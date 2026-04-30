@@ -19,7 +19,6 @@ onMounted(async () => {
 const navItems = [
   { label: 'Overview',  icon: '◈', to: '/dashboard' },
   { label: 'Database',  icon: '⛁', to: '/dashboard/database' },
-  { label: 'Builder',   icon: '✦', to: '/dashboard/builder' },
   { label: 'Terminals', icon: '⬡', to: '/dashboard/terminals' },
   { label: 'Settings',  icon: '◎', to: '/dashboard/settings' },
 ];

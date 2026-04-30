@@ -1,129 +1,85 @@
-# Postfolio
+# Postfolio — Schema-Driven Internal Tool Builder
 
-A **schema-driven internal tool builder**. Define your database, build your UI, and deploy role-based staff terminals — all without writing code.
-
----
-
-## Stack
-
-| Layer      | Technology                          |
-|------------|-------------------------------------|
-| Runtime    | Bun                                 |
-| Framework  | Nuxt 3 (Vue 3, Composition API)     |
-| Styling    | Tailwind CSS + CSS variables        |
-| DB (dev)   | SQLite via `better-sqlite3`         |
-| DB (prod)  | Supabase (Postgres)                 |
-| Auth       | Supabase Auth (prod) / mock (dev)   |
+Postfolio is a high-performance, modular platform designed to help businesses build, deploy, and manage custom internal tools. It bridges the gap between raw database management and specialized user interfaces, allowing you to create everything from POS terminals and inventory trackers to staff dashboards without writing a single line of frontend code.
 
 ---
 
-## Getting Started
+## ✦ Core Philosophy
+
+Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Postfolio** is built on the belief that internal tools should feel as premium as the products they support.
+
+- **Schema-First**: Your data defines your capability. Design your database schema directly within the platform.
+- **UI-Driven**: Build interfaces using a Figma-like visual canvas. Drag, drop, and configure.
+- **Terminal Isolation**: Deploy role-based "In-points" (terminals) that are isolated, secure, and authenticated via PIN.
+- **Dynamic Theming**: Brand colors and typography propagate instantly across every generated interface.
+
+---
+
+## 🛠 The Engine
+
+| Layer | Technology |
+| :--- | :--- |
+| **Runtime** | [Bun](https://bun.sh) (Ultra-fast JavaScript runtime) |
+| **Framework** | [Nuxt 3](https://nuxt.com) (Vue 3, Composition API) |
+| **Styling** | Vanilla CSS + [Tailwind CSS](https://tailwindcss.com) |
+| **Database (Dev)** | SQLite via `better-sqlite3` (Local persistence) |
+| **Database (Prod)** | Supabase / PostgreSQL (Production scale) |
+
+---
+
+## 📐 How it Works
+
+### 1. Database Editor
+Define your domain model. Postfolio handles the DDL (Data Definition Language) for you. It includes a built-in **Normalization Analyzer** that suggests schema improvements (e.g., splitting wide tables into 3.5NF) to ensure your data stays clean as you scale.
+
+### 2. UI Builder
+A professional design environment. Design staff-facing screens for different roles (Admin, Cashier, Inventory). Use modular elements like Table Views, Cart Widgets, and Input Fields that speak directly to your database.
+
+### 3. Terminals (In-points)
+Deploy specific layouts to physical or web-based terminals. Staff log in with a **secure PIN**. The interface is hydrated dynamically from the JSON layout definition and scaled to fit any screen perfectly.
+
+---
+
+## 🎨 Aesthetics & Experience
+
+Postfolio features a "Cream & Maroon" design system:
+- **Typography**: A harmonious blend of *Inter* (sans-serif) for utility and *DM Serif Display* (serif) for elegance.
+- **Interface**: A warm, tactile feel with soft shadows, rounded corners, and micro-animations.
+- **Staff View**: Minimalist and high-contrast, optimized for efficiency and low cognitive load.
+
+---
+
+## 🚀 Getting Started
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 bun install
 
-# Start dev server (uses SQLite, no Supabase needed)
-bun run dev
-
-# Seed built-in presets
+# 2. Seed built-in presets (Café POS, CRM, Inventory)
 bun run seed:presets
+
+# 3. Start the development server
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — login with any email in dev mode.
-
----
-
-## Environment
+### Environment Config
+Postfolio uses a hybrid database strategy. Toggle between local development and production Supabase via `.env`:
 
 ```env
-DEV_MODE=true              # true = SQLite, false = Supabase
-
-# Only needed when DEV_MODE=false
-SUPABASE_URL=...
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_KEY=...
+DEV_MODE=true  # Uses local dev.db (SQLite)
+# If false, requires SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_KEY
 ```
 
 ---
 
-## Project Structure
+## 🏗 Modular Architecture
 
-```
-postfolio/
-├── lib/
-│   ├── db.ts              # Unified DB abstraction (switch point)
-│   ├── db-sqlite.ts       # SQLite adapter (dev)
-│   ├── db-supabase.ts     # Supabase adapter (prod)
-│   ├── schemaUtils.ts     # SQL generation + normalization analysis
-│   ├── authUtils.ts       # JWT verification + PIN hashing
-│   └── uiTypes.ts         # Shared UI element type definitions
-│
-├── composables/
-│   ├── useAuth.ts         # Admin session state
-│   ├── useBusiness.ts     # Business profile + theme injection
-│   ├── useCanvas.ts       # Builder canvas state + undo
-│   └── useSchema.ts       # Schema API wrapper
-│
-├── server/api/
-│   ├── auth/              # Dev login
-│   ├── businesses/        # Create, fetch, theme
-│   ├── inpoints/          # CRUD, PIN login, layout save
-│   ├── schema/tables/     # DDL management + analysis
-│   ├── presets/           # Preset templates
-│   └── data/              # Generic query + insert
-│
-├── components/
-│   ├── Canvas.vue          # Builder drag/resize canvas
-│   ├── ElementRenderer.vue # Central element dispatch
-│   ├── PropertiesPanel.vue # Inspector panel
-│   └── elements/           # Isolated element components
-│       ├── ButtonEl.vue
-│       ├── TextEl.vue
-│       ├── ImageEl.vue
-│       ├── TableViewEl.vue
-│       ├── InputFieldEl.vue
-│       └── CartWidgetEl.vue
-│
-├── pages/
-│   ├── login.vue
-│   ├── dashboard/
-│   │   ├── index.vue       # Overview
-│   │   ├── database.vue    # Schema editor
-│   │   ├── builder.vue     # UI builder
-│   │   ├── terminals.vue   # In-point management
-│   │   └── settings.vue    # Theme + business config
-│   └── inpoint/[id].vue    # Staff terminal view
-│
-└── layouts/
-    ├── default.vue          # Bare shell (login)
-    └── dashboard.vue        # Sidebar + nav
-```
+Postfolio is designed for extension. Adding a new widget (e.g., a "Scanner" or "Chart") is a standardized process:
+1. Define the **Element Schema** in `lib/uiTypes.ts`.
+2. Create the **Vue Component** in `components/elements/`.
+3. Register the component in the **Element Renderer**.
+4. Add the configuration fields to the **Properties Panel**.
 
 ---
 
-## Architecture Principles
-
-- **DB abstraction**: all server code imports from `lib/db.ts` — never adapters directly
-- **Element modularity**: adding a new element type = one new `*El.vue` + one line in `ElementRenderer.vue`
-- **Schema safety**: all SQL identifiers validated against `/^[a-z][a-z0-9_]{0,62}$/` before any DDL
-- **Theming**: CSS variables on `:root` — updated at runtime from business palette, reflected everywhere
-
----
-
-## Multi-Tenancy
-
-Each business gets its own namespace:
-
-- **SQLite (dev)**: table name prefix `biz_<id>_<tablename>`
-- **Postgres (prod)**: separate schema `biz_<id>`
-
----
-
-## Adding a New Element Type
-
-1. Create `components/elements/MyEl.vue` — receives `element` prop, emits `action`
-2. Add the type to `lib/uiTypes.ts` — extend `ElementDef` union
-3. Register in `components/ElementRenderer.vue` — one line in `ELEMENT_COMPONENT_MAP`
-4. Add a section to `components/PropertiesPanel.vue` — `v-if="selectedElement.type === 'my-el'"`
-5. Add to the palette in `pages/dashboard/builder.vue` — one entry in `PALETTE_ITEMS`
+*Built with passion for clean code and beautiful interfaces.*

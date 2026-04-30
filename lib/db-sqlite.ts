@@ -1,30 +1,30 @@
 /**
  * SQLite adapter for local development.
- * Uses better-sqlite3 (sync API) wrapped in async to match the DbAdapter interface.
+ * Uses bun:sqlite (built-in, sync API) wrapped in async to match the DbAdapter interface.
  * Schema mirrors Postgres using SQLite-compatible types.
  */
 
-import Database from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import { join } from 'path';
 import type { DbAdapter, QueryResult, SingleResult } from './db';
 
 const DB_PATH = join(process.cwd(), 'dev.db');
 
 export class SqliteAdapter implements DbAdapter {
-  private db: Database.Database;
+  private db: Database;
 
   constructor() {
-    this.db = new Database(DB_PATH);
-    // Enable WAL mode for better concurrent read performance
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
+    this.db = new Database(DB_PATH, { create: true });
+
+    this.db.run("PRAGMA journal_mode = WAL");
+    this.db.run("PRAGMA foreign_keys = ON");
 
     this._bootstrap();
   }
 
   /** Create platform tables on first run if they don't exist. */
   private _bootstrap() {
-    this.db.exec(`
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS businesses (
         id            TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
         admin_user_id TEXT NOT NULL,
@@ -33,8 +33,10 @@ export class SqliteAdapter implements DbAdapter {
         color_palette TEXT DEFAULT '{}',
         schema_name   TEXT NOT NULL UNIQUE,
         created_at    TEXT DEFAULT (datetime('now'))
-      );
+      )
+    `);
 
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS inpoints (
         id            TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
         business_id   TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
@@ -44,8 +46,10 @@ export class SqliteAdapter implements DbAdapter {
         pin_hash      TEXT NOT NULL,
         ui_layout     TEXT DEFAULT '{}',
         created_at    TEXT DEFAULT (datetime('now'))
-      );
+      )
+    `);
 
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS presets (
         id                TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
         name              TEXT NOT NULL,
@@ -53,14 +57,13 @@ export class SqliteAdapter implements DbAdapter {
         schema_definition TEXT DEFAULT '{}',
         ui_layout         TEXT DEFAULT '{}',
         created_at        TEXT DEFAULT (datetime('now'))
-      );
+      )
     `);
   }
 
   async query<T>(sql: string, params: unknown[] = []): Promise<QueryResult<T>> {
     try {
-      const stmt = this.db.prepare(sql);
-      const rows = stmt.all(...params) as T[];
+      const rows = this.db.query<T, unknown[]>(sql).all(...params);
       return { data: rows, error: null };
     } catch (err) {
       return { data: null, error: (err as Error).message };
@@ -69,9 +72,8 @@ export class SqliteAdapter implements DbAdapter {
 
   async queryOne<T>(sql: string, params: unknown[] = []): Promise<SingleResult<T>> {
     try {
-      const stmt = this.db.prepare(sql);
-      const row = stmt.get(...params) as T | undefined;
-      return { data: row ?? null, error: null };
+      const row = this.db.query<T, unknown[]>(sql).get(...params) ?? null;
+      return { data: row, error: null };
     } catch (err) {
       return { data: null, error: (err as Error).message };
     }
@@ -79,16 +81,15 @@ export class SqliteAdapter implements DbAdapter {
 
   async insert<T>(table: string, values: Record<string, unknown>, schema?: string): Promise<SingleResult<T>> {
     try {
-      // SQLite has no schema namespace — prefix table name for scoped user tables
-      const tbl = schema ? `${schema}_${table}` : table;
-      const keys = Object.keys(values);
+      const tbl          = schema ? `${schema}_${table}` : table;
+      const keys         = Object.keys(values);
       const placeholders = keys.map(() => '?').join(', ');
-      const cols = keys.join(', ');
+      const cols         = keys.join(', ');
 
-      const stmt = this.db.prepare(
-        `INSERT INTO ${tbl} (${cols}) VALUES (${placeholders}) RETURNING *`
-      );
-      const row = stmt.get(...Object.values(values)) as T;
+      const row = this.db
+        .query<T, unknown[]>(`INSERT INTO ${tbl} (${cols}) VALUES (${placeholders}) RETURNING *`)
+        .get(...Object.values(values)) as T;
+
       return { data: row, error: null };
     } catch (err) {
       return { data: null, error: (err as Error).message };
@@ -97,12 +98,12 @@ export class SqliteAdapter implements DbAdapter {
 
   async update(table: string, values: Record<string, unknown>, where: Record<string, unknown>, schema?: string): Promise<{ error: string | null }> {
     try {
-      const tbl = schema ? `${schema}_${table}` : table;
-      const setClause = Object.keys(values).map(k => `${k} = ?`).join(', ');
+      const tbl         = schema ? `${schema}_${table}` : table;
+      const setClause   = Object.keys(values).map(k => `${k} = ?`).join(', ');
       const whereClause = Object.keys(where).map(k => `${k} = ?`).join(' AND ');
-      const params = [...Object.values(values), ...Object.values(where)];
+      const params      = [...Object.values(values), ...Object.values(where)];
 
-      this.db.prepare(`UPDATE ${tbl} SET ${setClause} WHERE ${whereClause}`).run(...params);
+      this.db.query(`UPDATE ${tbl} SET ${setClause} WHERE ${whereClause}`).run(...params);
       return { error: null };
     } catch (err) {
       return { error: (err as Error).message };
@@ -111,11 +112,10 @@ export class SqliteAdapter implements DbAdapter {
 
   async delete(table: string, where: Record<string, unknown>, schema?: string): Promise<{ error: string | null }> {
     try {
-      const tbl = schema ? `${schema}_${table}` : table;
+      const tbl         = schema ? `${schema}_${table}` : table;
       const whereClause = Object.keys(where).map(k => `${k} = ?`).join(' AND ');
-      const params = Object.values(where);
 
-      this.db.prepare(`DELETE FROM ${tbl} WHERE ${whereClause}`).run(...params);
+      this.db.query(`DELETE FROM ${tbl} WHERE ${whereClause}`).run(...Object.values(where));
       return { error: null };
     } catch (err) {
       return { error: (err as Error).message };
@@ -124,7 +124,7 @@ export class SqliteAdapter implements DbAdapter {
 
   async execute(sql: string): Promise<{ error: string | null }> {
     try {
-      this.db.exec(sql);
+      this.db.run(sql);
       return { error: null };
     } catch (err) {
       return { error: (err as Error).message };

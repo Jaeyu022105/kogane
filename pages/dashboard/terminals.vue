@@ -1,24 +1,35 @@
 <script setup lang="ts">
-/**
- * Terminals page — create and manage in-point staff accounts.
- */
-
 definePageMeta({ layout: 'dashboard' });
 
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
 
 const inpoints  = ref<any[]>([]);
-const loading   = ref(false);
-const showForm  = ref(false);
-const saving    = ref(false);
-const error     = ref<string | null>(null);
+const loading    = ref(false);
+const showForm   = ref(false);
+const saving     = ref(false);
+const error      = ref<string | null>(null);
+const pinVisible = ref(false);
+const pinCopied  = ref(false);
 
 const form = reactive({
   displayName: '',
-  role:        'staff',
   pin:         '',
 });
+
+function onPinInput(e: Event) {
+  const el = e.target as HTMLInputElement;
+  const digits = el.value.replace(/\D/g, '').slice(0, 8);
+  form.pin = digits;
+  el.value = digits;
+}
+
+function copyPin() {
+  if (!form.pin) return;
+  navigator.clipboard.writeText(form.pin);
+  pinCopied.value = true;
+  setTimeout(() => (pinCopied.value = false), 1500);
+}
 
 async function loadInpoints() {
   if (!business.value) return;
@@ -38,6 +49,10 @@ async function loadInpoints() {
 async function createInpoint() {
   if (!business.value) return;
   if (!form.displayName.trim() || !form.pin) return;
+  if (!/^\d{4,8}$/.test(form.pin)) {
+    error.value = 'PIN must be 4–8 digits (numbers only)';
+    return;
+  }
 
   saving.value = true;
   error.value  = null;
@@ -49,7 +64,6 @@ async function createInpoint() {
       body:    {
         businessId:  business.value.id,
         displayName: form.displayName.trim(),
-        role:        form.role,
         pin:         form.pin,
       },
     });
@@ -60,11 +74,14 @@ async function createInpoint() {
     }
 
     showForm.value   = false;
+    pinVisible.value = false;
+    pinCopied.value  = false;
     form.displayName = '';
     form.pin         = '';
     await loadInpoints();
-  } catch (err) {
-    error.value = (err as Error).message;
+  } catch (err: any) {
+    console.error('[createInpoint]', err);
+    error.value = err?.data?.message ?? err?.data?.error ?? err?.message ?? 'Unknown error';
   } finally {
     saving.value = false;
   }
@@ -72,116 +89,132 @@ async function createInpoint() {
 
 onMounted(loadInpoints);
 watch(() => business.value?.id, loadInpoints);
-
-const ROLE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  admin:     { bg: 'rgba(168,85,247,0.08)',  color: '#7c3aed', border: 'rgba(168,85,247,0.2)' },
-  staff:     { bg: 'rgba(61,24,32,0.07)',    color: '#3d1820', border: 'rgba(61,24,32,0.18)' },
-  inventory: { bg: 'rgba(22,163,74,0.08)',   color: '#15803d', border: 'rgba(22,163,74,0.2)' },
-  cashier:   { bg: 'rgba(232,116,138,0.1)',  color: '#be4561', border: 'rgba(232,116,138,0.25)' },
-};
-
-function roleStyle(role: string) {
-  return ROLE_STYLES[role] ?? { bg: 'rgba(61,24,32,0.05)', color: 'rgba(61,24,32,0.5)', border: 'rgba(61,24,32,0.15)' };
-}
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto" style="background: rgb(var(--shell-bg));">
-    <!-- Header -->
-    <header
+  <div class="flex-1 flex flex-col overflow-hidden" style="background: rgb(var(--shell-bg));">
+    <!-- ── Page header ──────────────────────────────────────────────────────── -->
+    <div
       class="px-8 py-5 flex items-center justify-between shrink-0"
-      style="border-bottom: 1px solid rgba(61,24,32,0.1);"
+      style="background: white; border-bottom: 1px solid rgba(61,24,32,0.08);"
     >
       <div>
         <h1 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">Terminals</h1>
-        <p class="text-sm mt-0.5" style="color: rgba(61,24,32,0.45);">Staff in-points and roles</p>
+        <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">
+          Staff in-points · {{ inpoints.length }} registered
+        </p>
       </div>
-      <button
-        class="flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full transition-all"
-        style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
-        @click="showForm = true"
-      >
-        + New Terminal
-      </button>
-    </header>
 
-    <div class="px-8 py-7">
+      <button
+        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all disabled:opacity-50"
+        style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
+        :disabled="!business"
+        :title="!business ? 'Please create a business in Settings first' : 'Create new terminal'"
+        @click="showForm = true"
+        @mouseenter="(e: MouseEvent) => !(!business) && ((e.currentTarget as HTMLElement).style.opacity = '0.85')"
+        @mouseleave="(e: MouseEvent) => !(!business) && ((e.currentTarget as HTMLElement).style.opacity = '1')"
+      >
+        <span style="font-size: 1rem; line-height: 1;">+</span>
+        New Terminal
+      </button>
+    </div>
+
+    <!-- ── Content area ─────────────────────────────────────────────────────── -->
+    <div class="flex-1 overflow-y-auto px-8 py-6">
       <!-- Loading -->
-      <div v-if="loading" class="flex justify-center py-16">
+      <div v-if="loading" class="flex justify-center py-20">
         <div
-          class="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-          style="border-color: rgba(61,24,32,0.2); border-top-color: transparent;"
+          class="w-6 h-6 rounded-full border-2 animate-spin"
+          style="border-color: rgba(61,24,32,0.12); border-top-color: rgb(var(--shell-sidebar));"
         />
       </div>
 
-      <!-- Grid -->
-      <div v-else class="grid grid-cols-2 gap-4">
+      <!-- Empty state / No business -->
+      <div
+        v-else-if="!business"
+        class="flex flex-col items-center justify-center py-24 text-center"
+      >
+        <div class="text-5xl mb-4" style="color: rgba(61,24,32,0.1);">🏢</div>
+        <p class="text-base font-semibold" style="color: rgba(61,24,32,0.35);">No business configured</p>
+        <p class="text-sm mt-1 mb-4" style="color: rgba(61,24,32,0.25);">You need to set up your business before creating terminals.</p>
+        <NuxtLink
+          to="/dashboard/settings"
+          class="px-4 py-2 text-sm font-medium rounded-xl transition-all"
+          style="background: rgba(61,24,32,0.06); color: rgba(61,24,32,0.65); text-decoration: none;"
+        >
+          Go to Settings →
+        </NuxtLink>
+      </div>
+
+      <!-- Empty state / No terminals -->
+      <div
+        v-else-if="inpoints.length === 0"
+        class="flex flex-col items-center justify-center py-24 text-center"
+      >
+        <div class="text-5xl mb-4" style="color: rgba(61,24,32,0.1);">⬡</div>
+        <p class="text-base font-semibold" style="color: rgba(61,24,32,0.35);">No terminals yet</p>
+        <p class="text-sm mt-1" style="color: rgba(61,24,32,0.25);">Create one and share the PIN with your staff.</p>
+      </div>
+
+      <!-- Terminal grid -->
+      <div v-else class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
         <div
           v-for="ip in inpoints"
           :key="ip.id"
-          class="card rounded-2xl p-5 space-y-4 animate-pop"
+          class="group rounded-2xl p-5 flex flex-col gap-4 transition-all"
+          style="background: white; border: 1px solid rgba(61,24,32,0.08);"
+          @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.18)'"
+          @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.08)'"
         >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">
+          <!-- Avatar + name -->
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold shrink-0"
+              style="background: rgba(61,24,32,0.07); color: rgb(var(--shell-sidebar));"
+            >
+              {{ ip.display_name?.[0]?.toUpperCase() ?? '?' }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-sm truncate" style="color: rgb(var(--shell-sidebar));">
                 {{ ip.display_name }}
               </p>
-              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">
-                Created {{ new Date(ip.created_at).toLocaleDateString() }}
-              </p>
+              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.35);">Terminal</p>
             </div>
-            <span
-              class="role-badge"
-              :style="{
-                background:   roleStyle(ip.role).bg,
-                color:        roleStyle(ip.role).color,
-                borderColor:  roleStyle(ip.role).border,
-              }"
-            >
-              {{ ip.role }}
-            </span>
           </div>
 
-          <div class="flex gap-2 pt-1">
+          <!-- Actions -->
+          <div class="flex items-center gap-2 mt-auto">
             <NuxtLink
               :to="`/dashboard/builder?inpoint=${ip.id}`"
-              class="flex-1 text-center text-xs py-2 rounded-full font-medium transition-all"
-              style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65); text-decoration: none;"
+              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+              style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.06); text-decoration: none;"
             >
-              Edit Layout
+              ✦ Edit Layout
             </NuxtLink>
             <NuxtLink
               :to="`/inpoint/${ip.id}`"
-              class="flex-1 text-center text-xs py-2 rounded-full font-semibold transition-all"
-              style="background: rgb(var(--shell-pink)); color: #fff; text-decoration: none; box-shadow: 0 2px 8px rgba(232,116,138,0.3);"
+              class="flex-1 text-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+              style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.1); text-decoration: none;"
             >
-              Open Terminal →
+              Open →
             </NuxtLink>
           </div>
-        </div>
-
-        <div v-if="inpoints.length === 0" class="col-span-2">
-          <EmptyState
-            icon="⬡"
-            title="No terminals yet"
-            message="Create one to assign a staff role and layout"
-          />
         </div>
       </div>
     </div>
 
-    <!-- Create form modal -->
+    <!-- ── Create form modal ─────────────────────────────────────────────────── -->
     <Transition name="v">
       <div
         v-if="showForm"
         class="fixed inset-0 z-50 flex items-center justify-center px-4"
-        style="background: rgba(61,24,32,0.35); backdrop-filter: blur(6px);"
+        style="background: rgba(15,5,7,0.4); backdrop-filter: blur(8px);"
         @click.self="showForm = false"
       >
-        <div class="w-full max-w-sm bg-white rounded-3xl p-7 space-y-5 animate-pop shadow-warm-lg">
+        <div class="w-full max-w-sm bg-white rounded-3xl p-7 space-y-5 shadow-2xl">
           <div>
             <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Terminal</h2>
-            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Add a staff in-point with a role and PIN.</p>
+            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Give it a name and share the PIN with your staff.</p>
           </div>
 
           <div class="space-y-4">
@@ -190,33 +223,58 @@ function roleStyle(role: string) {
               <input
                 v-model="form.displayName"
                 class="input-warm w-full px-4 py-2.5 text-sm"
-                placeholder="Cashier 1"
+                placeholder="Cash Register 1"
               />
-            </div>
-
-            <div>
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Role</label>
-              <select
-                v-model="form.role"
-                class="input-warm w-full px-4 py-2.5 text-sm"
-              >
-                <option value="cashier">Cashier</option>
-                <option value="inventory">Inventory</option>
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
-              </select>
             </div>
 
             <div>
               <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">PIN (4–8 digits)</label>
-              <input
-                v-model="form.pin"
-                type="password"
-                inputmode="numeric"
-                maxlength="8"
-                class="input-warm w-full px-4 py-2.5 text-sm"
-                placeholder="••••"
-              />
+              <div class="relative">
+                <input
+                  :value="form.pin"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="8"
+                  autocomplete="off"
+                  class="input-warm w-full px-4 py-2.5 text-sm pr-20"
+                  :style="pinVisible ? '' : '-webkit-text-security: disc;'"
+                  placeholder="••••"
+                  @input="onPinInput"
+                />
+                <div class="absolute inset-y-0 right-0 flex items-center gap-0.5 pr-2">
+                  <button
+                    type="button"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+                    style="color: rgba(61,24,32,0.4);"
+                    :title="pinCopied ? 'Copied!' : 'Copy PIN'"
+                    @click="copyPin"
+                  >
+                    <svg v-if="!pinCopied" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #22c55e;">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+                    style="color: rgba(61,24,32,0.4);"
+                    :title="pinVisible ? 'Hide PIN' : 'Show PIN'"
+                    @click="pinVisible = !pinVisible"
+                  >
+                    <svg v-if="!pinVisible" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

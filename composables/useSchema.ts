@@ -88,6 +88,28 @@ export function useSchema(businessId: Ref<string | undefined>) {
     return res.error;
   }
 
+  async function fetchTableRows(tableName: string, page = 1, limit = 50): Promise<{
+    columns: { name: string; type: string }[];
+    rows:    Record<string, unknown>[];
+    total:   number;
+    error:   string | null;
+  }> {
+    const id = businessId.value;
+    if (!id) return { columns: [], rows: [], total: 0, error: 'No business selected' };
+
+    const res = await $fetch<{
+      columns: { name: string; type: string }[];
+      rows:    Record<string, unknown>[];
+      total:   number;
+      error:   string | null;
+    }>('/api/schema/tables/rows', {
+      headers: authHeaders(),
+      query:   { businessId: id, tableName, page, limit },
+    });
+
+    return res;
+  }
+
   return {
     tables,
     loading,
@@ -97,5 +119,6 @@ export function useSchema(businessId: Ref<string | undefined>) {
     dropTable,
     analyzeTable,
     addColumns,
+    fetchTableRows,
   };
 }
