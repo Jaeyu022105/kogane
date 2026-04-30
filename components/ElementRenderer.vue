@@ -41,14 +41,15 @@ const component = computed(() => ELEMENT_COMPONENT_MAP[props.element.type] ?? nu
 <template>
   <div
     class="absolute"
-    :style="{
+    :class="{ 'inset-0': builderMode }"
+    :style="builderMode ? {
+      pointerEvents: 'none'
+    } : {
       left:    `${element.position.x}px`,
       top:     `${element.position.y}px`,
       width:   `${element.position.width}px`,
       height:  `${element.position.height}px`,
       zIndex:  element.position.zIndex,
-      // Disable pointer events in builder mode so drag handles take priority
-      pointerEvents: builderMode ? 'none' : 'auto',
     }"
   >
     <component
