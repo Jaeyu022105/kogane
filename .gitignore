@@ -1,0 +1,10 @@
+# Postfolio
+
+.env
+dev.db
+dev.db-shm
+dev.db-wal
+node_modules/
+.nuxt/
+.output/
+dist/

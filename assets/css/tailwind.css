@@ -1,0 +1,72 @@
+/* ── Google Fonts ──────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Default theme tokens (overridden per-business) ─────────── */
+:root {
+  --color-primary:    59 130 246;     /* blue-500 */
+  --color-secondary:  99 102 241;     /* indigo-500 */
+  --color-accent:     168 85 247;     /* purple-500 */
+  --color-background: 15 15 23;       /* near-black */
+  --color-surface:    22 22 34;
+  --color-border:     255 255 255 / 0.08;
+  --color-text:       240 240 255;
+  --color-muted:      140 140 170;
+
+  /* Scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,102,241,0.3) transparent;
+}
+
+/* ── Base resets ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: rgb(var(--color-background));
+  color: rgb(var(--color-text));
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(99,102,241,0.35); border-radius: 99px; }
+
+/* ── Utility layers ──────────────────────────────────────────── */
+@layer components {
+  /* Glass card */
+  .glass {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Surface panel */
+  .surface {
+    background: rgb(var(--color-surface));
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Focus ring */
+  .focus-ring {
+    @apply outline-none ring-2 ring-brand-primary ring-offset-2 ring-offset-transparent;
+  }
+
+  /* Sidebar link active */
+  .nav-link-active {
+    background: rgba(var(--color-primary), 0.15);
+    color: rgb(var(--color-primary));
+    border-left: 2px solid rgb(var(--color-primary));
+  }
+}
+
+/* ── Transition helpers ──────────────────────────────────────── */
+.v-enter-active, .v-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.v-enter-from, .v-leave-to       { opacity: 0; transform: translateY(4px); }
