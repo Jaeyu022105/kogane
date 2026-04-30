@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Dashboard layout — persistent sidebar + topbar shell.
+ * Dashboard layout — persistent sidebar + main shell.
  * Redirects to login if no session is found.
  */
 
@@ -17,11 +17,11 @@ onMounted(async () => {
 });
 
 const navItems = [
-  { label: 'Overview',  icon: '⬡', to: '/dashboard' },
+  { label: 'Overview',  icon: '◈', to: '/dashboard' },
   { label: 'Database',  icon: '⛁', to: '/dashboard/database' },
-  { label: 'Builder',   icon: '⬛', to: '/dashboard/builder' },
-  { label: 'Terminals', icon: '⬢', to: '/dashboard/terminals' },
-  { label: 'Settings',  icon: '⚙', to: '/dashboard/settings' },
+  { label: 'Builder',   icon: '✦', to: '/dashboard/builder' },
+  { label: 'Terminals', icon: '⬡', to: '/dashboard/terminals' },
+  { label: 'Settings',  icon: '◎', to: '/dashboard/settings' },
 ];
 
 const route = useRoute();
@@ -36,18 +36,28 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="flex h-dvh overflow-hidden bg-[rgb(var(--color-background))]">
+  <div class="flex h-dvh overflow-hidden" style="background: rgb(var(--shell-bg));">
     <!-- Sidebar -->
-    <aside class="w-56 flex flex-col surface border-r border-white/8 shrink-0">
+    <aside
+      class="w-52 flex flex-col shrink-0"
+      style="background: rgb(var(--shell-sidebar));"
+    >
       <!-- Logo -->
-      <div class="px-5 py-5 border-b border-white/8 flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center text-white font-bold text-sm">
+      <div class="px-5 py-5 flex items-center gap-3" style="border-bottom: 1px solid rgba(245,237,228,0.1);">
+        <div
+          class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm"
+          style="background: rgb(var(--shell-pink)); color: #fff;"
+        >
           P
         </div>
-        <div>
-          <p class="text-sm font-semibold text-white leading-tight">Postfolio</p>
-          <p class="text-xs text-white/40 truncate max-w-[100px]">{{ business?.name ?? '…' }}</p>
-        </div>
+        <span class="font-serif text-base leading-none" style="color: rgb(var(--shell-sidebar-text));">
+          <span style="color: rgb(var(--shell-pink));">Post</span><strong>folio</strong>
+        </span>
+      </div>
+
+      <!-- Business name chip -->
+      <div v-if="business?.name" class="mx-3 mt-3 px-3 py-1.5 rounded-lg text-xs truncate" style="background: rgba(245,237,228,0.08); color: rgba(245,237,228,0.55);">
+        {{ business.name }}
       </div>
 
       <!-- Navigation -->
@@ -56,26 +66,35 @@ function handleLogout() {
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all duration-150"
-          :class="{ 'nav-link-active': isActive(item.to) }"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150"
+          :class="isActive(item.to) ? 'nav-link-active font-medium' : ''"
+          :style="isActive(item.to) ? '' : 'color: rgba(245,237,228,0.5);'"
+          @mouseenter="(e: MouseEvent) => { if (!isActive(item.to)) (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.85)'; (e.currentTarget as HTMLElement).style.background = 'rgba(245,237,228,0.07)' }"
+          @mouseleave="(e: MouseEvent) => { if (!isActive(item.to)) (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.5)'; (e.currentTarget as HTMLElement).style.background = '' }"
         >
-          <span class="text-base leading-none">{{ item.icon }}</span>
+          <span class="text-sm w-4 text-center leading-none opacity-70">{{ item.icon }}</span>
           {{ item.label }}
         </NuxtLink>
       </nav>
 
       <!-- User footer -->
-      <div class="px-4 py-4 border-t border-white/8 flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full bg-brand-primary/20 flex items-center justify-center text-xs font-semibold text-brand-primary">
+      <div class="px-4 py-4 flex items-center gap-3" style="border-top: 1px solid rgba(245,237,228,0.1);">
+        <div
+          class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
+          style="background: rgba(232,116,138,0.25); color: rgb(var(--shell-pink));"
+        >
           {{ session?.email?.[0]?.toUpperCase() ?? 'A' }}
         </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-xs font-medium text-white truncate">{{ session?.email ?? 'Admin' }}</p>
-        </div>
+        <p class="text-xs flex-1 min-w-0 truncate" style="color: rgba(245,237,228,0.55);">
+          {{ session?.email ?? 'Admin' }}
+        </p>
         <button
-          class="text-white/30 hover:text-white/80 text-xs transition-colors"
+          class="text-xs transition-colors"
+          style="color: rgba(245,237,228,0.3);"
           title="Log out"
           @click="handleLogout"
+          @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.75)'"
+          @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.3)'"
         >
           ⏻
         </button>
@@ -83,7 +102,7 @@ function handleLogout() {
     </aside>
 
     <!-- Main -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden" style="background: rgb(var(--shell-bg));">
       <slot />
     </div>
   </div>

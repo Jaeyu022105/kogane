@@ -1,24 +1,31 @@
 /* ── Google Fonts ──────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Default theme tokens (overridden per-business) ─────────── */
+/* ── Shell tokens (fixed, not business-themed) ───────────────── */
 :root {
-  --color-primary:    59 130 246;     /* blue-500 */
-  --color-secondary:  99 102 241;     /* indigo-500 */
-  --color-accent:     168 85 247;     /* purple-500 */
-  --color-background: 15 15 23;       /* near-black */
-  --color-surface:    22 22 34;
-  --color-border:     255 255 255 / 0.08;
-  --color-text:       240 240 255;
-  --color-muted:      140 140 170;
+  --shell-bg:           245 237 228;   /* cream #f5ede4 */
+  --shell-sidebar:      61  24  32;    /* maroon #3d1820 */
+  --shell-sidebar-text: 245 237 228;   /* cream text in sidebar */
+  --shell-pink:         232 116 138;   /* accent pink #e8748a */
+  --shell-border:       61  24  32;    /* maroon borders */
+
+  /* Business brand tokens — overridden per-business via theming system */
+  --color-primary:    61  24  32;     /* maroon */
+  --color-secondary:  232 116 138;    /* pink */
+  --color-accent:     232 116 138;    /* pink */
+  --color-background: 245 237 228;    /* cream */
+  --color-surface:    255 255 255;    /* white */
+  --color-border:     61  24  32;
+  --color-text:       61  24  32;
+  --color-muted:      168 130 135;
 
   /* Scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(99,102,241,0.3) transparent;
+  scrollbar-color: rgba(232,116,138,0.35) transparent;
 }
 
 /* ── Base resets ─────────────────────────────────────────────── */
@@ -27,31 +34,50 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: rgb(var(--color-background));
-  color: rgb(var(--color-text));
+  background: rgb(var(--shell-bg));
+  color: rgb(var(--shell-sidebar));
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────── */
-::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: rgba(99,102,241,0.35); border-radius: 99px; }
+::-webkit-scrollbar-thumb  { background: rgba(232,116,138,0.4); border-radius: 99px; }
 
 /* ── Utility layers ──────────────────────────────────────────── */
 @layer components {
-  /* Glass card */
+  /* White card with soft warm shadow */
+  .card {
+    background: #ffffff;
+    border: 1px solid rgba(61,24,32,0.08);
+    box-shadow: 0 2px 12px rgba(61,24,32,0.06), 0 1px 3px rgba(61,24,32,0.04);
+  }
+
+  /* Sidebar surface */
+  .sidebar-surface {
+    background: rgb(var(--shell-sidebar));
+    color: rgb(var(--shell-sidebar-text));
+  }
+
+  /* Cream surface (for headers / secondary panels) */
+  .cream-surface {
+    background: #fdf7f2;
+    border: 1px solid rgba(61,24,32,0.08);
+  }
+
+  /* Legacy glass — map to white card for backward compat */
   .glass {
-    background: rgba(255,255,255,0.04);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #ffffff;
+    border: 1px solid rgba(61,24,32,0.08);
+    box-shadow: 0 2px 12px rgba(61,24,32,0.06);
   }
 
   /* Surface panel */
   .surface {
     background: rgb(var(--color-surface));
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid rgba(61,24,32,0.08);
   }
 
   /* Focus ring */
@@ -59,14 +85,70 @@ html, body {
     @apply outline-none ring-2 ring-brand-primary ring-offset-2 ring-offset-transparent;
   }
 
-  /* Sidebar link active */
+  /* Sidebar nav active */
   .nav-link-active {
-    background: rgba(var(--color-primary), 0.15);
-    color: rgb(var(--color-primary));
-    border-left: 2px solid rgb(var(--color-primary));
+    background: rgba(245,237,228,0.12);
+    color: #ffffff;
+  }
+
+  /* Primary filled button */
+  .btn-primary {
+    background: rgb(var(--shell-sidebar));
+    color: rgb(var(--shell-sidebar-text));
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-primary:hover  { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  /* Ghost/outline button */
+  .btn-ghost {
+    border: 1.5px solid rgba(61,24,32,0.2);
+    border-radius: 9999px;
+    color: rgb(var(--shell-sidebar));
+    font-weight: 500;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn-ghost:hover { border-color: rgba(61,24,32,0.45); background: rgba(61,24,32,0.04); }
+
+  /* Pink accent button */
+  .btn-pink {
+    background: rgb(var(--shell-pink));
+    color: #ffffff;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-pink:hover  { opacity: 0.88; }
+  .btn-pink:active { transform: scale(0.97); }
+
+  /* Form inputs */
+  .input-warm {
+    background: #fdf7f2;
+    border: 1.5px solid rgba(61,24,32,0.15);
+    border-radius: 0.75rem;
+    color: rgb(var(--shell-sidebar));
+    transition: border-color 0.15s;
+  }
+  .input-warm::placeholder { color: rgba(61,24,32,0.35); }
+  .input-warm:focus {
+    outline: none;
+    border-color: rgba(61,24,32,0.45);
+    box-shadow: 0 0 0 3px rgba(61,24,32,0.07);
+  }
+
+  /* Role badge */
+  .role-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    border: 1.5px solid;
   }
 }
 
 /* ── Transition helpers ──────────────────────────────────────── */
 .v-enter-active, .v-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
-.v-enter-from, .v-leave-to       { opacity: 0; transform: translateY(4px); }
+.v-enter-from,  .v-leave-to      { opacity: 0; transform: translateY(4px); }

@@ -13,7 +13,6 @@ const saving       = ref(false);
 const error        = ref<string | null>(null);
 const success      = ref(false);
 
-// Default palette mirrors the CSS variable defaults
 const palette = reactive({
   primary:    '#3b82f6',
   secondary:  '#6366f1',
@@ -25,7 +24,7 @@ onMounted(async () => {
   if (!business.value) await fetchBusiness();
 
   if (business.value) {
-    businessName.value          = business.value.name;
+    businessName.value = business.value.name;
     palette.primary    = business.value.colorPalette.primary    ?? palette.primary;
     palette.secondary  = business.value.colorPalette.secondary  ?? palette.secondary;
     palette.accent     = business.value.colorPalette.accent     ?? palette.accent;
@@ -49,7 +48,6 @@ async function saveTheme() {
   }
 }
 
-// Create business if it doesn't exist yet
 async function createBusiness() {
   if (!businessName.value.trim()) return;
   saving.value = true;
@@ -84,26 +82,36 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto">
-    <header class="px-8 py-5 border-b border-white/8">
-      <h1 class="text-xl font-bold text-white">Settings</h1>
-      <p class="text-sm text-white/40 mt-0.5">Branding and business configuration</p>
+  <div class="flex-1 overflow-y-auto" style="background: rgb(var(--shell-bg));">
+    <header
+      class="px-8 py-5"
+      style="border-bottom: 1px solid rgba(61,24,32,0.1);"
+    >
+      <h1 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">Settings</h1>
+      <p class="text-sm mt-0.5" style="color: rgba(61,24,32,0.45);">Branding and business configuration</p>
     </header>
 
-    <div class="px-8 py-6 max-w-2xl space-y-8">
+    <div class="px-8 py-7 max-w-2xl space-y-6">
 
       <!-- No business yet -->
-      <div v-if="!business" class="glass rounded-2xl p-6 space-y-4">
-        <h2 class="font-semibold text-white">Create Your Business</h2>
-        <p class="text-sm text-white/50">Set up your workspace to start building.</p>
+      <div v-if="!business" class="bg-white rounded-2xl p-6 space-y-4 shadow-warm">
+        <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Create Your Business</h2>
+        <p class="text-sm" style="color: rgba(61,24,32,0.5);">Set up your workspace to start building.</p>
         <input
           v-model="businessName"
-          class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+          class="input-warm w-full px-4 py-2.5 text-sm"
           placeholder="My Business Name"
         />
-        <div v-if="error" class="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{{ error }}</div>
+        <div
+          v-if="error"
+          class="text-xs px-3 py-2 rounded-xl"
+          style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+        >
+          {{ error }}
+        </div>
         <button
-          class="w-full py-2.5 bg-brand-primary hover:brightness-110 text-white font-semibold text-sm rounded-xl transition-all disabled:opacity-40"
+          class="w-full py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40"
+          style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
           :disabled="!businessName.trim() || saving"
           @click="createBusiness"
         >
@@ -112,21 +120,22 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
       </div>
 
       <!-- Theme editor -->
-      <div v-if="business" class="glass rounded-2xl p-6 space-y-5">
-        <h2 class="font-semibold text-white">Brand Colors</h2>
+      <div v-if="business" class="bg-white rounded-2xl p-6 space-y-5 shadow-warm">
+        <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Brand Colors</h2>
 
         <div class="grid grid-cols-2 gap-4">
-          <div v-for="field in COLOR_FIELDS" :key="field.key" class="space-y-1.5">
-            <label class="text-xs text-white/50">{{ field.label }}</label>
+          <div v-for="field in COLOR_FIELDS" :key="field.key" class="space-y-2">
+            <label class="text-xs font-semibold" style="color: rgba(61,24,32,0.55);">{{ field.label }}</label>
             <div class="flex items-center gap-2">
               <input
                 type="color"
                 v-model="palette[field.key]"
-                class="w-9 h-9 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                class="w-9 h-9 rounded-lg cursor-pointer"
+                style="border: 1.5px solid rgba(61,24,32,0.15); background: transparent;"
               />
               <input
                 v-model="palette[field.key]"
-                class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                class="input-warm flex-1 px-3 py-1.5 text-sm font-mono"
                 placeholder="#000000"
               />
             </div>
@@ -138,17 +147,30 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
           <div
             v-for="field in COLOR_FIELDS"
             :key="field.key"
-            class="flex-1 h-8 rounded-lg transition-colors"
+            class="flex-1 h-7 rounded-full transition-colors"
             :style="{ background: palette[field.key] }"
             :title="field.label"
           />
         </div>
 
-        <div v-if="error"   class="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{{ error }}</div>
-        <div v-if="success" class="text-xs text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">Theme saved!</div>
+        <div
+          v-if="error"
+          class="text-xs px-3 py-2 rounded-xl"
+          style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+        >
+          {{ error }}
+        </div>
+        <div
+          v-if="success"
+          class="text-xs px-3 py-2 rounded-xl"
+          style="background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2); color: #15803d;"
+        >
+          Theme saved! ✓
+        </div>
 
         <button
-          class="w-full py-2.5 bg-brand-primary hover:brightness-110 text-white font-semibold text-sm rounded-xl transition-all disabled:opacity-40 shadow-lg shadow-brand-primary/20"
+          class="w-full py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40"
+          style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
           :disabled="saving"
           @click="saveTheme"
         >
@@ -157,23 +179,24 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
       </div>
 
       <!-- Business info -->
-      <div v-if="business" class="glass rounded-2xl p-6 space-y-3">
-        <h2 class="font-semibold text-white">Business Info</h2>
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-white/40">ID</span>
-            <span class="text-white/70 font-mono text-xs">{{ business.id }}</span>
+      <div v-if="business" class="bg-white rounded-2xl p-6 space-y-3 shadow-warm">
+        <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Business Info</h2>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center py-2" style="border-bottom: 1px solid rgba(61,24,32,0.07);">
+            <span class="text-xs font-semibold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">ID</span>
+            <span class="text-xs font-mono" style="color: rgba(61,24,32,0.65);">{{ business.id }}</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-white/40">Schema</span>
-            <span class="text-white/70 font-mono text-xs">{{ business.schemaName }}</span>
+          <div class="flex justify-between items-center py-2" style="border-bottom: 1px solid rgba(61,24,32,0.07);">
+            <span class="text-xs font-semibold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">Schema</span>
+            <span class="text-xs font-mono" style="color: rgba(61,24,32,0.65);">{{ business.schemaName }}</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-white/40">Created</span>
-            <span class="text-white/70 text-xs">{{ new Date(business.createdAt).toLocaleDateString() }}</span>
+          <div class="flex justify-between items-center py-2">
+            <span class="text-xs font-semibold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">Created</span>
+            <span class="text-xs" style="color: rgba(61,24,32,0.65);">{{ new Date(business.createdAt).toLocaleDateString() }}</span>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>

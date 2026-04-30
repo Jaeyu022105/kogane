@@ -1,9 +1,4 @@
 <script setup lang="ts">
-/**
- * UI Builder page — Figma-like canvas editor for in-point layouts.
- * Three-panel layout: element palette | canvas | properties panel
- */
-
 import type { ElementDef, ElementType, UiLayout } from '~/lib/uiTypes';
 import Canvas          from '~/components/Canvas.vue';
 import PropertiesPanel from '~/components/PropertiesPanel.vue';
@@ -14,12 +9,10 @@ const { authHeaders }     = useAuth();
 const { business }        = useBusiness();
 const { layout, isDirty, canUndo, loadLayout, addElement, undo } = useCanvas();
 
-// ── Inpoint selection ─────────────────────────────────────────────────────────
-
-const inpoints    = ref<{ id: string; display_name: string; role: string; ui_layout: string }[]>([]);
+const inpoints        = ref<{ id: string; display_name: string; role: string; ui_layout: string }[]>([]);
 const selectedInpoint = ref<string | null>(null);
-const saving      = ref(false);
-const zoom        = ref(0.7);
+const saving          = ref(false);
+const zoom            = ref(0.7);
 
 async function loadInpoints() {
   if (!business.value) return;
@@ -34,11 +27,8 @@ function selectInpoint(id: string) {
   selectedInpoint.value = id;
   const ip = inpoints.value.find(i => i.id === id);
   if (!ip) return;
-
   try {
-    const parsed: UiLayout = typeof ip.ui_layout === 'string'
-      ? JSON.parse(ip.ui_layout)
-      : ip.ui_layout;
+    const parsed: UiLayout = typeof ip.ui_layout === 'string' ? JSON.parse(ip.ui_layout) : ip.ui_layout;
     loadLayout(parsed);
   } catch {
     loadLayout({ version: 1, resolution: { width: 1280, height: 720 }, elements: [] });
@@ -48,7 +38,6 @@ function selectInpoint(id: string) {
 async function saveLayout() {
   if (!selectedInpoint.value) return;
   saving.value = true;
-
   try {
     await $fetch('/api/inpoints/layout', {
       method:  'PATCH',
@@ -63,21 +52,18 @@ async function saveLayout() {
 onMounted(loadInpoints);
 watch(() => business.value?.id, loadInpoints);
 
-// ── Element palette ───────────────────────────────────────────────────────────
-
 const PALETTE_ITEMS: Array<{ type: ElementType; label: string; icon: string; defaults: Partial<ElementDef> }> = [
-  { type: 'button',      label: 'Button',      icon: '⬡', defaults: { text: 'Button', variant: 'primary' } as any },
-  { type: 'text',        label: 'Text',        icon: 'T',  defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any },
-  { type: 'image',       label: 'Image',       icon: '🖼', defaults: { src: '', fit: 'cover' } as any },
-  { type: 'table-view',  label: 'Table View',  icon: '⛁', defaults: { tableName: '', columns: [] } as any },
-  { type: 'input-field', label: 'Input',       icon: '▭', defaults: { fieldName: 'field', inputType: 'text' } as any },
-  { type: 'cart-widget', label: 'Cart',        icon: '🛒', defaults: { productTable: '', orderTable: '', displayColumns: [] } as any },
+  { type: 'button',      label: 'Button',     icon: '⬡', defaults: { text: 'Button', variant: 'primary' } as any },
+  { type: 'text',        label: 'Text',       icon: 'T',  defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any },
+  { type: 'image',       label: 'Image',      icon: '🖼', defaults: { src: '', fit: 'cover' } as any },
+  { type: 'table-view',  label: 'Table View', icon: '⛁', defaults: { tableName: '', columns: [] } as any },
+  { type: 'input-field', label: 'Input',      icon: '▭', defaults: { fieldName: 'field', inputType: 'text' } as any },
+  { type: 'cart-widget', label: 'Cart',       icon: '🛒', defaults: { productTable: '', orderTable: '', displayColumns: [] } as any },
 ];
 
 function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
-  const id = crypto.randomUUID();
   addElement({
-    id,
+    id:       crypto.randomUUID(),
     type,
     label:    type,
     position: { x: 80, y: 80, width: 200, height: 60, zIndex: layout.value.elements.length + 1 },
@@ -89,15 +75,14 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
 <template>
   <div class="flex-1 flex flex-col overflow-hidden">
     <!-- Topbar -->
-    <header class="px-6 py-3 border-b border-white/8 flex items-center gap-4 shrink-0">
+    <header class="px-6 py-3 flex items-center gap-4 shrink-0 bg-white" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
       <div class="flex-1">
-        <h1 class="text-base font-bold text-white">UI Builder</h1>
+        <h1 class="font-serif text-base font-normal" style="color: rgb(var(--shell-sidebar));">UI Builder</h1>
       </div>
 
-      <!-- Inpoint selector -->
       <select
         :value="selectedInpoint ?? ''"
-        class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-primary max-w-[200px]"
+        class="input-warm px-3 py-1.5 text-sm max-w-[200px]"
         @change="selectInpoint(($event.target as HTMLSelectElement).value)"
       >
         <option value="" disabled>Select terminal…</option>
@@ -106,61 +91,51 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
         </option>
       </select>
 
-      <!-- Zoom -->
       <div class="flex items-center gap-2">
-        <button class="text-white/40 hover:text-white text-sm" @click="zoom = Math.max(0.3, zoom - 0.1)">－</button>
-        <span class="text-xs text-white/40 w-12 text-center">{{ Math.round(zoom * 100) }}%</span>
-        <button class="text-white/40 hover:text-white text-sm" @click="zoom = Math.min(1.5, zoom + 0.1)">＋</button>
+        <button class="text-sm w-6 h-6 rounded-full flex items-center justify-center" style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.07);" @click="zoom = Math.max(0.3, zoom - 0.1)">−</button>
+        <span class="text-xs w-12 text-center" style="color: rgba(61,24,32,0.5);">{{ Math.round(zoom * 100) }}%</span>
+        <button class="text-sm w-6 h-6 rounded-full flex items-center justify-center" style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.07);" @click="zoom = Math.min(1.5, zoom + 0.1)">+</button>
       </div>
 
-      <!-- Undo -->
-      <button
-        :disabled="!canUndo"
-        class="text-xs text-white/50 hover:text-white disabled:opacity-30 transition-colors"
-        @click="undo"
-      >
-        ↩ Undo
-      </button>
+      <button :disabled="!canUndo" class="text-xs font-medium disabled:opacity-30" style="color: rgba(61,24,32,0.5);" @click="undo">↩ Undo</button>
 
-      <!-- Save -->
       <button
         :disabled="!isDirty || !selectedInpoint || saving"
-        class="bg-brand-primary hover:brightness-110 disabled:opacity-40 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-all shadow-lg shadow-brand-primary/20"
+        class="text-sm font-semibold px-4 py-1.5 rounded-full transition-all disabled:opacity-40"
+        style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 6px rgba(61,24,32,0.18);"
         @click="saveLayout"
       >
-        {{ saving ? 'Saving…' : isDirty ? 'Save *' : 'Saved' }}
+        {{ saving ? 'Saving…' : isDirty ? 'Save ✦' : 'Saved' }}
       </button>
     </header>
 
     <div class="flex-1 flex overflow-hidden">
-      <!-- Element Palette (left) -->
-      <aside class="w-44 shrink-0 surface border-r border-white/10 flex flex-col py-4 gap-1 px-2">
-        <p class="text-xs text-white/30 uppercase tracking-wide px-2 mb-2">Elements</p>
+      <!-- Palette -->
+      <aside class="w-44 shrink-0 bg-white flex flex-col py-4 gap-0.5 px-2" style="border-right: 1px solid rgba(61,24,32,0.1);">
+        <p class="text-xs font-bold uppercase tracking-widest px-2 mb-3" style="color: rgba(61,24,32,0.35);">Elements</p>
         <button
           v-for="item in PALETTE_ITEMS"
           :key="item.type"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-all text-left w-full"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left w-full"
+          style="color: rgba(61,24,32,0.6);"
           @click="dropElement(item.type, item.defaults)"
+          @mouseenter="(e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = 'rgba(61,24,32,0.06)'; (e.currentTarget as HTMLElement).style.color = 'rgb(61,24,32)'; }"
+          @mouseleave="(e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = ''; (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.6)'; }"
         >
-          <span class="text-base w-5 text-center">{{ item.icon }}</span>
+          <span class="text-base w-5 text-center leading-none opacity-70">{{ item.icon }}</span>
           {{ item.label }}
         </button>
       </aside>
 
-      <!-- Canvas area (center) -->
-      <div class="flex-1 overflow-auto flex items-center justify-center p-8 bg-[#0c0c14]">
-        <div v-if="!selectedInpoint" class="text-center text-white/30 text-sm">
-          <div class="text-4xl mb-3">⬛</div>
-          <p>Select a terminal above to start editing its layout</p>
+      <!-- Canvas -->
+      <div class="flex-1 overflow-auto flex items-center justify-center p-8" style="background: #ede5dc;">
+        <div v-if="!selectedInpoint" class="text-center" style="color: rgba(61,24,32,0.35);">
+          <div class="text-4xl mb-3">✦</div>
+          <p class="text-sm">Select a terminal above to start editing its layout</p>
         </div>
-        <Canvas
-          v-else
-          :business-id="business?.id ?? ''"
-          :zoom="zoom"
-        />
+        <Canvas v-else :business-id="business?.id ?? ''" :zoom="zoom" />
       </div>
 
-      <!-- Properties Panel (right) -->
       <PropertiesPanel />
     </div>
   </div>

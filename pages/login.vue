@@ -9,7 +9,6 @@ const password = ref('');
 const error    = ref<string | null>(null);
 const loading  = ref(false);
 
-// If already logged in, go straight to dashboard
 onMounted(() => {
   loadDevSession();
   if (isLoggedIn.value) router.push('/dashboard');
@@ -45,68 +44,87 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="min-h-dvh flex items-center justify-center px-4 relative overflow-hidden">
-    <!-- Background glow -->
-    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-brand-primary opacity-10 blur-3xl pointer-events-none" />
-    <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-brand-accent opacity-10 blur-3xl pointer-events-none" />
+  <div
+    class="min-h-dvh flex items-center justify-center px-4 relative overflow-hidden"
+    style="background: rgb(var(--shell-bg));"
+  >
+    <!-- Decorative blobs -->
+    <div
+      class="absolute -top-40 -right-40 w-[480px] h-[480px] rounded-full pointer-events-none"
+      style="background: radial-gradient(circle, rgba(232,116,138,0.18) 0%, transparent 70%);"
+    />
+    <div
+      class="absolute -bottom-40 -left-40 w-[480px] h-[480px] rounded-full pointer-events-none"
+      style="background: radial-gradient(circle, rgba(61,24,32,0.08) 0%, transparent 70%);"
+    />
 
-    <div class="w-full max-w-sm animate-fade-in">
+    <div class="w-full max-w-sm animate-fade-in relative">
       <!-- Logo -->
       <div class="flex items-center gap-3 mb-8">
-        <div class="w-10 h-10 rounded-xl bg-brand-primary flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-brand-primary/30">
+        <div
+          class="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg shadow-warm"
+          style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
+        >
           P
         </div>
         <div>
-          <h1 class="text-xl font-bold text-white">Postfolio</h1>
-          <p class="text-xs text-white/40">Internal tool builder</p>
+          <h1 class="font-serif text-xl leading-none" style="color: rgb(var(--shell-sidebar));">
+            <span style="color: rgb(var(--shell-pink));">Post</span><strong>folio</strong>
+          </h1>
+          <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Internal tool builder</p>
         </div>
       </div>
 
       <!-- Card -->
-      <div class="glass rounded-2xl p-8 space-y-5">
+      <div class="bg-white rounded-3xl p-8 space-y-5 shadow-warm-lg">
         <div>
-          <h2 class="text-lg font-semibold text-white">Admin login</h2>
-          <p class="text-sm text-white/40 mt-1">Sign in to manage your workspace</p>
+          <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Admin login</h2>
+          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.45);">Sign in to manage your workspace</p>
         </div>
 
         <form class="space-y-4" @submit.prevent="handleLogin">
           <div>
-            <label class="text-xs text-white/50 block mb-1.5">Email</label>
+            <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Email</label>
             <input
               v-model="email"
               type="email"
               required
               autocomplete="email"
-              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+              class="input-warm w-full px-4 py-2.5 text-sm"
               placeholder="you@company.com"
             />
           </div>
 
           <div>
-            <label class="text-xs text-white/50 block mb-1.5">Password</label>
+            <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Password</label>
             <input
               v-model="password"
               type="password"
               autocomplete="current-password"
-              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+              class="input-warm w-full px-4 py-2.5 text-sm"
               placeholder="••••••••"
             />
           </div>
 
-          <div v-if="error" class="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          <div
+            v-if="error"
+            class="text-xs px-3 py-2 rounded-xl"
+            style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+          >
             {{ error }}
           </div>
 
           <button
             type="submit"
             :disabled="loading"
-            class="w-full bg-brand-primary hover:brightness-110 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-all duration-150 active:scale-[0.98] shadow-lg shadow-brand-primary/25"
+            class="w-full py-3 text-sm font-semibold rounded-full transition-all active:scale-[0.98] disabled:opacity-50"
+            style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 4px 16px rgba(61,24,32,0.25);"
           >
             {{ loading ? 'Signing in…' : 'Sign in' }}
           </button>
         </form>
 
-        <p class="text-xs text-white/25 text-center">
+        <p class="text-xs text-center" style="color: rgba(61,24,32,0.3);">
           Dev mode — any credentials are accepted
         </p>
       </div>
