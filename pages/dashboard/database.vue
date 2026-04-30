@@ -177,9 +177,11 @@ function cellValue(val: unknown): string {
           style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.12);"
           title="New table"
           @click="showNewTable = true"
+        >
           <div class="flex items-center gap-1">
             <Plus class="w-3 h-3" /> New
           </div>
+        </button>
       </div>
 
       <!-- Schema label -->
