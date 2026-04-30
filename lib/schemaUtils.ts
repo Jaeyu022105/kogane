@@ -167,6 +167,41 @@ export function analyzeNormalization(table: TableDef): NormalizationHint[] {
     });
   }
 
+  // 3.5NF (Boyce-Codd / 3NF+) checks
+  // 1. Check for functional dependencies that might not rely on the primary key (transitive dependencies)
+  // Simple heuristic: if we have "department_id" AND "department_name", department_name should be in a separate table.
+  const idColumns = table.columns.filter(c => c.name.endsWith('_id') && c.name !== 'id');
+  for (const idCol of idColumns) {
+    const prefix = idCol.name.slice(0, -3); // e.g., 'department'
+    const relatedCols = table.columns.filter(c => c.name.startsWith(prefix + '_') && c.name !== idCol.name);
+    if (relatedCols.length > 0) {
+      hints.push({
+        severity: 'warning',
+        message:  `Possible 3.5NF violation (Transitive Dependency): Columns like "${relatedCols.map(c=>c.name).join(', ')}" seem to depend on "${idCol.name}" rather than the primary key. Extract them to a separate "${prefix}s" table.`,
+        action:   'normalize-3.5nf',
+      });
+    }
+  }
+
+  // 2. Check for repeating groups (1NF/2NF)
+  const repeatingGroups = new Map<string, number>();
+  for (const col of table.columns) {
+    const match = col.name.match(/^([a-z_]+)_([0-9]+)$/);
+    if (match) {
+      const base = match[1];
+      repeatingGroups.set(base, (repeatingGroups.get(base) ?? 0) + 1);
+    }
+  }
+  for (const [base, count] of repeatingGroups) {
+    if (count > 1) {
+      hints.push({
+        severity: 'warning',
+        message:  `Possible 1NF violation: Found repeating columns like "${base}_1", "${base}_2". Consider extracting into a one-to-many relationship.`,
+        action:   'normalize-1nf',
+      });
+    }
+  }
+
   // Warn if there are too many columns — usually a sign of poor normalization
   if (table.columns.length > 15) {
     hints.push({

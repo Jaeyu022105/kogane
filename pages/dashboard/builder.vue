@@ -76,71 +76,95 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
 <template>
   <div class="flex-1 flex flex-col overflow-hidden">
     <!-- Topbar -->
-    <header class="px-6 py-3 flex items-center gap-4 shrink-0 bg-white" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
-      <div class="flex-1">
-        <h1 class="font-serif text-base font-normal" style="color: rgb(var(--shell-sidebar));">UI Builder</h1>
-      </div>
+    <header class="px-6 py-3 flex items-center justify-between shrink-0 bg-[#fdf7f2]" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
+      <div class="flex items-center gap-6">
+        <h1 class="font-serif text-lg font-semibold tracking-tight" style="color: rgb(var(--shell-sidebar));">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-[rgb(var(--shell-sidebar))] text-[#fdf7f2] flex items-center justify-center text-xs font-bold shadow-sm">U</div>
+            Builder
+          </div>
+        </h1>
 
-      <select
-        :value="selectedInpoint ?? ''"
-        class="input-warm px-3 py-1.5 text-sm max-w-[200px]"
-        @change="selectInpoint(($event.target as HTMLSelectElement).value)"
-      >
-        <option value="" disabled>Select terminal…</option>
-        <option v-for="ip in inpoints" :key="ip.id" :value="ip.id">
-          {{ ip.display_name }} ({{ ip.role }})
-        </option>
-      </select>
+        <div class="h-6 w-px" style="background: rgba(61,24,32,0.1);"></div>
 
-      <div class="flex items-center gap-2">
-        <button class="text-sm w-6 h-6 rounded-full flex items-center justify-center" style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.07);" @click="zoom = Math.max(0.3, zoom - 0.1)">−</button>
-        <span class="text-xs w-12 text-center" style="color: rgba(61,24,32,0.5);">{{ Math.round(zoom * 100) }}%</span>
-        <button class="text-sm w-6 h-6 rounded-full flex items-center justify-center" style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.07);" @click="zoom = Math.min(1.5, zoom + 0.1)">+</button>
-      </div>
-
-      <button :disabled="!canUndo" class="text-xs font-medium disabled:opacity-30 flex items-center gap-1.5" style="color: rgba(61,24,32,0.5);" @click="undo">
-        <Undo2 class="w-3.5 h-3.5" /> Undo
-      </button>
-
-      <button
-        :disabled="!isDirty || !selectedInpoint || saving"
-        class="text-sm font-semibold px-4 py-1.5 rounded-full transition-all disabled:opacity-40"
-        style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 6px rgba(61,24,32,0.18);"
-        @click="saveLayout"
-      >
-        <div class="flex items-center justify-center gap-1.5">
-          <template v-if="saving">Saving…</template>
-          <template v-else-if="isDirty">Save <Sparkles class="w-3.5 h-3.5" /></template>
-          <template v-else>Saved</template>
+        <div class="relative group">
+          <select
+            :value="selectedInpoint ?? ''"
+            class="appearance-none bg-white/50 border pl-3 pr-8 py-1.5 rounded-lg text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[rgba(61,24,32,0.2)] hover:bg-white"
+            style="border-color: rgba(61,24,32,0.15); color: rgb(var(--shell-sidebar));"
+            @change="selectInpoint(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="" disabled>Select terminal…</option>
+            <option v-for="ip in inpoints" :key="ip.id" :value="ip.id">
+              {{ ip.display_name }} ({{ ip.role }})
+            </option>
+          </select>
+          <div class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
         </div>
-      </button>
+      </div>
+
+      <div class="flex items-center bg-white border rounded-lg p-1 shadow-sm" style="border-color: rgba(61,24,32,0.1);">
+        <button class="w-7 h-7 rounded hover:bg-gray-100 flex items-center justify-center transition-colors" style="color: rgba(61,24,32,0.6);" @click="zoom = Math.max(0.3, zoom - 0.1)">−</button>
+        <span class="text-xs font-mono w-12 text-center" style="color: rgba(61,24,32,0.8);">{{ Math.round(zoom * 100) }}%</span>
+        <button class="w-7 h-7 rounded hover:bg-gray-100 flex items-center justify-center transition-colors" style="color: rgba(61,24,32,0.6);" @click="zoom = Math.min(1.5, zoom + 0.1)">+</button>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button 
+          :disabled="!canUndo" 
+          class="text-xs font-medium px-3 py-2 rounded-lg transition-all disabled:opacity-30 hover:bg-black/5 flex items-center gap-1.5" 
+          style="color: rgba(61,24,32,0.7);" 
+          @click="undo"
+        >
+          <Undo2 class="w-4 h-4" /> Undo
+        </button>
+
+        <button
+          :disabled="!isDirty || !selectedInpoint || saving"
+          class="text-sm font-semibold px-5 py-2 rounded-lg transition-all disabled:opacity-40"
+          style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 4px 12px rgba(61,24,32,0.15);"
+          @click="saveLayout"
+        >
+          <div class="flex items-center justify-center gap-2">
+            <template v-if="saving">Saving…</template>
+            <template v-else-if="isDirty">Publish Changes <Sparkles class="w-4 h-4" /></template>
+            <template v-else>Up to date</template>
+          </div>
+        </button>
+      </div>
     </header>
 
-    <div class="flex-1 flex overflow-hidden">
-      <!-- Palette -->
-      <aside class="w-44 shrink-0 bg-white flex flex-col py-4 gap-0.5 px-2" style="border-right: 1px solid rgba(61,24,32,0.1);">
-        <p class="text-xs font-bold uppercase tracking-widest px-2 mb-3" style="color: rgba(61,24,32,0.35);">Elements</p>
+    <div class="flex-1 flex overflow-hidden bg-[#e5dfd8]">
+      <!-- Palette Sidebar (Icon based like Figma) -->
+      <aside class="w-16 shrink-0 bg-white flex flex-col items-center py-4 gap-2 z-10 shadow-sm" style="border-right: 1px solid rgba(61,24,32,0.1);">
         <button
           v-for="item in PALETTE_ITEMS"
           :key="item.type"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left w-full"
-          style="color: rgba(61,24,32,0.6);"
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+          :class="['hover:bg-[#f8f5f2]']"
           @click="dropElement(item.type, item.defaults)"
-          @mouseenter="(e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = 'rgba(61,24,32,0.06)'; (e.currentTarget as HTMLElement).style.color = 'rgb(61,24,32)'; }"
-          @mouseleave="(e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = ''; (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.6)'; }"
         >
-          <component :is="item.icon" class="w-4 h-4 opacity-70" />
-          {{ item.label }}
+          <component :is="item.icon" class="w-5 h-5 transition-transform group-hover:scale-110" style="color: rgba(61,24,32,0.7);" />
+          
+          <!-- Tooltip -->
+          <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
+            {{ item.label }}
+          </div>
         </button>
       </aside>
 
       <!-- Canvas -->
-      <div class="flex-1 overflow-auto flex items-center justify-center p-8" style="background: #ede5dc;">
-        <div v-if="!selectedInpoint" class="text-center" style="color: rgba(61,24,32,0.35);">
-          <Sparkles class="w-10 h-10 mx-auto mb-3" />
-          <p class="text-sm">Select a terminal above to start editing its layout</p>
+      <div class="flex-1 overflow-auto flex items-center justify-center relative">
+        <div class="absolute inset-0 bg-[radial-gradient(#d5cdc4_1px,transparent_1px)] [background-size:16px_16px] opacity-50"></div>
+        
+        <div v-if="!selectedInpoint" class="text-center z-10 bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50" style="color: rgba(61,24,32,0.6);">
+          <Sparkles class="w-12 h-12 mx-auto mb-4" style="color: rgb(var(--shell-sidebar));" />
+          <h2 class="text-lg font-semibold mb-1" style="color: rgb(var(--shell-sidebar));">No Terminal Selected</h2>
+          <p class="text-sm">Choose a terminal from the top bar to start designing its interface.</p>
         </div>
-        <Canvas v-else :business-id="business?.id ?? ''" :zoom="zoom" />
+        <Canvas v-else :business-id="business?.id ?? ''" :zoom="zoom" class="z-10 shadow-2xl" />
       </div>
 
       <PropertiesPanel />

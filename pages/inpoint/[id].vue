@@ -75,6 +75,63 @@ function clearPin() {
   pin.value = '';
 }
 
+const elementStates = ref<Record<string, Record<string, unknown>>>({});
+
+function handleFieldUpdate(elementId: string, field: string, value: unknown) {
+  if (!elementStates.value[elementId]) {
+    elementStates.value[elementId] = {};
+  }
+  elementStates.value[elementId][field] = value;
+}
+
+async function handleAction(element: any) {
+  if (element.type !== 'button') return;
+  const action = element.action;
+  if (!action || action.type === 'none') return;
+
+  if (action.type === 'navigate') {
+    if (action.payload.url) window.location.href = action.payload.url;
+  } else if (action.type === 'insert-record') {
+    const tableName = action.payload.tableName;
+    const mapping = action.payload.dataMapping;
+    if (!tableName || !mapping) return;
+
+    const record: Record<string, unknown> = {};
+    for (const [col, mapDef] of Object.entries(mapping) as [string, any][]) {
+      if (mapDef.type === 'static') {
+        record[col] = mapDef.value;
+      } else if (mapDef.type === 'element_value') {
+        const elId = mapDef.elementId;
+        // Search the element definition to find its fieldName, or assume input elements emit to their 'fieldName'
+        const elDef = session.value?.uiLayout?.elements.find(e => e.id === elId) as any;
+        const fieldName = elDef?.fieldName ?? 'value';
+        const val = elementStates.value[elId]?.[fieldName];
+        record[col] = val ?? null;
+      }
+    }
+
+    try {
+      await $fetch('/api/inpoints/insert', {
+        method: 'POST',
+        body: { inpointId: inpointId.value, tableName, record }
+      });
+      // Optionally reset fields after successful insert?
+      alert('Record inserted successfully!');
+    } catch (e) {
+      alert('Failed to insert record: ' + (e as Error).message);
+    }
+  } else if (action.type === 'custom-script') {
+    if (action.payload.script) {
+      try {
+        const func = new Function('elementStates', action.payload.script);
+        func(elementStates.value);
+      } catch (e) {
+        console.error('Custom script error:', e);
+      }
+    }
+  }
+}
+
 onMounted(() => {
   bootstrap();
   updateViewport();
@@ -118,6 +175,8 @@ onUnmounted(() => {
         :key="el.id"
         :element="el"
         :business-id="businessId"
+        @action="handleAction"
+        @field-update="handleFieldUpdate"
       />
     </div>
   </div>

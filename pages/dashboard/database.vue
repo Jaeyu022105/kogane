@@ -7,7 +7,9 @@ definePageMeta({ layout: 'dashboard' });
 const { business } = useBusiness();
 const businessId   = computed(() => business.value?.id);
 
-const { tables, loading, error, fetchTables, createTable, dropTable, analyzeTable, fetchTableRows } = useSchema(businessId);
+const { tables, tableDefs, loading, error, fetchTables, createTable, dropTable, analyzeTable, fetchTableRows, updateRow } = useSchema(businessId);
+
+const viewMode = ref<'data' | 'schema'>('data');
 
 // ── Selected table & rows ──────────────────────────────────────────────────
 
@@ -21,6 +23,7 @@ const rowsLoading    = ref(false);
 async function selectTable(name: string) {
   selectedTable.value = name;
   rowsPage.value      = 1;
+  viewMode.value      = 'data';
   await loadRows();
 }
 
@@ -34,6 +37,35 @@ async function loadRows() {
   tableRows.value    = res.rows    ?? [];
   rowsTotal.value    = res.total   ?? 0;
   rowsLoading.value  = false;
+}
+
+// ── Table inline editor ────────────────────────────────────────────────────
+
+const editingCell = ref<{ rowId: string | number; col: string } | null>(null);
+const editValue   = ref('');
+
+function startEdit(row: any, col: string) {
+  if (col === 'id' || col === 'created_at') return;
+  editingCell.value = { rowId: row.id, col };
+  editValue.value   = String(row[col] ?? '');
+}
+
+async function saveEdit() {
+  if (!editingCell.value || !selectedTable.value) return;
+  const { rowId, col } = editingCell.value;
+
+  let finalVal: any = editValue.value;
+  const colDef = tableColumns.value.find(c => c.name === col);
+  if (colDef) {
+    if (colDef.type === 'integer' || colDef.type === 'numeric') finalVal = Number(finalVal);
+    else if (colDef.type === 'boolean') finalVal = finalVal === 'true';
+  }
+
+  const row = tableRows.value.find(r => r.id === rowId);
+  if (row) row[col] = finalVal;
+
+  editingCell.value = null;
+  await updateRow(selectedTable.value, rowId, { [col]: finalVal });
 }
 
 // ── Create table form ──────────────────────────────────────────────────────
@@ -163,6 +195,22 @@ function cellValue(val: unknown): string {
   const s = String(val);
   return s.length > 80 ? s.slice(0, 80) + '…' : s;
 }
+
+// ── Schema Visualizer Helpers ──────────────────────────────────────────────
+
+const schemaMapRef = ref<HTMLElement | null>(null);
+
+function getTableDef(name: string) {
+  return tableDefs.value.find(t => t.name === name);
+}
+
+function getTablePosition(index: number, total: number) {
+  const cols = Math.ceil(Math.sqrt(total));
+  const x = (index % cols) * 350 + 50;
+  const y = Math.floor(index / cols) * 300 + 50;
+  return { x, y };
+}
+
 </script>
 
 <template>
@@ -252,6 +300,23 @@ function cellValue(val: unknown): string {
         </div>
 
         <div v-if="selectedTable" class="flex items-center gap-2 shrink-0">
+          <div class="flex bg-gray-100 rounded-lg p-1 mr-4" style="background: rgba(61,24,32,0.06);">
+            <button
+              class="text-xs px-3 py-1.5 rounded-md transition-all font-semibold"
+              :style="viewMode === 'data' ? 'background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: rgb(var(--shell-sidebar));' : 'color: rgba(61,24,32,0.5);'"
+              @click="viewMode = 'data'"
+            >
+              Data
+            </button>
+            <button
+              class="text-xs px-3 py-1.5 rounded-md transition-all font-semibold"
+              :style="viewMode === 'schema' ? 'background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: rgb(var(--shell-sidebar));' : 'color: rgba(61,24,32,0.5);'"
+              @click="viewMode = 'schema'"
+            >
+              Schema
+            </button>
+          </div>
+
           <button
             class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
             style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);"
@@ -293,11 +358,58 @@ function cellValue(val: unknown): string {
         </div>
 
         <!-- Loading rows -->
-        <div v-else-if="rowsLoading" class="flex items-center justify-center h-32">
+        <div v-else-if="rowsLoading && viewMode === 'data'" class="flex items-center justify-center h-32">
           <div
             class="w-6 h-6 rounded-full border-2 animate-spin"
             style="border-color: rgba(61,24,32,0.15); border-top-color: rgb(var(--shell-sidebar));"
           />
+        </div>
+
+        <!-- Schema Visualizer -->
+        <div v-else-if="viewMode === 'schema'" class="h-full relative overflow-auto bg-[#f8f5f2]" ref="schemaMapRef">
+          <div class="relative min-w-[2000px] min-h-[2000px] p-8">
+            <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 1;">
+              <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="rgba(61,24,32,0.3)" />
+                </marker>
+              </defs>
+              <template v-for="(table, i) in tableDefs" :key="'lines-'+table.name">
+                <template v-for="col in table.columns" :key="col.name">
+                  <path
+                    v-if="col.references"
+                    :d="`M ${getTablePosition(i, tableDefs.length).x + 280} ${getTablePosition(i, tableDefs.length).y + 60} C ${getTablePosition(i, tableDefs.length).x + 350} ${getTablePosition(i, tableDefs.length).y + 60}, ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).x - 50} ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).y + 40}, ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).x} ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).y + 40}`"
+                    fill="none"
+                    stroke="rgba(61,24,32,0.3)"
+                    stroke-width="2"
+                    marker-end="url(#arrowhead)"
+                  />
+                </template>
+              </template>
+            </svg>
+
+            <div
+              v-for="(table, i) in tableDefs"
+              :key="'box-'+table.name"
+              class="absolute bg-white rounded-xl shadow-lg border z-10 w-[280px] flex flex-col"
+              :style="{ left: `${getTablePosition(i, tableDefs.length).x}px`, top: `${getTablePosition(i, tableDefs.length).y}px`, borderColor: 'rgba(61,24,32,0.1)' }"
+            >
+              <div class="px-4 py-3 bg-[#fdf7f2] rounded-t-xl border-b flex items-center gap-2" style="borderColor: rgba(61,24,32,0.1);">
+                <Database class="w-4 h-4 opacity-50" />
+                <span class="font-mono font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">{{ table.name }}</span>
+              </div>
+              <div class="flex flex-col py-2">
+                <div v-for="col in table.columns" :key="col.name" class="px-4 py-1.5 flex items-center justify-between hover:bg-gray-50">
+                  <div class="flex items-center gap-2">
+                    <span v-if="col.name === 'id'" class="text-[0.6rem] bg-yellow-100 text-yellow-800 px-1 rounded font-bold">PK</span>
+                    <span v-if="col.references" class="text-[0.6rem] bg-blue-100 text-blue-800 px-1 rounded font-bold">FK</span>
+                    <span class="text-xs font-mono" style="color: rgba(61,24,32,0.8);">{{ col.name }}</span>
+                  </div>
+                  <span class="text-[0.65rem] font-mono" :style="`color: ${typeColor(col.type)};`">{{ col.type }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Spreadsheet grid -->
@@ -346,12 +458,25 @@ function cellValue(val: unknown): string {
                 <td
                   v-for="col in tableColumns"
                   :key="col.name"
-                  class="border-r px-3 py-1.5 font-mono whitespace-nowrap"
+                  class="border-r px-3 py-1.5 font-mono whitespace-nowrap cursor-text"
                   style="border-color: rgba(61,24,32,0.06); color: rgba(61,24,32,0.75); max-width: 280px; overflow: hidden; text-overflow: ellipsis;"
                   :title="String(row[col.name] ?? '')"
+                  @click="startEdit(row, col.name)"
                 >
-                  <span v-if="row[col.name] === null || row[col.name] === undefined" style="color: rgba(61,24,32,0.2); font-style: italic;">null</span>
-                  <span v-else>{{ cellValue(row[col.name]) }}</span>
+                  <input
+                    v-if="editingCell?.rowId === row.id && editingCell?.col === col.name"
+                    v-model="editValue"
+                    class="w-full bg-transparent border-none outline-none font-mono text-sm"
+                    style="color: rgb(var(--shell-sidebar));"
+                    @blur="saveEdit"
+                    @keyup.enter="saveEdit"
+                    @keyup.escape="editingCell = null"
+                    autofocus
+                  />
+                  <template v-else>
+                    <span v-if="row[col.name] === null || row[col.name] === undefined" style="color: rgba(61,24,32,0.2); font-style: italic;">null</span>
+                    <span v-else>{{ cellValue(row[col.name]) }}</span>
+                  </template>
                 </td>
               </tr>
 
@@ -368,7 +493,7 @@ function cellValue(val: unknown): string {
 
       <!-- Pagination footer -->
       <div
-        v-if="selectedTable && !rowsLoading && rowsTotal > 50"
+        v-if="selectedTable && !rowsLoading && viewMode === 'data' && rowsTotal > 50"
         class="px-6 py-2.5 flex items-center justify-between shrink-0 bg-white"
         style="border-top: 1px solid rgba(61,24,32,0.08);"
       >

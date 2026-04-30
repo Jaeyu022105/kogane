@@ -4,9 +4,10 @@
  * Each element type has its own section.
  */
 
-import type { ElementDef } from '~/lib/uiTypes';
+import type { ElementDef, ActionType, ActionPayloadMapping } from '~/lib/uiTypes';
+import { Plus, X, Trash2 } from 'lucide-vue-next';
 
-const { selectedElement, selectedId, updateElement, removeElement, bringForward, sendBackward } = useCanvas();
+const { layout, selectedElement, selectedId, updateElement, removeElement, bringForward, sendBackward } = useCanvas();
 
 function patch(updates: Partial<Omit<ElementDef, 'id' | 'type'>>) {
   if (!selectedId.value) return;
@@ -128,6 +129,121 @@ function patchPosition(pos: Partial<{ x: number; y: number; width: number; heigh
           <option value="ghost">Ghost</option>
           <option value="danger">Danger</option>
         </select>
+
+        <!-- Events -->
+        <div class="pt-3 mt-3 border-t" style="border-color: rgba(61,24,32,0.07);">
+          <p class="text-xs font-bold uppercase tracking-widest mb-2" style="color: rgba(61,24,32,0.35);">Events</p>
+          <label class="text-xs block mb-1" style="color: rgba(61,24,32,0.4);">On Click Action</label>
+          <select
+            :value="(selectedElement as any).action?.type ?? 'none'"
+            class="input-warm w-full px-3 py-1.5 text-sm mb-2"
+            @change="patch({ action: { type: ($event.target as HTMLSelectElement).value, payload: {} } } as any)"
+          >
+            <option value="none">None</option>
+            <option value="navigate">Navigate to URL</option>
+            <option value="insert-record">Insert Database Record</option>
+            <option value="custom-script">Custom JS Script</option>
+          </select>
+
+          <div v-if="(selectedElement as any).action?.type === 'navigate'" class="space-y-2 mt-2 p-3 rounded-lg bg-gray-50 border">
+            <label class="text-xs block" style="color: rgba(61,24,32,0.4);">Target URL</label>
+            <input
+              :value="(selectedElement as any).action.payload.url ?? ''"
+              class="input-warm w-full px-2 py-1.5 text-sm"
+              placeholder="https://..."
+              @input="patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), url: ($event.target as HTMLInputElement).value } } } as any)"
+            />
+          </div>
+
+          <div v-if="(selectedElement as any).action?.type === 'insert-record'" class="space-y-2 mt-2 p-3 rounded-lg bg-gray-50 border">
+            <label class="text-xs block" style="color: rgba(61,24,32,0.4);">Table Name</label>
+            <input
+              :value="(selectedElement as any).action.payload.tableName ?? ''"
+              class="input-warm w-full px-2 py-1.5 text-sm mb-2 font-mono"
+              placeholder="e.g. users"
+              @input="patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), tableName: ($event.target as HTMLInputElement).value } } } as any)"
+            />
+
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[0.65rem] font-bold uppercase tracking-widest" style="color: rgba(61,24,32,0.35);">Data Mapping</label>
+              <button
+                class="text-xs text-brand-primary font-medium flex items-center gap-1"
+                @click="patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), dataMapping: { ...((selectedElement as any).action.payload.dataMapping), ['new_col']: { type: 'static', value: '' } } } } } as any)"
+              >
+                <Plus class="w-3 h-3" /> Add
+              </button>
+            </div>
+            
+            <div v-for="(mapping, colName) in ((selectedElement as any).action.payload.dataMapping ?? {})" :key="colName" class="space-y-1 p-2 bg-white rounded border border-gray-100 mb-2 shadow-sm">
+              <div class="flex items-center gap-1">
+                <input
+                  :value="colName"
+                  class="input-warm px-1.5 py-1 text-xs font-mono w-1/3"
+                  placeholder="column"
+                  @change="(e) => {
+                    const newMap = { ...((selectedElement as any).action.payload.dataMapping) };
+                    const newCol = (e.target as HTMLInputElement).value;
+                    if(newCol !== colName) {
+                      newMap[newCol] = newMap[colName];
+                      delete newMap[colName];
+                      patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), dataMapping: newMap } } } as any);
+                    }
+                  }"
+                />
+                <select
+                  :value="mapping.type"
+                  class="input-warm px-1 py-1 text-[0.65rem] w-1/3"
+                  @change="(e) => {
+                    const newMap = { ...((selectedElement as any).action.payload.dataMapping) };
+                    newMap[colName] = { type: (e.target as HTMLSelectElement).value, value: '', elementId: '' };
+                    patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), dataMapping: newMap } } } as any);
+                  }"
+                >
+                  <option value="static">Static</option>
+                  <option value="element_value">Element ID</option>
+                </select>
+                <button
+                  class="text-red-400 p-1 hover:bg-red-50 rounded"
+                  @click="() => {
+                    const newMap = { ...((selectedElement as any).action.payload.dataMapping) };
+                    delete newMap[colName];
+                    patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), dataMapping: newMap } } } as any);
+                  }"
+                >
+                  <Trash2 class="w-3 h-3" />
+                </button>
+              </div>
+              <div v-if="mapping.type === 'static'" class="mt-1">
+                <input
+                  :value="mapping.value"
+                  class="input-warm w-full px-2 py-1 text-xs"
+                  placeholder="value"
+                  @input="(e) => {
+                    const newMap = { ...((selectedElement as any).action.payload.dataMapping) };
+                    newMap[colName].value = (e.target as HTMLInputElement).value;
+                    patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), dataMapping: newMap } } } as any);
+                  }"
+                />
+              </div>
+              <div v-else-if="mapping.type === 'element_value'" class="mt-1">
+                <select
+                  :value="mapping.elementId"
+                  class="input-warm w-full px-2 py-1 text-xs"
+                  @change="(e) => {
+                    const newMap = { ...((selectedElement as any).action.payload.dataMapping) };
+                    newMap[colName].elementId = (e.target as HTMLSelectElement).value;
+                    patch({ action: { ...((selectedElement as any).action), payload: { ...((selectedElement as any).action.payload), dataMapping: newMap } } } as any);
+                  }"
+                >
+                  <option value="">Select Input...</option>
+                  <option v-for="el in layout.elements.filter(e => e.type === 'input-field')" :key="el.id" :value="el.id">
+                    {{ el.label || el.type }} ({{ el.id.slice(0, 4) }})
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- Text -->

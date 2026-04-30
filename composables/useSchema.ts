@@ -13,6 +13,7 @@ export function useSchema(businessId: Ref<string | undefined>) {
   const { authHeaders } = useAuth();
 
   const tables  = ref<string[]>([]);
+  const tableDefs = ref<TableDef[]>([]);
   const loading = ref(false);
   const error   = ref<string | null>(null);
 
@@ -30,6 +31,13 @@ export function useSchema(businessId: Ref<string | undefined>) {
       });
       tables.value = res.tables ?? [];
       error.value  = res.error;
+      
+      // Also fetch definitions
+      const defRes = await $fetch<{ tables: TableDef[]; error: string | null }>('/api/schema/tables/definitions', {
+        headers: authHeaders(),
+        query:   { businessId: id },
+      });
+      tableDefs.value = defRes.tables ?? [];
     } catch (err) {
       error.value = (err as Error).message;
     } finally {
@@ -110,8 +118,22 @@ export function useSchema(businessId: Ref<string | undefined>) {
     return res;
   }
 
+  async function updateRow(tableName: string, rowId: string | number, updates: Record<string, unknown>) {
+    const id = businessId.value;
+    if (!id) return 'No business selected';
+
+    const res = await $fetch<{ success: boolean; error: string | null }>('/api/schema/tables/updateRow', {
+      method:  'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body:    { businessId: id, tableName, rowId, updates },
+    });
+
+    return res.error;
+  }
+
   return {
     tables,
+    tableDefs,
     loading,
     error,
     fetchTables,
@@ -120,5 +142,6 @@ export function useSchema(businessId: Ref<string | undefined>) {
     analyzeTable,
     addColumns,
     fetchTableRows,
+    updateRow,
   };
 }

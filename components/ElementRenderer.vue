@@ -22,7 +22,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'action',       element: ElementDef): void;
-  (e: 'fieldUpdate',  field: string, value: unknown): void;
+  (e: 'fieldUpdate',  elementId: string, field: string, value: unknown): void;
 }>();
 
 // Map element type to the correct component — renderer is the only place this dispatch lives
@@ -57,7 +57,7 @@ const component = computed(() => ELEMENT_COMPONENT_MAP[props.element.type] ?? nu
       :element="element as any"
       :business-id="businessId"
       @action="emit('action', $event)"
-      @update="(field: string, value: unknown) => emit('fieldUpdate', field, value)"
+      @update="(field: string, value: unknown) => emit('fieldUpdate', element.id, field, value)"
     />
   </div>
 </template>

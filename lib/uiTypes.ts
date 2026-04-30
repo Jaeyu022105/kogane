@@ -91,17 +91,27 @@ export type ElementDef =
 // ── Actions ─────────────────────────────────────────────────────────────────
 
 export type ActionType =
+  | 'none'
   | 'navigate'
-  | 'submit-form'
   | 'insert-record'
-  | 'update-record'
-  | 'delete-record'
-  | 'open-modal'
   | 'custom-script';
+
+export type ActionPayloadMapping = 
+  | { type: 'static'; value: string }
+  | { type: 'element_value'; elementId: string };
 
 export interface ElementAction {
   type:    ActionType;
-  payload: Record<string, unknown>;
+  payload: {
+    // For navigate
+    url?: string;
+    // For insert-record
+    tableName?: string;
+    dataMapping?: Record<string, ActionPayloadMapping>;
+    // For custom-script
+    script?: string;
+    [key: string]: any;
+  };
 }
 
 // ── Layout ──────────────────────────────────────────────────────────────────
