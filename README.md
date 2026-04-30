@@ -30,10 +30,10 @@ Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Po
 ## 📐 How it Works
 
 ### 1. Database Editor
-Define your domain model. Postfolio handles the DDL (Data Definition Language) for you. It includes a built-in **Normalization Analyzer** that suggests schema improvements (e.g., splitting wide tables into 3.5NF) to ensure your data stays clean as you scale.
+Define your domain model. Postfolio handles the DDL (Data Definition Language) for you. It features an **Interactive Table Editor** for direct inline data manipulation and a **Relational Schema Visualizer** that draws dynamic connection arrows for foreign keys. It includes a built-in **Normalization Analyzer** that suggests schema improvements (targeting 3.5NF / Boyce-Codd) to ensure your data stays clean as you scale.
 
 ### 2. UI Builder
-A professional design environment. Design staff-facing screens for different roles (Admin, Cashier, Inventory). Use modular elements like Table Views, Cart Widgets, and Input Fields that speak directly to your database.
+A professional, Figma/Supabase-inspired design environment. Design staff-facing screens using modular elements like Table Views, Cart Widgets, and Input Fields. It features a robust **Event System**, allowing you to build complex logic without writing code—like mapping an input field's value to a database insert action triggered by a button click.
 
 ### 3. Terminals (In-points)
 Deploy specific layouts to physical or web-based terminals. Staff log in with a **secure PIN**. The interface is hydrated dynamically from the JSON layout definition and scaled to fit any screen perfectly.
