@@ -4,10 +4,12 @@ definePageMeta({ layout: 'dashboard' });
 const { business } = useBusiness();
 const { session }  = useAuth();
 
+import { Building2, Database, Wrench, Palette, Terminal, Settings } from 'lucide-vue-next';
+
 const stats = computed(() => [
-  { label: 'Business',  value: business.value?.name ?? '—',      icon: '🏢' },
-  { label: 'Schema',    value: business.value?.schemaName ?? '—', icon: '⛁' },
-  { label: 'Mode',      value: 'Development',                     icon: '🔧' },
+  { label: 'Business',  value: business.value?.name ?? '—',       icon: Building2 },
+  { label: 'Schema',    value: business.value?.schemaName ?? '—', icon: Database },
+  { label: 'Mode',      value: 'Development',                     icon: Wrench },
 ]);
 </script>
 
@@ -40,7 +42,7 @@ const stats = computed(() => [
           :key="stat.label"
           class="card rounded-2xl px-5 py-5 space-y-3 animate-fade-in"
         >
-          <div class="text-2xl">{{ stat.icon }}</div>
+          <component :is="stat.icon" class="w-6 h-6" />
           <div>
             <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color: rgba(61,24,32,0.4);">
               {{ stat.label }}
@@ -65,7 +67,7 @@ const stats = computed(() => [
             @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(61,24,32,0.12)'"
             @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = ''"
           >
-            <div class="text-3xl mb-3">⛁</div>
+            <Database class="w-8 h-8 mb-3" />
             <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Database Editor</h3>
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Design your schema tables and columns</p>
           </NuxtLink>
@@ -76,7 +78,7 @@ const stats = computed(() => [
             @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(61,24,32,0.12)'"
             @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = ''"
           >
-            <div class="text-3xl mb-3">🎨</div>
+            <Palette class="w-8 h-8 mb-3" />
             <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">UI Builder</h3>
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Build custom interfaces for your terminals</p>
           </NuxtLink>
@@ -87,7 +89,7 @@ const stats = computed(() => [
             @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(61,24,32,0.12)'"
             @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = ''"
           >
-            <div class="text-3xl mb-3">⬡</div>
+            <Terminal class="w-8 h-8 mb-3" />
             <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Terminals</h3>
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Manage staff in-point access and roles</p>
           </NuxtLink>
@@ -98,7 +100,7 @@ const stats = computed(() => [
             @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(61,24,32,0.12)'"
             @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = ''"
           >
-            <div class="text-3xl mb-3">⚙️</div>
+            <Settings class="w-8 h-8 mb-3" />
             <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Settings</h3>
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Theme, branding, and business details</p>
           </NuxtLink>

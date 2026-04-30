@@ -6,6 +6,7 @@
  */
 
 import type { TableViewElementDef } from '~/lib/uiTypes';
+import { RefreshCw, ArrowLeft, ArrowRight } from 'lucide-vue-next';
 
 const props = defineProps<{ element: TableViewElementDef; businessId: string }>();
 
@@ -57,7 +58,9 @@ watch(() => [props.element.tableName, page.value], fetchRows);
       <span class="text-xs font-semibold text-white/60 uppercase tracking-wide">
         {{ element.tableName }}
       </span>
-      <button class="text-white/40 hover:text-white/80 text-xs" @click="fetchRows">↻</button>
+      <button class="text-white/40 hover:text-white/80 text-xs" @click="fetchRows">
+        <RefreshCw class="w-3.5 h-3.5" />
+      </button>
     </div>
 
     <!-- Loading -->
@@ -115,7 +118,9 @@ watch(() => [props.element.tableName, page.value], fetchRows);
           :disabled="page === 0"
           @click="page--"
         >
-          ← Prev
+          <div class="flex items-center gap-1">
+            <ArrowLeft class="w-3.5 h-3.5" /> Prev
+          </div>
         </button>
         <span class="text-xs text-white/40">Page {{ page + 1 }}</span>
         <button
@@ -123,7 +128,9 @@ watch(() => [props.element.tableName, page.value], fetchRows);
           :disabled="rows.length < pageSize"
           @click="page++"
         >
-          Next →
+          <div class="flex items-center gap-1">
+            Next <ArrowRight class="w-3.5 h-3.5" />
+          </div>
         </button>
       </div>
     </template>

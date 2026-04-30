@@ -2,6 +2,7 @@
 import type { ElementDef, ElementType, UiLayout } from '~/lib/uiTypes';
 import Canvas          from '~/components/Canvas.vue';
 import PropertiesPanel from '~/components/PropertiesPanel.vue';
+import { Hexagon, Type, Image as ImageIcon, Database, RectangleHorizontal, ShoppingCart, Undo2, Sparkles } from 'lucide-vue-next';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -52,13 +53,13 @@ async function saveLayout() {
 onMounted(loadInpoints);
 watch(() => business.value?.id, loadInpoints);
 
-const PALETTE_ITEMS: Array<{ type: ElementType; label: string; icon: string; defaults: Partial<ElementDef> }> = [
-  { type: 'button',      label: 'Button',     icon: '⬡', defaults: { text: 'Button', variant: 'primary' } as any },
-  { type: 'text',        label: 'Text',       icon: 'T',  defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any },
-  { type: 'image',       label: 'Image',      icon: '🖼', defaults: { src: '', fit: 'cover' } as any },
-  { type: 'table-view',  label: 'Table View', icon: '⛁', defaults: { tableName: '', columns: [] } as any },
-  { type: 'input-field', label: 'Input',      icon: '▭', defaults: { fieldName: 'field', inputType: 'text' } as any },
-  { type: 'cart-widget', label: 'Cart',       icon: '🛒', defaults: { productTable: '', orderTable: '', displayColumns: [] } as any },
+const PALETTE_ITEMS: Array<{ type: ElementType; label: string; icon: any; defaults: Partial<ElementDef> }> = [
+  { type: 'button',      label: 'Button',     icon: Hexagon, defaults: { text: 'Button', variant: 'primary' } as any },
+  { type: 'text',        label: 'Text',       icon: Type,  defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any },
+  { type: 'image',       label: 'Image',      icon: ImageIcon, defaults: { src: '', fit: 'cover' } as any },
+  { type: 'table-view',  label: 'Table View', icon: Database, defaults: { tableName: '', columns: [] } as any },
+  { type: 'input-field', label: 'Input',      icon: RectangleHorizontal, defaults: { fieldName: 'field', inputType: 'text' } as any },
+  { type: 'cart-widget', label: 'Cart',       icon: ShoppingCart, defaults: { productTable: '', orderTable: '', displayColumns: [] } as any },
 ];
 
 function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
@@ -97,7 +98,9 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
         <button class="text-sm w-6 h-6 rounded-full flex items-center justify-center" style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.07);" @click="zoom = Math.min(1.5, zoom + 0.1)">+</button>
       </div>
 
-      <button :disabled="!canUndo" class="text-xs font-medium disabled:opacity-30" style="color: rgba(61,24,32,0.5);" @click="undo">↩ Undo</button>
+      <button :disabled="!canUndo" class="text-xs font-medium disabled:opacity-30 flex items-center gap-1.5" style="color: rgba(61,24,32,0.5);" @click="undo">
+        <Undo2 class="w-3.5 h-3.5" /> Undo
+      </button>
 
       <button
         :disabled="!isDirty || !selectedInpoint || saving"
@@ -105,7 +108,11 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
         style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 6px rgba(61,24,32,0.18);"
         @click="saveLayout"
       >
-        {{ saving ? 'Saving…' : isDirty ? 'Save ✦' : 'Saved' }}
+        <div class="flex items-center justify-center gap-1.5">
+          <template v-if="saving">Saving…</template>
+          <template v-else-if="isDirty">Save <Sparkles class="w-3.5 h-3.5" /></template>
+          <template v-else>Saved</template>
+        </div>
       </button>
     </header>
 
@@ -122,7 +129,7 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
           @mouseenter="(e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = 'rgba(61,24,32,0.06)'; (e.currentTarget as HTMLElement).style.color = 'rgb(61,24,32)'; }"
           @mouseleave="(e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = ''; (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.6)'; }"
         >
-          <span class="text-base w-5 text-center leading-none opacity-70">{{ item.icon }}</span>
+          <component :is="item.icon" class="w-4 h-4 opacity-70" />
           {{ item.label }}
         </button>
       </aside>
@@ -130,7 +137,7 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
       <!-- Canvas -->
       <div class="flex-1 overflow-auto flex items-center justify-center p-8" style="background: #ede5dc;">
         <div v-if="!selectedInpoint" class="text-center" style="color: rgba(61,24,32,0.35);">
-          <div class="text-4xl mb-3">✦</div>
+          <Sparkles class="w-10 h-10 mx-auto mb-3" />
           <p class="text-sm">Select a terminal above to start editing its layout</p>
         </div>
         <Canvas v-else :business-id="business?.id ?? ''" :zoom="zoom" />

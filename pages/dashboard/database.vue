@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableDef, ColumnDef, ColumnType, NormalizationHint } from '~/lib/schemaUtils';
+import { Database, Hexagon, RefreshCw, Plus, ArrowLeft, ArrowRight, X } from 'lucide-vue-next';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -176,9 +177,9 @@ function cellValue(val: unknown): string {
           style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.12);"
           title="New table"
           @click="showNewTable = true"
-        >
-          + New
-        </button>
+          <div class="flex items-center gap-1">
+            <Plus class="w-3 h-3" /> New
+          </div>
       </div>
 
       <!-- Schema label -->
@@ -203,7 +204,7 @@ function cellValue(val: unknown): string {
           @mouseenter="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = 'rgba(245,237,228,0.05)'; }"
           @mouseleave="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = ''; }"
         >
-          <span style="opacity: 0.5; font-size: 0.65rem;">⛁</span>
+          <Database class="w-3 h-3 opacity-50" />
           <span class="font-mono truncate">{{ table }}</span>
         </button>
 
@@ -221,7 +222,9 @@ function cellValue(val: unknown): string {
           @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.75)'"
           @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.4)'"
         >
-          ⬡ Presets
+          <div class="flex items-center justify-center gap-1.5">
+            <Hexagon class="w-3.5 h-3.5" /> Presets
+          </div>
         </button>
       </div>
     </aside>
@@ -261,7 +264,9 @@ function cellValue(val: unknown): string {
             style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
             @click="loadRows"
           >
-            ↻ Refresh
+            <div class="flex items-center gap-1.5">
+              <RefreshCw class="w-3.5 h-3.5" /> Refresh
+            </div>
           </button>
         </div>
       </header>
@@ -271,14 +276,16 @@ function cellValue(val: unknown): string {
         <!-- Empty state: no table selected -->
         <div v-if="!selectedTable" class="flex items-center justify-center h-full">
           <div class="text-center space-y-2">
-            <div class="text-4xl" style="color: rgba(61,24,32,0.12);">⛁</div>
+            <Database class="w-12 h-12 mx-auto" style="color: rgba(61,24,32,0.12);" />
             <p class="text-sm" style="color: rgba(61,24,32,0.3);">Pick a table from the sidebar</p>
             <button
               class="mt-2 text-xs font-semibold px-4 py-2 rounded-full transition-all"
               style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
               @click="showNewTable = true"
             >
-              + New Table
+              <div class="flex items-center justify-center gap-1.5">
+                <Plus class="w-3.5 h-3.5" /> New Table
+              </div>
             </button>
           </div>
         </div>
@@ -373,7 +380,9 @@ function cellValue(val: unknown): string {
             style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);"
             @click="rowsPage--; loadRows()"
           >
-            ← Prev
+            <div class="flex items-center gap-1">
+              <ArrowLeft class="w-3.5 h-3.5" /> Prev
+            </div>
           </button>
           <button
             :disabled="rowsPage * 50 >= rowsTotal"
@@ -381,7 +390,9 @@ function cellValue(val: unknown): string {
             style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);"
             @click="rowsPage++; loadRows()"
           >
-            Next →
+            <div class="flex items-center gap-1">
+              Next <ArrowRight class="w-3.5 h-3.5" />
+            </div>
           </button>
         </div>
       </div>
@@ -396,7 +407,9 @@ function cellValue(val: unknown): string {
       >
         <div class="px-5 py-4 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
           <h2 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Presets</h2>
-          <button class="text-xs transition-colors" style="color: rgba(61,24,32,0.3);" @click="showPresets = false">✕</button>
+          <button class="text-xs transition-colors" style="color: rgba(61,24,32,0.3);" @click="showPresets = false">
+            <X class="w-4 h-4" />
+          </button>
         </div>
 
         <div v-if="presets.length === 0" class="px-5 py-8 text-center text-xs" style="color: rgba(61,24,32,0.35);">No presets available</div>
@@ -436,7 +449,9 @@ function cellValue(val: unknown): string {
         >
           <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
             <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Table</h2>
-            <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showNewTable = false">✕</button>
+            <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showNewTable = false">
+              <X class="w-5 h-5" />
+            </button>
           </div>
 
           <div class="flex-1 px-6 py-5 space-y-5">
@@ -471,7 +486,9 @@ function cellValue(val: unknown): string {
               <div class="flex items-center justify-between mb-3">
                 <label class="text-xs font-bold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">Columns</label>
                 <button class="text-xs font-semibold transition-colors" style="color: rgb(var(--shell-pink));" @click="addColumn">
-                  + Add
+                  <div class="flex items-center gap-1">
+                    <Plus class="w-3.5 h-3.5" /> Add
+                  </div>
                 </button>
               </div>
 
@@ -497,7 +514,7 @@ function cellValue(val: unknown): string {
                     @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = '#dc2626'"
                     @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.25)'"
                   >
-                    ✕
+                    <X class="w-4 h-4" />
                   </button>
                 </div>
               </div>

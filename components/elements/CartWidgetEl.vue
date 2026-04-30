@@ -6,6 +6,7 @@
  */
 
 import type { CartWidgetElementDef } from '~/lib/uiTypes';
+import { X } from 'lucide-vue-next';
 
 const props = defineProps<{ element: CartWidgetElementDef; businessId: string }>();
 
@@ -114,7 +115,9 @@ onMounted(loadProducts);
           class="flex items-center justify-between text-xs text-white/80"
         >
           <span class="truncate flex-1">{{ item.name }} ×{{ item.qty }}</span>
-          <button class="text-white/30 hover:text-red-400 ml-2" @click="removeFromCart(item.id)">✕</button>
+          <button class="text-white/30 hover:text-red-400 ml-2 flex items-center justify-center" @click="removeFromCart(item.id)">
+            <X class="w-3.5 h-3.5" />
+          </button>
         </div>
         <div v-if="cart.length === 0" class="text-center text-white/30 py-4">Empty</div>
       </div>

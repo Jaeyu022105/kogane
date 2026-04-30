@@ -16,11 +16,13 @@ onMounted(async () => {
   await fetchBusiness();
 });
 
+import { LayoutDashboard, Database, Terminal, Settings, Power } from 'lucide-vue-next';
+
 const navItems = [
-  { label: 'Overview',  icon: '◈', to: '/dashboard' },
-  { label: 'Database',  icon: '⛁', to: '/dashboard/database' },
-  { label: 'Terminals', icon: '⬡', to: '/dashboard/terminals' },
-  { label: 'Settings',  icon: '◎', to: '/dashboard/settings' },
+  { label: 'Overview',  icon: LayoutDashboard, to: '/dashboard' },
+  { label: 'Database',  icon: Database, to: '/dashboard/database' },
+  { label: 'Terminals', icon: Terminal, to: '/dashboard/terminals' },
+  { label: 'Settings',  icon: Settings, to: '/dashboard/settings' },
 ];
 
 const route = useRoute();
@@ -71,7 +73,7 @@ function handleLogout() {
           @mouseenter="(e: MouseEvent) => { if (!isActive(item.to)) (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.85)'; (e.currentTarget as HTMLElement).style.background = 'rgba(245,237,228,0.07)' }"
           @mouseleave="(e: MouseEvent) => { if (!isActive(item.to)) (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.5)'; (e.currentTarget as HTMLElement).style.background = '' }"
         >
-          <span class="text-sm w-4 text-center leading-none opacity-70">{{ item.icon }}</span>
+          <component :is="item.icon" class="w-4 h-4 opacity-70" />
           {{ item.label }}
         </NuxtLink>
       </nav>
@@ -95,7 +97,7 @@ function handleLogout() {
           @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.75)'"
           @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.3)'"
         >
-          ⏻
+          <Power class="w-4 h-4" />
         </button>
       </div>
     </aside>

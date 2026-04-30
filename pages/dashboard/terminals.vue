@@ -4,6 +4,8 @@ definePageMeta({ layout: 'dashboard' });
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
 
+import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight } from 'lucide-vue-next';
+
 const inpoints  = ref<any[]>([]);
 const loading    = ref(false);
 const showForm   = ref(false);
@@ -114,7 +116,7 @@ watch(() => business.value?.id, loadInpoints);
         @mouseenter="(e: MouseEvent) => !(!business) && ((e.currentTarget as HTMLElement).style.opacity = '0.85')"
         @mouseleave="(e: MouseEvent) => !(!business) && ((e.currentTarget as HTMLElement).style.opacity = '1')"
       >
-        <span style="font-size: 1rem; line-height: 1;">+</span>
+        <Plus class="w-4 h-4" />
         New Terminal
       </button>
     </div>
@@ -134,7 +136,7 @@ watch(() => business.value?.id, loadInpoints);
         v-else-if="!business"
         class="flex flex-col items-center justify-center py-24 text-center"
       >
-        <div class="text-5xl mb-4" style="color: rgba(61,24,32,0.1);">🏢</div>
+        <Building2 class="w-12 h-12 mb-4" style="color: rgba(61,24,32,0.1);" />
         <p class="text-base font-semibold" style="color: rgba(61,24,32,0.35);">No business configured</p>
         <p class="text-sm mt-1 mb-4" style="color: rgba(61,24,32,0.25);">You need to set up your business before creating terminals.</p>
         <NuxtLink
@@ -142,7 +144,9 @@ watch(() => business.value?.id, loadInpoints);
           class="px-4 py-2 text-sm font-medium rounded-xl transition-all"
           style="background: rgba(61,24,32,0.06); color: rgba(61,24,32,0.65); text-decoration: none;"
         >
-          Go to Settings →
+          <div class="flex items-center justify-center gap-1.5">
+            Go to Settings <ArrowRight class="w-3.5 h-3.5" />
+          </div>
         </NuxtLink>
       </div>
 
@@ -151,7 +155,7 @@ watch(() => business.value?.id, loadInpoints);
         v-else-if="inpoints.length === 0"
         class="flex flex-col items-center justify-center py-24 text-center"
       >
-        <div class="text-5xl mb-4" style="color: rgba(61,24,32,0.1);">⬡</div>
+        <TerminalIcon class="w-12 h-12 mb-4" style="color: rgba(61,24,32,0.1);" />
         <p class="text-base font-semibold" style="color: rgba(61,24,32,0.35);">No terminals yet</p>
         <p class="text-sm mt-1" style="color: rgba(61,24,32,0.25);">Create one and share the PIN with your staff.</p>
       </div>
@@ -189,14 +193,18 @@ watch(() => business.value?.id, loadInpoints);
               class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
               style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.06); text-decoration: none;"
             >
-              ✦ Edit Layout
+              <div class="flex items-center justify-center gap-1.5">
+                <PenSquare class="w-3.5 h-3.5" /> Edit Layout
+              </div>
             </NuxtLink>
             <NuxtLink
               :to="`/inpoint/${ip.id}`"
               class="flex-1 text-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
               style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.1); text-decoration: none;"
             >
-              Open →
+              <div class="flex items-center justify-center gap-1.5">
+                Open <ArrowRight class="w-3.5 h-3.5" />
+              </div>
             </NuxtLink>
           </div>
         </div>

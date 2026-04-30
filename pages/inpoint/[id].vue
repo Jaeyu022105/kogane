@@ -6,6 +6,7 @@
 
 import type { UiLayout } from '~/lib/uiTypes';
 import ElementRenderer from '~/components/ElementRenderer.vue';
+import { Power, Delete, Circle } from 'lucide-vue-next';
 
 definePageMeta({ layout: 'default' });
 
@@ -95,8 +96,8 @@ onUnmounted(() => {
         <span class="text-xs font-medium text-white/80">{{ session.displayName }}</span>
         <span class="text-xs text-white/30 px-2 py-0.5 rounded-full border border-white/10">{{ session.role }}</span>
       </div>
-      <button class="text-xs text-white/40 hover:text-white/80 transition-colors" @click="session = null">
-        ⏻ Logout
+      <button class="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors" @click="session = null">
+        <Power class="w-3.5 h-3.5" /> Logout
       </button>
     </div>
 
@@ -152,23 +153,24 @@ onUnmounted(() => {
                 : 'border-white/10 text-white/20',
             ]"
           >
-            {{ i <= pin.length ? '●' : '○' }}
+            <Circle :class="['w-3 h-3', i <= pin.length ? 'fill-current' : '']" />
           </div>
         </div>
 
         <!-- Numpad -->
         <div class="grid grid-cols-3 gap-2">
           <button
-            v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','⌫']"
+            v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','delete']"
             :key="digit"
             :class="[
               'h-12 rounded-xl text-lg font-semibold transition-all active:scale-95',
               digit === ''  ? 'invisible' : '',
-              digit === '⌫' ? 'text-white/50 bg-white/5 hover:bg-white/10' : 'text-white bg-white/5 hover:bg-white/10',
+              digit === 'delete' ? 'text-white/50 bg-white/5 hover:bg-white/10 flex items-center justify-center' : 'text-white bg-white/5 hover:bg-white/10',
             ]"
-            @click="digit === '⌫' ? clearPin() : appendPin(digit)"
+            @click="digit === 'delete' ? clearPin() : appendPin(digit)"
           >
-            {{ digit }}
+            <Delete v-if="digit === 'delete'" class="w-6 h-6" />
+            <template v-else>{{ digit }}</template>
           </button>
         </div>
 

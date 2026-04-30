@@ -5,6 +5,8 @@
 
 definePageMeta({ layout: 'dashboard' });
 
+import { Check } from 'lucide-vue-next';
+
 const { authHeaders }             = useAuth();
 const { business, fetchBusiness, updateTheme } = useBusiness();
 
@@ -165,7 +167,9 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
           class="text-xs px-3 py-2 rounded-xl"
           style="background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2); color: #15803d;"
         >
-          Theme saved! ✓
+          <div class="flex items-center gap-1.5">
+            Theme saved! <Check class="w-3.5 h-3.5" />
+          </div>
         </div>
 
         <button
