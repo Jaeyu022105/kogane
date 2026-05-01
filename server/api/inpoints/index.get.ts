@@ -1,6 +1,6 @@
 /**
- * GET /api/inpoints
- * Lists all in-points for the authenticated admin's business.
+ * GET /api/terminals
+ * Lists all terminals for the authenticated admin's business.
  */
 
 import { defineEventHandler, getQuery } from 'h3';
@@ -11,19 +11,19 @@ export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const { businessId } = getQuery(event) as { businessId: string };
 
-  if (!businessId) return { error: 'Missing businessId', inpoints: null };
+  if (!businessId) return { error: 'Missing businessId', terminals: null };
 
   const { data: business } = await db.queryOne<{ admin_user_id: string }>(
     'SELECT admin_user_id FROM businesses WHERE id = ?',
     [businessId],
   );
 
-  if (!business || business.admin_user_id !== userId) return { error: 'Forbidden', inpoints: null };
+  if (!business || business.admin_user_id !== userId) return { error: 'Forbidden', terminals: null };
 
-  const { data: inpoints, error } = await db.query(
-    'SELECT id, display_name, role, ui_layout, created_at FROM inpoints WHERE business_id = ?',
+  const { data: terminals, error } = await db.query(
+    'SELECT id, display_name, role, ui_layout, created_at FROM terminals WHERE business_id = ?',
     [businessId],
   );
 
-  return { inpoints: inpoints ?? [], error: error ?? null };
+  return { terminals: terminals ?? [], error: error ?? null };
 });

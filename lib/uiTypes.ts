@@ -1,6 +1,6 @@
 /**
  * Shared type definitions for UI layouts and elements.
- * These are used by both the builder (editor) and renderer (in-point viewer).
+ * These are used by both the builder (editor) and renderer (terminal viewer).
  */
 
 // ── Element Types ────────────────────────────────────────────────────────────

@@ -91,7 +91,7 @@ const stats = computed(() => [
           >
             <Terminal class="w-8 h-8 mb-3" />
             <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Terminals</h3>
-            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Manage staff in-point access and roles</p>
+            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Manage staff terminal access and roles</p>
           </NuxtLink>
           <NuxtLink
             to="/dashboard/settings"

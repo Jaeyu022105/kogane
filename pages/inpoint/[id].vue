@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * In-point PIN login page — staff enter their display name and PIN to access their terminal.
+ * Terminal PIN login page — staff enter their display name and PIN to access their terminal.
  * Layout is rendered from stored JSON after successful auth.
  */
 
@@ -11,7 +11,7 @@ import { Power, Delete, Circle } from 'lucide-vue-next';
 definePageMeta({ layout: 'default' });
 
 const route     = useRoute();
-const inpointId = computed(() => route.params.id as string);
+const terminalId = computed(() => route.params.id as string);
 
 const displayName = ref('');
 const pin         = ref('');
@@ -40,9 +40,9 @@ const canvasScale = computed(() => {
   return Math.min(scaleX, scaleY);
 });
 
-// Fetch which business this inpoint belongs to (for data queries)
+// Fetch which business this terminal belongs to (for data queries)
 async function bootstrap() {
-  const res = await $fetch<{ businessId: string; displayName: string; pinLength: number; error: string | null }>(`/api/inpoints/${inpointId.value}/meta`).catch(() => null);
+  const res = await $fetch<{ businessId: string; displayName: string; pinLength: number; error: string | null }>(`/api/terminals/${terminalId.value}/meta`).catch(() => null);
   if (res?.businessId) {
     businessId.value = res.businessId;
     serverDisplayName.value = res.displayName;
@@ -66,7 +66,7 @@ async function login() {
   error.value   = null;
 
   try {
-    const res = await $fetch<{ session: any; error: string | null }>('/api/inpoints/login', {
+    const res = await $fetch<{ session: any; error: string | null }>('/api/terminals/login', {
       method: 'POST',
       body:   { businessId: businessId.value, displayName: displayName.value, pin: pin.value },
     });
@@ -128,9 +128,9 @@ async function handleAction(element: any) {
     }
 
     try {
-      await $fetch('/api/inpoints/insert', {
+      await $fetch('/api/terminals/insert', {
         method: 'POST',
-        body: { inpointId: inpointId.value, tableName, record }
+        body: { terminalId: terminalId.value, tableName, record }
       });
       // Optionally reset fields after successful insert?
       alert('Record inserted successfully!');
@@ -161,7 +161,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Authenticated: render the in-point UI -->
+  <!-- Authenticated: render the terminal UI -->
   <div v-if="session" class="w-full h-dvh overflow-hidden relative bg-[#fdf7f2]">
     <!-- Topbar -->
     <div class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-md border-b" style="border-color: rgba(61,24,32,0.1);">

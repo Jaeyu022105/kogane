@@ -4,27 +4,27 @@ import { validateIdentifier } from '~/lib/schemaUtils';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { inpointId, tableName, record } = body;
+  const { terminalId, tableName, record } = body;
 
-  if (!inpointId || !tableName || !record) {
+  if (!terminalId || !tableName || !record) {
     return { success: false, error: 'Missing required fields' };
   }
 
-  // Authorize by checking if there's a valid session cookie for this inpoint
-  const sessionCookie = getCookie(event, `inpoint_session_${inpointId}`);
+  // Authorize by checking if there's a valid session cookie for this terminal
+  const sessionCookie = getCookie(event, `terminal_session_${terminalId}`);
   if (!sessionCookie) return { success: false, error: 'Unauthorized' };
 
-  // Fetch the business associated with this inpoint
-  const { data: inpoint, error: inpointErr } = await db.queryOne<{ business_id: string }>(
-    'SELECT business_id FROM inpoints WHERE id = ?',
-    [inpointId],
+  // Fetch the business associated with this terminal
+  const { data: terminal, error: terminalErr } = await db.queryOne<{ business_id: string }>(
+    'SELECT business_id FROM terminals WHERE id = ?',
+    [terminalId],
   );
 
-  if (inpointErr || !inpoint) return { success: false, error: 'Inpoint not found' };
+  if (terminalErr || !terminal) return { success: false, error: 'Terminal not found' };
 
   const { data: business, error: bizError } = await db.queryOne<{ schema_name: string }>(
     'SELECT schema_name FROM businesses WHERE id = ?',
-    [inpoint.business_id],
+    [terminal.business_id],
   );
 
   if (bizError || !business) return { success: false, error: 'Business not found' };

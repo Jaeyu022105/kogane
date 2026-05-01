@@ -1,6 +1,6 @@
 /**
- * POST /api/inpoints/create
- * Creates a new in-point (staff terminal) for the business.
+ * POST /api/terminals/create
+ * Creates a new terminal (staff terminal) for the business.
  */
 
 import { defineEventHandler, readBody } from 'h3';
@@ -14,11 +14,11 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ businessId: string; displayName: string; pin: string; resolution?: string }>(event);
 
   if (!body.businessId || !body.displayName || !body.pin) {
-    return { error: 'Missing required fields', inpoint: null };
+    return { error: 'Missing required fields', terminal: null };
   }
 
   if (!/^\d{4,8}$/.test(body.pin)) {
-    return { error: 'PIN must be 4–8 digits', inpoint: null };
+    return { error: 'PIN must be 4–8 digits', terminal: null };
   }
 
   const { data: business } = await db.queryOne<{ admin_user_id: string }>(
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
     [body.businessId],
   );
 
-  if (!business || business.admin_user_id !== userId) return { error: 'Forbidden', inpoint: null };
+  if (!business || business.admin_user_id !== userId) return { error: 'Forbidden', terminal: null };
 
   const pinHash = await hashPin(body.pin);
   const layoutData = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const { data: inpoint, error } = await db.insert('inpoints', {
+  const { data: terminal, error } = await db.insert('terminals', {
     business_id: body.businessId,
     display_name: body.displayName,
     role: 'staff',
@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
     ui_layout: JSON.stringify(layoutData),
   });
 
-  if (error) return { error, inpoint: null };
+  if (error) return { error, terminal: null };
 
-  return { inpoint, error: null };
+  return { terminal, error: null };
 });

@@ -6,7 +6,7 @@ const { business }    = useBusiness();
 
 import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight } from 'lucide-vue-next';
 
-const inpoints  = ref<any[]>([]);
+const terminals  = ref<any[]>([]);
 const loading    = ref(false);
 const showForm   = ref(false);
 const saving     = ref(false);
@@ -34,22 +34,22 @@ function copyPin() {
   setTimeout(() => (pinCopied.value = false), 1500);
 }
 
-async function loadInpoints() {
+async function loadTerminals() {
   if (!business.value) return;
   loading.value = true;
 
   try {
-    const res = await $fetch<{ inpoints: any[] }>('/api/inpoints', {
+    const res = await $fetch<{ terminals: any[] }>('/api/terminals', {
       headers: authHeaders(),
       query:   { businessId: business.value.id },
     });
-    inpoints.value = res.inpoints ?? [];
+    terminals.value = res.terminals ?? [];
   } finally {
     loading.value = false;
   }
 }
 
-async function createInpoint() {
+async function createTerminal() {
   if (!business.value) return;
   if (!form.displayName.trim() || !form.pin) return;
   if (!/^\d{4,8}$/.test(form.pin)) {
@@ -61,7 +61,7 @@ async function createInpoint() {
   error.value  = null;
 
   try {
-    const res = await $fetch<{ error: string | null }>('/api/inpoints/create', {
+    const res = await $fetch<{ error: string | null }>('/api/terminals/create', {
       method:  'POST',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body:    {
@@ -82,17 +82,17 @@ async function createInpoint() {
     pinCopied.value  = false;
     form.displayName = '';
     form.pin         = '';
-    await loadInpoints();
+    await loadTerminals();
   } catch (err: any) {
-    console.error('[createInpoint]', err);
+    console.error('[createTerminal]', err);
     error.value = err?.data?.message ?? err?.data?.error ?? err?.message ?? 'Unknown error';
   } finally {
     saving.value = false;
   }
 }
 
-onMounted(loadInpoints);
-watch(() => business.value?.id, loadInpoints);
+onMounted(loadTerminals);
+watch(() => business.value?.id, loadTerminals);
 </script>
 
 <template>
@@ -105,7 +105,7 @@ watch(() => business.value?.id, loadInpoints);
       <div>
         <h1 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">Terminals</h1>
         <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">
-          Staff in-points · {{ inpoints.length }} registered
+          Staff terminals · {{ terminals.length }} registered
         </p>
       </div>
 
@@ -154,7 +154,7 @@ watch(() => business.value?.id, loadInpoints);
 
       <!-- Empty state / No terminals -->
       <div
-        v-else-if="inpoints.length === 0"
+        v-else-if="terminals.length === 0"
         class="flex flex-col items-center justify-center py-24 text-center"
       >
         <TerminalIcon class="w-12 h-12 mb-4" style="color: rgba(61,24,32,0.1);" />
@@ -165,7 +165,7 @@ watch(() => business.value?.id, loadInpoints);
       <!-- Terminal grid -->
       <div v-else class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
         <div
-          v-for="ip in inpoints"
+          v-for="ip in terminals"
           :key="ip.id"
           class="group rounded-2xl p-5 flex flex-col gap-4 transition-all"
           style="background: white; border: 1px solid rgba(61,24,32,0.08);"
@@ -191,7 +191,7 @@ watch(() => business.value?.id, loadInpoints);
           <!-- Actions -->
           <div class="flex items-center gap-2 mt-auto">
             <NuxtLink
-              :to="`/dashboard/builder?inpoint=${ip.id}`"
+              :to="`/dashboard/builder?terminal=${ip.id}`"
               class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
               style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.06); text-decoration: none;"
             >
@@ -200,7 +200,7 @@ watch(() => business.value?.id, loadInpoints);
               </div>
             </NuxtLink>
             <NuxtLink
-              :to="`/inpoint/${ip.id}`"
+              :to="`/terminal/${ip.id}`"
               class="flex-1 text-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
               style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.1); text-decoration: none;"
             >
@@ -319,7 +319,7 @@ watch(() => business.value?.id, loadInpoints);
               class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40"
               style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
               :disabled="!form.displayName || !form.pin || saving"
-              @click="createInpoint"
+              @click="createTerminal"
             >
               {{ saving ? 'Creating…' : 'Create' }}
             </button>

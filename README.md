@@ -10,7 +10,7 @@ Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Po
 
 - **Schema-First**: Your data defines your capability. Design your database schema directly within the platform.
 - **UI-Driven**: Build interfaces using a Figma-like visual canvas. Drag, drop, and configure.
-- **Terminal Isolation**: Deploy role-based "In-points" (terminals) that are isolated, secure, and authenticated via PIN.
+- **Terminal Isolation**: Deploy role-based "Terminals" that are isolated, secure, and authenticated via PIN.
 - **Dynamic Theming**: Brand colors and typography propagate instantly across every generated interface.
 
 ---
@@ -38,7 +38,7 @@ A professional, Figma/Canva-inspired design environment. Design staff-facing scr
 - **Smart Properties**: A dynamic top bar for quick style adjustments, paired with a collapsible advanced properties sidebar for deep customization.
 - **Canvas Controls**: Infinite panning and scaling, along with standard keybinds (`Ctrl+C`, `Ctrl+V`, `Ctrl+D`) for rapid prototyping.
 
-### 3. Terminals (In-points)
+### 3. Terminals
 Deploy specific layouts to physical or web-based terminals. Staff log in with a **secure PIN**. The interface is hydrated dynamically from the JSON layout definition and scaled to fit any screen perfectly.
 
 ---

@@ -37,7 +37,7 @@ export class SqliteAdapter implements DbAdapter {
     `);
 
     this.db.run(`
-      CREATE TABLE IF NOT EXISTS inpoints (
+      CREATE TABLE IF NOT EXISTS terminals (
         id            TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
         business_id   TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
         auth_user_id  TEXT,
@@ -62,8 +62,8 @@ export class SqliteAdapter implements DbAdapter {
     `);
 
     try {
-      this.db.run("ALTER TABLE inpoints ADD COLUMN pin_length INTEGER NOT NULL DEFAULT 4");
-    } catch (e) {}
+      this.db.run("ALTER TABLE terminals ADD COLUMN pin_length INTEGER NOT NULL DEFAULT 4");
+    } catch (e) { }
   }
 
   async query<T>(sql: string, params: unknown[] = []): Promise<QueryResult<T>> {

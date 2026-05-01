@@ -1,6 +1,6 @@
 /**
  * Auth utilities — server-side session validation helpers.
- * All protected routes call verifyAdmin() or verifyInpoint() from here.
+ * All protected routes call verifyAdmin() or verifyTerminal() from here.
  */
 
 import { H3Event, getRequestHeader, createError } from 'h3';

@@ -1,7 +1,7 @@
 /**
- * GET /api/inpoints/[id]/meta
- * Returns lightweight metadata for an in-point (businessId, display name).
- * Used by the terminal login page to resolve which business the inpoint belongs to.
+ * GET /api/terminals/[id]/meta
+ * Returns lightweight metadata for an terminal (businessId, display name).
+ * Used by the terminal login page to resolve which business the terminal belongs to.
  */
 
 import { defineEventHandler } from 'h3';
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   if (!id) return { error: 'Missing id', businessId: null };
 
   const { data } = await db.queryOne<{ business_id: string; display_name: string; pin_length: number }>(
-    'SELECT business_id, display_name, pin_length FROM inpoints WHERE id = ?',
+    'SELECT business_id, display_name, pin_length FROM terminals WHERE id = ?',
     [id],
   );
 

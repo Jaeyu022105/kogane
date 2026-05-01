@@ -34,8 +34,8 @@ const {
 const showStudioPanel = ref(false);
 const canvasWrapper = ref<HTMLElement | null>(null);
 
-const inpoints = ref<{ id: string; display_name: string; role: string; ui_layout: string }[]>([]);
-const selectedInpoint = ref<string | null>(null);
+const terminals = ref<{ id: string; display_name: string; role: string; ui_layout: string }[]>([]);
+const selectedTerminal = ref<string | null>(null);
 const saving = ref(false);
 const zoom = ref(0.7);
 
@@ -53,22 +53,22 @@ const selectedElementName = computed(() => {
 
 const resolutionLabel = computed(() => `${layout.value.resolution.width} x ${layout.value.resolution.height}`);
 
-async function loadInpoints() {
+async function loadTerminals() {
   if (!business.value) return;
-  const res = await $fetch<{ inpoints: any[]; error: string | null }>('/api/inpoints', {
+  const res = await $fetch<{ terminals: any[]; error: string | null }>('/api/terminals', {
     headers: authHeaders(),
     query: { businessId: business.value.id },
   });
-  inpoints.value = res.inpoints ?? [];
+  terminals.value = res.terminals ?? [];
 
-  if (route.query.inpoint && !selectedInpoint.value) {
-    selectInpoint(route.query.inpoint as string);
+  if (route.query.terminal && !selectedTerminal.value) {
+    selectTerminal(route.query.terminal as string);
   }
 }
 
-function selectInpoint(id: string) {
-  selectedInpoint.value = id;
-  const ip = inpoints.value.find(i => i.id === id);
+function selectTerminal(id: string) {
+  selectedTerminal.value = id;
+  const ip = terminals.value.find(i => i.id === id);
   if (!ip) return;
 
   let parsed: any;
@@ -87,13 +87,13 @@ function selectInpoint(id: string) {
 }
 
 async function saveLayout() {
-  if (!selectedInpoint.value) return;
+  if (!selectedTerminal.value) return;
   saving.value = true;
   try {
-    await $fetch('/api/inpoints/layout', {
+    await $fetch('/api/terminals/layout', {
       method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: { inpointId: selectedInpoint.value, layout: layout.value },
+      body: { terminalId: selectedTerminal.value, layout: layout.value },
     });
   } finally {
     saving.value = false;
@@ -101,7 +101,7 @@ async function saveLayout() {
 }
 
 onMounted(() => {
-  loadInpoints();
+  loadTerminals();
   window.addEventListener('keydown', handleKeydown);
   if (canvasWrapper.value) {
     canvasWrapper.value.addEventListener('wheel', handleWheel, { passive: false });
@@ -115,7 +115,7 @@ onUnmounted(() => {
   }
 });
 
-watch(() => business.value?.id, loadInpoints);
+watch(() => business.value?.id, loadTerminals);
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -216,13 +216,13 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
 
         <div class="relative group">
           <select
-            :value="selectedInpoint ?? ''"
+            :value="selectedTerminal ?? ''"
             class="appearance-none bg-white/60 border pl-3 pr-8 py-1.5 rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[rgba(61,24,32,0.2)] hover:bg-white"
             style="border-color: rgba(61,24,32,0.15); color: rgb(var(--shell-sidebar));"
-            @change="selectInpoint(($event.target as HTMLSelectElement).value)"
+            @change="selectTerminal(($event.target as HTMLSelectElement).value)"
           >
             <option value="" disabled>Select terminal...</option>
-            <option v-for="ip in inpoints" :key="ip.id" :value="ip.id">
+            <option v-for="ip in terminals" :key="ip.id" :value="ip.id">
               {{ ip.display_name }} ({{ ip.role }})
             </option>
           </select>
@@ -279,7 +279,7 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
         </button>
 
         <button
-          :disabled="!isDirty || !selectedInpoint || saving"
+          :disabled="!isDirty || !selectedTerminal || saving"
           class="text-sm font-semibold px-5 py-2 rounded-xl transition-all disabled:opacity-40"
           style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 4px 12px rgba(61,24,32,0.15);"
           @click="saveLayout"
@@ -382,7 +382,7 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
           </div>
         </div>
 
-        <div v-if="!selectedInpoint" class="absolute inset-0 flex items-center justify-center">
+        <div v-if="!selectedTerminal" class="absolute inset-0 flex items-center justify-center">
           <div class="z-10 bg-white p-8 rounded-3xl shadow-xl border text-center pointer-events-auto" style="color: rgba(61,24,32,0.6); border-color: rgba(61,24,32,0.1);">
             <Sparkles class="w-12 h-12 mx-auto mb-4" style="color: rgb(var(--shell-sidebar));" />
             <h2 class="text-lg font-semibold mb-1" style="color: rgb(var(--shell-sidebar));">No Terminal Selected</h2>
