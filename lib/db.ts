@@ -54,10 +54,10 @@ async function getAdapter(): Promise<DbAdapter> {
 }
 
 export const db = {
-  query:    async <T>(sql: string, params?: unknown[]) => (await getAdapter()).query<T>(sql, params),
+  query: async <T>(sql: string, params?: unknown[]) => (await getAdapter()).query<T>(sql, params),
   queryOne: async <T>(sql: string, params?: unknown[]) => (await getAdapter()).queryOne<T>(sql, params),
-  insert:   async <T>(table: string, values: Record<string, unknown>, schema?: string) => (await getAdapter()).insert<T>(table, values, schema),
-  update:   async (table: string, values: Record<string, unknown>, where: Record<string, unknown>, schema?: string) => (await getAdapter()).update(table, values, where, schema),
-  delete:   async (table: string, where: Record<string, unknown>, schema?: string) => (await getAdapter()).delete(table, where, schema),
-  execute:  async (sql: string) => (await getAdapter()).execute(sql),
+  insert: async <T>(table: string, values: Record<string, unknown>, schema?: string) => (await getAdapter()).insert<T>(table, values, schema),
+  update: async (table: string, values: Record<string, unknown>, where: Record<string, unknown>, schema?: string) => (await getAdapter()).update(table, values, where, schema),
+  delete: async (table: string, where: Record<string, unknown>, schema?: string) => (await getAdapter()).delete(table, where, schema),
+  execute: async (sql: string) => (await getAdapter()).execute(sql),
 };

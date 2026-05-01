@@ -6,16 +6,16 @@
 export type ColumnType = 'text' | 'numeric' | 'integer' | 'boolean' | 'date' | 'timestamptz';
 
 export interface ColumnDef {
-  name:       string;
-  type:       ColumnType;
-  nullable:   boolean;
-  unique?:    boolean;
-  default?:   string;
+  name: string;
+  type: ColumnType;
+  nullable: boolean;
+  unique?: boolean;
+  default?: string;
   references?: { table: string; column: string };
 }
 
 export interface TableDef {
-  name:    string;
+  name: string;
   columns: ColumnDef[];
 }
 
@@ -45,20 +45,20 @@ export function validateTableDef(table: TableDef): void {
 
 // Map app column types to Postgres/SQLite column types
 const TYPE_MAP_PG: Record<ColumnType, string> = {
-  text:        'text',
-  numeric:     'numeric',
-  integer:     'integer',
-  boolean:     'boolean',
-  date:        'date',
+  text: 'text',
+  numeric: 'numeric',
+  integer: 'integer',
+  boolean: 'boolean',
+  date: 'date',
   timestamptz: 'timestamptz',
 };
 
 const TYPE_MAP_SQLITE: Record<ColumnType, string> = {
-  text:        'TEXT',
-  numeric:     'REAL',
-  integer:     'INTEGER',
-  boolean:     'INTEGER', // SQLite has no boolean — store as 0/1
-  date:        'TEXT',
+  text: 'TEXT',
+  numeric: 'REAL',
+  integer: 'INTEGER',
+  boolean: 'INTEGER', // SQLite has no boolean — store as 0/1
+  date: 'TEXT',
   timestamptz: 'TEXT',
 };
 
@@ -90,7 +90,7 @@ export function buildCreateTableSql(table: TableDef, schema: string, dialect: 'p
 function buildColumnSql(col: ColumnDef, typeMap: Record<ColumnType, string>): string {
   const parts: string[] = [`${col.name} ${typeMap[col.type]}`];
   if (!col.nullable) parts.push('NOT NULL');
-  if (col.unique)    parts.push('UNIQUE');
+  if (col.unique) parts.push('UNIQUE');
   if (col.default !== undefined) parts.push(`DEFAULT ${col.default}`);
   if (col.references) {
     parts.push(`REFERENCES ${col.references.table}(${col.references.column})`);
@@ -124,8 +124,8 @@ export function buildAddColumnSql(tableName: string, col: ColumnDef, schema: str
 
 export interface NormalizationHint {
   severity: 'warning' | 'suggestion';
-  message:  string;
-  action?:  string;
+  message: string;
+  action?: string;
 }
 
 const MIXED_CONCERN_PATTERNS = [
@@ -153,8 +153,8 @@ export function analyzeNormalization(table: TableDef): NormalizationHint[] {
   if ((groups['address']?.length ?? 0) > 1) {
     hints.push({
       severity: 'suggestion',
-      message:  `Found ${groups['address']!.length} address-related columns. Consider extracting them into a separate "addresses" table.`,
-      action:   'split-table',
+      message: `Found ${groups['address']!.length} address-related columns. Consider extracting them into a separate "addresses" table.`,
+      action: 'split-table',
     });
   }
 
@@ -162,8 +162,8 @@ export function analyzeNormalization(table: TableDef): NormalizationHint[] {
   if ((groups['contact']?.length ?? 0) > 1) {
     hints.push({
       severity: 'suggestion',
-      message:  `Found multiple contact columns (${groups['contact']!.join(', ')}). Consider a dedicated contacts table.`,
-      action:   'split-table',
+      message: `Found multiple contact columns (${groups['contact']!.join(', ')}). Consider a dedicated contacts table.`,
+      action: 'split-table',
     });
   }
 
@@ -177,8 +177,8 @@ export function analyzeNormalization(table: TableDef): NormalizationHint[] {
     if (relatedCols.length > 0) {
       hints.push({
         severity: 'warning',
-        message:  `Possible 3.5NF violation (Transitive Dependency): Columns like "${relatedCols.map(c=>c.name).join(', ')}" seem to depend on "${idCol.name}" rather than the primary key. Extract them to a separate "${prefix}s" table.`,
-        action:   'normalize-3.5nf',
+        message: `Possible 3.5NF violation (Transitive Dependency): Columns like "${relatedCols.map(c => c.name).join(', ')}" seem to depend on "${idCol.name}" rather than the primary key. Extract them to a separate "${prefix}s" table.`,
+        action: 'normalize-3.5nf',
       });
     }
   }
@@ -196,8 +196,8 @@ export function analyzeNormalization(table: TableDef): NormalizationHint[] {
     if (count > 1) {
       hints.push({
         severity: 'warning',
-        message:  `Possible 1NF violation: Found repeating columns like "${base}_1", "${base}_2". Consider extracting into a one-to-many relationship.`,
-        action:   'normalize-1nf',
+        message: `Possible 1NF violation: Found repeating columns like "${base}_1", "${base}_2". Consider extracting into a one-to-many relationship.`,
+        action: 'normalize-1nf',
       });
     }
   }
@@ -206,7 +206,7 @@ export function analyzeNormalization(table: TableDef): NormalizationHint[] {
   if (table.columns.length > 15) {
     hints.push({
       severity: 'warning',
-      message:  `Table "${table.name}" has ${table.columns.length} columns. Consider splitting into related tables to reduce redundancy.`,
+      message: `Table "${table.name}" has ${table.columns.length} columns. Consider splitting into related tables to reduce redundancy.`,
     });
   }
 

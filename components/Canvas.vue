@@ -16,9 +16,12 @@ const props = defineProps<{
 const {
   layout,
   selectedId,
+  cameraX,
+  cameraY,
   selectElement,
   moveElement,
   updateElement,
+  setCamera,
 } = useCanvas();
 
 const zoom    = computed(() => props.zoom ?? 1);
@@ -36,6 +39,9 @@ const drag = ref<{
 
 function onMousedownEl(ev: MouseEvent, el: ElementDef) {
   ev.stopPropagation();
+  if (editingTextId.value && editingTextId.value !== el.id) {
+    editingTextId.value = null;
+  }
   selectElement(el.id);
 
   drag.value = {
@@ -48,6 +54,20 @@ function onMousedownEl(ev: MouseEvent, el: ElementDef) {
 
   window.addEventListener('mousemove', onMousemove);
   window.addEventListener('mouseup',   onMouseup, { once: true });
+}
+
+const editingTextId = ref<string | null>(null);
+
+function onDblclickEl(ev: MouseEvent, el: ElementDef) {
+  ev.stopPropagation();
+  if (el.type === 'text') {
+    editingTextId.value = el.id;
+    // small delay to let vue render the textarea then focus it
+    setTimeout(() => {
+      const ta = document.getElementById(`edit-${el.id}`) as HTMLTextAreaElement;
+      if (ta) ta.focus();
+    }, 10);
+  }
 }
 
 function snap(v: number): number {
@@ -69,6 +89,45 @@ function onMousemove(ev: MouseEvent) {
 function onMouseup() {
   drag.value = null;
   window.removeEventListener('mousemove', onMousemove);
+}
+
+// ── Pan state ─────────────────────────────────────────────────────────────────
+
+const pan = ref<{
+  startX: number;
+  startY: number;
+  origCamX: number;
+  origCamY: number;
+} | null>(null);
+
+function onMousedownCanvas(ev: MouseEvent) {
+  if (ev.button !== 0 && ev.button !== 1) return; // allow left or middle click to pan when clicking empty area
+  selectElement(null);
+  editingTextId.value = null;
+
+  pan.value = {
+    startX: ev.clientX,
+    startY: ev.clientY,
+    origCamX: cameraX.value,
+    origCamY: cameraY.value,
+  };
+
+  window.addEventListener('mousemove', onPanMove);
+  window.addEventListener('mouseup',   onPanUp, { once: true });
+}
+
+function onPanMove(ev: MouseEvent) {
+  if (!pan.value) return;
+
+  const dx = ev.clientX - pan.value.startX;
+  const dy = ev.clientY - pan.value.startY;
+
+  setCamera(pan.value.origCamX + dx, pan.value.origCamY + dy);
+}
+
+function onPanUp() {
+  pan.value = null;
+  window.removeEventListener('mousemove', onPanMove);
 }
 
 // ── Resize handle ─────────────────────────────────────────────────────────────
@@ -118,67 +177,87 @@ function onResizeUp() {
 </script>
 
 <template>
-  <!-- Canvas root — click on empty area to deselect -->
+  <!-- Canvas root — full size transparent wrapper catching pan/deselect -->
   <div
-    class="relative overflow-hidden bg-[#111118] rounded-xl border border-white/10"
-    :style="{
-      width:  `${layout.resolution.width * zoom}px`,
-      height: `${layout.resolution.height * zoom}px`,
-    }"
-    @mousedown.self="selectElement(null)"
+    class="w-full h-full overflow-hidden"
+    @mousedown="onMousedownCanvas"
   >
-    <!-- Grid dots -->
-    <svg
-      class="absolute inset-0 pointer-events-none opacity-20"
-      :width="layout.resolution.width * zoom"
-      :height="layout.resolution.height * zoom"
-    >
-      <defs>
-        <pattern id="grid" :width="GRID_PX * zoom" :height="GRID_PX * zoom" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="0.75" fill="rgba(255,255,255,0.4)" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg>
-
-    <!-- Scale wrapper for zoom -->
+    <!-- Transform wrapper for pan and zoom -->
     <div
-      class="absolute inset-0"
-      :style="{ transform: `scale(${zoom})`, transformOrigin: 'top left' }"
+      class="absolute"
+      :style="{ transform: `translate(${cameraX}px, ${cameraY}px) scale(${zoom})`, transformOrigin: '0 0' }"
     >
-      <!-- Render each element with its drag handle overlay -->
+      <!-- The actual layout page / board -->
       <div
-        v-for="el in layout.elements"
-        :key="el.id"
-        class="absolute group"
+        class="relative bg-[#111118] border border-white/10 shadow-2xl overflow-hidden"
         :style="{
-          left:    `${el.position.x}px`,
-          top:     `${el.position.y}px`,
-          width:   `${el.position.width}px`,
-          height:  `${el.position.height}px`,
-          zIndex:  el.position.zIndex,
+          width:  `${layout.resolution.width}px`,
+          height: `${layout.resolution.height}px`,
         }"
-        @mousedown="onMousedownEl($event, el)"
       >
-        <!-- Selection ring -->
-        <div
-          v-if="selectedId === el.id"
-          class="absolute inset-0 ring-2 ring-brand-primary rounded pointer-events-none z-10"
-        />
+        <!-- Grid dots -->
+        <svg class="absolute inset-0 pointer-events-none opacity-20" width="100%" height="100%">
+          <defs>
+            <pattern id="grid" :width="GRID_PX" :height="GRID_PX" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.75" fill="rgba(255,255,255,0.4)" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
 
-        <!-- Element content (non-interactive in builder) -->
-        <ElementRenderer
-          :element="el"
-          :business-id="businessId"
-          :builder-mode="true"
-        />
-
-        <!-- Resize handle (bottom-right corner) -->
+        <!-- Render each element -->
         <div
-          v-if="selectedId === el.id"
-          class="absolute bottom-0 right-0 w-3 h-3 bg-brand-primary rounded-tl cursor-se-resize z-20"
-          @mousedown.stop="onMousedownResize($event, el)"
-        />
+          v-for="el in layout.elements"
+          :key="el.id"
+          class="absolute group"
+          :style="{
+            left:    `${el.position.x}px`,
+            top:     `${el.position.y}px`,
+            width:   `${el.position.width}px`,
+            height:  `${el.position.height}px`,
+            zIndex:  el.position.zIndex,
+          }"
+          @mousedown="onMousedownEl($event, el)"
+          @dblclick="onDblclickEl($event, el)"
+        >
+          <!-- Selection ring -->
+          <div
+            v-if="selectedId === el.id"
+            class="absolute inset-0 ring-2 ring-brand-primary pointer-events-none z-10"
+          />
+
+          <!-- Element content (non-interactive in builder) -->
+          <template v-if="editingTextId === el.id && el.type === 'text'">
+            <textarea
+              :id="`edit-${el.id}`"
+              :value="(el as any).content"
+              class="w-full h-full bg-transparent resize-none outline-none border-none p-0 m-0"
+              :style="{
+                fontSize: `${(el as any).fontSize ?? 16}px`,
+                fontWeight: (el as any).fontWeight ?? 'normal',
+                color: (el as any).color ?? '#000',
+                textAlign: (el as any).align ?? 'left',
+              }"
+              @input="updateElement(el.id, { content: ($event.target as HTMLTextAreaElement).value } as any)"
+              @blur="editingTextId = null"
+              @mousedown.stop
+            />
+          </template>
+          <template v-else>
+            <ElementRenderer
+              :element="el"
+              :business-id="businessId"
+              :builder-mode="true"
+            />
+          </template>
+
+          <!-- Resize handle (bottom-right corner) -->
+          <div
+            v-if="selectedId === el.id"
+            class="absolute bottom-0 right-0 w-3 h-3 bg-brand-primary rounded-tl cursor-se-resize z-20"
+            @mousedown.stop="onMousedownResize($event, el)"
+          />
+        </div>
       </div>
     </div>
   </div>

@@ -7,24 +7,24 @@ import { ref, watch } from 'vue';
 import { useAuth } from './useAuth';
 
 export interface ColorPalette {
-  primary:    string;
-  secondary:  string;
-  accent:     string;
+  primary: string;
+  secondary: string;
+  accent: string;
   background: string;
 }
 
 export interface Business {
-  id:            string;
-  name:          string;
-  logoUrl:       string | null;
-  colorPalette:  ColorPalette;
-  schemaName:    string;
-  createdAt:     string;
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  colorPalette: ColorPalette;
+  schemaName: string;
+  createdAt: string;
 }
 
 const business = ref<Business | null>(null);
-const loading  = ref(false);
-const error    = ref<string | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 function hexToRgb(hex: string): string {
   const clean = hex.replace('#', '');
@@ -37,9 +37,9 @@ function hexToRgb(hex: string): string {
 /** Inject CSS variables from the business color palette into :root. */
 function applyTheme(palette: ColorPalette) {
   const root = document.documentElement;
-  if (palette.primary)    root.style.setProperty('--color-primary',    hexToRgb(palette.primary));
-  if (palette.secondary)  root.style.setProperty('--color-secondary',  hexToRgb(palette.secondary));
-  if (palette.accent)     root.style.setProperty('--color-accent',     hexToRgb(palette.accent));
+  if (palette.primary) root.style.setProperty('--color-primary', hexToRgb(palette.primary));
+  if (palette.secondary) root.style.setProperty('--color-secondary', hexToRgb(palette.secondary));
+  if (palette.accent) root.style.setProperty('--color-accent', hexToRgb(palette.accent));
   if (palette.background) root.style.setProperty('--color-background', hexToRgb(palette.background));
 }
 
@@ -48,10 +48,10 @@ export function useBusiness() {
 
   async function fetchBusiness() {
     loading.value = true;
-    error.value   = null;
+    error.value = null;
 
     try {
-      const res  = await $fetch<{ business: any; error: string | null }>('/api/businesses/me', {
+      const res = await $fetch<{ business: any; error: string | null }>('/api/businesses/me', {
         headers: authHeaders(),
       });
 
@@ -72,12 +72,12 @@ export function useBusiness() {
       }
 
       business.value = {
-        id:           raw.id,
-        name:         raw.name,
-        logoUrl:      raw.logo_url ?? null,
+        id: raw.id,
+        name: raw.name,
+        logoUrl: raw.logo_url ?? null,
         colorPalette: palette,
-        schemaName:   raw.schema_name,
-        createdAt:    raw.created_at,
+        schemaName: raw.schema_name,
+        createdAt: raw.created_at,
       };
 
       applyTheme(palette);
@@ -90,9 +90,9 @@ export function useBusiness() {
 
   async function updateTheme(palette: ColorPalette, logoUrl?: string) {
     await $fetch('/api/businesses/theme', {
-      method:  'PATCH',
+      method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body:    { colorPalette: palette, logoUrl },
+      body: { colorPalette: palette, logoUrl },
     });
 
     if (business.value) {

@@ -11,7 +11,7 @@ import { DEFAULT_LAYOUT } from '~/lib/uiTypes';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
-  const body = await readBody<{ businessId: string; displayName: string; pin: string }>(event);
+  const body = await readBody<{ businessId: string; displayName: string; pin: string; resolution?: string }>(event);
 
   if (!body.businessId || !body.displayName || !body.pin) {
     return { error: 'Missing required fields', inpoint: null };
@@ -29,13 +29,21 @@ export default defineEventHandler(async (event) => {
   if (!business || business.admin_user_id !== userId) return { error: 'Forbidden', inpoint: null };
 
   const pinHash = await hashPin(body.pin);
+  const layoutData = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+  if (body.resolution) {
+    const [w, h] = body.resolution.split('x').map(Number);
+    if (!isNaN(w) && !isNaN(h)) {
+      layoutData.resolution = { width: w, height: h };
+    }
+  }
 
   const { data: inpoint, error } = await db.insert('inpoints', {
-    business_id:  body.businessId,
+    business_id: body.businessId,
     display_name: body.displayName,
-    role:         'staff',
-    pin_hash:     pinHash,
-    ui_layout:    JSON.stringify(DEFAULT_LAYOUT),
+    role: 'staff',
+    pin_hash: pinHash,
+    pin_length: body.pin.length,
+    ui_layout: JSON.stringify(layoutData),
   });
 
   if (error) return { error, inpoint: null };

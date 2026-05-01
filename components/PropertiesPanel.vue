@@ -5,9 +5,11 @@
  */
 
 import type { ElementDef, ActionType, ActionPayloadMapping } from '~/lib/uiTypes';
-import { Plus, X, Trash2 } from 'lucide-vue-next';
+import { Plus, X, Trash2, Layers, PenTool } from 'lucide-vue-next';
 
-const { layout, selectedElement, selectedId, updateElement, removeElement, bringForward, sendBackward } = useCanvas();
+const { layout, selectedElement, selectedId, updateElement, removeElement, bringForward, sendBackward, selectElement, updateResolution } = useCanvas();
+
+const activeTab = ref<'design' | 'layers'>('design');
 
 function patch(updates: Partial<Omit<ElementDef, 'id' | 'type'>>) {
   if (!selectedId.value) return;
@@ -25,18 +27,72 @@ function patchPosition(pos: Partial<{ x: number; y: number; width: number; heigh
     class="w-64 h-full flex flex-col overflow-y-auto bg-white"
     style="border-left: 1px solid rgba(61,24,32,0.1);"
   >
-    <!-- Empty state -->
-    <div v-if="!selectedElement" class="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
-      <div
-        class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"
-        style="background: rgba(61,24,32,0.06);"
+    <div class="flex border-b" style="border-color: rgba(61,24,32,0.08);">
+      <button
+        class="flex-1 py-2 text-xs font-semibold tracking-wide transition-colors flex items-center justify-center gap-1.5"
+        :class="activeTab === 'design' ? 'bg-black/5 text-brand-primary' : 'text-gray-400 hover:text-gray-600'"
+        @click="activeTab = 'design'"
       >
-        ☝️
-      </div>
-      <p class="text-sm" style="color: rgba(61,24,32,0.4);">Select an element to inspect</p>
+        <PenTool class="w-3.5 h-3.5" /> Design
+      </button>
+      <button
+        class="flex-1 py-2 text-xs font-semibold tracking-wide transition-colors flex items-center justify-center gap-1.5"
+        :class="activeTab === 'layers' ? 'bg-black/5 text-brand-primary' : 'text-gray-400 hover:text-gray-600'"
+        @click="activeTab = 'layers'"
+      >
+        <Layers class="w-3.5 h-3.5" /> Layers
+      </button>
     </div>
 
+    <!-- Layers Tab -->
+    <div v-if="activeTab === 'layers'" class="flex-1 overflow-y-auto p-2 space-y-1">
+      <div v-if="layout.elements.length === 0" class="text-center py-8 text-xs text-gray-400">
+        No layers yet
+      </div>
+      <button
+        v-for="el in [...layout.elements].sort((a, b) => b.position.zIndex - a.position.zIndex)"
+        :key="el.id"
+        class="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition-colors"
+        :class="selectedId === el.id ? 'bg-brand-primary text-white' : 'hover:bg-black/5'"
+        @click="selectElement(el.id)"
+      >
+        <span class="truncate font-medium">{{ el.label || el.type }}</span>
+        <span class="text-[10px] opacity-50">{{ el.type }}</span>
+      </button>
+    </div>
+
+    <!-- Design Tab -->
     <template v-else>
+      <!-- Empty state -->
+      <!-- Canvas Properties -->
+      <div v-if="!selectedElement" class="flex-1 flex flex-col p-4">
+        <div class="flex-1 flex flex-col items-center justify-center gap-3 text-center mb-8">
+          <div
+            class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"
+            style="background: rgba(61,24,32,0.06);"
+          >
+            ☝️
+          </div>
+          <p class="text-sm" style="color: rgba(61,24,32,0.4);">Select an element to inspect</p>
+        </div>
+
+        <div class="border-t pt-4" style="border-color: rgba(61,24,32,0.08);">
+          <p class="text-xs font-bold uppercase tracking-widest mb-3" style="color: rgba(61,24,32,0.35);">Canvas</p>
+          <label class="text-xs block mb-1.5" style="color: rgba(61,24,32,0.4);">Resolution</label>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] text-gray-400 mb-0.5 block">Width</label>
+              <input type="number" :value="layout.resolution.width" class="input-warm w-full px-2 py-1 text-sm" @input="updateResolution(Number(($event.target as HTMLInputElement).value), layout.resolution.height)" />
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 mb-0.5 block">Height</label>
+              <input type="number" :value="layout.resolution.height" class="input-warm w-full px-2 py-1 text-sm" @input="updateResolution(layout.resolution.width, Number(($event.target as HTMLInputElement).value))" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template v-else>
       <!-- Header -->
       <div
         class="px-4 py-3 flex items-center justify-between"
@@ -297,6 +353,7 @@ function patchPosition(pos: Partial<{ x: number; y: number; width: number; heigh
           @input="patch({ columns: ($event.target as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean) } as any)"
         />
       </section>
+    </template>
     </template>
   </aside>
 </template>

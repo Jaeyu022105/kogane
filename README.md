@@ -33,7 +33,10 @@ Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Po
 Define your domain model. Postfolio handles the DDL (Data Definition Language) for you. It features an **Interactive Table Editor** for direct inline data manipulation and a **Relational Schema Visualizer** that draws dynamic connection arrows for foreign keys. It includes a built-in **Normalization Analyzer** that suggests schema improvements (targeting 3.5NF / Boyce-Codd) to ensure your data stays clean as you scale.
 
 ### 2. UI Builder
-A professional, Figma/Supabase-inspired design environment. Design staff-facing screens using modular elements like Table Views, Cart Widgets, and Input Fields. It features a robust **Event System**, allowing you to build complex logic without writing code—like mapping an input field's value to a database insert action triggered by a button click.
+A professional, Figma/Canva-inspired design environment. Design staff-facing screens using modular elements like Table Views, Cart Widgets, and Input Fields. It features:
+- **Event System**: Build complex logic without writing code—like mapping an input field's value to a database insert action triggered by a button click.
+- **Smart Properties**: A dynamic top bar for quick style adjustments, paired with a collapsible advanced properties sidebar for deep customization.
+- **Canvas Controls**: Infinite panning and scaling, along with standard keybinds (`Ctrl+C`, `Ctrl+V`, `Ctrl+D`) for rapid prototyping.
 
 ### 3. Terminals (In-points)
 Deploy specific layouts to physical or web-based terminals. Staff log in with a **secure PIN**. The interface is hydrated dynamically from the JSON layout definition and scaled to fit any screen perfectly.

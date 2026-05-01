@@ -13,19 +13,19 @@ export default defineEventHandler(async (event) => {
   await verifyAdmin(event);
 
   const body = await readBody<{
-    name:             string;
-    description?:     string;
-    schemaDef:        SchemaDef;
-    uiLayout?:        UiLayout;
+    name: string;
+    description?: string;
+    schemaDef: SchemaDef;
+    uiLayout?: UiLayout;
   }>(event);
 
   if (!body.name?.trim()) return { error: 'Name is required', preset: null };
 
   const { data: preset, error } = await db.insert('presets', {
-    name:              body.name.trim(),
-    description:       body.description ?? '',
+    name: body.name.trim(),
+    description: body.description ?? '',
     schema_definition: JSON.stringify(body.schemaDef),
-    ui_layout:         JSON.stringify(body.uiLayout ?? {}),
+    ui_layout: JSON.stringify(body.uiLayout ?? {}),
   });
 
   if (error) return { error, preset: null };

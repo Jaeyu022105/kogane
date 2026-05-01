@@ -19,8 +19,8 @@ export default defineEventHandler(async (event) => {
   return {
     session: {
       userId: 'dev-admin',
-      email:  body.email,
-      token:  'dev-admin-token',
+      email: body.email,
+      token: 'dev-admin-token',
     },
     error: null,
   };

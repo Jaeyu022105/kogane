@@ -19,6 +19,9 @@ const error       = ref<string | null>(null);
 const loading     = ref(false);
 const session     = ref<{ displayName: string; role: string; uiLayout: UiLayout } | null>(null);
 const businessId  = ref('');
+const serverDisplayName = ref('');
+const serverPinLength = ref(4);
+const step        = ref<1 | 2>(1);
 
 // Viewport size — computed client-side to avoid SSR window access
 const viewW = ref(1280);
@@ -39,8 +42,22 @@ const canvasScale = computed(() => {
 
 // Fetch which business this inpoint belongs to (for data queries)
 async function bootstrap() {
-  const res = await $fetch<{ businessId: string }>(`/api/inpoints/${inpointId.value}/meta`).catch(() => null);
-  if (res?.businessId) businessId.value = res.businessId;
+  const res = await $fetch<{ businessId: string; displayName: string; pinLength: number; error: string | null }>(`/api/inpoints/${inpointId.value}/meta`).catch(() => null);
+  if (res?.businessId) {
+    businessId.value = res.businessId;
+    serverDisplayName.value = res.displayName;
+    serverPinLength.value = res.pinLength || 4;
+  }
+}
+
+function nextStep() {
+  if (!displayName.value.trim()) return;
+  if (displayName.value.trim().toLowerCase() === serverDisplayName.value.toLowerCase()) {
+    step.value = 2;
+    error.value = null;
+  } else {
+    error.value = 'Invalid terminal name';
+  }
 }
 
 async function login() {
@@ -68,7 +85,7 @@ async function login() {
 }
 
 function appendPin(digit: string) {
-  if (pin.value.length < 8) pin.value += digit;
+  if (pin.value.length < serverPinLength.value) pin.value += digit;
 }
 
 function clearPin() {
@@ -145,15 +162,15 @@ onUnmounted(() => {
 
 <template>
   <!-- Authenticated: render the in-point UI -->
-  <div v-if="session" class="w-full h-dvh overflow-hidden relative bg-[rgb(var(--color-background))]">
+  <div v-if="session" class="w-full h-dvh overflow-hidden relative bg-[#fdf7f2]">
     <!-- Topbar -->
-    <div class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-black/40 backdrop-blur-md border-b border-white/10">
+    <div class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-md border-b" style="border-color: rgba(61,24,32,0.1);">
       <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md bg-brand-primary flex items-center justify-center text-white text-xs font-bold">P</div>
-        <span class="text-xs font-medium text-white/80">{{ session.displayName }}</span>
-        <span class="text-xs text-white/30 px-2 py-0.5 rounded-full border border-white/10">{{ session.role }}</span>
+        <div class="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" style="background: rgb(var(--shell-sidebar));">T</div>
+        <span class="text-xs font-semibold" style="color: rgb(var(--shell-sidebar));">{{ session.displayName }}</span>
+        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06); border: 1px solid rgba(61,24,32,0.1);">{{ session.role }}</span>
       </div>
-      <button class="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors" @click="session = null">
+      <button class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" style="color: rgba(61,24,32,0.6);" @click="session = null">
         <Power class="w-3.5 h-3.5" /> Logout
       </button>
     </div>
@@ -182,66 +199,89 @@ onUnmounted(() => {
   </div>
 
   <!-- Not authenticated: PIN login screen -->
-  <div v-else class="min-h-dvh flex items-center justify-center px-4">
+  <div v-else class="min-h-dvh flex items-center justify-center px-4 bg-[#fdf7f2]">
     <div class="w-full max-w-xs space-y-6 animate-fade-in">
       <!-- Logo -->
       <div class="text-center">
-        <div class="w-12 h-12 rounded-2xl bg-brand-primary mx-auto flex items-center justify-center text-white font-bold text-xl mb-3 shadow-lg shadow-brand-primary/30">
-          P
+        <div class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-white font-serif text-2xl mb-4 shadow-xl" style="background: rgb(var(--shell-sidebar));">
+          T
         </div>
-        <h1 class="text-lg font-bold text-white">Terminal Login</h1>
-        <p class="text-sm text-white/40 mt-1">Enter your name and PIN</p>
+        <h1 class="text-xl font-serif font-medium" style="color: rgb(var(--shell-sidebar));">Terminal Login</h1>
+        <p class="text-sm mt-1" style="color: rgba(61,24,32,0.5);">Enter your name and PIN</p>
       </div>
 
-      <div class="glass rounded-2xl p-5 space-y-4">
-        <input
-          v-model="displayName"
-          class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white text-center focus:outline-none focus:ring-2 focus:ring-brand-primary"
-          placeholder="Your name"
-        />
+      <div class="bg-white rounded-3xl p-6 space-y-5 shadow-2xl" style="border: 1px solid rgba(61,24,32,0.08);">
+        <template v-if="step === 1">
+          <input
+            v-model="displayName"
+            class="w-full rounded-xl px-4 py-3 text-sm text-center font-medium transition-all focus:outline-none"
+            style="background: rgba(61,24,32,0.04); color: rgb(var(--shell-sidebar)); border: 1.5px solid rgba(61,24,32,0.08);"
+            placeholder="Your name"
+            @keyup.enter="nextStep"
+            autofocus
+          />
 
-        <!-- PIN display -->
-        <div class="flex gap-2 justify-center">
-          <div
-            v-for="i in 6"
-            :key="i"
-            :class="[
-              'w-8 h-8 rounded-lg border flex items-center justify-center text-lg font-bold transition-all',
-              i <= pin.length
-                ? 'border-brand-primary bg-brand-primary/20 text-brand-primary'
-                : 'border-white/10 text-white/20',
-            ]"
-          >
-            <Circle :class="['w-3 h-3', i <= pin.length ? 'fill-current' : '']" />
-          </div>
-        </div>
+          <div v-if="error" class="text-xs text-center font-medium mt-1" style="color: #dc2626;">{{ error }}</div>
 
-        <!-- Numpad -->
-        <div class="grid grid-cols-3 gap-2">
           <button
-            v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','delete']"
-            :key="digit"
-            :class="[
-              'h-12 rounded-xl text-lg font-semibold transition-all active:scale-95',
-              digit === ''  ? 'invisible' : '',
-              digit === 'delete' ? 'text-white/50 bg-white/5 hover:bg-white/10 flex items-center justify-center' : 'text-white bg-white/5 hover:bg-white/10',
-            ]"
-            @click="digit === 'delete' ? clearPin() : appendPin(digit)"
+            :disabled="!displayName"
+            class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
+            style="background: rgb(var(--shell-sidebar)); box-shadow: 0 4px 14px rgba(61,24,32,0.25);"
+            @click="nextStep"
           >
-            <Delete v-if="digit === 'delete'" class="w-6 h-6" />
-            <template v-else>{{ digit }}</template>
+            Next
           </button>
-        </div>
+        </template>
 
-        <div v-if="error" class="text-xs text-red-400 text-center">{{ error }}</div>
+        <template v-else>
+          <div
+            class="w-full rounded-xl px-4 py-3 text-sm text-center font-semibold"
+            style="background: rgba(61,24,32,0.04); color: rgb(var(--shell-sidebar)); border: 1.5px solid rgba(61,24,32,0.08);"
+          >
+            {{ displayName }}
+          </div>
 
-        <button
-          :disabled="pin.length < 4 || !displayName || loading"
-          class="w-full py-2.5 bg-brand-primary hover:brightness-110 disabled:opacity-40 text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-brand-primary/20"
-          @click="login"
-        >
-          {{ loading ? 'Checking…' : 'Login' }}
-        </button>
+          <!-- PIN display -->
+          <div class="flex gap-2 justify-center">
+            <div
+              v-for="i in serverPinLength"
+              :key="i"
+              class="w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all"
+              :style="i <= pin.length ? 'border-color: rgb(var(--shell-sidebar)); background: rgba(61,24,32,0.05);' : 'border-color: rgba(61,24,32,0.1); background: transparent;'"
+            >
+              <Circle class="w-3.5 h-3.5 transition-all" :style="i <= pin.length ? 'fill: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar));' : 'color: transparent;'" />
+            </div>
+          </div>
+
+          <!-- Numpad -->
+          <div class="grid grid-cols-3 gap-2.5 mt-2">
+            <button
+              v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','delete']"
+              :key="digit"
+              :class="[
+                'h-14 rounded-2xl text-xl font-semibold transition-all active:scale-95 flex items-center justify-center',
+                digit === '' ? 'invisible' : '',
+                digit === 'delete' ? 'opacity-60 hover:opacity-100 hover:bg-black/5' : 'hover:bg-black/5'
+              ]"
+              :style="digit !== '' ? 'color: rgb(var(--shell-sidebar));' : ''"
+              @click="digit === 'delete' ? clearPin() : appendPin(digit)"
+            >
+              <Delete v-if="digit === 'delete'" class="w-6 h-6" />
+              <template v-else>{{ digit }}</template>
+            </button>
+          </div>
+
+          <div v-if="error" class="text-xs text-center font-medium mt-1" style="color: #dc2626;">{{ error }}</div>
+
+          <button
+            :disabled="pin.length < serverPinLength || loading"
+            class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
+            style="background: rgb(var(--shell-sidebar)); box-shadow: 0 4px 14px rgba(61,24,32,0.25);"
+            @click="login"
+          >
+            {{ loading ? 'Checking…' : 'Login' }}
+          </button>
+        </template>
       </div>
     </div>
   </div>

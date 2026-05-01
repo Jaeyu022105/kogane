@@ -14,69 +14,69 @@ export type ElementType =
   | 'cart-widget';
 
 export interface ElementPosition {
-  x:      number;
-  y:      number;
-  width:  number;
+  x: number;
+  y: number;
+  width: number;
   height: number;
   zIndex: number;
 }
 
 // Shared props common to every element
 export interface BaseElementDef {
-  id:       string;
-  type:     ElementType;
+  id: string;
+  type: ElementType;
   position: ElementPosition;
-  label?:   string;
+  label?: string;
 }
 
 // Button element
 export interface ButtonElementDef extends BaseElementDef {
-  type:    'button';
-  text:    string;
+  type: 'button';
+  text: string;
   variant: 'primary' | 'secondary' | 'ghost' | 'danger';
   action?: ElementAction;
 }
 
 // Static or dynamic text
 export interface TextElementDef extends BaseElementDef {
-  type:      'text';
-  content:   string;
-  fontSize:  number;
+  type: 'text';
+  content: string;
+  fontSize: number;
   fontWeight: 'normal' | 'medium' | 'semibold' | 'bold';
-  color?:    string;
-  align?:    'left' | 'center' | 'right';
+  color?: string;
+  align?: 'left' | 'center' | 'right';
 }
 
 // Image element
 export interface ImageElementDef extends BaseElementDef {
-  type:    'image';
-  src:     string;
-  fit:     'cover' | 'contain' | 'fill';
+  type: 'image';
+  src: string;
+  fit: 'cover' | 'contain' | 'fill';
   radius?: number;
 }
 
 // Table view — links to a user-defined table
 export interface TableViewElementDef extends BaseElementDef {
-  type:      'table-view';
+  type: 'table-view';
   tableName: string;
-  columns:   string[];
+  columns: string[];
   pageSize?: number;
 }
 
 // Input field
 export interface InputFieldElementDef extends BaseElementDef {
-  type:        'input-field';
-  fieldName:   string;
+  type: 'input-field';
+  fieldName: string;
   placeholder?: string;
-  inputType:   'text' | 'number' | 'date' | 'select';
-  options?:    string[]; // for select type
+  inputType: 'text' | 'number' | 'date' | 'select';
+  options?: string[]; // for select type
 }
 
 // Cart / order widget
 export interface CartWidgetElementDef extends BaseElementDef {
-  type:           'cart-widget';
-  productTable:   string;
-  orderTable:     string;
+  type: 'cart-widget';
+  productTable: string;
+  orderTable: string;
   displayColumns: string[];
 }
 
@@ -96,12 +96,12 @@ export type ActionType =
   | 'insert-record'
   | 'custom-script';
 
-export type ActionPayloadMapping = 
+export type ActionPayloadMapping =
   | { type: 'static'; value: string }
   | { type: 'element_value'; elementId: string };
 
 export interface ElementAction {
-  type:    ActionType;
+  type: ActionType;
   payload: {
     // For navigate
     url?: string;
@@ -117,13 +117,13 @@ export interface ElementAction {
 // ── Layout ──────────────────────────────────────────────────────────────────
 
 export interface UiLayout {
-  version:    number;
+  version: number;
   resolution: { width: number; height: number };
-  elements:   ElementDef[];
+  elements: ElementDef[];
 }
 
 export const DEFAULT_LAYOUT: UiLayout = {
-  version:    1,
+  version: 1,
   resolution: { width: 1280, height: 720 },
-  elements:   [],
+  elements: [],
 };

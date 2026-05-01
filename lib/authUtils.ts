@@ -35,8 +35,8 @@ export async function verifyAdmin(event: H3Event): Promise<{ userId: string }> {
 /** Hash a PIN using Web Crypto (SHA-256) — no native bcrypt in Bun edge. */
 export async function hashPin(pin: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data    = encoder.encode(pin);
-  const buffer  = await crypto.subtle.digest('SHA-256', data);
+  const data = encoder.encode(pin);
+  const buffer = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');

@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const body = await readBody<{
     businessId: string;
-    tableName:  string;
-    values:     Record<string, unknown>;
+    tableName: string;
+    values: Record<string, unknown>;
   }>(event);
 
   if (!body.businessId || !body.tableName || !body.values) {

@@ -12,30 +12,30 @@ export interface SchemaTable {
 export function useSchema(businessId: Ref<string | undefined>) {
   const { authHeaders } = useAuth();
 
-  const tables  = ref<string[]>([]);
+  const tables = ref<string[]>([]);
   const tableDefs = ref<TableDef[]>([]);
   const loading = ref(false);
-  const error   = ref<string | null>(null);
+  const error = ref<string | null>(null);
 
   async function fetchTables() {
     const id = businessId.value;
     if (!id) return;
 
     loading.value = true;
-    error.value   = null;
+    error.value = null;
 
     try {
       const res = await $fetch<{ tables: string[]; error: string | null }>('/api/schema/tables', {
         headers: authHeaders(),
-        query:   { businessId: id },
+        query: { businessId: id },
       });
       tables.value = res.tables ?? [];
-      error.value  = res.error;
-      
+      error.value = res.error;
+
       // Also fetch definitions
       const defRes = await $fetch<{ tables: TableDef[]; error: string | null }>('/api/schema/tables/definitions', {
         headers: authHeaders(),
-        query:   { businessId: id },
+        query: { businessId: id },
       });
       tableDefs.value = defRes.tables ?? [];
     } catch (err) {
@@ -50,9 +50,9 @@ export function useSchema(businessId: Ref<string | undefined>) {
     if (!id) return 'No business selected';
 
     const res = await $fetch<{ success: boolean; error: string | null }>('/api/schema/tables/create', {
-      method:  'POST',
+      method: 'POST',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body:    { businessId: id, table: def },
+      body: { businessId: id, table: def },
     });
 
     if (!res.error) await fetchTables();
@@ -65,9 +65,9 @@ export function useSchema(businessId: Ref<string | undefined>) {
     if (!id) return 'No business selected';
 
     const res = await $fetch<{ success: boolean; error: string | null }>('/api/schema/tables/delete', {
-      method:  'DELETE',
+      method: 'DELETE',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body:    { businessId: id, tableName, confirm: true },
+      body: { businessId: id, tableName, confirm: true },
     });
 
     if (!res.error) await fetchTables();
@@ -88,9 +88,9 @@ export function useSchema(businessId: Ref<string | undefined>) {
     if (!id) return 'No business selected';
 
     const res = await $fetch<{ success: boolean; error: string | null }>('/api/schema/tables/update', {
-      method:  'POST',
+      method: 'POST',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body:    { businessId: id, tableName, addColumns: columns },
+      body: { businessId: id, tableName, addColumns: columns },
     });
 
     return res.error;
@@ -98,21 +98,21 @@ export function useSchema(businessId: Ref<string | undefined>) {
 
   async function fetchTableRows(tableName: string, page = 1, limit = 50): Promise<{
     columns: { name: string; type: string }[];
-    rows:    Record<string, unknown>[];
-    total:   number;
-    error:   string | null;
+    rows: Record<string, unknown>[];
+    total: number;
+    error: string | null;
   }> {
     const id = businessId.value;
     if (!id) return { columns: [], rows: [], total: 0, error: 'No business selected' };
 
     const res = await $fetch<{
       columns: { name: string; type: string }[];
-      rows:    Record<string, unknown>[];
-      total:   number;
-      error:   string | null;
+      rows: Record<string, unknown>[];
+      total: number;
+      error: string | null;
     }>('/api/schema/tables/rows', {
       headers: authHeaders(),
-      query:   { businessId: id, tableName, page, limit },
+      query: { businessId: id, tableName, page, limit },
     });
 
     return res;
@@ -123,9 +123,9 @@ export function useSchema(businessId: Ref<string | undefined>) {
     if (!id) return 'No business selected';
 
     const res = await $fetch<{ success: boolean; error: string | null }>('/api/schema/tables/updateRow', {
-      method:  'POST',
+      method: 'POST',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body:    { businessId: id, tableName, rowId, updates },
+      body: { businessId: id, tableName, rowId, updates },
     });
 
     return res.error;

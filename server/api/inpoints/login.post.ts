@@ -43,9 +43,9 @@ export default defineEventHandler(async (event) => {
 
   return {
     session: {
-      inpointId:   inpoint.id,
+      inpointId: inpoint.id,
       displayName: inpoint.display_name,
-      role:        inpoint.role,
+      role: inpoint.role,
       uiLayout,
     },
     error: null,

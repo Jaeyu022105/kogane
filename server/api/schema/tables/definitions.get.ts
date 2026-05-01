@@ -31,12 +31,12 @@ export default defineEventHandler(async (event) => {
     for (const row of tablesData ?? []) {
       const realName = row.name.replace(`${business.schema_name}_`, '');
       const { data: colData } = await db.query<any>(`PRAGMA table_info("${row.name}")`);
-      
+
       const columns: ColumnDef[] = (colData ?? []).map((c: any) => {
         let type = 'text';
         if (c.type === 'INTEGER') type = 'integer';
         else if (c.type === 'REAL') type = 'numeric';
-        
+
         // guess references based on name convention (e.g., user_id -> users.id)
         let references;
         if (c.name.endsWith('_id') && c.name !== 'id') {

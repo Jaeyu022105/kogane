@@ -25,106 +25,106 @@ db.exec(`
 
 const BUILT_IN_PRESETS = [
   {
-    name:        'Café POS',
+    name: 'Café POS',
     description: 'Products, orders, and inventory tables for a café or restaurant.',
     schema_definition: JSON.stringify({
       tables: [
         {
           name: 'products',
           columns: [
-            { name: 'name',        type: 'text',    nullable: false },
-            { name: 'description', type: 'text',    nullable: true },
-            { name: 'price',       type: 'numeric', nullable: false },
-            { name: 'category',    type: 'text',    nullable: true },
-            { name: 'available',   type: 'boolean', nullable: false, default: '1' },
+            { name: 'name', type: 'text', nullable: false },
+            { name: 'description', type: 'text', nullable: true },
+            { name: 'price', type: 'numeric', nullable: false },
+            { name: 'category', type: 'text', nullable: true },
+            { name: 'available', type: 'boolean', nullable: false, default: '1' },
           ],
         },
         {
           name: 'orders',
           columns: [
-            { name: 'items',      type: 'text',    nullable: false },
-            { name: 'total',      type: 'numeric', nullable: false },
-            { name: 'status',     type: 'text',    nullable: false, default: "'pending'" },
-            { name: 'staff_name', type: 'text',    nullable: true },
+            { name: 'items', type: 'text', nullable: false },
+            { name: 'total', type: 'numeric', nullable: false },
+            { name: 'status', type: 'text', nullable: false, default: "'pending'" },
+            { name: 'staff_name', type: 'text', nullable: true },
           ],
         },
         {
           name: 'inventory',
           columns: [
-            { name: 'item_name',   type: 'text',    nullable: false },
-            { name: 'quantity',    type: 'integer', nullable: false, default: '0' },
-            { name: 'unit',        type: 'text',    nullable: true },
-            { name: 'reorder_at',  type: 'integer', nullable: true },
+            { name: 'item_name', type: 'text', nullable: false },
+            { name: 'quantity', type: 'integer', nullable: false, default: '0' },
+            { name: 'unit', type: 'text', nullable: true },
+            { name: 'reorder_at', type: 'integer', nullable: true },
           ],
         },
       ],
     }),
   },
   {
-    name:        'Inventory Tracker',
+    name: 'Inventory Tracker',
     description: 'Items, stock movements, and supplier tables.',
     schema_definition: JSON.stringify({
       tables: [
         {
           name: 'items',
           columns: [
-            { name: 'sku',         type: 'text',    nullable: false, unique: true },
-            { name: 'name',        type: 'text',    nullable: false },
-            { name: 'category',    type: 'text',    nullable: true },
-            { name: 'unit_cost',   type: 'numeric', nullable: true },
-            { name: 'quantity',    type: 'integer', nullable: false, default: '0' },
+            { name: 'sku', type: 'text', nullable: false, unique: true },
+            { name: 'name', type: 'text', nullable: false },
+            { name: 'category', type: 'text', nullable: true },
+            { name: 'unit_cost', type: 'numeric', nullable: true },
+            { name: 'quantity', type: 'integer', nullable: false, default: '0' },
           ],
         },
         {
           name: 'stock_movements',
           columns: [
-            { name: 'item_id',    type: 'text',    nullable: false },
-            { name: 'delta',      type: 'integer', nullable: false },
-            { name: 'reason',     type: 'text',    nullable: true },
-            { name: 'moved_at',   type: 'timestamptz', nullable: true },
+            { name: 'item_id', type: 'text', nullable: false },
+            { name: 'delta', type: 'integer', nullable: false },
+            { name: 'reason', type: 'text', nullable: true },
+            { name: 'moved_at', type: 'timestamptz', nullable: true },
           ],
         },
         {
           name: 'suppliers',
           columns: [
-            { name: 'name',    type: 'text', nullable: false },
+            { name: 'name', type: 'text', nullable: false },
             { name: 'contact', type: 'text', nullable: true },
-            { name: 'email',   type: 'text', nullable: true },
+            { name: 'email', type: 'text', nullable: true },
           ],
         },
       ],
     }),
   },
   {
-    name:        'CRM',
+    name: 'CRM',
     description: 'Contacts, companies, and interaction logs.',
     schema_definition: JSON.stringify({
       tables: [
         {
           name: 'companies',
           columns: [
-            { name: 'name',     type: 'text', nullable: false },
+            { name: 'name', type: 'text', nullable: false },
             { name: 'industry', type: 'text', nullable: true },
-            { name: 'website',  type: 'text', nullable: true },
+            { name: 'website', type: 'text', nullable: true },
           ],
         },
         {
           name: 'contacts',
           columns: [
-            { name: 'first_name',  type: 'text', nullable: false },
-            { name: 'last_name',   type: 'text', nullable: true },
-            { name: 'email',       type: 'text', nullable: true },
-            { name: 'phone',       type: 'text', nullable: true },
-            { name: 'company_id',  type: 'text', nullable: true },
+            { name: 'first_name', type: 'text', nullable: false },
+            { name: 'last_name', type: 'text', nullable: true },
+            { name: 'email', type: 'text', nullable: true },
+            { name: 'phone', type: 'text', nullable: true },
+            { name: 'company_id', type: 'text', nullable: true },
           ],
         },
         {
           name: 'interactions',
           columns: [
-            { name: 'contact_id', type: 'text',        nullable: false },
-            { name: 'type',       type: 'text',        nullable: false },
-            { name: 'notes',      type: 'text',        nullable: true },
-            { name: 'occurred_at',type: 'timestamptz', nullable: true },
+            { name: 'contact_id', type: 'text', nullable: false },
+            { name: 'type', type: 'text', nullable: false },
+            { name: 'notes', type: 'text', nullable: true },
+            { name: 'occurred_at', type: 'timestamptz', nullable: true },
           ],
         },
       ],

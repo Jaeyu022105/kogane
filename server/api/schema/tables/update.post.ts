@@ -34,10 +34,10 @@ export default defineEventHandler(async (event) => {
   if (business.admin_user_id !== userId) return { error: 'Forbidden', success: false };
 
   const isDevMode = process.env.DEV_MODE === 'true';
-  const dialect   = isDevMode ? 'sqlite' : 'postgres';
+  const dialect = isDevMode ? 'sqlite' : 'postgres';
 
   for (const col of body.addColumns) {
-    const sql     = buildAddColumnSql(body.tableName, col, business.schema_name, dialect);
+    const sql = buildAddColumnSql(body.tableName, col, business.schema_name, dialect);
     const { error } = await db.execute(sql);
     if (error) return { error: `Failed to add column "${col.name}": ${error}`, success: false };
   }

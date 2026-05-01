@@ -13,10 +13,10 @@ export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const body = await readBody<{
     businessId: string;
-    tableName:  string;
-    columns:    string[];
-    limit?:     number;
-    offset?:    number;
+    tableName: string;
+    columns: string[];
+    limit?: number;
+    offset?: number;
   }>(event);
 
   if (!body.businessId || !body.tableName) {
@@ -38,20 +38,20 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { data: null, error: 'Business not found' };
   if (business.admin_user_id !== userId) return { data: null, error: 'Forbidden' };
 
-  const isDevMode  = process.env.DEV_MODE === 'true';
-  const cols       = body.columns?.length ? body.columns.join(', ') : '*';
-  const limit      = Math.min(body.limit ?? 50, 200);
-  const offset     = body.offset ?? 0;
+  const isDevMode = process.env.DEV_MODE === 'true';
+  const cols = body.columns?.length ? body.columns.join(', ') : '*';
+  const limit = Math.min(body.limit ?? 50, 200);
+  const offset = body.offset ?? 0;
 
   let sql: string;
   let params: unknown[];
 
   if (isDevMode) {
     const tbl = `${business.schema_name}_${body.tableName}`;
-    sql    = `SELECT ${cols} FROM ${tbl} LIMIT ? OFFSET ?`;
+    sql = `SELECT ${cols} FROM ${tbl} LIMIT ? OFFSET ?`;
     params = [limit, offset];
   } else {
-    sql    = `SELECT ${cols} FROM "${business.schema_name}"."${body.tableName}" LIMIT $1 OFFSET $2`;
+    sql = `SELECT ${cols} FROM "${business.schema_name}"."${body.tableName}" LIMIT $1 OFFSET $2`;
     params = [limit, offset];
   }
 

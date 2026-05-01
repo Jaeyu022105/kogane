@@ -7,9 +7,9 @@
 import { ref, computed } from 'vue';
 
 export interface AdminSession {
-  userId:   string;
-  email:    string;
-  token:    string;
+  userId: string;
+  email: string;
+  token: string;
 }
 
 const session = ref<AdminSession | null>(null);
@@ -42,7 +42,7 @@ export function useAuth() {
   }
 
   return {
-    session:     computed(() => session.value),
+    session: computed(() => session.value),
     isLoggedIn,
     devLogin,
     loadDevSession,

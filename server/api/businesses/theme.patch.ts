@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ logoUrl?: string; colorPalette?: Record<string, string> }>(event);
 
   const updates: Record<string, unknown> = {};
-  if (body.logoUrl !== undefined)      updates.logo_url      = body.logoUrl;
+  if (body.logoUrl !== undefined) updates.logo_url = body.logoUrl;
   if (body.colorPalette !== undefined) updates.color_palette = JSON.stringify(body.colorPalette);
 
   if (!Object.keys(updates).length) return { error: 'No updates provided', success: false };

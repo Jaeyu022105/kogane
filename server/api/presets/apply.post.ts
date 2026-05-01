@@ -43,11 +43,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const isDevMode = process.env.DEV_MODE === 'true';
-  const dialect   = isDevMode ? 'sqlite' : 'postgres';
+  const dialect = isDevMode ? 'sqlite' : 'postgres';
   const errors: string[] = [];
 
   for (const table of schemaDef.tables ?? []) {
-    const sql     = buildCreateTableSql(table, business.schema_name, dialect);
+    const sql = buildCreateTableSql(table, business.schema_name, dialect);
     const { error } = await db.execute(sql);
     if (error) errors.push(`${table.name}: ${error}`);
   }

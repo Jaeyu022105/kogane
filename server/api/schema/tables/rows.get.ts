@@ -11,9 +11,9 @@ export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const { businessId, tableName, page, limit } = getQuery(event) as {
     businessId: string;
-    tableName:  string;
-    page?:      string;
-    limit?:     string;
+    tableName: string;
+    page?: string;
+    limit?: string;
   };
 
   if (!businessId || !tableName) {
@@ -29,13 +29,13 @@ export default defineEventHandler(async (event) => {
   if (business.admin_user_id !== userId) return { columns: null, rows: null, total: 0, error: 'Forbidden' };
 
   const isDevMode = process.env.DEV_MODE === 'true';
-  const pageNum   = Math.max(1, parseInt(page ?? '1', 10));
-  const pageSize  = Math.min(200, parseInt(limit ?? '50', 10));
-  const offset    = (pageNum - 1) * pageSize;
+  const pageNum = Math.max(1, parseInt(page ?? '1', 10));
+  const pageSize = Math.min(200, parseInt(limit ?? '50', 10));
+  const offset = (pageNum - 1) * pageSize;
 
   let columns: { name: string; type: string }[] = [];
-  let rows:    Record<string, unknown>[]         = [];
-  let total    = 0;
+  let rows: Record<string, unknown>[] = [];
+  let total = 0;
 
   if (isDevMode) {
     const fqTable = `${business.schema_name}_${tableName}`;
@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
     );
     rows = rowData ?? [];
   } else {
-    const schema  = business.schema_name;
+    const schema = business.schema_name;
     const fqTable = `"${schema}"."${tableName}"`;
 
     const { data: colData } = await db.query<{ column_name: string; data_type: string }>(

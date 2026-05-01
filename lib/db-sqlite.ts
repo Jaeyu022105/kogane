@@ -44,6 +44,7 @@ export class SqliteAdapter implements DbAdapter {
         display_name  TEXT NOT NULL,
         role          TEXT NOT NULL DEFAULT 'staff',
         pin_hash      TEXT NOT NULL,
+        pin_length    INTEGER NOT NULL DEFAULT 4,
         ui_layout     TEXT DEFAULT '{}',
         created_at    TEXT DEFAULT (datetime('now'))
       )
@@ -59,6 +60,10 @@ export class SqliteAdapter implements DbAdapter {
         created_at        TEXT DEFAULT (datetime('now'))
       )
     `);
+
+    try {
+      this.db.run("ALTER TABLE inpoints ADD COLUMN pin_length INTEGER NOT NULL DEFAULT 4");
+    } catch (e) {}
   }
 
   async query<T>(sql: string, params: unknown[] = []): Promise<QueryResult<T>> {
@@ -81,10 +86,10 @@ export class SqliteAdapter implements DbAdapter {
 
   async insert<T>(table: string, values: Record<string, unknown>, schema?: string): Promise<SingleResult<T>> {
     try {
-      const tbl          = schema ? `${schema}_${table}` : table;
-      const keys         = Object.keys(values);
+      const tbl = schema ? `${schema}_${table}` : table;
+      const keys = Object.keys(values);
       const placeholders = keys.map(() => '?').join(', ');
-      const cols         = keys.join(', ');
+      const cols = keys.join(', ');
 
       const row = this.db
         .query<T, unknown[]>(`INSERT INTO ${tbl} (${cols}) VALUES (${placeholders}) RETURNING *`)
@@ -98,10 +103,10 @@ export class SqliteAdapter implements DbAdapter {
 
   async update(table: string, values: Record<string, unknown>, where: Record<string, unknown>, schema?: string): Promise<{ error: string | null }> {
     try {
-      const tbl         = schema ? `${schema}_${table}` : table;
-      const setClause   = Object.keys(values).map(k => `${k} = ?`).join(', ');
+      const tbl = schema ? `${schema}_${table}` : table;
+      const setClause = Object.keys(values).map(k => `${k} = ?`).join(', ');
       const whereClause = Object.keys(where).map(k => `${k} = ?`).join(' AND ');
-      const params      = [...Object.values(values), ...Object.values(where)];
+      const params = [...Object.values(values), ...Object.values(where)];
 
       this.db.query(`UPDATE ${tbl} SET ${setClause} WHERE ${whereClause}`).run(...params);
       return { error: null };
@@ -112,7 +117,7 @@ export class SqliteAdapter implements DbAdapter {
 
   async delete(table: string, where: Record<string, unknown>, schema?: string): Promise<{ error: string | null }> {
     try {
-      const tbl         = schema ? `${schema}_${table}` : table;
+      const tbl = schema ? `${schema}_${table}` : table;
       const whereClause = Object.keys(where).map(k => `${k} = ?`).join(' AND ');
 
       this.db.query(`DELETE FROM ${tbl} WHERE ${whereClause}`).run(...Object.values(where));

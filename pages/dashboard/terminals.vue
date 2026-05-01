@@ -17,6 +17,7 @@ const pinCopied  = ref(false);
 const form = reactive({
   displayName: '',
   pin:         '',
+  resolution:  '1280x720',
 });
 
 function onPinInput(e: Event) {
@@ -67,6 +68,7 @@ async function createInpoint() {
         businessId:  business.value.id,
         displayName: form.displayName.trim(),
         pin:         form.pin,
+        resolution:  form.resolution,
       },
     });
 
@@ -283,6 +285,17 @@ watch(() => business.value?.id, loadInpoints);
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Initial Layout Size</label>
+              <select v-model="form.resolution" class="input-warm w-full px-4 py-2.5 text-sm">
+                <option value="1280x720">Landscape (1280x720)</option>
+                <option value="1920x1080">Landscape 1080p (1920x1080)</option>
+                <option value="1024x768">Tablet (1024x768)</option>
+                <option value="720x1280">Portrait (720x1280)</option>
+                <option value="1080x1920">Portrait 1080p (1080x1920)</option>
+              </select>
             </div>
           </div>
 

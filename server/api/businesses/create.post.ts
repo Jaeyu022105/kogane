@@ -32,9 +32,9 @@ export default defineEventHandler(async (event) => {
 
   const { data: business, error } = await db.insert('businesses', {
     admin_user_id: userId,
-    name:          body.name.trim(),
+    name: body.name.trim(),
     color_palette: JSON.stringify(body.colorPalette ?? {}),
-    schema_name:   schemaName,
+    schema_name: schemaName,
   });
 
   if (error || !business) return { error: error ?? 'Insert failed', business: null };

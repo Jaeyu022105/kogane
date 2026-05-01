@@ -8,12 +8,17 @@ definePageMeta({ layout: 'dashboard' });
 
 const { authHeaders }     = useAuth();
 const { business }        = useBusiness();
-const { layout, isDirty, canUndo, loadLayout, addElement, undo } = useCanvas();
+const { layout, selectedElement, selectedId, isDirty, canUndo, canRedo, loadLayout, addElement, removeElement, undo, redo, cutElement, copyElement, pasteElement, duplicateElement, updateElement, cameraX, cameraY, setCamera } = useCanvas();
+
+const showPropertiesPanel = ref(true);
+const canvasWrapper       = ref<HTMLElement | null>(null);
 
 const inpoints        = ref<{ id: string; display_name: string; role: string; ui_layout: string }[]>([]);
 const selectedInpoint = ref<string | null>(null);
 const saving          = ref(false);
 const zoom            = ref(0.7);
+
+const route           = useRoute();
 
 async function loadInpoints() {
   if (!business.value) return;
@@ -22,18 +27,27 @@ async function loadInpoints() {
     query:   { businessId: business.value.id },
   });
   inpoints.value = res.inpoints ?? [];
+
+  if (route.query.inpoint && !selectedInpoint.value) {
+    selectInpoint(route.query.inpoint as string);
+  }
 }
 
 function selectInpoint(id: string) {
   selectedInpoint.value = id;
   const ip = inpoints.value.find(i => i.id === id);
   if (!ip) return;
+  let parsed: any;
   try {
-    const parsed: UiLayout = typeof ip.ui_layout === 'string' ? JSON.parse(ip.ui_layout) : ip.ui_layout;
-    loadLayout(parsed);
+    parsed = typeof ip.ui_layout === 'string' ? JSON.parse(ip.ui_layout) : ip.ui_layout;
   } catch {
-    loadLayout({ version: 1, resolution: { width: 1280, height: 720 }, elements: [] });
+    parsed = null;
   }
+  if (!parsed || typeof parsed !== 'object') {
+    parsed = { version: 1, resolution: { width: 1280, height: 720 }, elements: [] };
+  }
+  if (!parsed.elements) parsed.elements = [];
+  loadLayout(parsed as UiLayout);
 }
 
 async function saveLayout() {
@@ -50,8 +64,80 @@ async function saveLayout() {
   }
 }
 
-onMounted(loadInpoints);
+onMounted(() => {
+  loadInpoints();
+  window.addEventListener('keydown', handleKeydown);
+  if (canvasWrapper.value) {
+    canvasWrapper.value.addEventListener('wheel', handleWheel, { passive: false });
+  }
+});
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+  if (canvasWrapper.value) {
+    canvasWrapper.value.removeEventListener('wheel', handleWheel);
+  }
+});
+
 watch(() => business.value?.id, loadInpoints);
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedId.value) removeElement(selectedId.value);
+    return;
+  }
+
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'c') copyElement();
+    if (e.key === 'x') cutElement();
+    if (e.key === 'v') pasteElement();
+    if (e.key === 'd') {
+      e.preventDefault();
+      duplicateElement();
+    }
+    if (e.key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    }
+    if (e.key === 'y') {
+      e.preventDefault();
+      redo();
+    }
+  }
+}
+
+function handleWheel(e: WheelEvent) {
+  e.preventDefault();
+  
+  const oldZoom = zoom.value;
+  const newZoom = Math.max(0.1, Math.min(3, oldZoom + (e.deltaY > 0 ? -0.05 : 0.05)));
+  if (oldZoom === newZoom) return;
+
+  if (!canvasWrapper.value) {
+    zoom.value = newZoom;
+    return;
+  }
+
+  const rect = canvasWrapper.value.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  const worldX = (mouseX - cameraX.value) / oldZoom;
+  const worldY = (mouseY - cameraY.value) / oldZoom;
+
+  const newCameraX = mouseX - worldX * newZoom;
+  const newCameraY = mouseY - worldY * newZoom;
+
+  zoom.value = newZoom;
+  setCamera(newCameraX, newCameraY);
+}
+
+function patch(updates: Partial<any>) {
+  if (!selectedId.value) return;
+  updateElement(selectedId.value, updates);
+}
 
 const PALETTE_ITEMS: Array<{ type: ElementType; label: string; icon: any; defaults: Partial<ElementDef> }> = [
   { type: 'button',      label: 'Button',     icon: Hexagon, defaults: { text: 'Button', variant: 'primary' } as any },
@@ -121,6 +207,15 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
           <Undo2 class="w-4 h-4" /> Undo
         </button>
 
+        <button 
+          v-if="canRedo"
+          class="text-xs font-medium px-3 py-2 rounded-lg transition-all hover:bg-black/5 flex items-center gap-1.5" 
+          style="color: rgba(61,24,32,0.7);" 
+          @click="redo"
+        >
+          Redo <Undo2 class="w-4 h-4 scale-x-[-1]" />
+        </button>
+
         <button
           :disabled="!isDirty || !selectedInpoint || saving"
           class="text-sm font-semibold px-5 py-2 rounded-lg transition-all disabled:opacity-40"
@@ -133,8 +228,73 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
             <template v-else>Up to date</template>
           </div>
         </button>
+
+        <div class="h-6 w-px mx-1" style="background: rgba(61,24,32,0.1);"></div>
+
+        <button
+          class="text-xs font-medium px-3 py-2 rounded-lg transition-all hover:bg-black/5"
+          :class="showPropertiesPanel ? 'bg-black/5' : ''"
+          style="color: rgba(61,24,32,0.7);"
+          @click="showPropertiesPanel = !showPropertiesPanel"
+        >
+          Properties
+        </button>
       </div>
     </header>
+
+    <!-- Context / Simplified Properties Top Bar -->
+    <div v-if="selectedElement" class="h-12 bg-white flex items-center px-4 shrink-0 shadow-sm z-20 gap-4" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
+      <div class="text-xs font-bold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">
+        {{ selectedElement.type }}
+      </div>
+      
+      <div class="h-4 w-px" style="background: rgba(61,24,32,0.1);"></div>
+
+      <template v-if="selectedElement.type === 'button'">
+        <div class="flex items-center gap-2">
+          <label class="text-xs" style="color: rgba(61,24,32,0.6);">Variant</label>
+          <select :value="(selectedElement as any).variant" class="input-warm px-2 py-1 text-xs" @change="patch({ variant: ($event.target as HTMLSelectElement).value })">
+            <option value="primary">Primary</option>
+            <option value="secondary">Secondary</option>
+            <option value="ghost">Ghost</option>
+            <option value="danger">Danger</option>
+          </select>
+        </div>
+      </template>
+
+      <template v-if="selectedElement.type === 'text'">
+        <div class="flex items-center gap-2">
+          <label class="text-xs" style="color: rgba(61,24,32,0.6);">Size</label>
+          <input type="number" :value="(selectedElement as any).fontSize" class="input-warm w-16 px-2 py-1 text-xs" @input="patch({ fontSize: Number(($event.target as HTMLInputElement).value) })" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs" style="color: rgba(61,24,32,0.6);">Align</label>
+          <select :value="(selectedElement as any).align ?? 'left'" class="input-warm px-2 py-1 text-xs" @change="patch({ align: ($event.target as HTMLSelectElement).value })">
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+      </template>
+
+      <template v-if="selectedElement.type === 'image'">
+        <div class="flex items-center gap-2">
+          <label class="text-xs" style="color: rgba(61,24,32,0.6);">Fit</label>
+          <select :value="(selectedElement as any).fit" class="input-warm px-2 py-1 text-xs" @change="patch({ fit: ($event.target as HTMLSelectElement).value })">
+            <option value="cover">Cover</option>
+            <option value="contain">Contain</option>
+            <option value="fill">Fill</option>
+          </select>
+        </div>
+      </template>
+
+      <template v-if="selectedElement.type === 'table-view'">
+        <div class="flex items-center gap-2">
+          <label class="text-xs" style="color: rgba(61,24,32,0.6);">Table</label>
+          <input :value="(selectedElement as any).tableName" class="input-warm w-32 px-2 py-1 text-xs font-mono" placeholder="Table Name" @input="patch({ tableName: ($event.target as HTMLInputElement).value })" />
+        </div>
+      </template>
+    </div>
 
     <div class="flex-1 flex overflow-hidden bg-[#e5dfd8]">
       <!-- Palette Sidebar (Icon based like Figma) -->
@@ -156,18 +316,20 @@ function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
       </aside>
 
       <!-- Canvas -->
-      <div class="flex-1 overflow-auto flex items-center justify-center relative">
-        <div class="absolute inset-0 bg-[radial-gradient(#d5cdc4_1px,transparent_1px)] [background-size:16px_16px] opacity-50"></div>
+      <div ref="canvasWrapper" class="canvas-container flex-1 overflow-hidden relative">
+        <div class="absolute inset-0 bg-[radial-gradient(#d5cdc4_1px,transparent_1px)] [background-size:16px_16px] opacity-50 pointer-events-none"></div>
         
-        <div v-if="!selectedInpoint" class="text-center z-10 bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50" style="color: rgba(61,24,32,0.6);">
-          <Sparkles class="w-12 h-12 mx-auto mb-4" style="color: rgb(var(--shell-sidebar));" />
-          <h2 class="text-lg font-semibold mb-1" style="color: rgb(var(--shell-sidebar));">No Terminal Selected</h2>
-          <p class="text-sm">Choose a terminal from the top bar to start designing its interface.</p>
+        <div v-if="!selectedInpoint" class="absolute inset-0 flex items-center justify-center">
+          <div class="z-10 bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50 text-center pointer-events-auto" style="color: rgba(61,24,32,0.6);">
+            <Sparkles class="w-12 h-12 mx-auto mb-4" style="color: rgb(var(--shell-sidebar));" />
+            <h2 class="text-lg font-semibold mb-1" style="color: rgb(var(--shell-sidebar));">No Terminal Selected</h2>
+            <p class="text-sm">Choose a terminal from the top bar to start designing its interface.</p>
+          </div>
         </div>
-        <Canvas v-else :business-id="business?.id ?? ''" :zoom="zoom" class="z-10 shadow-2xl" />
+        <Canvas v-else :business-id="business?.id ?? ''" :zoom="zoom" class="z-10 absolute inset-0" />
       </div>
 
-      <PropertiesPanel />
+      <PropertiesPanel v-if="showPropertiesPanel" />
     </div>
   </div>
 </template>

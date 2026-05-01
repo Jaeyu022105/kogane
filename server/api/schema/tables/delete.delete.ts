@@ -32,8 +32,8 @@ export default defineEventHandler(async (event) => {
   if (business.admin_user_id !== userId) return { error: 'Forbidden', success: false };
 
   const isDevMode = process.env.DEV_MODE === 'true';
-  const dialect   = isDevMode ? 'sqlite' : 'postgres';
-  const sql       = buildDropTableSql(body.tableName, business.schema_name, dialect);
+  const dialect = isDevMode ? 'sqlite' : 'postgres';
+  const sql = buildDropTableSql(body.tableName, business.schema_name, dialect);
 
   const { error } = await db.execute(sql);
 
