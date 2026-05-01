@@ -6,7 +6,7 @@
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
-import type { UiLayout } from '~/lib/uiTypes';
+import { normalizeLayout, type UiLayout } from '~/lib/uiTypes';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
   const { error } = await db.update(
     'terminals',
-    { ui_layout: JSON.stringify(body.layout) },
+    { ui_layout: JSON.stringify(normalizeLayout(body.layout)) },
     { id: body.terminalId },
   );
 

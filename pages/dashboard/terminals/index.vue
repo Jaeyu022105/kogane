@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight, Shield } from 'lucide-vue-next';
+import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+
 definePageMeta({ layout: 'dashboard' });
 
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
-
-import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight } from 'lucide-vue-next';
 
 const terminals  = ref<any[]>([]);
 const loading    = ref(false);
@@ -18,6 +19,7 @@ const form = reactive({
   displayName: '',
   pin:         '',
   resolution:  '1280x720',
+  presetKey:   TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register',
 });
 
 function onPinInput(e: Event) {
@@ -69,6 +71,7 @@ async function createTerminal() {
         displayName: form.displayName.trim(),
         pin:         form.pin,
         resolution:  form.resolution,
+        presetKey:   form.presetKey,
       },
     });
 
@@ -82,6 +85,7 @@ async function createTerminal() {
     pinCopied.value  = false;
     form.displayName = '';
     form.pin         = '';
+    form.presetKey   = TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register';
     await loadTerminals();
   } catch (err: any) {
     console.error('[createTerminal]', err);
@@ -200,8 +204,17 @@ watch(() => business.value?.id, loadTerminals);
               </div>
             </NuxtLink>
             <NuxtLink
+              :to="`/dashboard/terminals/${ip.id}`"
+              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+              style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06); text-decoration: none;"
+            >
+              <div class="flex items-center justify-center gap-1.5">
+                <Shield class="w-3.5 h-3.5" /> Permissions
+              </div>
+            </NuxtLink>
+            <NuxtLink
               :to="`/terminal/${ip.id}`"
-              class="flex-1 text-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+              class="text-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
               style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.1); text-decoration: none;"
             >
               <div class="flex items-center justify-center gap-1.5">
@@ -295,6 +308,15 @@ watch(() => business.value?.id, loadTerminals);
                 <option value="1024x768">Tablet (1024x768)</option>
                 <option value="720x1280">Portrait (720x1280)</option>
                 <option value="1080x1920">Portrait 1080p (1080x1920)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Permission Preset</label>
+              <select v-model="form.presetKey" class="input-warm w-full px-4 py-2.5 text-sm">
+                <option v-for="preset in TERMINAL_PERMISSION_PRESETS" :key="preset.key" :value="preset.key">
+                  {{ preset.label }}
+                </option>
               </select>
             </div>
           </div>

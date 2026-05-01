@@ -16,12 +16,14 @@ onMounted(async () => {
   await fetchBusiness();
 });
 
-import { LayoutDashboard, Database, Terminal, Settings, Power } from 'lucide-vue-next';
+import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3 } from 'lucide-vue-next';
 
 const navItems = [
   { label: 'Overview',  icon: LayoutDashboard, to: '/dashboard' },
   { label: 'Database',  icon: Database, to: '/dashboard/database' },
   { label: 'Terminals', icon: Terminal, to: '/dashboard/terminals' },
+  { label: 'Audit Log', icon: Shield, to: '/dashboard/audit' },
+  { label: 'Reports',   icon: BarChart3, to: '/dashboard/reports' },
   { label: 'Settings',  icon: Settings, to: '/dashboard/settings' },
 ];
 

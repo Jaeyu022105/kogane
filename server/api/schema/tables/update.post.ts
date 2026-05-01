@@ -9,6 +9,7 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { buildAddColumnSql, validateIdentifier } from '~/lib/schemaUtils';
 import type { ColumnDef } from '~/lib/schemaUtils';
+import { writeAuditLog } from '~/server/utils/audit';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -41,6 +42,18 @@ export default defineEventHandler(async (event) => {
     const { error } = await db.execute(sql);
     if (error) return { error: `Failed to add column "${col.name}": ${error}`, success: false };
   }
+
+  await writeAuditLog({
+    businessId: body.businessId,
+    actorId: userId,
+    actorType: 'admin',
+    actorName: 'Admin',
+    actionType: 'schema:alter',
+    targetTable: body.tableName,
+    metadata: {
+      addColumns: body.addColumns,
+    },
+  });
 
   return { success: true, error: null };
 });

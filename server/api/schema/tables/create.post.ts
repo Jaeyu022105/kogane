@@ -8,6 +8,7 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { buildCreateTableSql, validateTableDef } from '~/lib/schemaUtils';
 import type { TableDef } from '~/lib/schemaUtils';
+import { writeAuditLog } from '~/server/utils/audit';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -39,6 +40,18 @@ export default defineEventHandler(async (event) => {
   const { error } = await db.execute(sql);
 
   if (error) return { error, success: false };
+
+  await writeAuditLog({
+    businessId: body.businessId,
+    actorId: userId,
+    actorType: 'admin',
+    actorName: 'Admin',
+    actionType: 'schema:create',
+    targetTable: body.table.name,
+    metadata: {
+      columns: body.table.columns,
+    },
+  });
 
   return { success: true, error: null };
 });

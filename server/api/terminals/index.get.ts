@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   if (!business || business.admin_user_id !== userId) return { error: 'Forbidden', terminals: null };
 
   const { data: terminals, error } = await db.query(
-    'SELECT id, display_name, role, ui_layout, created_at FROM terminals WHERE business_id = ?',
+    'SELECT id, display_name, role, permissions, ui_layout, created_at FROM terminals WHERE business_id = ?',
     [businessId],
   );
 

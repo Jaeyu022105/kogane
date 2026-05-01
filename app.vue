@@ -17,4 +17,5 @@ onMounted(() => {
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <ModalHost />
 </template>

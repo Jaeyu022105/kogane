@@ -4,7 +4,7 @@ definePageMeta({ layout: 'dashboard' });
 const { business } = useBusiness();
 const { session }  = useAuth();
 
-import { Building2, Database, Wrench, Palette, Terminal, Settings } from 'lucide-vue-next';
+import { Building2, Database, Wrench, Palette, Terminal, Settings, Shield, BarChart3 } from 'lucide-vue-next';
 
 const stats = computed(() => [
   { label: 'Business',  value: business.value?.name ?? '—',       icon: Building2 },
@@ -92,6 +92,28 @@ const stats = computed(() => [
             <Terminal class="w-8 h-8 mb-3" />
             <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Terminals</h3>
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Manage staff terminal access and roles</p>
+          </NuxtLink>
+          <NuxtLink
+            to="/dashboard/audit"
+            class="card rounded-2xl p-5 block transition-all duration-150 animate-fade-in group"
+            style="text-decoration: none;"
+            @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(61,24,32,0.12)'"
+            @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = ''"
+          >
+            <Shield class="w-8 h-8 mb-3" />
+            <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Audit Log</h3>
+            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Track data mutations and terminal activity</p>
+          </NuxtLink>
+          <NuxtLink
+            to="/dashboard/reports"
+            class="card rounded-2xl p-5 block transition-all duration-150 animate-fade-in group"
+            style="text-decoration: none;"
+            @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(61,24,32,0.12)'"
+            @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.boxShadow = ''"
+          >
+            <BarChart3 class="w-8 h-8 mb-3" />
+            <h3 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Reports</h3>
+            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Summaries, activity views, and custom queries</p>
           </NuxtLink>
           <NuxtLink
             to="/dashboard/settings"

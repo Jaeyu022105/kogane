@@ -2,6 +2,8 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { fetchRowById, updateBusinessRow } from '~/server/utils/businessTable';
+import { writeAuditLog } from '~/server/utils/audit';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -29,21 +31,27 @@ export default defineEventHandler(async (event) => {
       validateIdentifier(key);
     }
 
-    const isDevMode = process.env.DEV_MODE === 'true';
-    const tbl = isDevMode
-      ? `${business.schema_name}_${tableName}`
-      : `"${business.schema_name}"."${tableName}"`;
+    const before = await fetchRowById(business.schema_name, tableName, rowId);
+    const updated = await updateBusinessRow(business.schema_name, tableName, rowId, updates);
+    if (updated.error) {
+      return { success: false, error: updated.error };
+    }
 
-    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`).join(', ');
-    const values = keys.map(k => updates[k]);
+    await writeAuditLog({
+      businessId,
+      actorId: userId,
+      actorType: 'admin',
+      actorName: 'Admin',
+      actionType: 'update',
+      targetTable: tableName,
+      targetId: String(rowId),
+      payloadBefore: before.data,
+      payloadAfter: updated.data,
+      metadata: {
+        source: 'admin:schema:update-row',
+      },
+    });
 
-    const sql = `UPDATE ${tbl} SET ${setClauses} WHERE id = $${keys.length + 1}`;
-    const args = [...values, rowId];
-
-    // SQLite driver uses ? instead of $1
-    const finalSql = isDevMode ? sql.replace(/\$[0-9]+/g, '?') : sql;
-
-    await db.query(finalSql, args);
     return { success: true, error: null };
   } catch (err) {
     return { success: false, error: (err as Error).message };

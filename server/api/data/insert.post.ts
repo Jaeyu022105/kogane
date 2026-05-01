@@ -8,6 +8,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { writeAuditLog } from '~/server/utils/audit';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -42,6 +43,22 @@ export default defineEventHandler(async (event) => {
   const { data, error } = isDevMode
     ? await db.insert(body.tableName, body.values, business.schema_name)
     : await db.insert(body.tableName, body.values, business.schema_name);
+
+  if (!error && data) {
+    await writeAuditLog({
+      businessId: body.businessId,
+      actorId: userId,
+      actorType: 'admin',
+      actorName: 'Admin',
+      actionType: 'insert',
+      targetTable: body.tableName,
+      targetId: (data as any).id ?? null,
+      payloadAfter: data,
+      metadata: {
+        source: 'admin:data:insert',
+      },
+    });
+  }
 
   return { data: data ?? null, error: error ?? null };
 });

@@ -45,6 +45,7 @@ export class SqliteAdapter implements DbAdapter {
         role          TEXT NOT NULL DEFAULT 'staff',
         pin_hash      TEXT NOT NULL,
         pin_length    INTEGER NOT NULL DEFAULT 4,
+        permissions   TEXT DEFAULT '{}',
         ui_layout     TEXT DEFAULT '{}',
         created_at    TEXT DEFAULT (datetime('now'))
       )
@@ -61,8 +62,29 @@ export class SqliteAdapter implements DbAdapter {
       )
     `);
 
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id             TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        business_id    TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        actor_id       TEXT,
+        actor_type     TEXT NOT NULL,
+        actor_name     TEXT NOT NULL,
+        action_type    TEXT NOT NULL,
+        target_table   TEXT,
+        target_id      TEXT,
+        payload_before TEXT,
+        payload_after  TEXT,
+        metadata       TEXT,
+        created_at     TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
     try {
       this.db.run("ALTER TABLE terminals ADD COLUMN pin_length INTEGER NOT NULL DEFAULT 4");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE terminals ADD COLUMN permissions TEXT DEFAULT '{}'");
     } catch (e) { }
   }
 

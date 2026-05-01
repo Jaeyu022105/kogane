@@ -12,6 +12,7 @@ const { business, fetchBusiness, updateTheme } = useBusiness();
 
 const businessName = ref('');
 const saving       = ref(false);
+const uploadingLogo = ref(false);
 const error        = ref<string | null>(null);
 const success      = ref(false);
 
@@ -48,6 +49,48 @@ async function saveTheme() {
   } finally {
     saving.value = false;
   }
+}
+
+async function uploadLogo() {
+  if (!import.meta.client) return;
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
+  input.click();
+
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+
+    uploadingLogo.value = true;
+    error.value = null;
+
+    try {
+      const ext = file.name.includes('.') ? file.name.split('.').pop() : 'png';
+      const form = new FormData();
+      form.append('file', file);
+      form.append('bucket', 'assets');
+      form.append('path', `logo.${ext}`);
+
+      const res = await $fetch<{ url: string; error: string | null }>('/api/storage/upload', {
+        method: 'POST',
+        body: form,
+      });
+
+      if (res.error) {
+        error.value = res.error;
+        return;
+      }
+
+      await updateTheme({ ...palette }, res.url);
+      if (business.value) business.value.logoUrl = res.url;
+    } catch (err) {
+      error.value = (err as Error).message;
+    } finally {
+      uploadingLogo.value = false;
+    }
+  };
 }
 
 async function createBusiness() {
@@ -124,6 +167,25 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
       <!-- Theme editor -->
       <div v-if="business" class="bg-white rounded-2xl p-6 space-y-5 shadow-warm">
         <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Brand Colors</h2>
+
+        <div class="flex items-center gap-4 rounded-2xl border px-4 py-4" style="border-color: rgba(61,24,32,0.08);">
+          <div class="h-16 w-16 overflow-hidden rounded-2xl border bg-[#f7f1eb]" style="border-color: rgba(61,24,32,0.08);">
+            <img v-if="business.logoUrl" :src="business.logoUrl" alt="Business logo" class="h-full w-full object-cover" />
+            <div v-else class="h-full w-full flex items-center justify-center text-sm font-semibold" style="color: rgba(61,24,32,0.35);">Logo</div>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">Business Logo</p>
+            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Stored through the shared upload abstraction.</p>
+          </div>
+          <button
+            class="rounded-full px-4 py-2 text-sm font-semibold transition-all disabled:opacity-40"
+            style="background: rgba(61,24,32,0.08); color: rgb(var(--shell-sidebar));"
+            :disabled="uploadingLogo"
+            @click="uploadLogo"
+          >
+            {{ uploadingLogo ? 'Uploading...' : 'Upload Logo' }}
+          </button>
+        </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div v-for="field in COLOR_FIELDS" :key="field.key" class="space-y-2">

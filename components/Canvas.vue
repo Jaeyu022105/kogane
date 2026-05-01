@@ -15,6 +15,7 @@ const props = defineProps<{
 
 const {
   layout,
+  activeElements,
   selectedId,
   cameraX,
   cameraY,
@@ -163,7 +164,7 @@ function onResizeMove(ev: MouseEvent) {
 
   updateElement(resize.value.elId, {
     position: {
-      ...layout.value.elements.find(e => e.id === resize.value!.elId)!.position,
+      ...activeElements.value.find(e => e.id === resize.value!.elId)!.position,
       width:  snap(Math.max(40, resize.value.origW + dw)),
       height: snap(Math.max(24, resize.value.origH + dh)),
     },
@@ -207,7 +208,7 @@ function onResizeUp() {
 
         <!-- Render each element -->
         <div
-          v-for="el in layout.elements"
+          v-for="el in activeElements"
           :key="el.id"
           class="absolute group"
           :style="{

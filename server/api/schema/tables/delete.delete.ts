@@ -8,6 +8,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { buildDropTableSql, validateIdentifier } from '~/lib/schemaUtils';
+import { writeAuditLog } from '~/server/utils/audit';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -38,6 +39,18 @@ export default defineEventHandler(async (event) => {
   const { error } = await db.execute(sql);
 
   if (error) return { error, success: false };
+
+  await writeAuditLog({
+    businessId: body.businessId,
+    actorId: userId,
+    actorType: 'admin',
+    actorName: 'Admin',
+    actionType: 'schema:drop',
+    targetTable: body.tableName,
+    metadata: {
+      tableName: body.tableName,
+    },
+  });
 
   return { success: true, error: null };
 });
