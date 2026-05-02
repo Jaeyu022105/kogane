@@ -9,7 +9,7 @@ export type ElementType =
   | 'image'
   | 'table-view'
   | 'input-field'
-  | 'cart-widget'
+  | 'chart'
   | 'upload';
 
 export interface ElementPosition {
@@ -116,12 +116,15 @@ export interface InputFieldElementDef extends BaseElementDef {
   defaultValue?: string;
 }
 
-export interface CartWidgetElementDef extends BaseElementDef {
-  type: 'cart-widget';
-  productTable: string;
-  orderTable: string;
-  displayColumns: string[];
-  priceColumn?: string;
+export type ChartType = 'pie' | 'bar' | 'line';
+
+export interface ChartElementDef extends BaseElementDef {
+  type: 'chart';
+  chartType: ChartType;
+  tableName?: string;
+  labelColumn?: string;
+  valueColumn?: string;
+  colorPalette?: string[];
 }
 
 export interface UploadElementDef extends BaseElementDef {
@@ -138,7 +141,7 @@ export type ElementDef =
   | ImageElementDef
   | TableViewElementDef
   | InputFieldElementDef
-  | CartWidgetElementDef
+  | ChartElementDef
   | UploadElementDef;
 
 export type LegacyActionType =
@@ -191,7 +194,7 @@ export const TRIGGERS_BY_ELEMENT_TYPE: Record<ElementType, EventTrigger[]> = {
   image: ['click'],
   'table-view': ['load'],
   'input-field': ['input:commit', 'submit', 'select:change'],
-  'cart-widget': ['load'],
+  chart: ['load'],
   upload: ['click'],
 };
 
@@ -338,15 +341,16 @@ function normalizeElement(raw: unknown): ElementDef | null {
         submitGroup: typeof source.submitGroup === 'string' ? source.submitGroup : undefined,
         defaultValue: typeof source.defaultValue === 'string' ? source.defaultValue : undefined,
       } as InputFieldElementDef;
-    case 'cart-widget':
+    case 'chart':
       return {
         ...base,
-        type: 'cart-widget',
-        productTable: String(source.productTable ?? ''),
-        orderTable: String(source.orderTable ?? ''),
-        displayColumns: Array.isArray(source.displayColumns) ? source.displayColumns.map(String) : [],
-        priceColumn: typeof source.priceColumn === 'string' ? source.priceColumn : undefined,
-      } as CartWidgetElementDef;
+        type: 'chart',
+        chartType: source.chartType ?? 'bar',
+        tableName: typeof source.tableName === 'string' ? source.tableName : undefined,
+        labelColumn: typeof source.labelColumn === 'string' ? source.labelColumn : undefined,
+        valueColumn: typeof source.valueColumn === 'string' ? source.valueColumn : undefined,
+        colorPalette: Array.isArray(source.colorPalette) ? source.colorPalette.map(String) : undefined,
+      } as ChartElementDef;
     case 'upload':
       return {
         ...base,

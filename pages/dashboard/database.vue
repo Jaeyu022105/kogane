@@ -77,7 +77,15 @@ const hints        = ref<NormalizationHint[]>([]);
 const saving       = ref(false);
 const formError    = ref<string | null>(null);
 
-const COLUMN_TYPES: ColumnType[] = ['text', 'integer', 'numeric', 'boolean', 'date', 'timestamptz'];
+const COLUMN_TYPE_LABELS: Record<ColumnType, string> = {
+  text: 'Text',
+  integer: 'Integer',
+  numeric: 'Decimal',
+  boolean: 'True / False',
+  date: 'Date',
+  timestamptz: 'Timestamp',
+};
+const COLUMN_TYPES = Object.keys(COLUMN_TYPE_LABELS) as ColumnType[];
 
 let analyzeTimer: ReturnType<typeof setTimeout>;
 
@@ -200,15 +208,131 @@ function cellValue(val: unknown): string {
 
 const schemaMapRef = ref<HTMLElement | null>(null);
 
+// Pan and Zoom
+const schemaZoom = ref(1);
+const schemaCamX = ref(0);
+const schemaCamY = ref(0);
+
+const schemaPan = ref<{ startX: number; startY: number; origCamX: number; origCamY: number } | null>(null);
+
+function onSchemaWheel(ev: WheelEvent) {
+  if (viewMode.value !== 'schema') return;
+  ev.preventDefault();
+  const oldZoom = schemaZoom.value;
+  const nextZoom = Math.max(0.1, Math.min(3, oldZoom + (ev.deltaY > 0 ? -0.05 : 0.05)));
+  if (oldZoom === nextZoom || !schemaMapRef.value) return;
+
+  const rect = schemaMapRef.value.getBoundingClientRect();
+  const mouseX = ev.clientX - rect.left;
+  const mouseY = ev.clientY - rect.top;
+  const worldX = (mouseX - schemaCamX.value) / oldZoom;
+  const worldY = (mouseY - schemaCamY.value) / oldZoom;
+
+  schemaZoom.value = nextZoom;
+  schemaCamX.value = mouseX - worldX * nextZoom;
+  schemaCamY.value = mouseY - worldY * nextZoom;
+}
+
+function onSchemaMousedown(ev: MouseEvent) {
+  if (ev.button !== 0 && ev.button !== 1) return;
+  schemaPan.value = {
+    startX: ev.clientX,
+    startY: ev.clientY,
+    origCamX: schemaCamX.value,
+    origCamY: schemaCamY.value,
+  };
+  window.addEventListener('mousemove', onSchemaPanMove);
+  window.addEventListener('mouseup', onSchemaPanUp, { once: true });
+}
+
+function onSchemaPanMove(ev: MouseEvent) {
+  if (!schemaPan.value) return;
+  schemaCamX.value = schemaPan.value.origCamX + (ev.clientX - schemaPan.value.startX);
+  schemaCamY.value = schemaPan.value.origCamY + (ev.clientY - schemaPan.value.startY);
+}
+
+function onSchemaPanUp() {
+  schemaPan.value = null;
+  window.removeEventListener('mousemove', onSchemaPanMove);
+}
+
+onMounted(() => {
+  schemaMapRef.value?.addEventListener('wheel', onSchemaWheel, { passive: false });
+});
+
+onUnmounted(() => {
+  schemaMapRef.value?.removeEventListener('wheel', onSchemaWheel);
+});
+
+// Table positions & dragging
+const tablePositions = ref<Record<string, { x: number; y: number }>>({});
+
+function initTablePositions() {
+  if (tableDefs.value.length === 0) return;
+  
+  tableDefs.value.forEach((table, index) => {
+    if (!tablePositions.value[table.name]) {
+      const cols = Math.max(1, Math.ceil(Math.sqrt(tableDefs.value.length)));
+      tablePositions.value[table.name] = {
+        x: (index % cols) * 350 + 50,
+        y: Math.floor(index / cols) * 300 + 50,
+      };
+    }
+  });
+}
+
+watch(tableDefs, initTablePositions, { immediate: true });
+
+function autoArrangeTables() {
+  const cols = Math.max(1, Math.ceil(Math.sqrt(tableDefs.value.length)));
+  tableDefs.value.forEach((table, index) => {
+    tablePositions.value[table.name] = {
+      x: (index % cols) * 350 + 50,
+      y: Math.floor(index / cols) * 300 + 50,
+    };
+  });
+  schemaCamX.value = 0;
+  schemaCamY.value = 0;
+  schemaZoom.value = 1;
+}
+
+const tableDrag = ref<{ name: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+
+function onTableMousedown(ev: MouseEvent, tableName: string) {
+  ev.stopPropagation();
+  const pos = tablePositions.value[tableName] || { x: 0, y: 0 };
+  tableDrag.value = {
+    name: tableName,
+    startX: ev.clientX,
+    startY: ev.clientY,
+    origX: pos.x,
+    origY: pos.y,
+  };
+  window.addEventListener('mousemove', onTableMousemove);
+  window.addEventListener('mouseup', onTableMouseup, { once: true });
+}
+
+function onTableMousemove(ev: MouseEvent) {
+  if (!tableDrag.value) return;
+  const dx = (ev.clientX - tableDrag.value.startX) / schemaZoom.value;
+  const dy = (ev.clientY - tableDrag.value.startY) / schemaZoom.value;
+  tablePositions.value[tableDrag.value.name] = {
+    x: tableDrag.value.origX + dx,
+    y: tableDrag.value.origY + dy,
+  };
+}
+
+function onTableMouseup() {
+  tableDrag.value = null;
+  window.removeEventListener('mousemove', onTableMousemove);
+}
+
 function getTableDef(name: string) {
   return tableDefs.value.find(t => t.name === name);
 }
 
-function getTablePosition(index: number, total: number) {
-  const cols = Math.ceil(Math.sqrt(total));
-  const x = (index % cols) * 350 + 50;
-  const y = Math.floor(index / cols) * 300 + 50;
-  return { x, y };
+function getTablePositionSafe(name: string) {
+  return tablePositions.value[name] || { x: 0, y: 0 };
 }
 
 </script>
@@ -318,6 +442,15 @@ function getTablePosition(index: number, total: number) {
           </div>
 
           <button
+            v-if="viewMode === 'schema'"
+            class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+            style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6); background: white;"
+            @click="autoArrangeTables"
+          >
+            Auto Arrange
+          </button>
+
+          <button
             class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
             style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);"
             @click="handleDrop(selectedTable!)"
@@ -366,19 +499,39 @@ function getTablePosition(index: number, total: number) {
         </div>
 
         <!-- Schema Visualizer -->
-        <div v-else-if="viewMode === 'schema'" class="h-full relative overflow-auto bg-[#f8f5f2]" ref="schemaMapRef">
-          <div class="relative min-w-[2000px] min-h-[2000px] p-8">
-            <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 1;">
+        <div
+          v-else-if="viewMode === 'schema'"
+          class="h-full relative overflow-hidden bg-[#f8f5f2]"
+          ref="schemaMapRef"
+          @mousedown="onSchemaMousedown"
+        >
+          <!-- Grid background -->
+          <svg class="absolute inset-0 pointer-events-none opacity-20" width="100%" height="100%">
+            <defs>
+              <pattern id="schema-grid" width="16" height="16" patternUnits="userSpaceOnUse" :patternTransform="`translate(${schemaCamX}, ${schemaCamY}) scale(${schemaZoom})`">
+                <circle cx="1" cy="1" r="1" fill="rgba(61,24,32,0.5)" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#schema-grid)" />
+          </svg>
+
+          <!-- Transform wrapper -->
+          <div
+            class="absolute pointer-events-none"
+            :style="{ transform: `translate(${schemaCamX}px, ${schemaCamY}px) scale(${schemaZoom})`, transformOrigin: '0 0' }"
+          >
+            <!-- Relationships SVG -->
+            <svg class="absolute inset-0 overflow-visible pointer-events-none" style="z-index: 1;">
               <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                   <polygon points="0 0, 10 3.5, 0 7" fill="rgba(61,24,32,0.3)" />
                 </marker>
               </defs>
-              <template v-for="(table, i) in tableDefs" :key="'lines-'+table.name">
+              <template v-for="table in tableDefs" :key="'lines-'+table.name">
                 <template v-for="col in table.columns" :key="col.name">
                   <path
                     v-if="col.references"
-                    :d="`M ${getTablePosition(i, tableDefs.length).x + 280} ${getTablePosition(i, tableDefs.length).y + 60} C ${getTablePosition(i, tableDefs.length).x + 350} ${getTablePosition(i, tableDefs.length).y + 60}, ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).x - 50} ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).y + 40}, ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).x} ${getTablePosition(tableDefs.findIndex(t => t.name === col.references!.table), tableDefs.length).y + 40}`"
+                    :d="`M ${getTablePositionSafe(table.name).x + 280} ${getTablePositionSafe(table.name).y + 60} C ${getTablePositionSafe(table.name).x + 350} ${getTablePositionSafe(table.name).y + 60}, ${getTablePositionSafe(col.references.table).x - 50} ${getTablePositionSafe(col.references.table).y + 40}, ${getTablePositionSafe(col.references.table).x} ${getTablePositionSafe(col.references.table).y + 40}`"
                     fill="none"
                     stroke="rgba(61,24,32,0.3)"
                     stroke-width="2"
@@ -388,13 +541,23 @@ function getTablePosition(index: number, total: number) {
               </template>
             </svg>
 
+            <!-- Table Cards -->
             <div
-              v-for="(table, i) in tableDefs"
+              v-for="table in tableDefs"
               :key="'box-'+table.name"
-              class="absolute bg-white rounded-xl shadow-lg border z-10 w-[280px] flex flex-col"
-              :style="{ left: `${getTablePosition(i, tableDefs.length).x}px`, top: `${getTablePosition(i, tableDefs.length).y}px`, borderColor: 'rgba(61,24,32,0.1)' }"
+              class="absolute bg-white rounded-xl shadow-lg border z-10 w-[280px] flex flex-col pointer-events-auto"
+              :style="{
+                left: `${getTablePositionSafe(table.name).x}px`,
+                top: `${getTablePositionSafe(table.name).y}px`,
+                borderColor: 'rgba(61,24,32,0.1)'
+              }"
             >
-              <div class="px-4 py-3 bg-[#fdf7f2] rounded-t-xl border-b flex items-center gap-2" style="borderColor: rgba(61,24,32,0.1);">
+              <!-- Card Header (Draggable) -->
+              <div
+                class="px-4 py-3 bg-[#fdf7f2] rounded-t-xl border-b flex items-center gap-2 cursor-grab active:cursor-grabbing"
+                style="borderColor: rgba(61,24,32,0.1);"
+                @mousedown="onTableMousedown($event, table.name)"
+              >
                 <Database class="w-4 h-4 opacity-50" />
                 <span class="font-mono font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">{{ table.name }}</span>
               </div>
@@ -628,7 +791,7 @@ function getTablePosition(index: number, total: number) {
                 >
                   <input v-model="col.name" class="input-warm px-3 py-1.5 text-sm font-mono" placeholder="column_name" />
                   <select v-model="col.type" class="input-warm px-2 py-1.5 text-xs">
-                    <option v-for="t in COLUMN_TYPES" :key="t" :value="t">{{ t }}</option>
+                    <option v-for="t in COLUMN_TYPES" :key="t" :value="t">{{ COLUMN_TYPE_LABELS[t] }}</option>
                   </select>
                   <label class="flex items-center gap-1 text-xs whitespace-nowrap cursor-pointer" style="color: rgba(61,24,32,0.5);">
                     <input type="checkbox" v-model="col.nullable" />

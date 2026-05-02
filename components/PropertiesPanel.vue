@@ -185,6 +185,16 @@ const ACTION_TYPES: RuntimeActionDefinition['type'][] = ['insert', 'update', 'de
               <option value="select">Select</option>
             </select>
           </template>
+          <template v-else-if="selectedElement.type === 'chart'">
+            <select :value="(selectedElement as any).chartType" class="input-warm w-full px-3 py-1.5 text-sm" @change="patch({ chartType: ($event.target as HTMLSelectElement).value } as any)">
+              <option value="bar">Bar Chart</option>
+              <option value="pie">Pie Chart</option>
+              <option value="line">Line Chart</option>
+            </select>
+            <input :value="(selectedElement as any).tableName ?? ''" class="input-warm w-full px-3 py-1.5 text-sm font-mono" placeholder="Table name" @input="patch({ tableName: ($event.target as HTMLInputElement).value } as any)" />
+            <input :value="(selectedElement as any).labelColumn ?? ''" class="input-warm w-full px-3 py-1.5 text-sm font-mono" placeholder="Label column" @input="patch({ labelColumn: ($event.target as HTMLInputElement).value } as any)" />
+            <input :value="(selectedElement as any).valueColumn ?? ''" class="input-warm w-full px-3 py-1.5 text-sm font-mono" placeholder="Value column" @input="patch({ valueColumn: ($event.target as HTMLInputElement).value } as any)" />
+          </template>
           <template v-else-if="selectedElement.type === 'upload'">
             <select :value="(selectedElement as any).bucket" class="input-warm w-full px-3 py-1.5 text-sm" @change="patch({ bucket: ($event.target as HTMLSelectElement).value } as any)">
               <option value="assets">assets</option>

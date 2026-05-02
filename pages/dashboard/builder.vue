@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import {
+  BarChart2,
   Copy,
   Database,
   Hexagon,
   Image as ImageIcon,
+  Layers,
+  MousePointer2,
   Plus,
   RectangleHorizontal,
-  ShoppingCart,
   Sparkles,
   Trash2,
   Type,
@@ -17,6 +19,7 @@ import {
 import Canvas from '~/components/Canvas.vue';
 import PropertiesPanel from '~/components/PropertiesPanel.vue';
 import type { ElementDef, ElementType, UiLayout } from '~/lib/uiTypes';
+import { BUILDER_PRESETS } from '~/lib/builderPresets';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -49,12 +52,17 @@ const {
   setCamera,
 } = useCanvas();
 
-const showStudioPanel = ref(false);
-const canvasWrapper = ref<HTMLElement | null>(null);
-const terminals = ref<Array<{ id: string; display_name: string; role: string; ui_layout: string }>>([]);
+const showStudioPanel  = ref(false);
+const showPresetsPanel = ref(false);
+const canvasWrapper    = ref<HTMLElement | null>(null);
+const terminals        = ref<Array<{ id: string; display_name: string; role: string; ui_layout: string }>>([]);
 const selectedTerminal = ref<string | null>(null);
-const saving = ref(false);
-const zoom = ref(0.7);
+const saving           = ref(false);
+const zoom             = ref(0.7);
+
+/* pending drop — when set, clicking on canvas creates element at cursor position,
+   and dragging draws a box to define the element's size */
+const pendingDrop = ref<{ type: ElementType; defaults: Partial<ElementDef> } | null>(null);
 
 const route = useRoute();
 
@@ -62,13 +70,13 @@ const layerLabel = computed(() => activeLayer.value?.name ?? 'Main Screen');
 const resolutionLabel = computed(() => `${layout.value.resolution.width} x ${layout.value.resolution.height}`);
 
 const PALETTE_ITEMS: Array<{ type: ElementType; label: string; icon: any; defaults: Partial<ElementDef> }> = [
-  { type: 'button', label: 'Button', icon: Hexagon, defaults: { text: 'Button', variant: 'primary' } as any },
-  { type: 'text', label: 'Text', icon: Type, defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any },
-  { type: 'image', label: 'Image', icon: ImageIcon, defaults: { src: '', fit: 'cover' } as any },
-  { type: 'table-view', label: 'Table View', icon: Database, defaults: { tableName: '', columns: [] } as any },
-  { type: 'input-field', label: 'Input', icon: RectangleHorizontal, defaults: { fieldName: 'field', inputType: 'text' } as any },
-  { type: 'cart-widget', label: 'Cart', icon: ShoppingCart, defaults: { productTable: '', orderTable: '', displayColumns: [] } as any },
-  { type: 'upload', label: 'Upload', icon: Upload, defaults: { bucket: 'assets', buttonLabel: 'Upload file' } as any },
+  { type: 'button',      label: 'Button',     icon: Hexagon,            defaults: { text: 'Button', variant: 'primary' } as any },
+  { type: 'text',        label: 'Text',       icon: Type,               defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any },
+  { type: 'image',       label: 'Image',      icon: ImageIcon,          defaults: { src: '', fit: 'cover' } as any },
+  { type: 'table-view',  label: 'Table View', icon: Database,           defaults: { tableName: '', columns: [] } as any },
+  { type: 'input-field', label: 'Input',      icon: RectangleHorizontal,defaults: { fieldName: 'field', inputType: 'text' } as any },
+  { type: 'chart',       label: 'Chart',      icon: BarChart2,          defaults: { chartType: 'bar', tableName: '', labelColumn: '', valueColumn: '' } as any },
+  { type: 'upload',      label: 'Upload',     icon: Upload,             defaults: { bucket: 'assets', buttonLabel: 'Upload file' } as any },
 ];
 
 async function loadTerminals() {
@@ -119,7 +127,9 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
 
   if (event.key === 'Escape') {
-    showStudioPanel.value = false;
+    showStudioPanel.value  = false;
+    showPresetsPanel.value = false;
+    pendingDrop.value      = null;
     return;
   }
 
@@ -173,20 +183,113 @@ function patchSelected(updates: Partial<any>) {
   updateElement(selectedId.value, updates);
 }
 
-function dropElement(type: ElementType, defaults: Partial<ElementDef>) {
+function activatePaletteDrop(type: ElementType, defaults: Partial<ElementDef>) {
+  pendingDrop.value = { type, defaults };
+}
+
+function dropElement(type: ElementType, defaults: Partial<ElementDef>, x = 80, y = 80, w = 220, h = 64) {
   addElement({
     id: crypto.randomUUID(),
     type,
     label: type,
     position: {
-      x: 80,
-      y: 80,
-      width: 220,
-      height: 64,
+      x,
+      y,
+      width:  w,
+      height: h,
       zIndex: activeElements.value.length + 1,
     },
     ...defaults,
   } as ElementDef);
+}
+
+function applyBuilderPreset(presetId: string) {
+  const preset = BUILDER_PRESETS.find(p => p.id === presetId);
+  if (!preset) return;
+  if (!confirm('Apply this preset? It will replace the current layout.')) return;
+  loadLayout(preset.layout);
+  showPresetsPanel.value = false;
+}
+
+const dropBox = ref<{ startX: number, startY: number, curX: number, curY: number } | null>(null);
+
+function onCanvasMousedown(e: MouseEvent) {
+  if (!pendingDrop.value || !canvasWrapper.value) return;
+
+  // Intercept the click/mousedown so Canvas.vue doesn't pan or select
+  e.stopPropagation();
+  e.preventDefault();
+
+  const rect = canvasWrapper.value.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  // Transform to world coordinates based on camera and zoom
+  const worldX = (mouseX - cameraX.value) / zoom.value;
+  const worldY = (mouseY - cameraY.value) / zoom.value;
+
+  dropBox.value = {
+    startX: worldX,
+    startY: worldY,
+    curX: worldX,
+    curY: worldY,
+  };
+
+  window.addEventListener('mousemove', onCanvasMousemove);
+  window.addEventListener('mouseup', onCanvasMouseup, { once: true });
+}
+
+function onCanvasMousemove(e: MouseEvent) {
+  if (!dropBox.value || !canvasWrapper.value) return;
+
+  const rect = canvasWrapper.value.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  dropBox.value.curX = (mouseX - cameraX.value) / zoom.value;
+  dropBox.value.curY = (mouseY - cameraY.value) / zoom.value;
+}
+
+function onCanvasMouseup() {
+  window.removeEventListener('mousemove', onCanvasMousemove);
+  
+  if (!dropBox.value || !pendingDrop.value) {
+    dropBox.value = null;
+    return;
+  }
+
+  const snap = (v: number) => Math.round(v / 8) * 8;
+  
+  const minW = 40;
+  const minH = 24;
+
+  const x = Math.min(dropBox.value.startX, dropBox.value.curX);
+  const y = Math.min(dropBox.value.startY, dropBox.value.curY);
+  
+  let w = Math.abs(dropBox.value.curX - dropBox.value.startX);
+  let h = Math.abs(dropBox.value.curY - dropBox.value.startY);
+
+  // If it was just a click or very small drag, use default sizes
+  if (w < 10 && h < 10) {
+    w = 220;
+    h = 64;
+  } else {
+    // Enforce minimums if they actually dragged a box
+    w = Math.max(minW, snap(w));
+    h = Math.max(minH, snap(h));
+  }
+
+  dropElement(
+    pendingDrop.value.type,
+    pendingDrop.value.defaults,
+    snap(x),
+    snap(y),
+    w,
+    h
+  );
+
+  pendingDrop.value = null;
+  dropBox.value = null;
 }
 
 function createModalLayer() {
@@ -265,8 +368,19 @@ watch(() => business.value?.id, loadTerminals);
         >
           <Plus class="w-3.5 h-3.5" /> New Modal
         </button>
-        <button class="text-xs font-semibold px-4 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white" style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));" @click="showStudioPanel = !showStudioPanel">
-          {{ showStudioPanel ? 'Hide Studio' : 'Layers & Properties' }}
+        <button
+          class="text-xs font-semibold px-4 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
+          style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
+          @click="showPresetsPanel = !showPresetsPanel"
+        >
+          <Sparkles class="w-3.5 h-3.5" /> Presets
+        </button>
+        <button
+          class="text-xs font-semibold px-4 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
+          style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
+          @click="showStudioPanel = !showStudioPanel"
+        >
+          <Layers class="w-3.5 h-3.5" /> {{ showStudioPanel ? 'Hide Studio' : 'Studio' }}
         </button>
         <button
           :disabled="!isDirty || !selectedTerminal || saving"
@@ -284,21 +398,89 @@ watch(() => business.value?.id, loadTerminals);
     </header>
 
     <div class="flex-1 flex overflow-hidden bg-[#e5dfd8]">
-      <aside class="w-16 shrink-0 bg-white flex flex-col items-center py-4 gap-2 z-10 shadow-sm" style="border-right: 1px solid rgba(61,24,32,0.1);">
+      <aside class="w-16 shrink-0 bg-white flex flex-col items-center py-4 gap-1 z-10 shadow-sm" style="border-right: 1px solid rgba(61,24,32,0.1);">
+        <!-- Pointer / select tool -->
+        <button
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+          :style="!pendingDrop ? 'background: rgba(232,116,138,0.1);' : 'hover:background: rgba(245,237,228,0.5);'"
+          @click="pendingDrop = null"
+        >
+          <MousePointer2 class="w-5 h-5" :style="!pendingDrop ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.5);'" />
+          <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
+            Select
+          </div>
+        </button>
+
+        <div class="w-8 border-t my-1" style="border-color: rgba(61,24,32,0.08);" />
+
         <button
           v-for="item in PALETTE_ITEMS"
           :key="item.type"
-          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative hover:bg-[#f8f5f2]"
-          @click="dropElement(item.type, item.defaults)"
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+          :style="pendingDrop?.type === item.type
+            ? 'background: rgba(232,116,138,0.15);'
+            : 'hover:background: rgba(245,237,228,0.5);'"
+          @click="activatePaletteDrop(item.type, item.defaults)"
         >
-          <component :is="item.icon" class="w-5 h-5 transition-transform group-hover:scale-110" style="color: rgba(61,24,32,0.7);" />
+          <component
+            :is="item.icon"
+            class="w-5 h-5 transition-transform group-hover:scale-110"
+            :style="pendingDrop?.type === item.type ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
+          />
           <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
             {{ item.label }}
           </div>
         </button>
       </aside>
 
-      <div ref="canvasWrapper" class="canvas-container flex-1 overflow-hidden relative">
+      <div
+        ref="canvasWrapper"
+        class="canvas-container flex-1 overflow-hidden relative"
+        :style="pendingDrop ? 'cursor: crosshair;' : ''"
+        @mousedown.capture="onCanvasMousedown"
+      >
+        <!-- drop mode hint -->
+        <Transition name="v">
+          <div
+            v-if="pendingDrop"
+            class="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          >
+            <div
+              class="px-4 py-2 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-lg"
+              style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
+            >
+              <MousePointer2 class="w-3.5 h-3.5" />
+              Click canvas to place · Esc to cancel
+            </div>
+          </div>
+        </Transition>
+        
+        <!-- drop mode dragging marquee -->
+        <div
+          v-if="dropBox"
+          class="absolute inset-0 pointer-events-none z-50 overflow-hidden"
+        >
+          <div
+            class="absolute"
+            :style="{
+              transform: `translate(${cameraX}px, ${cameraY}px) scale(${zoom})`,
+              transformOrigin: '0 0'
+            }"
+          >
+            <div
+              class="absolute border-2"
+              :style="{
+                left: `${Math.min(dropBox.startX, dropBox.curX)}px`,
+                top: `${Math.min(dropBox.startY, dropBox.curY)}px`,
+                width: `${Math.abs(dropBox.curX - dropBox.startX)}px`,
+                height: `${Math.abs(dropBox.curY - dropBox.startY)}px`,
+                borderColor: '#3d1820',
+                backgroundColor: 'rgba(61,24,32,0.1)'
+              }"
+            />
+          </div>
+        </div>
+
         <div class="absolute inset-0 bg-[radial-gradient(#d5cdc4_1px,transparent_1px)] [background-size:16px_16px] opacity-50 pointer-events-none"></div>
 
         <div v-if="selectedElement" class="pointer-events-none absolute inset-x-0 top-5 z-30 flex justify-center px-4">
@@ -369,5 +551,48 @@ watch(() => business.value?.id, loadTerminals);
         </div>
       </div>
     </div>
+
+    <!-- ── Builder Presets slide-over ───────────────────────────────────── -->
+    <Transition name="v">
+      <div
+        v-if="showPresetsPanel"
+        class="fixed inset-0 z-50 flex items-stretch justify-end"
+        @click.self="showPresetsPanel = false"
+      >
+        <div
+          class="w-[400px] h-full bg-white flex flex-col shadow-2xl overflow-y-auto"
+          style="border-left: 1px solid rgba(61,24,32,0.1);"
+        >
+          <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
+            <div>
+              <h2 class="font-semibold text-base" style="color: rgb(var(--shell-sidebar));">Layout Presets</h2>
+              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Apply a ready-made layout to get started fast</p>
+            </div>
+            <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showPresetsPanel = false">
+              <Sparkles class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-3">
+            <div
+              v-for="preset in BUILDER_PRESETS"
+              :key="preset.id"
+              class="rounded-2xl p-4 space-y-2 transition-all"
+              style="background: #fdf7f2; border: 1px solid rgba(61,24,32,0.08);"
+            >
+              <p class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">{{ preset.name }}</p>
+              <p class="text-xs" style="color: rgba(61,24,32,0.45);">{{ preset.description }}</p>
+              <button
+                class="w-full py-2 text-xs rounded-full font-semibold transition-all"
+                style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
+                @click="applyBuilderPreset(preset.id)"
+              >
+                Apply Preset
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>

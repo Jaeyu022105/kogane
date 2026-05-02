@@ -133,21 +133,29 @@ function onPanUp() {
 
 // ── Resize handle ─────────────────────────────────────────────────────────────
 
+type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se';
+
 const resize = ref<{
   elId:    string;
+  handle:  ResizeHandle;
   startX:  number;
   startY:  number;
+  origX:   number;
+  origY:   number;
   origW:   number;
   origH:   number;
 } | null>(null);
 
-function onMousedownResize(ev: MouseEvent, el: ElementDef) {
+function onMousedownResize(ev: MouseEvent, el: ElementDef, handle: ResizeHandle) {
   ev.stopPropagation();
 
   resize.value = {
     elId:   el.id,
+    handle,
     startX: ev.clientX,
     startY: ev.clientY,
+    origX:  el.position.x,
+    origY:  el.position.y,
     origW:  el.position.width,
     origH:  el.position.height,
   };
@@ -159,14 +167,43 @@ function onMousedownResize(ev: MouseEvent, el: ElementDef) {
 function onResizeMove(ev: MouseEvent) {
   if (!resize.value) return;
 
-  const dw = (ev.clientX - resize.value.startX) / zoom.value;
-  const dh = (ev.clientY - resize.value.startY) / zoom.value;
+  const dx = (ev.clientX - resize.value.startX) / zoom.value;
+  const dy = (ev.clientY - resize.value.startY) / zoom.value;
+
+  const { handle, origX, origY, origW, origH } = resize.value;
+  let nextX = origX;
+  let nextY = origY;
+  let nextW = origW;
+  let nextH = origH;
+
+  const MIN_W = 40;
+  const MIN_H = 24;
+
+  if (handle.includes('e')) {
+    nextW = Math.max(MIN_W, origW + dx);
+  } else if (handle.includes('w')) {
+    const maxDx = origW - MIN_W;
+    const clampedDx = Math.min(dx, maxDx);
+    nextX = origX + clampedDx;
+    nextW = origW - clampedDx;
+  }
+
+  if (handle.includes('s')) {
+    nextH = Math.max(MIN_H, origH + dy);
+  } else if (handle.includes('n')) {
+    const maxDy = origH - MIN_H;
+    const clampedDy = Math.min(dy, maxDy);
+    nextY = origY + clampedDy;
+    nextH = origH - clampedDy;
+  }
 
   updateElement(resize.value.elId, {
     position: {
       ...activeElements.value.find(e => e.id === resize.value!.elId)!.position,
-      width:  snap(Math.max(40, resize.value.origW + dw)),
-      height: snap(Math.max(24, resize.value.origH + dh)),
+      x:      snap(nextX),
+      y:      snap(nextY),
+      width:  snap(nextW),
+      height: snap(nextH),
     },
   });
 }
@@ -252,12 +289,29 @@ function onResizeUp() {
             />
           </template>
 
-          <!-- Resize handle (bottom-right corner) -->
-          <div
-            v-if="selectedId === el.id"
-            class="absolute bottom-0 right-0 w-3 h-3 bg-brand-primary rounded-tl cursor-se-resize z-20"
-            @mousedown.stop="onMousedownResize($event, el)"
-          />
+          <!-- Resize handles -->
+          <template v-if="selectedId === el.id">
+            <div
+              class="absolute top-0 left-0 w-3 h-3 bg-brand-primary rounded-br cursor-nw-resize z-20"
+              style="margin: -1.5px 0 0 -1.5px;"
+              @mousedown.stop="onMousedownResize($event, el, 'nw')"
+            />
+            <div
+              class="absolute top-0 right-0 w-3 h-3 bg-brand-primary rounded-bl cursor-ne-resize z-20"
+              style="margin: -1.5px -1.5px 0 0;"
+              @mousedown.stop="onMousedownResize($event, el, 'ne')"
+            />
+            <div
+              class="absolute bottom-0 left-0 w-3 h-3 bg-brand-primary rounded-tr cursor-sw-resize z-20"
+              style="margin: 0 0 -1.5px -1.5px;"
+              @mousedown.stop="onMousedownResize($event, el, 'sw')"
+            />
+            <div
+              class="absolute bottom-0 right-0 w-3 h-3 bg-brand-primary rounded-tl cursor-se-resize z-20"
+              style="margin: 0 -1.5px -1.5px 0;"
+              @mousedown.stop="onMousedownResize($event, el, 'se')"
+            />
+          </template>
         </div>
       </div>
     </div>

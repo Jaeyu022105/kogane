@@ -10,7 +10,7 @@ import TextEl from '~/components/elements/TextEl.vue';
 import ImageEl from '~/components/elements/ImageEl.vue';
 import TableViewEl from '~/components/elements/TableViewEl.vue';
 import InputFieldEl from '~/components/elements/InputFieldEl.vue';
-import CartWidgetEl from '~/components/elements/CartWidgetEl.vue';
+import ChartEl from '~/components/elements/ChartEl.vue';
 import UploadEl from '~/components/elements/UploadEl.vue';
 
 const props = defineProps<{
@@ -32,7 +32,7 @@ const ELEMENT_COMPONENT_MAP: Record<string, unknown> = {
   image: ImageEl,
   'table-view': TableViewEl,
   'input-field': InputFieldEl,
-  'cart-widget': CartWidgetEl,
+  chart: ChartEl,
   upload: UploadEl,
 };
 
