@@ -431,6 +431,9 @@ function applyBuilderPreset(presetId: string) {
 
 const dropBox = ref<{ startX: number, startY: number, curX: number, curY: number } | null>(null);
 
+const BOARD_OFFSET_X = 17;
+const BOARD_OFFSET_Y = 65;
+
 function onCanvasMousedown(e: MouseEvent) {
   if (!pendingDrop.value || !canvasWrapper.value) return;
 
@@ -442,9 +445,9 @@ function onCanvasMousedown(e: MouseEvent) {
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
 
-  // Transform to world coordinates based on camera and zoom
-  const worldX = (mouseX - cameraX.value) / zoom.value;
-  const worldY = (mouseY - cameraY.value) / zoom.value;
+  // Transform to world coordinates based on camera and zoom, adjusting for board offset
+  const worldX = (mouseX - cameraX.value) / zoom.value - BOARD_OFFSET_X;
+  const worldY = (mouseY - cameraY.value) / zoom.value - BOARD_OFFSET_Y;
 
   dropBox.value = {
     startX: worldX,
@@ -464,8 +467,8 @@ function onCanvasMousemove(e: MouseEvent) {
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
 
-  dropBox.value.curX = (mouseX - cameraX.value) / zoom.value;
-  dropBox.value.curY = (mouseY - cameraY.value) / zoom.value;
+  dropBox.value.curX = (mouseX - cameraX.value) / zoom.value - BOARD_OFFSET_X;
+  dropBox.value.curY = (mouseY - cameraY.value) / zoom.value - BOARD_OFFSET_Y;
 }
 
 function onCanvasMouseup() {
@@ -836,8 +839,8 @@ watch(() => business.value?.id, loadTerminals);
             <div
               class="absolute border-2"
               :style="{
-                left: `${Math.min(dropBox.startX, dropBox.curX)}px`,
-                top: `${Math.min(dropBox.startY, dropBox.curY)}px`,
+                left: `${Math.min(dropBox.startX, dropBox.curX) + BOARD_OFFSET_X}px`,
+                top: `${Math.min(dropBox.startY, dropBox.curY) + BOARD_OFFSET_Y}px`,
                 width: `${Math.abs(dropBox.curX - dropBox.startX)}px`,
                 height: `${Math.abs(dropBox.curY - dropBox.startY)}px`,
                 borderColor: '#3d1820',
