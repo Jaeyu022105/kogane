@@ -8,9 +8,11 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { hashPin } from '~/lib/authUtils';
 import { DEFAULT_LAYOUT } from '~/lib/uiTypes';
+import { BUILDER_PRESETS } from '~/lib/builderPresets';
 import { presetByKey, TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 import { writeAuditLog } from '~/server/utils/audit';
 import { getBusinessForAdmin } from '~/server/utils/business';
+import { ensureStarterBusinessTables, starterTableNamesForPreset } from '~/server/utils/starterTables';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -34,8 +36,25 @@ export default defineEventHandler(async (event) => {
   if (!business) return { error: 'Forbidden', terminal: null };
 
   const pinHash = await hashPin(body.pin);
-  const layoutData = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
   const preset = presetByKey(body.presetKey) ?? TERMINAL_PERMISSION_PRESETS[0];
+  const presetLayoutMap: Record<string, string> = {
+    'cashier-register': 'cashier-station',
+    'catalog-registrar': 'catalog-station',
+    'inventory-manager': 'inventory-station',
+    'kitchen-display': 'kitchen-station',
+    'reports-viewer': 'reports-station',
+  };
+  const initialLayoutPreset = BUILDER_PRESETS.find((item) => item.id === presetLayoutMap[preset.key]);
+  const layoutData = JSON.parse(JSON.stringify(initialLayoutPreset?.layout ?? DEFAULT_LAYOUT));
+
+  const starterTables = starterTableNamesForPreset(preset.key);
+  if (starterTables.length > 0) {
+    const starterResult = await ensureStarterBusinessTables(business.schema_name, starterTables);
+    if (starterResult.error) {
+      return { error: starterResult.error, terminal: null };
+    }
+  }
+
   if (body.resolution) {
     const [w, h] = body.resolution.split('x').map(Number);
     if (!isNaN(w) && !isNaN(h)) {
@@ -46,7 +65,7 @@ export default defineEventHandler(async (event) => {
   const { data: terminal, error } = await db.insert('terminals', {
     business_id: body.businessId,
     display_name: body.displayName,
-    role: 'staff',
+    role: preset.label,
     pin_hash: pinHash,
     pin_length: body.pin.length,
     permissions: JSON.stringify(preset.permissions),

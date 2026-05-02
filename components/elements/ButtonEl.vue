@@ -20,12 +20,18 @@ async function handleClick() {
 <template>
   <button
     :class="[
-      'w-full h-full rounded-lg font-medium text-sm transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
-      element.variant === 'primary' && 'bg-brand-primary text-white hover:brightness-110',
-      element.variant === 'secondary' && 'bg-brand-secondary text-white hover:brightness-110',
-      element.variant === 'ghost' && 'border border-white/20 text-white/80 hover:bg-white/10',
-      element.variant === 'danger' && 'bg-red-600 text-white hover:bg-red-500',
+      'w-full h-full font-medium text-sm transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
+      !element.backgroundColor && element.variant === 'primary' && 'bg-brand-primary text-white hover:brightness-110',
+      !element.backgroundColor && element.variant === 'secondary' && 'bg-brand-secondary text-white hover:brightness-110',
+      !element.backgroundColor && element.variant === 'ghost' && 'border border-white/20 text-white/80 hover:bg-white/10',
+      !element.backgroundColor && element.variant === 'danger' && 'bg-red-600 text-white hover:bg-red-500',
     ]"
+    :style="{
+      background: element.backgroundColor,
+      color: element.textColor,
+      borderRadius: `${element.radius ?? 12}px`,
+      border: element.variant === 'ghost' && !element.backgroundColor ? undefined : '1px solid rgba(255,255,255,0.08)',
+    }"
     :disabled="disabled"
     @click="handleClick"
   >

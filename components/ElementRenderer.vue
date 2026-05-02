@@ -12,6 +12,7 @@ import TableViewEl from '~/components/elements/TableViewEl.vue';
 import InputFieldEl from '~/components/elements/InputFieldEl.vue';
 import ChartEl from '~/components/elements/ChartEl.vue';
 import UploadEl from '~/components/elements/UploadEl.vue';
+import CartWidgetEl from '~/components/elements/CartWidgetEl.vue';
 
 const props = defineProps<{
   element: ElementDef;
@@ -34,6 +35,7 @@ const ELEMENT_COMPONENT_MAP: Record<string, unknown> = {
   'input-field': InputFieldEl,
   chart: ChartEl,
   upload: UploadEl,
+  'cart-widget': CartWidgetEl,
 };
 
 const component = computed(() => ELEMENT_COMPONENT_MAP[props.element.type] ?? null);

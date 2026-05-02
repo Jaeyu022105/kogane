@@ -45,6 +45,7 @@ const BUILT_IN_PRESETS = [
             { name: 'items', type: 'text', nullable: false },
             { name: 'total', type: 'numeric', nullable: false },
             { name: 'status', type: 'text', nullable: false, default: "'pending'" },
+            { name: 'table_number', type: 'text', nullable: true },
             { name: 'staff_name', type: 'text', nullable: true },
           ],
         },

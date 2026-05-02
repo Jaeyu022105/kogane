@@ -1,6 +1,7 @@
-import type { RuntimeActionDefinition } from '~/lib/uiTypes';
+import type { ElementType, RuntimeActionDefinition } from '~/lib/uiTypes';
 
 export type TablePermissionKey = 'read' | 'insert' | 'update' | 'delete';
+export type PermissionPresetKey = 'cashier-register' | 'catalog-registrar' | 'inventory-manager' | 'kitchen-display' | 'reports-viewer';
 
 export interface TablePermissionSet {
   read: boolean;
@@ -20,8 +21,11 @@ export interface TerminalPermissions {
 }
 
 export interface PermissionPreset {
-  key: 'cashier-register' | 'inventory-manager' | 'reports-viewer';
+  key: PermissionPresetKey;
   label: string;
+  description: string;
+  recommendedElements: ElementType[];
+  optionalElements: ElementType[];
   permissions: TerminalPermissions;
 }
 
@@ -44,6 +48,9 @@ export const TERMINAL_PERMISSION_PRESETS: PermissionPreset[] = [
   {
     key: 'cashier-register',
     label: 'Cashier Register',
+    description: 'Fast selling station focused on line speed, simple inputs, and locked-down mutations.',
+    recommendedElements: ['text', 'button', 'input-field', 'table-view'],
+    optionalElements: ['image', 'upload'],
     permissions: {
       tables: {
         '*': { read: true, insert: true, update: false, delete: false },
@@ -53,8 +60,25 @@ export const TERMINAL_PERMISSION_PRESETS: PermissionPreset[] = [
     },
   },
   {
+    key: 'catalog-registrar',
+    label: 'Catalog Registrar',
+    description: 'Product-entry station for building the sellable catalog and reviewing item details before they reach the cashier.',
+    recommendedElements: ['text', 'table-view', 'input-field', 'button', 'image'],
+    optionalElements: ['chart', 'upload'],
+    permissions: {
+      tables: {
+        '*': { read: true, insert: true, update: true, delete: false },
+      },
+      audit_log: { visible: false },
+      reports: { visible: false },
+    },
+  },
+  {
     key: 'inventory-manager',
     label: 'Inventory Manager',
+    description: 'Operations terminal for stock movement, receiving, and day-to-day data maintenance.',
+    recommendedElements: ['text', 'table-view', 'input-field', 'button', 'chart', 'upload'],
+    optionalElements: ['image'],
     permissions: {
       tables: {
         '*': { read: true, insert: true, update: true, delete: false },
@@ -64,8 +88,25 @@ export const TERMINAL_PERMISSION_PRESETS: PermissionPreset[] = [
     },
   },
   {
+    key: 'kitchen-display',
+    label: 'Kitchen Display',
+    description: 'Read-only production queue for the back-of-house to watch incoming orders live.',
+    recommendedElements: ['text', 'table-view'],
+    optionalElements: ['button', 'chart', 'image'],
+    permissions: {
+      tables: {
+        '*': { read: true, insert: false, update: false, delete: false },
+      },
+      audit_log: { visible: false },
+      reports: { visible: false },
+    },
+  },
+  {
     key: 'reports-viewer',
     label: 'Reports Viewer',
+    description: 'Read-only analytics station for activity monitoring, audit review, and trend charts.',
+    recommendedElements: ['text', 'chart', 'table-view', 'image'],
+    optionalElements: ['button', 'upload'],
     permissions: {
       tables: {
         '*': { read: true, insert: false, update: false, delete: false },
@@ -140,6 +181,10 @@ export function resolveTablePermissions(permissions: TerminalPermissions | strin
 }
 
 export function isActionAllowed(permissions: TerminalPermissions | string | null | undefined, action: RuntimeActionDefinition): boolean {
+  if (action.source === 'audit-log') {
+    return action.type === 'query' && normalizePermissions(permissions).audit_log.visible;
+  }
+
   if (!action.table) {
     return action.type !== 'query' || action.type === 'query';
   }
@@ -166,4 +211,66 @@ export function isActionAllowed(permissions: TerminalPermissions | string | null
 
 export function presetByKey(key: string | null | undefined): PermissionPreset | null {
   return TERMINAL_PERMISSION_PRESETS.find((preset) => preset.key === key) ?? null;
+}
+
+export function inferPermissionPreset(permissions: TerminalPermissions | string | null | undefined): PermissionPreset | null {
+  const normalized = normalizePermissions(permissions);
+  const wildcard = normalizeTablePermissionSet(normalized.tables['*']);
+
+  if (
+    wildcard.read &&
+    wildcard.insert &&
+    !wildcard.update &&
+    !wildcard.delete &&
+    !normalized.audit_log.visible &&
+    !normalized.reports.visible
+  ) {
+    return presetByKey('cashier-register');
+  }
+
+  if (
+    wildcard.read &&
+    wildcard.insert &&
+    wildcard.update &&
+    !wildcard.delete &&
+    !normalized.audit_log.visible &&
+    !normalized.reports.visible
+  ) {
+    return presetByKey('catalog-registrar');
+  }
+
+  if (
+    wildcard.read &&
+    wildcard.insert &&
+    wildcard.update &&
+    !wildcard.delete &&
+    !normalized.audit_log.visible &&
+    normalized.reports.visible
+  ) {
+    return presetByKey('inventory-manager');
+  }
+
+  if (
+    wildcard.read &&
+    !wildcard.insert &&
+    !wildcard.update &&
+    !wildcard.delete &&
+    !normalized.audit_log.visible &&
+    !normalized.reports.visible
+  ) {
+    return presetByKey('kitchen-display');
+  }
+
+  if (
+    wildcard.read &&
+    !wildcard.insert &&
+    !wildcard.update &&
+    !wildcard.delete &&
+    normalized.audit_log.visible &&
+    normalized.reports.visible
+  ) {
+    return presetByKey('reports-viewer');
+  }
+
+  return null;
 }

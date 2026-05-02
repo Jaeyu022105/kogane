@@ -10,7 +10,10 @@ export type ElementType =
   | 'table-view'
   | 'input-field'
   | 'chart'
-  | 'upload';
+  | 'upload'
+  | 'cart-widget';
+
+export type QuerySource = 'business-table' | 'audit-log';
 
 export interface ElementPosition {
   x: number;
@@ -44,8 +47,23 @@ export type RuntimePayloadValue =
   | RuntimePayloadValue[]
   | { [key: string]: RuntimePayloadValue };
 
+export interface UiLayoutTheme {
+  frameBackground: string;
+  topBarBackground: string;
+  topBarText: string;
+  canvasBackground: string;
+  gridColor: string;
+  accentColor: string;
+  panelBackground: string;
+  panelHeaderBackground: string;
+  panelText: string;
+  panelMutedText: string;
+  panelBorder: string;
+}
+
 export interface RuntimeActionDefinition {
   type: RuntimeActionType;
+  source?: QuerySource;
   table?: string;
   payload?: RuntimePayloadValue;
   rowId?: RuntimePayloadValue;
@@ -53,6 +71,8 @@ export interface RuntimeActionDefinition {
   columns?: string[];
   limit?: number;
   offset?: number;
+  orderBy?: string;
+  descending?: boolean;
   targetElementId?: string;
   event?: string;
   bucket?: 'assets' | 'products' | 'backgrounds';
@@ -79,6 +99,9 @@ export interface ButtonElementDef extends BaseElementDef {
   type: 'button';
   text: string;
   variant: 'primary' | 'secondary' | 'ghost' | 'danger';
+  backgroundColor?: string;
+  textColor?: string;
+  radius?: number;
   action?: LegacyElementAction;
 }
 
@@ -100,10 +123,21 @@ export interface ImageElementDef extends BaseElementDef {
 
 export interface TableViewElementDef extends BaseElementDef {
   type: 'table-view';
+  source?: QuerySource;
+  title?: string;
+  subtitle?: string;
   tableName?: string;
   columns: string[];
   pageSize?: number;
+  autoRefreshMs?: number;
+  orderBy?: string;
+  descending?: boolean;
   emptyLabel?: string;
+  filters?: Record<string, string>;
+  backgroundColor?: string;
+  headerBackgroundColor?: string;
+  textColor?: string;
+  striped?: boolean;
 }
 
 export interface InputFieldElementDef extends BaseElementDef {
@@ -114,6 +148,10 @@ export interface InputFieldElementDef extends BaseElementDef {
   options?: string[];
   submitGroup?: string;
   defaultValue?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  borderColor?: string;
+  radius?: number;
 }
 
 export type ChartType = 'pie' | 'bar' | 'line';
@@ -121,10 +159,18 @@ export type ChartType = 'pie' | 'bar' | 'line';
 export interface ChartElementDef extends BaseElementDef {
   type: 'chart';
   chartType: ChartType;
+  source?: QuerySource;
+  title?: string;
+  subtitle?: string;
   tableName?: string;
   labelColumn?: string;
   valueColumn?: string;
+  aggregation?: 'sum' | 'count';
+  filters?: Record<string, string>;
   colorPalette?: string[];
+  backgroundColor?: string;
+  textColor?: string;
+  emptyLabel?: string;
 }
 
 export interface UploadElementDef extends BaseElementDef {
@@ -133,6 +179,28 @@ export interface UploadElementDef extends BaseElementDef {
   pathTemplate?: string;
   accept?: string[];
   buttonLabel?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  borderColor?: string;
+  radius?: number;
+}
+
+export interface CartWidgetElementDef extends BaseElementDef {
+  type: 'cart-widget';
+  title?: string;
+  subtitle?: string;
+  productTable?: string;
+  displayColumns: string[];
+  priceColumn?: string;
+  orderTable?: string;
+  submitLabel?: string;
+  emptyLabel?: string;
+  backgroundColor?: string;
+  panelColor?: string;
+  textColor?: string;
+  accentColor?: string;
+  borderColor?: string;
+  radius?: number;
 }
 
 export type ElementDef =
@@ -142,7 +210,8 @@ export type ElementDef =
   | TableViewElementDef
   | InputFieldElementDef
   | ChartElementDef
-  | UploadElementDef;
+  | UploadElementDef
+  | CartWidgetElementDef;
 
 export type LegacyActionType =
   | 'none'
@@ -177,13 +246,29 @@ export interface ModalLayerDef {
 export interface UiLayout {
   version: number;
   resolution: { width: number; height: number };
+  theme: UiLayoutTheme;
   elements: ElementDef[];
   modals?: ModalLayerDef[];
 }
 
+export const DEFAULT_LAYOUT_THEME: UiLayoutTheme = {
+  frameBackground: '#130d11',
+  topBarBackground: 'rgba(255,255,255,0.03)',
+  topBarText: '#f5ede4',
+  canvasBackground: '#111118',
+  gridColor: 'rgba(255,255,255,0.4)',
+  accentColor: '#e8748a',
+  panelBackground: '#161116',
+  panelHeaderBackground: 'rgba(255,255,255,0.06)',
+  panelText: '#f5ede4',
+  panelMutedText: 'rgba(245,237,228,0.68)',
+  panelBorder: 'rgba(255,255,255,0.08)',
+};
+
 export const DEFAULT_LAYOUT: UiLayout = {
   version: 2,
   resolution: { width: 1280, height: 720 },
+  theme: { ...DEFAULT_LAYOUT_THEME },
   elements: [],
   modals: [],
 };
@@ -196,10 +281,47 @@ export const TRIGGERS_BY_ELEMENT_TYPE: Record<ElementType, EventTrigger[]> = {
   'input-field': ['input:commit', 'submit', 'select:change'],
   chart: ['load'],
   upload: ['click'],
+  'cart-widget': [],
 };
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeTheme(value: unknown): UiLayoutTheme {
+  const source = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+
+  return {
+    frameBackground: typeof source.frameBackground === 'string' ? source.frameBackground : DEFAULT_LAYOUT_THEME.frameBackground,
+    topBarBackground: typeof source.topBarBackground === 'string' ? source.topBarBackground : DEFAULT_LAYOUT_THEME.topBarBackground,
+    topBarText: typeof source.topBarText === 'string' ? source.topBarText : DEFAULT_LAYOUT_THEME.topBarText,
+    canvasBackground: typeof source.canvasBackground === 'string' ? source.canvasBackground : DEFAULT_LAYOUT_THEME.canvasBackground,
+    gridColor: typeof source.gridColor === 'string' ? source.gridColor : DEFAULT_LAYOUT_THEME.gridColor,
+    accentColor: typeof source.accentColor === 'string' ? source.accentColor : DEFAULT_LAYOUT_THEME.accentColor,
+    panelBackground: typeof source.panelBackground === 'string' ? source.panelBackground : DEFAULT_LAYOUT_THEME.panelBackground,
+    panelHeaderBackground: typeof source.panelHeaderBackground === 'string' ? source.panelHeaderBackground : DEFAULT_LAYOUT_THEME.panelHeaderBackground,
+    panelText: typeof source.panelText === 'string' ? source.panelText : DEFAULT_LAYOUT_THEME.panelText,
+    panelMutedText: typeof source.panelMutedText === 'string' ? source.panelMutedText : DEFAULT_LAYOUT_THEME.panelMutedText,
+    panelBorder: typeof source.panelBorder === 'string' ? source.panelBorder : DEFAULT_LAYOUT_THEME.panelBorder,
+  };
+}
+
+function normalizeStringMap(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, item]) => item != null && String(item).trim().length > 0)
+    .map(([key, item]) => [String(key), String(item)]);
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function normalizeLegacyOrderColumn(tableName: unknown, column: unknown) {
+  if (tableName === 'orders' && column === 'customer_name') {
+    return 'table_number';
+  }
+
+  return String(column);
 }
 
 function legacyActionToEvents(action?: LegacyElementAction): ElementEventBinding[] {
@@ -302,6 +424,9 @@ function normalizeElement(raw: unknown): ElementDef | null {
         type: 'button',
         text: String(source.text ?? source.props?.label ?? source.label ?? 'Button'),
         variant: source.variant ?? 'primary',
+        backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
+        textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
+        radius: source.radius != null ? Number(source.radius) : undefined,
       } as ButtonElementDef;
     case 'text':
       return {
@@ -325,31 +450,60 @@ function normalizeElement(raw: unknown): ElementDef | null {
       return {
         ...base,
         type: 'table-view',
+        source: source.source ?? 'business-table',
+        title: typeof source.title === 'string' ? source.title : undefined,
+        subtitle: typeof source.subtitle === 'string' ? source.subtitle : undefined,
         tableName: source.tableName ? String(source.tableName) : undefined,
-        columns: Array.isArray(source.columns) ? source.columns.map(String) : [],
+        columns: Array.isArray(source.columns)
+          ? source.columns.map((column) => normalizeLegacyOrderColumn(source.tableName, column))
+          : [],
         pageSize: source.pageSize != null ? Number(source.pageSize) : undefined,
+        autoRefreshMs: source.autoRefreshMs != null ? Number(source.autoRefreshMs) : undefined,
+        orderBy: typeof source.orderBy === 'string' ? source.orderBy : undefined,
+        descending: typeof source.descending === 'boolean' ? source.descending : undefined,
         emptyLabel: typeof source.emptyLabel === 'string' ? source.emptyLabel : undefined,
+        filters: normalizeStringMap(source.filters),
+        backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
+        headerBackgroundColor: typeof source.headerBackgroundColor === 'string' ? source.headerBackgroundColor : undefined,
+        textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
+        striped: typeof source.striped === 'boolean' ? source.striped : undefined,
       } as TableViewElementDef;
     case 'input-field':
       return {
         ...base,
         type: 'input-field',
-        fieldName: String(source.fieldName ?? 'value'),
-        placeholder: typeof source.placeholder === 'string' ? source.placeholder : undefined,
+        fieldName: source.fieldName === 'customer_name' ? 'table_number' : String(source.fieldName ?? 'value'),
+        placeholder: source.fieldName === 'customer_name'
+          ? 'Table number'
+          : typeof source.placeholder === 'string'
+            ? source.placeholder
+            : undefined,
         inputType: source.inputType ?? 'text',
         options: Array.isArray(source.options) ? source.options.map(String) : undefined,
         submitGroup: typeof source.submitGroup === 'string' ? source.submitGroup : undefined,
         defaultValue: typeof source.defaultValue === 'string' ? source.defaultValue : undefined,
+        backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
+        textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
+        borderColor: typeof source.borderColor === 'string' ? source.borderColor : undefined,
+        radius: source.radius != null ? Number(source.radius) : undefined,
       } as InputFieldElementDef;
     case 'chart':
       return {
         ...base,
         type: 'chart',
         chartType: source.chartType ?? 'bar',
+        source: source.source ?? 'business-table',
+        title: typeof source.title === 'string' ? source.title : undefined,
+        subtitle: typeof source.subtitle === 'string' ? source.subtitle : undefined,
         tableName: typeof source.tableName === 'string' ? source.tableName : undefined,
         labelColumn: typeof source.labelColumn === 'string' ? source.labelColumn : undefined,
         valueColumn: typeof source.valueColumn === 'string' ? source.valueColumn : undefined,
+        aggregation: source.aggregation ?? 'sum',
+        filters: normalizeStringMap(source.filters),
         colorPalette: Array.isArray(source.colorPalette) ? source.colorPalette.map(String) : undefined,
+        backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
+        textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
+        emptyLabel: typeof source.emptyLabel === 'string' ? source.emptyLabel : undefined,
       } as ChartElementDef;
     case 'upload':
       return {
@@ -359,7 +513,30 @@ function normalizeElement(raw: unknown): ElementDef | null {
         pathTemplate: typeof source.pathTemplate === 'string' ? source.pathTemplate : undefined,
         accept: Array.isArray(source.accept) ? source.accept.map(String) : undefined,
         buttonLabel: typeof source.buttonLabel === 'string' ? source.buttonLabel : undefined,
+        backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
+        textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
+        borderColor: typeof source.borderColor === 'string' ? source.borderColor : undefined,
+        radius: source.radius != null ? Number(source.radius) : undefined,
       } as UploadElementDef;
+    case 'cart-widget':
+      return {
+        ...base,
+        type: 'cart-widget',
+        title: typeof source.title === 'string' ? source.title : undefined,
+        subtitle: typeof source.subtitle === 'string' ? source.subtitle : undefined,
+        productTable: typeof source.productTable === 'string' ? source.productTable : undefined,
+        displayColumns: Array.isArray(source.displayColumns) ? source.displayColumns.map(String) : ['name'],
+        priceColumn: typeof source.priceColumn === 'string' ? source.priceColumn : undefined,
+        orderTable: typeof source.orderTable === 'string' ? source.orderTable : undefined,
+        submitLabel: typeof source.submitLabel === 'string' ? source.submitLabel : undefined,
+        emptyLabel: typeof source.emptyLabel === 'string' ? source.emptyLabel : undefined,
+        backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
+        panelColor: typeof source.panelColor === 'string' ? source.panelColor : undefined,
+        textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
+        accentColor: typeof source.accentColor === 'string' ? source.accentColor : undefined,
+        borderColor: typeof source.borderColor === 'string' ? source.borderColor : undefined,
+        radius: source.radius != null ? Number(source.radius) : undefined,
+      } as CartWidgetElementDef;
     default:
       return null;
   }
@@ -388,6 +565,7 @@ export function normalizeLayout(layout?: Partial<UiLayout> | null): UiLayout {
       width: Number(source.resolution?.width ?? DEFAULT_LAYOUT.resolution.width),
       height: Number(source.resolution?.height ?? DEFAULT_LAYOUT.resolution.height),
     },
+    theme: normalizeTheme(source.theme),
     elements: Array.isArray(source.elements)
       ? source.elements.map(normalizeElement).filter((item): item is ElementDef => Boolean(item))
       : [],

@@ -124,7 +124,7 @@ export function useCanvasRuntime() {
   }
 
   async function runQueryAction(elementId: string, action: RuntimeActionDefinition, trigger: EventTrigger) {
-    if (!action.table) return [];
+    if (!action.table && action.source !== 'audit-log') return [];
 
     const envelope: RuntimeEventEnvelope = {
       inpoint_id: context.value.terminalId,
@@ -155,6 +155,11 @@ export function useCanvasRuntime() {
       : [];
     runtimeState.value.queryTables[targetElementId] = action.table;
     return runtimeState.value.queryResults[targetElementId];
+  }
+
+  async function reloadElement(element: ElementDef) {
+    loadedElements.delete(element.id);
+    return loadElement(element);
   }
 
   async function pickFile(accept?: string[]) {
@@ -266,7 +271,19 @@ export function useCanvasRuntime() {
     }
 
     if (action.type === 'query') {
-      return runQueryAction(options.element.id, action, options.trigger);
+      const resolvedWhere = action.where
+        ? resolveRuntimePayload(action.where, {
+            cart: runtimeState.value.cart,
+            inputs: runtimeState.value.inputs,
+            uploads: runtimeState.value.uploads,
+            elementId: options.element.id,
+          }) as Record<string, unknown>
+        : undefined;
+
+      return runQueryAction(options.element.id, {
+        ...action,
+        where: resolvedWhere as any,
+      }, options.trigger);
     }
 
     const resolvedPayload = resolveRuntimePayload(action.payload, {
@@ -281,10 +298,19 @@ export function useCanvasRuntime() {
       uploads: runtimeState.value.uploads,
       elementId: options.element.id,
     });
+    const resolvedWhere = action.where
+      ? resolveRuntimePayload(action.where, {
+          cart: runtimeState.value.cart,
+          inputs: runtimeState.value.inputs,
+          uploads: runtimeState.value.uploads,
+          elementId: options.element.id,
+        }) as Record<string, unknown>
+      : undefined;
 
     const runtimeAction: RuntimeActionDefinition = {
       ...action,
       rowId: resolvedRowId as any,
+      where: resolvedWhere as any,
     };
 
     const envelope: RuntimeEventEnvelope = {
@@ -325,13 +351,47 @@ export function useCanvasRuntime() {
       return;
     }
 
-    if (element.type === 'table-view' && element.tableName) {
+    if (element.type === 'table-view' && element.source !== 'audit-log' && element.tableName) {
+        await runQueryAction(element.id, {
+          type: 'query',
+          source: element.source ?? 'business-table',
+          table: element.tableName,
+          columns: element.columns,
+          orderBy: element.orderBy,
+          descending: element.descending,
+          targetElementId: element.id,
+          limit: element.pageSize ?? 20,
+          where: element.filters,
+      }, 'load');
+    }
+
+    if (element.type === 'table-view' && element.source === 'audit-log') {
       await runQueryAction(element.id, {
         type: 'query',
-        table: element.tableName,
-        columns: element.columns,
+        source: 'audit-log',
+        columns: element.columns.length > 0
+          ? element.columns
+          : ['created_at', 'actor_name', 'action_type', 'target_table'],
         targetElementId: element.id,
         limit: element.pageSize ?? 20,
+        where: element.filters,
+      }, 'load');
+    }
+
+    if (element.type === 'chart') {
+      const defaultColumns = [element.labelColumn, element.valueColumn]
+        .filter((column): column is string => Boolean(column));
+
+      await runQueryAction(element.id, {
+        type: 'query',
+        source: element.source ?? 'business-table',
+        table: element.source === 'audit-log' ? undefined : element.tableName,
+        columns: defaultColumns.length > 0
+          ? Array.from(new Set([...defaultColumns, 'created_at']))
+          : ['created_at'],
+        targetElementId: element.id,
+        limit: 100,
+        where: element.filters,
       }, 'load');
     }
 
@@ -340,6 +400,7 @@ export function useCanvasRuntime() {
       if (cartElement.productTable) {
         await runQueryAction(element.id, {
           type: 'query',
+          source: 'business-table',
           table: cartElement.productTable,
           columns: ['*'],
           targetElementId: element.id,
@@ -367,6 +428,7 @@ export function useCanvasRuntime() {
     dispatch,
     triggerElement,
     loadElement,
+    reloadElement,
     isElementDisabled,
   };
 }

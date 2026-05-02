@@ -2,7 +2,7 @@
 import { Circle, Delete, Power } from 'lucide-vue-next';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
-import { normalizeLayout, type UiLayout } from '~/lib/uiTypes';
+import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
 
 definePageMeta({ layout: 'default' });
 
@@ -17,16 +17,20 @@ interface TerminalRuntimeSession {
 
 const route = useRoute();
 const terminalId = computed(() => route.params.id as string);
+const { isLoggedIn } = useAuth();
 
-const displayName = ref('');
 const pin = ref('');
-const error = ref<string | null>(null);
+const loginError = ref<string | null>(null);
 const loading = ref(false);
 const session = ref<TerminalRuntimeSession | null>(null);
 const businessId = ref('');
 const serverDisplayName = ref('');
 const serverPinLength = ref(4);
-const step = ref<1 | 2>(1);
+const terminalTheme = ref<UiLayoutTheme>({ ...DEFAULT_LAYOUT_THEME });
+const logoutPin = ref('');
+const logoutError = ref<string | null>(null);
+const showLogoutPrompt = ref(false);
+const logoutLoading = ref(false);
 
 const viewW = ref(1280);
 const viewH = ref(720);
@@ -53,12 +57,36 @@ const canvasScale = computed(() => {
 const activeModal = computed(() =>
   session.value?.uiLayout?.modals?.find((modal) => modal.id === runtime.state.value.activeModalId) ?? null,
 );
+const activeTheme = computed(() => session.value?.uiLayout?.theme ?? terminalTheme.value ?? DEFAULT_LAYOUT_THEME);
+
+function adminReturnLocation() {
+  return `/dashboard/terminals/${terminalId.value}`;
+}
+
+function terminalReturnLocation() {
+  return `/terminal/${terminalId.value}`;
+}
+
+function adminEntryLocation() {
+  if (isLoggedIn.value) {
+    return adminReturnLocation();
+  }
+
+  return {
+    path: '/login',
+    query: {
+      redirect: adminReturnLocation(),
+      returnTo: terminalReturnLocation(),
+    },
+  };
+}
 
 async function bootstrap() {
   const res = await $fetch<{
     businessId: string;
     displayName: string;
     pinLength: number;
+    theme: UiLayoutTheme;
     permissions: any;
     error: string | null;
   }>(`/api/terminals/${terminalId.value}/meta`).catch(() => null);
@@ -67,16 +95,7 @@ async function bootstrap() {
     businessId.value = res.businessId;
     serverDisplayName.value = res.displayName;
     serverPinLength.value = res.pinLength || 4;
-  }
-}
-
-function nextStep() {
-  if (!displayName.value.trim()) return;
-  if (displayName.value.trim().toLowerCase() === serverDisplayName.value.toLowerCase()) {
-    step.value = 2;
-    error.value = null;
-  } else {
-    error.value = 'Invalid terminal name';
+    terminalTheme.value = res.theme ?? { ...DEFAULT_LAYOUT_THEME };
   }
 }
 
@@ -90,22 +109,21 @@ function configureRuntime(currentSession: TerminalRuntimeSession) {
 }
 
 async function login() {
-  if (!displayName.value || pin.value.length < 4) return;
+  if (pin.value.length < serverPinLength.value) return;
   loading.value = true;
-  error.value = null;
+  loginError.value = null;
 
   try {
     const res = await $fetch<{ session: TerminalRuntimeSession | null; error: string | null }>('/api/terminals/login', {
       method: 'POST',
       body: {
-        businessId: businessId.value,
-        displayName: displayName.value,
+        terminalId: terminalId.value,
         pin: pin.value,
       },
     });
 
     if (res.error || !res.session) {
-      error.value = res.error ?? 'Invalid credentials';
+      loginError.value = res.error ?? 'Invalid credentials';
       return;
     }
 
@@ -115,18 +133,29 @@ async function login() {
     };
     configureRuntime(session.value);
     scheduleExpiryWarning(session.value.expiresAt);
+    pin.value = '';
   } catch (err) {
-    error.value = (err as Error).message;
+    loginError.value = (err as Error).message;
   } finally {
     loading.value = false;
   }
 }
 
 function appendPin(digit: string) {
+  if (showLogoutPrompt.value) {
+    if (logoutPin.value.length < serverPinLength.value) logoutPin.value += digit;
+    return;
+  }
+
   if (pin.value.length < serverPinLength.value) pin.value += digit;
 }
 
 function clearPin() {
+  if (showLogoutPrompt.value) {
+    logoutPin.value = '';
+    return;
+  }
+
   pin.value = '';
 }
 
@@ -146,17 +175,51 @@ function scheduleExpiryWarning(expiresAt: string) {
   }, delay);
 }
 
-async function logout() {
-  try {
-    await $fetch('/api/terminals/logout', { method: 'POST' });
-  } catch {
-    // ignore logout API errors and clear local state anyway
-  }
+function openLogoutPrompt() {
+  showLogoutPrompt.value = true;
+  logoutPin.value = '';
+  logoutError.value = null;
+}
 
-  session.value = null;
-  runtime.reset();
-  pin.value = '';
-  step.value = 1;
+function closeLogoutPrompt() {
+  showLogoutPrompt.value = false;
+  logoutPin.value = '';
+  logoutError.value = null;
+}
+
+async function logout() {
+  if (!session.value || logoutPin.value.length < serverPinLength.value) return;
+  logoutLoading.value = true;
+  logoutError.value = null;
+
+  try {
+    const res = await $fetch<{ success: boolean; error: string | null }>('/api/terminals/logout', {
+      method: 'POST',
+      body: {
+        terminalId: terminalId.value,
+        pin: logoutPin.value,
+      },
+    });
+
+    if (res.error || !res.success) {
+      logoutError.value = res.error ?? 'Invalid PIN';
+      return;
+    }
+
+    session.value = null;
+    runtime.reset();
+    pin.value = '';
+    closeLogoutPrompt();
+    await navigateTo(adminEntryLocation());
+  } catch (err) {
+    logoutError.value = (err as Error).message;
+  } finally {
+    logoutLoading.value = false;
+  }
+}
+
+function leaveLoginPage() {
+  navigateTo(adminEntryLocation());
 }
 
 onMounted(() => {
@@ -172,14 +235,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="session" class="w-full h-dvh overflow-hidden relative bg-[#fdf7f2]">
-    <div class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-md border-b" style="border-color: rgba(61,24,32,0.1);">
+  <div v-if="session" class="w-full h-dvh overflow-hidden relative" :style="{ background: activeTheme.frameBackground }">
+    <div
+      class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 backdrop-blur-md border-b"
+      :style="{ background: activeTheme.topBarBackground, borderColor: activeTheme.panelBorder }"
+    >
       <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" style="background: rgb(var(--shell-sidebar));">T</div>
-        <span class="text-xs font-semibold" style="color: rgb(var(--shell-sidebar));">{{ session.displayName }}</span>
-        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06); border: 1px solid rgba(61,24,32,0.1);">{{ session.role }}</span>
+        <div class="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" :style="{ background: activeTheme.accentColor }">T</div>
+        <span class="text-xs font-semibold" :style="{ color: activeTheme.topBarText }">{{ session.displayName }}</span>
+        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" :style="{ color: activeTheme.panelMutedText, background: activeTheme.panelHeaderBackground, border: `1px solid ${activeTheme.panelBorder}` }">{{ session.role }}</span>
       </div>
-      <button class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" style="color: rgba(61,24,32,0.6);" @click="logout">
+      <button class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" :style="{ color: activeTheme.topBarText }" @click="openLogoutPrompt">
         <Power class="w-3.5 h-3.5" /> Logout
       </button>
     </div>
@@ -207,12 +273,12 @@ onUnmounted(() => {
         class="absolute inset-0 z-[60] flex items-center justify-center bg-black/45"
       >
         <div
-          class="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#1b1214] shadow-2xl"
+          class="relative overflow-hidden rounded-[28px] border shadow-2xl"
           :style="activeModal.presentation === 'fullscreen'
-            ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px;`
+            ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`
             : activeModal.presentation === 'drawer'
-              ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto;`
-              : 'width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px);'"
+              ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`
+              : `width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`"
         >
           <ElementRenderer
             v-for="el in activeModal.elements"
@@ -223,64 +289,35 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-  </div>
 
-  <div v-else class="min-h-dvh flex items-center justify-center px-4 bg-[#fdf7f2]">
-    <div class="w-full max-w-xs space-y-6 animate-fade-in">
-      <div class="text-center">
-        <div class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-white font-serif text-2xl mb-4 shadow-xl" style="background: rgb(var(--shell-sidebar));">
-          T
-        </div>
-        <h1 class="text-xl font-serif font-medium" style="color: rgb(var(--shell-sidebar));">Terminal Login</h1>
-        <p class="text-sm mt-1" style="color: rgba(61,24,32,0.5);">Enter your name and PIN</p>
-      </div>
-
-      <div class="bg-white rounded-3xl p-6 space-y-5 shadow-2xl" style="border: 1px solid rgba(61,24,32,0.08);">
-        <template v-if="step === 1">
-          <input
-            v-model="displayName"
-            class="w-full rounded-xl px-4 py-3 text-sm text-center font-medium transition-all focus:outline-none"
-            style="background: rgba(61,24,32,0.04); color: rgb(var(--shell-sidebar)); border: 1.5px solid rgba(61,24,32,0.08);"
-            placeholder="Your name"
-            autofocus
-            @keyup.enter="nextStep"
-          />
-
-          <div v-if="error" class="text-xs text-center font-medium mt-1" style="color: #dc2626;">{{ error }}</div>
-
-          <button
-            :disabled="!displayName"
-            class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
-            style="background: rgb(var(--shell-sidebar)); box-shadow: 0 4px 14px rgba(61,24,32,0.25);"
-            @click="nextStep"
-          >
-            Next
-          </button>
-        </template>
-
-        <template v-else>
-          <div
-            class="w-full rounded-xl px-4 py-3 text-sm text-center font-semibold"
-            style="background: rgba(61,24,32,0.04); color: rgb(var(--shell-sidebar)); border: 1.5px solid rgba(61,24,32,0.08);"
-          >
-            {{ displayName }}
+    <Transition name="v">
+      <div
+        v-if="showLogoutPrompt"
+        class="absolute inset-0 z-[90] flex items-center justify-center bg-[rgba(15,5,7,0.55)] backdrop-blur-sm px-4"
+        @click.self="closeLogoutPrompt"
+      >
+        <div class="w-full max-w-xs rounded-[28px] bg-white p-6 shadow-2xl" style="border: 1px solid rgba(61,24,32,0.08);">
+          <div class="text-center">
+            <div class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white font-semibold mb-3" style="background: rgb(var(--shell-sidebar));">T</div>
+            <h2 class="text-lg font-serif" style="color: rgb(var(--shell-sidebar));">Exit Terminal Mode</h2>
+            <p class="text-sm mt-1" style="color: rgba(61,24,32,0.5);">Enter the terminal PIN to leave runtime mode and return to the admin side.</p>
           </div>
 
-          <div class="flex gap-2 justify-center">
+          <div class="flex gap-2 justify-center mt-5">
             <div
               v-for="i in serverPinLength"
-              :key="i"
+              :key="`logout-${i}`"
               class="w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all"
-              :style="i <= pin.length ? 'border-color: rgb(var(--shell-sidebar)); background: rgba(61,24,32,0.05);' : 'border-color: rgba(61,24,32,0.1); background: transparent;'"
+              :style="i <= logoutPin.length ? 'border-color: rgb(var(--shell-sidebar)); background: rgba(61,24,32,0.05);' : 'border-color: rgba(61,24,32,0.1); background: transparent;'"
             >
-              <Circle class="w-3.5 h-3.5 transition-all" :style="i <= pin.length ? 'fill: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar));' : 'color: transparent;'" />
+              <Circle class="w-3.5 h-3.5 transition-all" :style="i <= logoutPin.length ? 'fill: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar));' : 'color: transparent;'" />
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-2.5 mt-2">
+          <div class="grid grid-cols-3 gap-2.5 mt-4">
             <button
               v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','delete']"
-              :key="digit"
+              :key="`logout-digit-${digit}`"
               :class="[
                 'h-14 rounded-2xl text-xl font-semibold transition-all active:scale-95 flex items-center justify-center',
                 digit === '' ? 'invisible' : '',
@@ -294,17 +331,94 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div v-if="error" class="text-xs text-center font-medium mt-1" style="color: #dc2626;">{{ error }}</div>
+          <div v-if="logoutError" class="text-xs text-center font-medium mt-3" style="color: #dc2626;">{{ logoutError }}</div>
 
-          <button
-            :disabled="pin.length < serverPinLength || loading"
-            class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
-            style="background: rgb(var(--shell-sidebar)); box-shadow: 0 4px 14px rgba(61,24,32,0.25);"
-            @click="login"
+          <div class="flex gap-3 mt-5">
+            <button
+              class="flex-1 py-3 rounded-xl text-sm font-medium transition-all"
+              style="border: 1px solid rgba(61,24,32,0.14); color: rgba(61,24,32,0.7);"
+              @click="closeLogoutPrompt"
+            >
+              Cancel
+            </button>
+            <button
+              :disabled="logoutPin.length < serverPinLength || logoutLoading"
+              class="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40"
+              style="background: rgb(var(--shell-sidebar));"
+              @click="logout"
+            >
+              {{ logoutLoading ? 'Checking...' : 'Exit' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </div>
+
+  <div v-else class="min-h-dvh flex items-center justify-center px-4" :style="{ background: activeTheme.frameBackground }">
+    <div class="w-full max-w-xs space-y-6 animate-fade-in">
+      <div class="text-center">
+        <div class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-white font-serif text-2xl mb-4 shadow-xl" :style="{ background: activeTheme.accentColor }">
+          T
+        </div>
+        <h1 class="text-xl font-serif font-medium" :style="{ color: activeTheme.panelText }">Terminal Login</h1>
+        <p class="text-sm mt-1" :style="{ color: activeTheme.panelMutedText }">Enter the PIN for {{ serverDisplayName || 'this terminal' }}</p>
+      </div>
+
+      <div class="rounded-3xl p-6 space-y-5 shadow-2xl" :style="{ background: activeTheme.panelBackground, border: `1px solid ${activeTheme.panelBorder}` }">
+        <div
+          class="w-full rounded-xl px-4 py-3 text-sm text-center font-semibold"
+          :style="{ background: activeTheme.panelHeaderBackground, color: activeTheme.panelText, border: `1.5px solid ${activeTheme.panelBorder}` }"
+        >
+          {{ serverDisplayName || 'Loading terminal...' }}
+        </div>
+
+        <div class="flex gap-2 justify-center">
+          <div
+            v-for="i in serverPinLength"
+            :key="i"
+            class="w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all"
+            :style="i <= pin.length ? `border-color: ${activeTheme.accentColor}; background: ${activeTheme.panelHeaderBackground};` : `border-color: ${activeTheme.panelBorder}; background: transparent;`"
           >
-            {{ loading ? 'Checking...' : 'Login' }}
+            <Circle class="w-3.5 h-3.5 transition-all" :style="i <= pin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 mt-2">
+          <button
+            v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','delete']"
+            :key="digit"
+            :class="[
+              'h-14 rounded-2xl text-xl font-semibold transition-all active:scale-95 flex items-center justify-center',
+              digit === '' ? 'invisible' : '',
+              digit === 'delete' ? 'opacity-60 hover:opacity-100 hover:bg-black/5' : 'hover:bg-black/5',
+            ]"
+            :style="digit !== '' ? `color: ${activeTheme.panelText};` : ''"
+            @click="digit === 'delete' ? clearPin() : appendPin(digit)"
+          >
+            <Delete v-if="digit === 'delete'" class="w-6 h-6" />
+            <template v-else>{{ digit }}</template>
           </button>
-        </template>
+        </div>
+
+        <div v-if="loginError" class="text-xs text-center font-medium mt-1" style="color: #dc2626;">{{ loginError }}</div>
+
+        <button
+          :disabled="pin.length < serverPinLength || loading"
+          class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
+          :style="{ background: activeTheme.accentColor, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
+          @click="login"
+        >
+          {{ loading ? 'Checking...' : 'Login' }}
+        </button>
+
+        <button
+          class="w-full py-3 rounded-xl text-sm font-medium transition-all"
+          :style="{ border: `1px solid ${activeTheme.panelBorder}`, color: activeTheme.panelText }"
+          @click="leaveLoginPage"
+        >
+          {{ isLoggedIn ? 'Return To Dashboard' : 'Admin Login' }}
+        </button>
       </div>
     </div>
   </div>

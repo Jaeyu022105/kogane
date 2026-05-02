@@ -37,7 +37,13 @@ async function commit(trigger: 'input:commit' | 'select:change') {
     <template v-if="element.inputType === 'select'">
       <select
         :value="model"
-        class="w-full h-full bg-white/5 border border-white/15 rounded-lg px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-50"
+        class="w-full h-full px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-50"
+        :style="{
+          background: element.backgroundColor ?? 'rgba(255,255,255,0.05)',
+          color: element.textColor ?? '#ffffff',
+          border: `1px solid ${element.borderColor ?? 'rgba(255,255,255,0.15)'}`,
+          borderRadius: `${element.radius ?? 12}px`,
+        }"
         :disabled="disabled"
         @change="onSelectChange"
       >
@@ -51,7 +57,13 @@ async function commit(trigger: 'input:commit' | 'select:change') {
         :placeholder="element.placeholder ?? ''"
         :value="model"
         :disabled="disabled"
-        class="w-full h-full bg-white/5 border border-white/15 rounded-lg px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-50"
+        class="w-full h-full px-3 text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-50"
+        :style="{
+          background: element.backgroundColor ?? 'rgba(255,255,255,0.05)',
+          color: element.textColor ?? '#ffffff',
+          border: `1px solid ${element.borderColor ?? 'rgba(255,255,255,0.15)'}`,
+          borderRadius: `${element.radius ?? 12}px`,
+        }"
         @input="onInput"
         @blur="commit('input:commit')"
         @keyup.enter="commit('input:commit')"

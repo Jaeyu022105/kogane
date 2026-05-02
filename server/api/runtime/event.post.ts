@@ -5,7 +5,9 @@ import type { AuditActionType } from '~/lib/audit';
 import type { RuntimeEventEnvelope } from '~/lib/runtime';
 import { writeAuditLog } from '~/server/utils/audit';
 import { deleteBusinessRow, fetchRowById, insertBusinessRow, queryBusinessRows, updateBusinessRow } from '~/server/utils/businessTable';
-import { getTerminalContext } from '~/server/utils/business';
+import { getTerminalContext, replacePlaceholdersForDialect, sqlPlaceholder } from '~/server/utils/business';
+import { ensureStarterBusinessTable } from '~/server/utils/starterTables';
+import { db } from '~/lib/db';
 
 type RuntimeBatchBody =
   | RuntimeEventEnvelope
@@ -23,6 +25,74 @@ function actionToAuditType(actionType: string): AuditActionType {
     return actionType;
   }
   return 'permission:denied';
+}
+
+const AUDIT_LOG_COLUMNS = new Set([
+  'id',
+  'business_id',
+  'actor_id',
+  'actor_type',
+  'actor_name',
+  'action_type',
+  'target_table',
+  'target_id',
+  'payload_before',
+  'payload_after',
+  'metadata',
+  'created_at',
+]);
+
+const AUDIT_LOG_FILTER_COLUMNS = new Set([
+  'actor_type',
+  'actor_name',
+  'action_type',
+  'target_table',
+  'target_id',
+]);
+
+async function queryAuditLogRows(options: {
+  businessId: string;
+  columns?: string[];
+  where?: Record<string, unknown>;
+  limit?: number;
+  offset?: number;
+}) {
+  const selectedColumns = options.columns?.length ? options.columns : [
+    'created_at',
+    'actor_name',
+    'actor_type',
+    'action_type',
+    'target_table',
+    'target_id',
+  ];
+
+  for (const column of selectedColumns) {
+    if (!AUDIT_LOG_COLUMNS.has(column)) {
+      throw new Error(`Invalid audit_log column: ${column}`);
+    }
+  }
+
+  const clauses = [`business_id = ${sqlPlaceholder(1)}`];
+  const params: unknown[] = [options.businessId];
+
+  for (const [key, value] of Object.entries(options.where ?? {})) {
+    if (!AUDIT_LOG_FILTER_COLUMNS.has(key) || value == null || value === '') continue;
+    params.push(value);
+    clauses.push(`${key} = ${sqlPlaceholder(params.length)}`);
+  }
+
+  const limit = Math.min(options.limit ?? 50, 200);
+  const offset = Math.max(options.offset ?? 0, 0);
+  params.push(limit);
+  const limitPlaceholder = sqlPlaceholder(params.length);
+  params.push(offset);
+  const offsetPlaceholder = sqlPlaceholder(params.length);
+
+  const sql = replacePlaceholdersForDialect(
+    `SELECT ${selectedColumns.join(', ')} FROM audit_log WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder}`,
+  );
+
+  return db.query(sql, params);
 }
 
 export default defineEventHandler(async (event) => {
@@ -67,7 +137,31 @@ export default defineEventHandler(async (event) => {
         continue;
       }
 
+      if (item.action.table) {
+        const ensured = await ensureStarterBusinessTable(terminal.schemaName, item.action.table);
+        if (ensured.error) {
+          throw new Error(ensured.error);
+        }
+      }
+
       if (item.action.type === 'query') {
+        if (item.action.source === 'audit-log') {
+          const queryResult = await queryAuditLogRows({
+            businessId: session.businessId,
+            columns: item.action.columns,
+            where: item.action.where,
+            limit: item.action.limit,
+            offset: item.action.offset,
+          });
+
+          results.push({
+            ok: !queryResult.error,
+            data: queryResult.data ?? [],
+            error: queryResult.error,
+          });
+          continue;
+        }
+
         if (!item.action.table) throw new Error('Query actions require a table');
 
         const queryResult = await queryBusinessRows(
@@ -75,9 +169,11 @@ export default defineEventHandler(async (event) => {
           item.action.table,
           item.action.columns ?? [],
           {
+            where: item.action.where as Record<string, unknown> | undefined,
             limit: Math.min(item.action.limit ?? 50, 200),
             offset: item.action.offset ?? 0,
-            orderBy: 'created_at',
+            orderBy: item.action.orderBy,
+            descending: item.action.descending,
           },
         );
 

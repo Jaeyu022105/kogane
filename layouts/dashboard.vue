@@ -10,7 +10,12 @@ const { business, fetchBusiness }     = useBusiness();
 
 onMounted(async () => {
   if (!isLoggedIn.value) {
-    router.push('/login');
+    router.push({
+      path: '/login',
+      query: {
+        redirect: route.fullPath,
+      },
+    });
     return;
   }
   await fetchBusiness();
@@ -34,7 +39,12 @@ function isActive(to: string) {
 
 function handleLogout() {
   logout();
-  router.push('/login');
+  router.push({
+    path: '/login',
+    query: {
+      redirect: route.fullPath,
+    },
+  });
 }
 </script>
 

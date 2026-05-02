@@ -12,6 +12,13 @@ function validateColumns(columns: string[]) {
   for (const column of columns) validateIdentifier(column);
 }
 
+function serializeBusinessValue(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return JSON.stringify(value);
+  if (value && typeof value === 'object') return JSON.stringify(value);
+  return value;
+}
+
 export async function fetchRowById<T = Record<string, unknown>>(schemaName: string, tableName: string, rowId: unknown) {
   validateIdentifier(tableName);
   const table = qualifyBusinessTable(schemaName, tableName);
@@ -31,7 +38,7 @@ export async function insertBusinessRow<T = Record<string, unknown>>(schemaName:
     `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *`,
   );
 
-  return db.queryOne<T>(sql, Object.values(values));
+  return db.queryOne<T>(sql, Object.values(values).map(serializeBusinessValue));
 }
 
 export async function updateBusinessRow<T = Record<string, unknown>>(schemaName: string, tableName: string, rowId: unknown, values: Record<string, unknown>) {
@@ -47,7 +54,7 @@ export async function updateBusinessRow<T = Record<string, unknown>>(schemaName:
     `UPDATE ${table} SET ${setClause} WHERE id = ${sqlPlaceholder(keys.length + 1)} RETURNING *`,
   );
 
-  return db.queryOne<T>(sql, [...Object.values(values), rowId]);
+  return db.queryOne<T>(sql, [...Object.values(values).map(serializeBusinessValue), rowId]);
 }
 
 export async function deleteBusinessRow<T = Record<string, unknown>>(schemaName: string, tableName: string, rowId: unknown) {

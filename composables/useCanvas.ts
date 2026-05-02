@@ -65,6 +65,23 @@ export function useCanvas() {
     layout.value.resolution = { width, height };
   }
 
+  function updateTheme(patch: Partial<UiLayout['theme']>) {
+    snapshot();
+    layout.value.theme = {
+      ...layout.value.theme,
+      ...patch,
+    };
+  }
+
+  function updateAllElements(mapper: (element: ElementDef) => ElementDef) {
+    snapshot();
+    layout.value.elements = layout.value.elements.map((element) => mapper(element));
+    layout.value.modals = (layout.value.modals ?? []).map((modal) => ({
+      ...modal,
+      elements: modal.elements.map((element) => mapper(element)),
+    }));
+  }
+
   function addModal(name: string, presentation: ModalLayerDef['presentation'] = 'custom') {
     snapshot();
     layout.value.modals = layout.value.modals ?? [];
@@ -91,6 +108,13 @@ export function useCanvas() {
     snapshot();
     getLayerElements().push(element);
     selectedId.value = element.id;
+  }
+
+  function addElements(elements: ElementDef[]) {
+    if (elements.length === 0) return;
+    snapshot();
+    getLayerElements().push(...elements);
+    selectedId.value = elements[elements.length - 1]?.id ?? null;
   }
 
   function removeElement(id: string) {
@@ -225,9 +249,12 @@ export function useCanvas() {
     addModal,
     removeModal,
     addElement,
+    addElements,
     removeElement,
     updateElement,
     updateResolution,
+    updateTheme,
+    updateAllElements,
     moveElement,
     selectElement,
     bringForward,

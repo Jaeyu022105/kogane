@@ -1,6 +1,6 @@
 /**
  * POST /api/terminals/login
- * Authenticates an terminal user via display name + PIN.
+ * Authenticates a terminal user via terminal id + PIN.
  * Returns a session token for the terminal session.
  */
 
@@ -12,23 +12,33 @@ import { db } from '~/lib/db';
 import { writeAuditLog } from '~/server/utils/audit';
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{ businessId: string; displayName: string; pin: string }>(event);
+  const body = (await readBody<{
+    terminalId?: string;
+    businessId?: string;
+    displayName?: string;
+    pin?: string;
+  }>(event)) ?? {};
 
-  if (!body.businessId || !body.displayName || !body.pin) {
+  if (!body.pin || (!body.terminalId && (!body.businessId || !body.displayName))) {
     return { error: 'Missing credentials', session: null };
   }
 
+  const query = body.terminalId
+    ? 'SELECT id, business_id, pin_hash, role, permissions, ui_layout, display_name FROM terminals WHERE id = ?'
+    : 'SELECT id, business_id, pin_hash, role, permissions, ui_layout, display_name FROM terminals WHERE business_id = ? AND display_name = ?';
+  const params = body.terminalId
+    ? [body.terminalId]
+    : [body.businessId, body.displayName];
+
   const { data: terminal } = await db.queryOne<{
     id: string;
+    business_id: string;
     pin_hash: string;
     role: string;
     permissions: string;
     ui_layout: string;
     display_name: string;
-  }>(
-    'SELECT id, pin_hash, role, permissions, ui_layout, display_name FROM terminals WHERE business_id = ? AND display_name = ?',
-    [body.businessId, body.displayName],
-  );
+  }>(query, params);
 
   if (!terminal) return { error: 'Invalid credentials', session: null };
 
@@ -51,14 +61,14 @@ export default defineEventHandler(async (event) => {
 
   await issueTerminalSession(event, {
     terminalId: terminal.id,
-    businessId: body.businessId,
+    businessId: terminal.business_id,
     displayName: terminal.display_name,
     role: terminal.role,
     expiresAt,
   });
 
   await writeAuditLog({
-    businessId: body.businessId,
+    businessId: terminal.business_id,
     actorType: 'inpoint',
     actorName: terminal.display_name,
     actionType: 'login',

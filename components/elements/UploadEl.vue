@@ -23,7 +23,13 @@ async function handleClick() {
 
 <template>
   <button
-    class="w-full h-full rounded-2xl border border-dashed border-white/20 bg-white/5 px-4 py-3 text-left text-white/85 transition-all hover:bg-white/10 disabled:opacity-40"
+    class="w-full h-full px-4 py-3 text-left transition-all hover:bg-white/10 disabled:opacity-40"
+    :style="{
+      background: element.backgroundColor ?? 'rgba(255,255,255,0.05)',
+      color: element.textColor ?? '#f5ede4',
+      border: `1px dashed ${element.borderColor ?? 'rgba(255,255,255,0.2)'}`,
+      borderRadius: `${element.radius ?? 18}px`,
+    }"
     :disabled="disabled"
     @click="handleClick"
   >

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Shield, Sparkles } from 'lucide-vue-next';
+import { ArrowLeft, Shield, Sparkles, Trash2 } from 'lucide-vue-next';
 import { DEFAULT_TERMINAL_PERMISSIONS, normalizePermissions, resolveTablePermissions, TERMINAL_PERMISSION_PRESETS, type TablePermissionKey, type TerminalPermissions } from '~/lib/permissions';
 
 definePageMeta({ layout: 'dashboard' });
@@ -8,11 +8,13 @@ const route = useRoute();
 const router = useRouter();
 const { authHeaders } = useAuth();
 const { business } = useBusiness();
+const { confirm, alert } = useModal();
 const businessId = computed(() => business.value?.id);
 const { tables, fetchTables } = useSchema(businessId);
 
 const loading = ref(false);
 const saving = ref(false);
+const deleting = ref(false);
 const error = ref<string | null>(null);
 const terminal = ref<{
   id: string;
@@ -107,6 +109,47 @@ async function savePermissions() {
   }
 }
 
+async function deleteTerminal() {
+  if (!terminal.value) return;
+
+  const approved = await confirm({
+    title: 'Delete terminal?',
+    description: `Remove ${terminal.value.display_name} and its layout from this business.`,
+    confirmLabel: 'Delete Terminal',
+    confirmVariant: 'danger',
+  });
+
+  if (!approved) return;
+
+  deleting.value = true;
+
+  try {
+    const res = await $fetch<{ success: boolean; error: string | null }>(`/api/terminals/${terminal.value.id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+
+    if (res.error) {
+      await alert({
+        title: 'Unable to delete terminal',
+        description: res.error,
+        confirmLabel: 'Close',
+      });
+      return;
+    }
+
+    router.push('/dashboard/terminals');
+  } catch (err) {
+    await alert({
+      title: 'Unable to delete terminal',
+      description: (err as Error).message,
+      confirmLabel: 'Close',
+    });
+  } finally {
+    deleting.value = false;
+  }
+}
+
 onMounted(async () => {
   await fetchTables();
   await loadTerminal();
@@ -132,6 +175,18 @@ watch(businessId, fetchTables);
         </div>
       </div>
       <div class="flex items-center gap-4">
+        <button
+          class="text-sm font-semibold px-5 py-2.5 rounded-2xl transition-all disabled:opacity-40"
+          style="background: rgba(239,68,68,0.08); color: #b42318; border: 1px solid rgba(239,68,68,0.16);"
+          :disabled="deleting || !terminal"
+          @click="deleteTerminal"
+        >
+          <div class="flex items-center gap-2">
+            <div v-if="deleting" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+            <Trash2 v-else class="w-4 h-4" />
+            {{ deleting ? 'Deleting...' : 'Delete Terminal' }}
+          </div>
+        </button>
         <button
           class="group relative text-sm font-semibold px-6 py-2.5 rounded-2xl transition-all disabled:opacity-40 overflow-hidden shadow-warm"
           style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"

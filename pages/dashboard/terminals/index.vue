@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight, Shield } from 'lucide-vue-next';
+import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight, Shield, Trash2 } from 'lucide-vue-next';
 import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 
 definePageMeta({ layout: 'dashboard' });
 
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
+const { confirm, alert } = useModal();
 
 const terminals  = ref<any[]>([]);
 const loading    = ref(false);
 const showForm   = ref(false);
 const saving     = ref(false);
+const deletingId = ref<string | null>(null);
 const error      = ref<string | null>(null);
 const pinVisible = ref(false);
 const pinCopied  = ref(false);
@@ -92,6 +94,45 @@ async function createTerminal() {
     error.value = err?.data?.message ?? err?.data?.error ?? err?.message ?? 'Unknown error';
   } finally {
     saving.value = false;
+  }
+}
+
+async function deleteTerminal(terminalId: string, displayName: string) {
+  const approved = await confirm({
+    title: 'Delete terminal?',
+    description: `Remove ${displayName} and its assigned layout from this business.`,
+    confirmLabel: 'Delete Terminal',
+    confirmVariant: 'danger',
+  });
+
+  if (!approved) return;
+
+  deletingId.value = terminalId;
+
+  try {
+    const res = await $fetch<{ success: boolean; error: string | null }>(`/api/terminals/${terminalId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+
+    if (res.error) {
+      await alert({
+        title: 'Unable to delete terminal',
+        description: res.error,
+        confirmLabel: 'Close',
+      });
+      return;
+    }
+
+    terminals.value = terminals.value.filter((terminal) => terminal.id !== terminalId);
+  } catch (err: any) {
+    await alert({
+      title: 'Unable to delete terminal',
+      description: err?.data?.message ?? err?.data?.error ?? err?.message ?? 'Unknown error',
+      confirmLabel: 'Close',
+    });
+  } finally {
+    deletingId.value = null;
   }
 }
 
@@ -190,6 +231,16 @@ watch(() => business.value?.id, loadTerminals);
               </p>
               <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.35);">Terminal</p>
             </div>
+            <button
+              class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-all"
+              style="background: rgba(239,68,68,0.06); color: #b42318;"
+              :disabled="deletingId === ip.id"
+              :title="deletingId === ip.id ? 'Deleting...' : 'Delete terminal'"
+              @click="deleteTerminal(ip.id, ip.display_name)"
+            >
+              <div v-if="deletingId === ip.id" class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              <Trash2 v-else class="w-4 h-4" />
+            </button>
           </div>
 
           <!-- Actions -->

@@ -1,0 +1,527 @@
+import type { ElementDef, ElementPosition } from '~/lib/uiTypes';
+import type { PermissionPresetKey } from '~/lib/permissions';
+
+export type StationObjectIconKey = 'layers' | 'database' | 'chart' | 'sparkles';
+
+export interface StationObjectDefinition {
+  id: string;
+  label: string;
+  description: string;
+  icon: StationObjectIconKey;
+  type: ElementDef['type'];
+  recommendedFor: PermissionPresetKey[];
+  optionalFor?: PermissionPresetKey[];
+  defaultSize: {
+    width: number;
+    height: number;
+  };
+  defaults?: Partial<ElementDef>;
+  elements?: StationObjectElementBlueprint[];
+}
+
+export interface StationObjectElementBlueprint {
+  key: string;
+  type: ElementDef['type'];
+  label: string;
+  position: Omit<ElementPosition, 'zIndex'> & { zIndex?: number };
+  defaults: Partial<ElementDef>;
+}
+
+export const STATION_OBJECTS: StationObjectDefinition[] = [
+  {
+    id: 'cashier-sale-panel',
+    label: 'Sale Panel',
+    description: 'Cashier-ready product picker with cart totals and one-tap order submission.',
+    icon: 'layers',
+    type: 'cart-widget',
+    recommendedFor: ['cashier-register'],
+    optionalFor: ['inventory-manager'],
+    defaultSize: { width: 760, height: 420 },
+    defaults: {
+      label: 'sale panel',
+      title: 'Cashier Register',
+      subtitle: 'Tap products, assign a table number, and add them to the current order.',
+      productTable: 'products',
+      displayColumns: ['name', 'category'],
+      priceColumn: 'price',
+      orderTable: 'orders',
+      submitLabel: 'Submit Order',
+      emptyLabel: 'No products are ready for sale yet. Add them from a Catalog Registrar or Inventory terminal first.',
+      radius: 26,
+    },
+  },
+  {
+    id: 'cashier-open-orders',
+    label: 'Open Orders',
+    description: 'Live queue of current orders so the front desk can track what still needs action.',
+    icon: 'database',
+    type: 'table-view',
+    recommendedFor: ['cashier-register'],
+    optionalFor: ['reports-viewer'],
+    defaultSize: { width: 520, height: 320 },
+    defaults: {
+      label: 'open orders',
+      source: 'business-table',
+      title: 'Open Orders',
+      subtitle: 'Track tickets waiting to be fulfilled.',
+      tableName: 'orders',
+      columns: ['id', 'table_number', 'total', 'status'],
+      pageSize: 10,
+      striped: true,
+      emptyLabel: 'No open orders right now.',
+    },
+  },
+  {
+    id: 'inventory-stock-grid',
+    label: 'Stock Grid',
+    description: 'Inventory-focused table for quantities, units, reorder levels, and day-to-day monitoring.',
+    icon: 'database',
+    type: 'table-view',
+    recommendedFor: ['inventory-manager'],
+    optionalFor: ['reports-viewer'],
+    defaultSize: { width: 680, height: 360 },
+    defaults: {
+      label: 'stock grid',
+      source: 'business-table',
+      title: 'Inventory Overview',
+      subtitle: 'See which items need attention before service starts.',
+      tableName: 'inventory',
+      columns: ['item_name', 'quantity', 'unit', 'reorder_at'],
+      pageSize: 12,
+      striped: true,
+      emptyLabel: 'No inventory records yet.',
+    },
+  },
+  {
+    id: 'inventory-stock-chart',
+    label: 'Stock Levels',
+    description: 'Quick bar chart for comparing available quantities at a glance.',
+    icon: 'chart',
+    type: 'chart',
+    recommendedFor: ['inventory-manager'],
+    optionalFor: ['reports-viewer'],
+    defaultSize: { width: 520, height: 300 },
+    defaults: {
+      label: 'stock levels',
+      source: 'business-table',
+      title: 'Stock Levels',
+      subtitle: 'Compare item quantities without leaving the station.',
+      chartType: 'bar',
+      aggregation: 'sum',
+      tableName: 'inventory',
+      labelColumn: 'item_name',
+      valueColumn: 'quantity',
+      emptyLabel: 'No stock data yet.',
+    },
+  },
+  {
+    id: 'kitchen-order-board',
+    label: 'Kitchen Order Board',
+    description: 'Live incoming order queue for kitchen or back-of-house screens, with automatic refresh while the terminal is open.',
+    icon: 'database',
+    type: 'table-view',
+    recommendedFor: ['kitchen-display'],
+    optionalFor: ['cashier-register', 'reports-viewer'],
+    defaultSize: { width: 760, height: 420 },
+    defaults: {
+      label: 'kitchen order board',
+      source: 'business-table',
+      title: 'Incoming Orders',
+      subtitle: 'Kitchen queue that refreshes automatically.',
+      tableName: 'orders',
+      columns: ['created_at', 'table_number', 'items', 'status', 'total'],
+      pageSize: 16,
+      autoRefreshMs: 3000,
+      orderBy: 'created_at',
+      descending: true,
+      striped: true,
+      emptyLabel: 'No incoming orders yet.',
+    },
+  },
+  {
+    id: 'reports-activity-feed',
+    label: 'Activity Feed',
+    description: 'Role-safe audit feed for who changed what and when.',
+    icon: 'sparkles',
+    type: 'table-view',
+    recommendedFor: ['reports-viewer'],
+    optionalFor: ['inventory-manager'],
+    defaultSize: { width: 620, height: 340 },
+    defaults: {
+      label: 'activity feed',
+      source: 'audit-log',
+      title: 'Activity Feed',
+      subtitle: 'Recent staff activity across the business.',
+      columns: ['created_at', 'actor_name', 'action_type', 'target_table'],
+      pageSize: 12,
+      striped: true,
+      emptyLabel: 'No activity yet.',
+    },
+  },
+  {
+    id: 'reports-action-breakdown',
+    label: 'Action Breakdown',
+    description: 'Audit-driven chart that counts inserts, updates, deletes, and denied actions by type.',
+    icon: 'chart',
+    type: 'chart',
+    recommendedFor: ['reports-viewer'],
+    optionalFor: ['inventory-manager'],
+    defaultSize: { width: 520, height: 300 },
+    defaults: {
+      label: 'action breakdown',
+      source: 'audit-log',
+      title: 'Action Breakdown',
+      subtitle: 'See which kinds of events are happening most often.',
+      chartType: 'bar',
+      aggregation: 'count',
+      labelColumn: 'action_type',
+      emptyLabel: 'No audit events yet.',
+    },
+  },
+  {
+    id: 'product-intake',
+    label: 'Product Intake',
+    description: 'Registrar-style intake block for adding new products and reviewing the live catalog beside the form.',
+    icon: 'database',
+    type: 'table-view',
+    recommendedFor: ['catalog-registrar'],
+    optionalFor: ['inventory-manager', 'cashier-register'],
+    defaultSize: { width: 900, height: 420 },
+    elements: [
+      {
+        key: 'product-intake-title',
+        type: 'text',
+        label: 'product intake title',
+        position: { x: 0, y: 0, width: 340, height: 38 },
+        defaults: { content: 'Product Intake', fontSize: 24, fontWeight: 'bold', align: 'left' } as any,
+      },
+      {
+        key: 'product-intake-subtitle',
+        type: 'text',
+        label: 'product intake subtitle',
+        position: { x: 0, y: 34, width: 420, height: 24 },
+        defaults: { content: 'Add new sellable items without leaving the station.', fontSize: 13, fontWeight: 'normal', align: 'left' } as any,
+      },
+      {
+        key: 'product-intake-name',
+        type: 'input-field',
+        label: 'product name',
+        position: { x: 0, y: 84, width: 204, height: 56 },
+        defaults: { fieldName: 'name', placeholder: 'Product name', inputType: 'text' } as any,
+      },
+      {
+        key: 'product-intake-description',
+        type: 'input-field',
+        label: 'product description',
+        position: { x: 220, y: 84, width: 196, height: 56 },
+        defaults: { fieldName: 'description', placeholder: 'Short description', inputType: 'text' } as any,
+      },
+      {
+        key: 'product-intake-category',
+        type: 'input-field',
+        label: 'product category',
+        position: { x: 0, y: 154, width: 196, height: 56 },
+        defaults: { fieldName: 'category', placeholder: 'Category', inputType: 'select', options: ['Food', 'Beverage', 'Service', 'Supplies'] } as any,
+      },
+      {
+        key: 'product-intake-price',
+        type: 'input-field',
+        label: 'product price',
+        position: { x: 212, y: 154, width: 204, height: 56 },
+        defaults: { fieldName: 'price', placeholder: 'Price', inputType: 'number' } as any,
+      },
+      {
+        key: 'product-intake-note',
+        type: 'text',
+        label: 'product intake note',
+        position: { x: 0, y: 228, width: 416, height: 34 },
+        defaults: { content: 'New products are active by default. You can refine visibility or details later from the database view.', fontSize: 12, fontWeight: 'normal', align: 'left' } as any,
+      },
+      {
+        key: 'product-intake-submit',
+        type: 'button',
+        label: 'add product',
+        position: { x: 0, y: 292, width: 416, height: 58 },
+        defaults: {
+          text: 'Add Product',
+          variant: 'primary',
+          events: [
+            {
+              trigger: 'click',
+              action: {
+                type: 'insert',
+                table: 'products',
+                payload: {
+                  name: '$$input.product-intake-name',
+                  description: '$$input.product-intake-description',
+                  category: '$$input.product-intake-category',
+                  price: '$$input.product-intake-price',
+                },
+              },
+            },
+          ],
+        } as any,
+      },
+      {
+        key: 'product-intake-table',
+        type: 'table-view',
+        label: 'product catalog',
+        position: { x: 448, y: 84, width: 452, height: 266 },
+        defaults: {
+          source: 'business-table',
+          title: 'Product Catalog',
+          subtitle: 'Items available to the cashier and other stations.',
+          tableName: 'products',
+          columns: ['name', 'category', 'description', 'price', 'available'],
+          pageSize: 8,
+          striped: true,
+          emptyLabel: 'No products have been added yet.',
+        } as any,
+      },
+    ],
+  },
+  {
+    id: 'item-lookup',
+    label: 'Item Lookup',
+    description: 'Fast exact-name lookup block for cashiers or inventory staff who need a quick product answer.',
+    icon: 'sparkles',
+    type: 'table-view',
+    recommendedFor: ['cashier-register', 'catalog-registrar'],
+    optionalFor: ['inventory-manager'],
+    defaultSize: { width: 760, height: 320 },
+    elements: [
+      {
+        key: 'item-lookup-title',
+        type: 'text',
+        label: 'lookup title',
+        position: { x: 0, y: 0, width: 280, height: 38 },
+        defaults: { content: 'Item Lookup', fontSize: 24, fontWeight: 'bold', align: 'left' } as any,
+      },
+      {
+        key: 'item-lookup-name',
+        type: 'input-field',
+        label: 'lookup name',
+        position: { x: 0, y: 64, width: 240, height: 56 },
+        defaults: { fieldName: 'lookup_name', placeholder: 'Exact product name', inputType: 'text' } as any,
+      },
+      {
+        key: 'item-lookup-search',
+        type: 'button',
+        label: 'search item',
+        position: { x: 256, y: 64, width: 156, height: 56 },
+        defaults: {
+          text: 'Search Item',
+          variant: 'secondary',
+          events: [
+            {
+              trigger: 'click',
+              action: {
+                type: 'query',
+                source: 'business-table',
+                table: 'products',
+                columns: ['name', 'category', 'description', 'price', 'available'],
+                where: {
+                  name: '$$input.item-lookup-name',
+                },
+                targetElementId: 'item-lookup-results',
+                limit: 10,
+              },
+            },
+          ],
+        } as any,
+      },
+      {
+        key: 'item-lookup-results',
+        type: 'table-view',
+        label: 'lookup results',
+        position: { x: 0, y: 140, width: 760, height: 180 },
+        defaults: {
+          source: 'business-table',
+          title: 'Lookup Results',
+          subtitle: 'Use the exact product name to pull matching records.',
+          tableName: 'products',
+          columns: ['name', 'category', 'description', 'price', 'available'],
+          pageSize: 6,
+          striped: true,
+          emptyLabel: 'No items match the current lookup.',
+        } as any,
+      },
+    ],
+  },
+  {
+    id: 'checkout-summary',
+    label: 'Checkout Summary',
+    description: 'Manual order intake block for registrars who need to create tickets without the product grid.',
+    icon: 'layers',
+    type: 'table-view',
+    recommendedFor: ['cashier-register'],
+    optionalFor: ['reports-viewer'],
+    defaultSize: { width: 860, height: 380 },
+    elements: [
+      {
+        key: 'checkout-title',
+        type: 'text',
+        label: 'checkout title',
+        position: { x: 0, y: 0, width: 340, height: 38 },
+        defaults: { content: 'Manual Checkout Intake', fontSize: 24, fontWeight: 'bold', align: 'left' } as any,
+      },
+      {
+        key: 'checkout-items',
+        type: 'input-field',
+        label: 'order summary',
+        position: { x: 0, y: 64, width: 260, height: 56 },
+        defaults: { fieldName: 'items', placeholder: 'Order summary', inputType: 'text' } as any,
+      },
+      {
+        key: 'checkout-staff',
+        type: 'input-field',
+        label: 'table number',
+        position: { x: 276, y: 64, width: 160, height: 56 },
+        defaults: { fieldName: 'table_number', placeholder: 'Table number', inputType: 'text' } as any,
+      },
+      {
+        key: 'checkout-total',
+        type: 'input-field',
+        label: 'order total',
+        position: { x: 0, y: 136, width: 180, height: 56 },
+        defaults: { fieldName: 'total', placeholder: 'Total amount', inputType: 'number' } as any,
+      },
+      {
+        key: 'checkout-status',
+        type: 'input-field',
+        label: 'order status',
+        position: { x: 196, y: 136, width: 240, height: 56 },
+        defaults: { fieldName: 'status', placeholder: 'Status', inputType: 'select', options: ['pending', 'paid', 'fulfilled'], defaultValue: 'pending' } as any,
+      },
+      {
+        key: 'checkout-submit',
+        type: 'button',
+        label: 'create order',
+        position: { x: 0, y: 216, width: 436, height: 58 },
+        defaults: {
+          text: 'Create Order Ticket',
+          variant: 'primary',
+          events: [
+            {
+              trigger: 'click',
+              action: {
+                type: 'insert',
+                table: 'orders',
+                payload: {
+                  items: '$$input.checkout-items',
+                  table_number: '$$input.checkout-staff',
+                  total: '$$input.checkout-total',
+                  status: '$$input.checkout-status',
+                },
+              },
+            },
+          ],
+        } as any,
+      },
+      {
+        key: 'checkout-open-orders',
+        type: 'table-view',
+        label: 'checkout open orders',
+        position: { x: 460, y: 64, width: 400, height: 250 },
+        defaults: {
+          source: 'business-table',
+          title: 'Open Orders',
+          subtitle: 'Recent tickets at this station.',
+          tableName: 'orders',
+          columns: ['id', 'table_number', 'total', 'status'],
+          pageSize: 8,
+          striped: true,
+          emptyLabel: 'No order tickets yet.',
+        } as any,
+      },
+    ],
+  },
+  {
+    id: 'stock-receiving',
+    label: 'Stock Receiving',
+    description: 'Inventory receiving block for logging fresh stock into the working inventory table.',
+    icon: 'database',
+    type: 'table-view',
+    recommendedFor: ['inventory-manager'],
+    optionalFor: ['catalog-registrar', 'cashier-register'],
+    defaultSize: { width: 860, height: 380 },
+    elements: [
+      {
+        key: 'receiving-title',
+        type: 'text',
+        label: 'receiving title',
+        position: { x: 0, y: 0, width: 340, height: 38 },
+        defaults: { content: 'Stock Receiving', fontSize: 24, fontWeight: 'bold', align: 'left' } as any,
+      },
+      {
+        key: 'receiving-item-name',
+        type: 'input-field',
+        label: 'receiving item name',
+        position: { x: 0, y: 64, width: 204, height: 56 },
+        defaults: { fieldName: 'item_name', placeholder: 'Item name', inputType: 'text' } as any,
+      },
+      {
+        key: 'receiving-quantity',
+        type: 'input-field',
+        label: 'receiving quantity',
+        position: { x: 220, y: 64, width: 140, height: 56 },
+        defaults: { fieldName: 'quantity', placeholder: 'Qty received', inputType: 'number' } as any,
+      },
+      {
+        key: 'receiving-unit',
+        type: 'input-field',
+        label: 'receiving unit',
+        position: { x: 0, y: 136, width: 140, height: 56 },
+        defaults: { fieldName: 'unit', placeholder: 'Unit', inputType: 'text' } as any,
+      },
+      {
+        key: 'receiving-reorder',
+        type: 'input-field',
+        label: 'receiving reorder',
+        position: { x: 156, y: 136, width: 204, height: 56 },
+        defaults: { fieldName: 'reorder_at', placeholder: 'Reorder threshold', inputType: 'number' } as any,
+      },
+      {
+        key: 'receiving-submit',
+        type: 'button',
+        label: 'log receiving',
+        position: { x: 0, y: 216, width: 360, height: 58 },
+        defaults: {
+          text: 'Receive Into Inventory',
+          variant: 'primary',
+          events: [
+            {
+              trigger: 'click',
+              action: {
+                type: 'insert',
+                table: 'inventory',
+                payload: {
+                  item_name: '$$input.receiving-item-name',
+                  quantity: '$$input.receiving-quantity',
+                  unit: '$$input.receiving-unit',
+                  reorder_at: '$$input.receiving-reorder',
+                },
+              },
+            },
+          ],
+        } as any,
+      },
+      {
+        key: 'receiving-table',
+        type: 'table-view',
+        label: 'recent inventory receipts',
+        position: { x: 388, y: 64, width: 472, height: 250 },
+        defaults: {
+          source: 'business-table',
+          title: 'Recent Inventory Entries',
+          subtitle: 'Latest inventory rows logged from this station.',
+          tableName: 'inventory',
+          columns: ['item_name', 'quantity', 'unit', 'reorder_at'],
+          pageSize: 8,
+          striped: true,
+          emptyLabel: 'No inventory entries yet.',
+        } as any,
+      },
+    ],
+  },
+];

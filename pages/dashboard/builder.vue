@@ -18,8 +18,10 @@ import {
 } from 'lucide-vue-next';
 import Canvas from '~/components/Canvas.vue';
 import PropertiesPanel from '~/components/PropertiesPanel.vue';
-import type { ElementDef, ElementType, UiLayout } from '~/lib/uiTypes';
+import { DEFAULT_LAYOUT_THEME, type ElementDef, type ElementType, type UiLayout } from '~/lib/uiTypes';
 import { BUILDER_PRESETS } from '~/lib/builderPresets';
+import { inferPermissionPreset, normalizePermissions } from '~/lib/permissions';
+import { STATION_OBJECTS, type StationObjectElementBlueprint } from '~/lib/stationObjects';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -39,6 +41,7 @@ const {
   setActiveLayer,
   addModal,
   addElement,
+  addElements,
   removeElement,
   undo,
   redo,
@@ -52,32 +55,116 @@ const {
   setCamera,
 } = useCanvas();
 
+interface BuilderPaletteItem {
+  id: string;
+  type: ElementType;
+  label: string;
+  description: string;
+  icon: any;
+  defaults?: Partial<ElementDef>;
+  bundleElements?: StationObjectElementBlueprint[];
+  defaultWidth: number;
+  defaultHeight: number;
+}
+
 const showStudioPanel  = ref(false);
 const showPresetsPanel = ref(false);
 const canvasWrapper    = ref<HTMLElement | null>(null);
-const terminals        = ref<Array<{ id: string; display_name: string; role: string; ui_layout: string }>>([]);
+const terminals        = ref<Array<{ id: string; display_name: string; role: string; ui_layout: string; permissions: string | null }>>([]);
 const selectedTerminal = ref<string | null>(null);
 const saving           = ref(false);
 const zoom             = ref(0.7);
 
 /* pending drop — when set, clicking on canvas creates element at cursor position,
    and dragging draws a box to define the element's size */
-const pendingDrop = ref<{ type: ElementType; defaults: Partial<ElementDef> } | null>(null);
+const pendingDrop = ref<BuilderPaletteItem | null>(null);
 
 const route = useRoute();
 
 const layerLabel = computed(() => activeLayer.value?.name ?? 'Main Screen');
 const resolutionLabel = computed(() => `${layout.value.resolution.width} x ${layout.value.resolution.height}`);
+const selectedTerminalRecord = computed(() => terminals.value.find((item) => item.id === selectedTerminal.value) ?? null);
+const selectedTerminalPermissions = computed(() => normalizePermissions(selectedTerminalRecord.value?.permissions ?? null));
+const selectedStationPreset = computed(() => inferPermissionPreset(selectedTerminalRecord.value?.permissions ?? null));
+const selectedStationKey = computed(() => selectedStationPreset.value?.key ?? null);
+const currentTheme = computed(() => layout.value.theme ?? DEFAULT_LAYOUT_THEME);
 
-const PALETTE_ITEMS: Array<{ type: ElementType; label: string; icon: any; defaults: Partial<ElementDef> }> = [
-  { type: 'button',      label: 'Button',     icon: Hexagon,            defaults: { text: 'Button', variant: 'primary' } as any },
-  { type: 'text',        label: 'Text',       icon: Type,               defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any },
-  { type: 'image',       label: 'Image',      icon: ImageIcon,          defaults: { src: '', fit: 'cover' } as any },
-  { type: 'table-view',  label: 'Table View', icon: Database,           defaults: { tableName: '', columns: [] } as any },
-  { type: 'input-field', label: 'Input',      icon: RectangleHorizontal,defaults: { fieldName: 'field', inputType: 'text' } as any },
-  { type: 'chart',       label: 'Chart',      icon: BarChart2,          defaults: { chartType: 'bar', tableName: '', labelColumn: '', valueColumn: '' } as any },
-  { type: 'upload',      label: 'Upload',     icon: Upload,             defaults: { bucket: 'assets', buttonLabel: 'Upload file' } as any },
+const STATION_OBJECT_ICON_MAP = {
+  layers: Layers,
+  database: Database,
+  chart: BarChart2,
+  sparkles: Sparkles,
+} as const;
+
+const PALETTE_ITEMS: BuilderPaletteItem[] = [
+  { id: 'button', type: 'button', label: 'Button', description: 'Generic action button.', icon: Hexagon, defaults: { text: 'Button', variant: 'primary', radius: 16 } as any, defaultWidth: 220, defaultHeight: 64 },
+  { id: 'text', type: 'text', label: 'Text', description: 'Headings, labels, and helper text.', icon: Type, defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any, defaultWidth: 260, defaultHeight: 80 },
+  { id: 'image', type: 'image', label: 'Image', description: 'Images, branding, or signage.', icon: ImageIcon, defaults: { src: '', fit: 'cover' } as any, defaultWidth: 240, defaultHeight: 180 },
+  { id: 'table-view', type: 'table-view', label: 'Table View', description: 'Flexible database table view.', icon: Database, defaults: { source: 'business-table', title: 'Data Table', tableName: '', columns: [], pageSize: 20, striped: true } as any, defaultWidth: 520, defaultHeight: 320 },
+  { id: 'input-field', type: 'input-field', label: 'Input', description: 'Single form field.', icon: RectangleHorizontal, defaults: { fieldName: 'field', inputType: 'text', radius: 16 } as any, defaultWidth: 260, defaultHeight: 56 },
+  { id: 'chart', type: 'chart', label: 'Chart', description: 'Business table or audit-log chart.', icon: BarChart2, defaults: { source: 'business-table', title: 'Data Chart', chartType: 'bar', aggregation: 'sum', tableName: '', labelColumn: '', valueColumn: '' } as any, defaultWidth: 460, defaultHeight: 300 },
+  { id: 'upload', type: 'upload', label: 'Upload', description: 'File or asset uploader.', icon: Upload, defaults: { bucket: 'assets', buttonLabel: 'Upload file', radius: 18 } as any, defaultWidth: 260, defaultHeight: 88 },
 ];
+
+const stationObjectItems = computed<BuilderPaletteItem[]>(() =>
+  STATION_OBJECTS.map((item) => ({
+    id: item.id,
+    type: item.type,
+    label: item.label,
+    description: item.description,
+    icon: STATION_OBJECT_ICON_MAP[item.icon],
+    defaults: item.defaults,
+    bundleElements: item.elements,
+    defaultWidth: item.defaultSize.width,
+    defaultHeight: item.defaultSize.height,
+  })),
+);
+
+const recommendedStationObjects = computed(() => {
+  if (!selectedStationKey.value) return stationObjectItems.value;
+
+  return stationObjectItems.value.filter((item) =>
+    STATION_OBJECTS.find((objectItem) => objectItem.id === item.id)?.recommendedFor.includes(selectedStationKey.value!),
+  );
+});
+
+const optionalStationObjects = computed(() => {
+  if (!selectedStationKey.value) return [];
+
+  return stationObjectItems.value.filter((item) =>
+    STATION_OBJECTS.find((objectItem) => objectItem.id === item.id)?.optionalFor?.includes(selectedStationKey.value!),
+  );
+});
+
+const extraStationObjects = computed(() => {
+  if (!selectedStationKey.value) return [];
+
+  const claimed = new Set([
+    ...recommendedStationObjects.value.map((item) => item.id),
+    ...optionalStationObjects.value.map((item) => item.id),
+  ]);
+
+  return stationObjectItems.value.filter((item) => !claimed.has(item.id));
+});
+
+const recommendedPaletteItems = computed(() => {
+  const recommended = new Set(selectedStationPreset.value?.recommendedElements ?? ['button', 'text', 'input-field', 'table-view']);
+  return PALETTE_ITEMS.filter((item) => recommended.has(item.type));
+});
+
+const optionalPaletteItems = computed(() => {
+  const recommended = new Set(recommendedPaletteItems.value.map((item) => item.type));
+  const optional = new Set(selectedStationPreset.value?.optionalElements ?? []);
+  return PALETTE_ITEMS.filter((item) => optional.has(item.type) && !recommended.has(item.type));
+});
+
+const extraPaletteItems = computed(() => {
+  const claimed = new Set([
+    ...recommendedPaletteItems.value.map((item) => item.type),
+    ...optionalPaletteItems.value.map((item) => item.type),
+  ]);
+  return PALETTE_ITEMS.filter((item) => !claimed.has(item.type));
+});
 
 async function loadTerminals() {
   if (!business.value) return;
@@ -96,6 +183,7 @@ function selectTerminal(id: string) {
   selectedTerminal.value = id;
   const terminal = terminals.value.find((item) => item.id === id);
   if (!terminal) return;
+  showStudioPanel.value = true;
 
   let parsed: UiLayout | null = null;
   try {
@@ -183,24 +271,154 @@ function patchSelected(updates: Partial<any>) {
   updateElement(selectedId.value, updates);
 }
 
-function activatePaletteDrop(type: ElementType, defaults: Partial<ElementDef>) {
-  pendingDrop.value = { type, defaults };
+function applyThemeToElementDefaults(type: ElementType, defaults: Partial<ElementDef> = {}) {
+  const theme = currentTheme.value;
+
+  switch (type) {
+    case 'text':
+      return {
+        color: (defaults as any).color ?? theme.panelText,
+        ...(defaults as any),
+      };
+    case 'button': {
+      const buttonVariant = (defaults as any).variant ?? 'primary';
+      return {
+        backgroundColor: (defaults as any).backgroundColor ?? (buttonVariant === 'ghost' || buttonVariant === 'danger' ? undefined : theme.accentColor),
+        textColor: (defaults as any).textColor ?? '#ffffff',
+        ...(defaults as any),
+      };
+    }
+    case 'table-view':
+      return {
+        backgroundColor: (defaults as any).backgroundColor ?? theme.panelBackground,
+        headerBackgroundColor: (defaults as any).headerBackgroundColor ?? theme.panelHeaderBackground,
+        textColor: (defaults as any).textColor ?? theme.panelText,
+        ...(defaults as any),
+      };
+    case 'input-field':
+      return {
+        backgroundColor: (defaults as any).backgroundColor ?? theme.panelHeaderBackground,
+        textColor: (defaults as any).textColor ?? theme.panelText,
+        borderColor: (defaults as any).borderColor ?? theme.panelBorder,
+        ...(defaults as any),
+      };
+    case 'chart':
+      return {
+        backgroundColor: (defaults as any).backgroundColor ?? theme.panelBackground,
+        textColor: (defaults as any).textColor ?? theme.panelText,
+        colorPalette: (defaults as any).colorPalette ?? [theme.accentColor, '#0ea5e9', '#10b981', '#f59e0b'],
+        ...(defaults as any),
+      };
+    case 'upload':
+      return {
+        backgroundColor: (defaults as any).backgroundColor ?? theme.panelHeaderBackground,
+        textColor: (defaults as any).textColor ?? theme.panelText,
+        borderColor: (defaults as any).borderColor ?? theme.panelBorder,
+        ...(defaults as any),
+      };
+    case 'cart-widget':
+      return {
+        backgroundColor: (defaults as any).backgroundColor ?? theme.panelBackground,
+        panelColor: (defaults as any).panelColor ?? theme.panelHeaderBackground,
+        textColor: (defaults as any).textColor ?? theme.panelText,
+        accentColor: (defaults as any).accentColor ?? theme.accentColor,
+        borderColor: (defaults as any).borderColor ?? theme.panelBorder,
+        ...(defaults as any),
+      };
+    default:
+      return defaults as any;
+  }
 }
 
-function dropElement(type: ElementType, defaults: Partial<ElementDef>, x = 80, y = 80, w = 220, h = 64) {
-  addElement({
+function remapBundleReferences(value: unknown, idMap: Record<string, string>, parentKey?: string): unknown {
+  if (typeof value === 'string') {
+    if (value.startsWith('$$input.')) {
+      const key = value.replace('$$input.', '');
+      return idMap[key] ? `$$input.${idMap[key]}` : value;
+    }
+
+    if (value.startsWith('$$upload.')) {
+      const key = value.replace('$$upload.', '');
+      return idMap[key] ? `$$upload.${idMap[key]}` : value;
+    }
+
+    if (parentKey === 'targetElementId' && idMap[value]) {
+      return idMap[value];
+    }
+
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => remapBundleReferences(item, idMap, parentKey));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+        key,
+        remapBundleReferences(item, idMap, key),
+      ]),
+    );
+  }
+
+  return value;
+}
+
+function activatePaletteDrop(item: BuilderPaletteItem) {
+  pendingDrop.value = item;
+}
+
+function createSingleElement(item: BuilderPaletteItem, x = 80, y = 80, w = item.defaultWidth, h = item.defaultHeight) {
+  return {
     id: crypto.randomUUID(),
-    type,
-    label: type,
+    type: item.type,
+    label: item.label,
     position: {
       x,
       y,
-      width:  w,
+      width: w,
       height: h,
       zIndex: activeElements.value.length + 1,
     },
-    ...defaults,
-  } as ElementDef);
+    ...applyThemeToElementDefaults(item.type, item.defaults),
+  } as ElementDef;
+}
+
+function createBundleElements(item: BuilderPaletteItem, x = 80, y = 80, w = item.defaultWidth, h = item.defaultHeight) {
+  const scaleX = w / item.defaultWidth;
+  const scaleY = h / item.defaultHeight;
+  const idMap = Object.fromEntries(
+    (item.bundleElements ?? []).map((blueprint) => [blueprint.key, crypto.randomUUID()]),
+  );
+
+  return (item.bundleElements ?? []).map((blueprint, index) => {
+    const themedDefaults = applyThemeToElementDefaults(blueprint.type, blueprint.defaults);
+    const resolvedDefaults = remapBundleReferences(themedDefaults, idMap) as Record<string, unknown>;
+
+    return {
+      id: idMap[blueprint.key],
+      type: blueprint.type,
+      label: blueprint.label,
+      position: {
+        x: Math.round((x + blueprint.position.x * scaleX) / 8) * 8,
+        y: Math.round((y + blueprint.position.y * scaleY) / 8) * 8,
+        width: Math.max(40, Math.round((blueprint.position.width * scaleX) / 8) * 8),
+        height: Math.max(24, Math.round((blueprint.position.height * scaleY) / 8) * 8),
+        zIndex: activeElements.value.length + index + 1,
+      },
+      ...resolvedDefaults,
+    } as ElementDef;
+  });
+}
+
+function dropElement(item: BuilderPaletteItem, x = 80, y = 80, w = item.defaultWidth, h = item.defaultHeight) {
+  if (item.bundleElements?.length) {
+    addElements(createBundleElements(item, x, y, w, h));
+    return;
+  }
+
+  addElement(createSingleElement(item, x, y, w, h));
 }
 
 function applyBuilderPreset(presetId: string) {
@@ -271,8 +489,8 @@ function onCanvasMouseup() {
 
   // If it was just a click or very small drag, use default sizes
   if (w < 10 && h < 10) {
-    w = 220;
-    h = 64;
+    w = pendingDrop.value.defaultWidth;
+    h = pendingDrop.value.defaultHeight;
   } else {
     // Enforce minimums if they actually dragged a box
     w = Math.max(minW, snap(w));
@@ -280,8 +498,7 @@ function onCanvasMouseup() {
   }
 
   dropElement(
-    pendingDrop.value.type,
-    pendingDrop.value.defaults,
+    pendingDrop.value,
     snap(x),
     snap(y),
     w,
@@ -345,6 +562,37 @@ watch(() => business.value?.id, loadTerminals);
             {{ modal.name }}
           </option>
         </select>
+
+        <div
+          v-if="selectedTerminalRecord"
+          class="hidden lg:flex items-center gap-3 rounded-2xl border px-3 py-2 min-w-0"
+          style="border-color: rgba(61,24,32,0.1); background: rgba(61,24,32,0.03);"
+        >
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-[0.24em]" style="color: rgba(61,24,32,0.35);">
+              {{ selectedStationPreset?.label ?? 'Custom Station' }}
+            </p>
+            <p class="text-xs truncate" style="color: rgba(61,24,32,0.62);">
+              {{ selectedStationPreset?.description ?? 'Mixed-authority terminal with custom permissions.' }}
+            </p>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <span
+              v-if="selectedTerminalPermissions.reports.visible"
+              class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full"
+              style="background: rgba(14,165,233,0.1); color: #0ea5e9;"
+            >
+              Reports
+            </span>
+            <span
+              v-if="selectedTerminalPermissions.audit_log.visible"
+              class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full"
+              style="background: rgba(232,116,138,0.1); color: #e8748a;"
+            >
+              Audit
+            </span>
+          </div>
+        </div>
       </div>
 
       <div class="hidden md:flex items-center justify-self-center rounded-xl border bg-white/70 px-1.5 py-1 shadow-sm" style="border-color: rgba(61,24,32,0.12);">
@@ -412,25 +660,143 @@ watch(() => business.value?.id, loadTerminals);
         </button>
 
         <div class="w-8 border-t my-1" style="border-color: rgba(61,24,32,0.08);" />
+        <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Core</span>
 
         <button
-          v-for="item in PALETTE_ITEMS"
-          :key="item.type"
+          v-for="item in recommendedPaletteItems"
+          :key="`recommended-${item.type}`"
           class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
-          :style="pendingDrop?.type === item.type
+          :style="pendingDrop?.id === item.id
             ? 'background: rgba(232,116,138,0.15);'
-            : 'hover:background: rgba(245,237,228,0.5);'"
-          @click="activatePaletteDrop(item.type, item.defaults)"
+            : 'background: rgba(61,24,32,0.04);'"
+          @click="activatePaletteDrop(item)"
         >
           <component
             :is="item.icon"
             class="w-5 h-5 transition-transform group-hover:scale-110"
-            :style="pendingDrop?.type === item.type ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
+            :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.78);'"
           />
           <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
-            {{ item.label }}
+            {{ item.label }} · Recommended
           </div>
         </button>
+
+        <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+        <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Objects</span>
+
+        <button
+          v-for="item in recommendedStationObjects"
+          :key="`object-${item.id}`"
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+          :style="pendingDrop?.id === item.id
+            ? 'background: rgba(232,116,138,0.15);'
+            : 'background: rgba(61,24,32,0.04);'"
+          @click="activatePaletteDrop(item)"
+        >
+          <component
+            :is="item.icon"
+            class="w-5 h-5 transition-transform group-hover:scale-110"
+            :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.78);'"
+          />
+          <div class="absolute left-full ml-3 w-52 px-2 py-2 bg-black/85 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-normal z-50 shadow-xl transition-opacity">
+            <div class="font-semibold">{{ item.label }}</div>
+            <div class="mt-1 text-white/70 leading-relaxed">{{ item.description }}</div>
+          </div>
+        </button>
+
+        <template v-if="optionalStationObjects.length > 0">
+          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Optional</span>
+          <button
+            v-for="item in optionalStationObjects"
+            :key="`optional-object-${item.id}`"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            :style="pendingDrop?.id === item.id
+              ? 'background: rgba(232,116,138,0.15);'
+              : 'hover:background: rgba(245,237,228,0.5);'"
+            @click="activatePaletteDrop(item)"
+          >
+            <component
+              :is="item.icon"
+              class="w-5 h-5 transition-transform group-hover:scale-110"
+              :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
+            />
+            <div class="absolute left-full ml-3 w-52 px-2 py-2 bg-black/85 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-normal z-50 shadow-xl transition-opacity">
+              <div class="font-semibold">{{ item.label }} · Optional</div>
+              <div class="mt-1 text-white/70 leading-relaxed">{{ item.description }}</div>
+            </div>
+          </button>
+        </template>
+
+        <template v-if="extraStationObjects.length > 0">
+          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Shared</span>
+          <button
+            v-for="item in extraStationObjects"
+            :key="`extra-object-${item.id}`"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            :style="pendingDrop?.id === item.id
+              ? 'background: rgba(232,116,138,0.15);'
+              : 'hover:background: rgba(245,237,228,0.5);'"
+            @click="activatePaletteDrop(item)"
+          >
+            <component
+              :is="item.icon"
+              class="w-5 h-5 transition-transform group-hover:scale-110"
+              :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.58);'"
+            />
+            <div class="absolute left-full ml-3 w-52 px-2 py-2 bg-black/85 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-normal z-50 shadow-xl transition-opacity">
+              <div class="font-semibold">{{ item.label }}</div>
+              <div class="mt-1 text-white/70 leading-relaxed">{{ item.description }}</div>
+            </div>
+          </button>
+        </template>
+
+        <template v-if="optionalPaletteItems.length > 0">
+          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Extra</span>
+          <button
+            v-for="item in optionalPaletteItems"
+            :key="`optional-${item.type}`"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            :style="pendingDrop?.id === item.id
+              ? 'background: rgba(232,116,138,0.15);'
+              : 'hover:background: rgba(245,237,228,0.5);'"
+            @click="activatePaletteDrop(item)"
+          >
+            <component
+              :is="item.icon"
+              class="w-5 h-5 transition-transform group-hover:scale-110"
+              :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
+            />
+            <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
+              {{ item.label }} · Optional
+            </div>
+          </button>
+        </template>
+
+        <template v-if="extraPaletteItems.length > 0">
+          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">More</span>
+          <button
+            v-for="item in extraPaletteItems"
+            :key="`extra-${item.type}`"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            :style="pendingDrop?.id === item.id
+              ? 'background: rgba(232,116,138,0.15);'
+              : 'hover:background: rgba(245,237,228,0.5);'"
+            @click="activatePaletteDrop(item)"
+          >
+            <component
+              :is="item.icon"
+              class="w-5 h-5 transition-transform group-hover:scale-110"
+              :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.58);'"
+            />
+            <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
+              {{ item.label }}
+            </div>
+          </button>
+        </template>
       </aside>
 
       <div
@@ -530,11 +896,17 @@ watch(() => business.value?.id, loadTerminals);
           </div>
         </div>
 
-        <Canvas v-else :business-id="business?.id ?? ''" :zoom="zoom" class="z-10 absolute inset-0" />
+        <Canvas
+          v-else
+          :business-id="business?.id ?? ''"
+          :zoom="zoom"
+          :terminal-name="selectedTerminalRecord?.display_name ?? ''"
+          :terminal-preset-label="selectedStationPreset?.label ?? 'Custom Station'"
+          class="z-10 absolute inset-0"
+        />
 
-        <div v-if="showStudioPanel" class="absolute inset-0 z-40 flex justify-end">
-          <button class="absolute inset-0 bg-transparent" aria-label="Close layers and properties" @click="showStudioPanel = false" />
-          <div class="relative h-full w-[24rem] max-w-[calc(100%-1.5rem)] p-3">
+        <div v-if="showStudioPanel" class="pointer-events-none absolute inset-y-0 right-0 z-40 flex justify-end">
+          <div class="pointer-events-auto relative h-full w-[24rem] max-w-[calc(100%-1.5rem)] p-3">
             <div class="h-full rounded-[30px] border bg-white shadow-xl overflow-hidden" style="border-color: rgba(61,24,32,0.1);">
               <div class="flex items-center justify-between px-5 py-4" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
                 <div>

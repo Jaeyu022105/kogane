@@ -11,6 +11,8 @@ import ElementRenderer from '~/components/ElementRenderer.vue';
 const props = defineProps<{
   businessId: string;
   zoom?:      number;
+  terminalName?: string;
+  terminalPresetLabel?: string;
 }>();
 
 const {
@@ -27,6 +29,7 @@ const {
 
 const zoom    = computed(() => props.zoom ?? 1);
 const GRID_PX = 8; // snap grid size in canvas units
+const theme   = computed(() => layout.value.theme);
 
 // ── Drag state ────────────────────────────────────────────────────────────────
 
@@ -225,93 +228,122 @@ function onResizeUp() {
       class="absolute"
       :style="{ transform: `translate(${cameraX}px, ${cameraY}px) scale(${zoom})`, transformOrigin: '0 0' }"
     >
-      <!-- The actual layout page / board -->
       <div
-        class="relative bg-[#111118] border border-white/10 shadow-2xl overflow-hidden"
+        class="rounded-[32px] border border-white/10 shadow-2xl overflow-hidden"
         :style="{
-          width:  `${layout.resolution.width}px`,
-          height: `${layout.resolution.height}px`,
+          width: `${layout.resolution.width + 32}px`,
+          background: `linear-gradient(180deg, ${theme.frameBackground} 0%, ${theme.frameBackground} 100%)`,
         }"
       >
-        <!-- Grid dots -->
-        <svg class="absolute inset-0 pointer-events-none opacity-20" width="100%" height="100%">
-          <defs>
-            <pattern id="grid" :width="GRID_PX" :height="GRID_PX" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="0.75" fill="rgba(255,255,255,0.4)" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
-
-        <!-- Render each element -->
         <div
-          v-for="el in activeElements"
-          :key="el.id"
-          class="absolute group"
+          class="h-12 px-5 flex items-center justify-between border-b"
           :style="{
-            left:    `${el.position.x}px`,
-            top:     `${el.position.y}px`,
-            width:   `${el.position.width}px`,
-            height:  `${el.position.height}px`,
-            zIndex:  el.position.zIndex,
+            borderColor: theme.panelBorder,
+            background: theme.topBarBackground,
           }"
-          @mousedown="onMousedownEl($event, el)"
-          @dblclick="onDblclickEl($event, el)"
         >
-          <!-- Selection ring -->
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-[0.24em]" :style="{ color: theme.panelMutedText }">{{ terminalPresetLabel || 'Terminal Preview' }}</p>
+            <p class="text-sm font-semibold truncate" :style="{ color: theme.topBarText }">{{ terminalName || 'Preview Terminal' }}</p>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] font-medium" :style="{ color: theme.panelMutedText }">
+            <span>{{ layout.resolution.width }} x {{ layout.resolution.height }}</span>
+            <span class="w-2 h-2 rounded-full" :style="{ background: theme.accentColor }"></span>
+          </div>
+        </div>
+
+        <div class="p-4">
+          <!-- The actual layout page / board -->
           <div
-            v-if="selectedId === el.id"
-            class="absolute inset-0 ring-2 ring-brand-primary pointer-events-none z-10"
-          />
+            class="relative border shadow-2xl overflow-hidden rounded-[24px]"
+            :style="{
+              width:  `${layout.resolution.width}px`,
+              height: `${layout.resolution.height}px`,
+              background: theme.canvasBackground,
+              borderColor: theme.panelBorder,
+            }"
+          >
+            <!-- Grid dots -->
+            <svg class="absolute inset-0 pointer-events-none opacity-20" width="100%" height="100%">
+              <defs>
+                <pattern id="grid" :width="GRID_PX" :height="GRID_PX" patternUnits="userSpaceOnUse">
+                  <circle cx="1" cy="1" r="0.75" :fill="theme.gridColor" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
 
-          <!-- Element content (non-interactive in builder) -->
-          <template v-if="editingTextId === el.id && el.type === 'text'">
-            <textarea
-              :id="`edit-${el.id}`"
-              :value="(el as any).content"
-              class="w-full h-full bg-transparent resize-none outline-none border-none p-0 m-0"
+            <!-- Render each element -->
+            <div
+              v-for="el in activeElements"
+              :key="el.id"
+              class="absolute group"
               :style="{
-                fontSize: `${(el as any).fontSize ?? 16}px`,
-                fontWeight: (el as any).fontWeight ?? 'normal',
-                color: (el as any).color ?? '#000',
-                textAlign: (el as any).align ?? 'left',
+                left:    `${el.position.x}px`,
+                top:     `${el.position.y}px`,
+                width:   `${el.position.width}px`,
+                height:  `${el.position.height}px`,
+                zIndex:  el.position.zIndex,
               }"
-              @input="updateElement(el.id, { content: ($event.target as HTMLTextAreaElement).value } as any)"
-              @blur="editingTextId = null"
-              @mousedown.stop
-            />
-          </template>
-          <template v-else>
-            <ElementRenderer
-              :element="el"
-              :business-id="businessId"
-              :builder-mode="true"
-            />
-          </template>
+              @mousedown="onMousedownEl($event, el)"
+              @dblclick="onDblclickEl($event, el)"
+            >
+              <!-- Selection ring -->
+              <div
+                v-if="selectedId === el.id"
+                class="absolute inset-0 ring-2 ring-brand-primary pointer-events-none z-10 rounded-[18px]"
+              />
 
-          <!-- Resize handles -->
-          <template v-if="selectedId === el.id">
-            <div
-              class="absolute top-0 left-0 w-3 h-3 bg-brand-primary rounded-br cursor-nw-resize z-20"
-              style="margin: -1.5px 0 0 -1.5px;"
-              @mousedown.stop="onMousedownResize($event, el, 'nw')"
-            />
-            <div
-              class="absolute top-0 right-0 w-3 h-3 bg-brand-primary rounded-bl cursor-ne-resize z-20"
-              style="margin: -1.5px -1.5px 0 0;"
-              @mousedown.stop="onMousedownResize($event, el, 'ne')"
-            />
-            <div
-              class="absolute bottom-0 left-0 w-3 h-3 bg-brand-primary rounded-tr cursor-sw-resize z-20"
-              style="margin: 0 0 -1.5px -1.5px;"
-              @mousedown.stop="onMousedownResize($event, el, 'sw')"
-            />
-            <div
-              class="absolute bottom-0 right-0 w-3 h-3 bg-brand-primary rounded-tl cursor-se-resize z-20"
-              style="margin: 0 -1.5px -1.5px 0;"
-              @mousedown.stop="onMousedownResize($event, el, 'se')"
-            />
-          </template>
+              <!-- Element content (non-interactive in builder) -->
+              <template v-if="editingTextId === el.id && el.type === 'text'">
+                <textarea
+                  :id="`edit-${el.id}`"
+                  :value="(el as any).content"
+                  class="w-full h-full bg-transparent resize-none outline-none border-none p-0 m-0"
+                  :style="{
+                    fontSize: `${(el as any).fontSize ?? 16}px`,
+                    fontWeight: (el as any).fontWeight ?? 'normal',
+                    color: (el as any).color ?? '#000',
+                    textAlign: (el as any).align ?? 'left',
+                  }"
+                  @input="updateElement(el.id, { content: ($event.target as HTMLTextAreaElement).value } as any)"
+                  @blur="editingTextId = null"
+                  @mousedown.stop
+                />
+              </template>
+              <template v-else>
+                <ElementRenderer
+                  :element="el"
+                  :business-id="businessId"
+                  :builder-mode="true"
+                />
+              </template>
+
+              <!-- Resize handles -->
+              <template v-if="selectedId === el.id">
+                <div
+                  class="absolute top-0 left-0 w-3 h-3 bg-brand-primary rounded-br cursor-nw-resize z-20"
+                  style="margin: -1.5px 0 0 -1.5px;"
+                  @mousedown.stop="onMousedownResize($event, el, 'nw')"
+                />
+                <div
+                  class="absolute top-0 right-0 w-3 h-3 bg-brand-primary rounded-bl cursor-ne-resize z-20"
+                  style="margin: -1.5px -1.5px 0 0;"
+                  @mousedown.stop="onMousedownResize($event, el, 'ne')"
+                />
+                <div
+                  class="absolute bottom-0 left-0 w-3 h-3 bg-brand-primary rounded-tr cursor-sw-resize z-20"
+                  style="margin: 0 0 -1.5px -1.5px;"
+                  @mousedown.stop="onMousedownResize($event, el, 'sw')"
+                />
+                <div
+                  class="absolute bottom-0 right-0 w-3 h-3 bg-brand-primary rounded-tl cursor-se-resize z-20"
+                  style="margin: 0 -1.5px -1.5px 0;"
+                  @mousedown.stop="onMousedownResize($event, el, 'se')"
+                />
+              </template>
+            </div>
+          </div>
         </div>
       </div>
     </div>

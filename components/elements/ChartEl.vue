@@ -4,235 +4,265 @@ import type { ChartElementDef } from '~/lib/uiTypes';
 const props = defineProps<{
   element: ChartElementDef;
   businessId: string;
+  runtime?: any;
   builderMode?: boolean;
 }>();
 
-const { authHeaders } = useAuth();
-
-const rows    = ref<Record<string, unknown>[]>([]);
+const rows = computed<Record<string, unknown>[]>(() => props.runtime?.state?.value?.queryResults?.[props.element.id] ?? []);
 const loading = ref(false);
 
-const PALETTE = computed(() =>
+const palette = computed(() =>
   props.element.colorPalette?.length
     ? props.element.colorPalette
     : ['#e8748a', '#6366f1', '#f59e0b', '#10b981', '#0ea5e9', '#a78bfa', '#fb923c'],
 );
 
+const textColor = computed(() => props.element.textColor ?? '#f5ede4');
+const mutedTextColor = computed(() => 'rgba(245,237,228,0.7)');
+const surfaceColor = computed(() => props.element.backgroundColor ?? '#161116');
+const lineGradientId = computed(() => `chart-line-fill-${props.element.id}`);
+const chartTitle = computed(() =>
+  props.element.title
+  ?? (props.element.source === 'audit-log' ? 'Audit Activity' : props.element.tableName || 'Chart'),
+);
+
+function normalizeLabel(raw: unknown): string {
+  if (raw == null) return 'Unknown';
+  const value = String(raw);
+
+  if (props.element.labelColumn === 'created_at') {
+    return value.slice(0, 10);
+  }
+
+  return value;
+}
+
 async function fetchData() {
-  if (!props.element.tableName || props.builderMode) return;
+  if (props.builderMode || !props.runtime) return;
+  if (props.element.source !== 'audit-log' && !props.element.tableName) return;
+
   loading.value = true;
 
   try {
-    const res = await $fetch<{ rows: any[] }>('/api/data/query', {
-      method:  'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: {
-        businessId: props.businessId,
-        table:      props.element.tableName,
-        columns:    [props.element.labelColumn, props.element.valueColumn].filter(Boolean),
-        limit:      100,
-      },
-    });
-    rows.value = res.rows ?? [];
-  } catch {
-    rows.value = [];
+    await props.runtime.loadElement(props.element);
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(fetchData);
-watch(() => [props.element.tableName, props.element.labelColumn, props.element.valueColumn], fetchData);
+watch(
+  () => [
+    props.element.source,
+    props.element.tableName,
+    props.element.labelColumn,
+    props.element.valueColumn,
+    props.element.aggregation,
+    JSON.stringify(props.element.filters ?? {}),
+  ],
+  fetchData,
+  { deep: true },
+);
 
-/* ── computed chart data ─────────────────────────────────────────────────── */
+onMounted(fetchData);
 
 const chartData = computed(() => {
-  const labelCol = props.element.labelColumn ?? '';
-  const valueCol = props.element.valueColumn ?? '';
-
   if (props.builderMode) {
-    /* demo data for the builder canvas */
     return [
       { label: 'Alpha', value: 42 },
-      { label: 'Beta',  value: 28 },
+      { label: 'Beta', value: 28 },
       { label: 'Gamma', value: 18 },
       { label: 'Delta', value: 12 },
     ];
   }
 
+  const labelColumn = props.element.labelColumn ?? (props.element.source === 'audit-log' ? 'action_type' : '');
+  const valueColumn = props.element.valueColumn ?? '';
+  const aggregation = props.element.aggregation ?? 'sum';
+
+  if (!labelColumn) return [];
+
+  if (aggregation === 'count') {
+    const grouped = new Map<string, number>();
+
+    for (const row of rows.value) {
+      const label = normalizeLabel(row[labelColumn]);
+      grouped.set(label, (grouped.get(label) ?? 0) + 1);
+    }
+
+    return Array.from(grouped.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }
+
   return rows.value
-    .map(r => ({
-      label: String(r[labelCol] ?? '?'),
-      value: Number(r[valueCol] ?? 0),
+    .map((row) => ({
+      label: normalizeLabel(row[labelColumn]),
+      value: Number(row[valueColumn] ?? 0),
     }))
-    .filter(d => !Number.isNaN(d.value));
+    .filter((item) => !Number.isNaN(item.value));
 });
 
-const total = computed(() => chartData.value.reduce((s, d) => s + d.value, 0) || 1);
+const total = computed(() => chartData.value.reduce((sum, item) => sum + item.value, 0) || 1);
+const maxValue = computed(() => Math.max(...chartData.value.map((item) => item.value), 1));
 
-/* ── pie helpers ─────────────────────────────────────────────────────────── */
-
-function polarToXY(angle: number, r: number, cx: number, cy: number) {
+function polarToXY(angle: number, radius: number, cx: number, cy: number) {
   return {
-    x: cx + r * Math.cos(angle),
-    y: cy + r * Math.sin(angle),
+    x: cx + radius * Math.cos(angle),
+    y: cy + radius * Math.sin(angle),
   };
 }
 
-function pieSlicePath(startAngle: number, endAngle: number, cx: number, cy: number, r: number): string {
-  const s = polarToXY(startAngle, r, cx, cy);
-  const e = polarToXY(endAngle,   r, cx, cy);
-  const large = endAngle - startAngle > Math.PI ? 1 : 0;
-  return `M ${cx} ${cy} L ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y} Z`;
+function pieSlicePath(startAngle: number, endAngle: number, cx: number, cy: number, radius: number): string {
+  const start = polarToXY(startAngle, radius, cx, cy);
+  const end = polarToXY(endAngle, radius, cx, cy);
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
 }
 
 const pieSlices = computed(() => {
   let angle = -Math.PI / 2;
-  return chartData.value.map((d, i) => {
-    const sweep = (d.value / total.value) * 2 * Math.PI;
+
+  return chartData.value.map((item, index) => {
+    const sweep = (item.value / total.value) * 2 * Math.PI;
     const slice = {
-      path:  pieSlicePath(angle, angle + sweep, 80, 80, 70),
-      color: PALETTE.value[i % PALETTE.value.length],
-      label: d.label,
-      pct:   Math.round((d.value / total.value) * 100),
+      path: pieSlicePath(angle, angle + sweep, 80, 80, 70),
+      color: palette.value[index % palette.value.length],
+      label: item.label,
+      pct: Math.round((item.value / total.value) * 100),
     };
     angle += sweep;
     return slice;
   });
 });
 
-/* ── bar helpers ─────────────────────────────────────────────────────────── */
+function linePoints(width: number, height: number): string {
+  const pad = 24;
+  const usableWidth = width - pad * 2;
+  const usableHeight = height - pad * 2;
 
-const maxValue = computed(() => Math.max(...chartData.value.map(d => d.value), 1));
+  if (chartData.value.length < 2) return '';
 
-/* ── line helpers ────────────────────────────────────────────────────────── */
-
-function linePoints(w: number, h: number): string {
-  const data  = chartData.value;
-  const pad   = 24;
-  const usableW = w - pad * 2;
-  const usableH = h - pad * 2;
-
-  if (data.length < 2) return '';
-
-  return data.map((d, i) => {
-    const x = pad + (i / (data.length - 1)) * usableW;
-    const y = pad + usableH - (d.value / maxValue.value) * usableH;
-    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+  return chartData.value.map((item, index) => {
+    const x = pad + (index / (chartData.value.length - 1)) * usableWidth;
+    const y = pad + usableHeight - (item.value / maxValue.value) * usableHeight;
+    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
   }).join(' ');
 }
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-col bg-white rounded-xl overflow-hidden" style="border: 1px solid rgba(61,24,32,0.08);">
-    <!-- Header -->
-    <div class="px-3 py-2 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.06);">
-      <span class="text-xs font-semibold" style="color: rgb(var(--shell-sidebar));">
-        {{ element.tableName || 'Chart' }}
-      </span>
-      <span
-        class="text-[0.6rem] font-mono px-1.5 py-0.5 rounded capitalize"
-        style="background: rgba(232,116,138,0.12); color: rgb(232,116,138);"
-      >
-        {{ element.chartType }}
-      </span>
+  <div
+    class="w-full h-full flex flex-col overflow-hidden rounded-[22px]"
+    :style="{
+      background: surfaceColor,
+      border: '1px solid rgba(255,255,255,0.08)',
+      color: textColor,
+    }"
+  >
+    <div class="px-4 py-3 flex items-start justify-between shrink-0" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold truncate">{{ chartTitle }}</p>
+        <p v-if="element.subtitle" class="text-[11px] truncate" :style="{ color: mutedTextColor }">{{ element.subtitle }}</p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <span
+          class="text-[10px] font-mono px-2 py-1 rounded-full uppercase"
+          style="background: rgba(255,255,255,0.08);"
+        >
+          {{ element.source === 'audit-log' ? 'audit' : (element.tableName || 'table') }}
+        </span>
+        <span
+          class="text-[10px] font-mono px-2 py-1 rounded-full uppercase"
+          style="background: rgba(232,116,138,0.14); color: #e8748a;"
+        >
+          {{ element.aggregation ?? 'sum' }}
+        </span>
+      </div>
     </div>
 
-    <!-- Loading -->
     <div v-if="loading" class="flex-1 flex items-center justify-center">
-      <div class="w-5 h-5 rounded-full border-2 animate-spin" style="border-color: rgba(61,24,32,0.1); border-top-color: rgb(var(--shell-sidebar));"></div>
+      <div class="w-5 h-5 rounded-full border-2 animate-spin" style="border-color: rgba(255,255,255,0.16); border-top-color: #e8748a;" />
     </div>
 
-    <!-- Pie Chart -->
-    <div v-else-if="element.chartType === 'pie'" class="flex-1 flex items-center justify-center p-2 gap-4">
+    <div v-else-if="chartData.length === 0" class="flex-1 flex items-center justify-center px-4 text-center text-sm" :style="{ color: mutedTextColor }">
+      {{ element.emptyLabel ?? 'No chart data yet' }}
+    </div>
+
+    <div v-else-if="element.chartType === 'pie'" class="flex-1 flex items-center justify-center p-3 gap-4">
       <svg viewBox="0 0 160 160" class="w-28 h-28 shrink-0">
-        <g>
-          <path
-            v-for="(slice, i) in pieSlices"
-            :key="i"
-            :d="slice.path"
-            :fill="slice.color"
-            stroke="white"
-            stroke-width="1.5"
-          />
-        </g>
+        <path
+          v-for="(slice, index) in pieSlices"
+          :key="index"
+          :d="slice.path"
+          :fill="slice.color"
+          stroke="rgba(255,255,255,0.9)"
+          stroke-width="1.5"
+        />
       </svg>
       <div class="flex flex-col gap-1 min-w-0">
         <div
-          v-for="(slice, i) in pieSlices"
-          :key="i"
-          class="flex items-center gap-1.5 text-xs"
+          v-for="(slice, index) in pieSlices"
+          :key="index"
+          class="flex items-center gap-2 text-xs"
         >
-          <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background: ${slice.color};`" />
-          <span class="truncate" style="color: rgba(61,24,32,0.65);">{{ slice.label }}</span>
-          <span class="font-semibold ml-auto pl-2" style="color: rgb(var(--shell-sidebar));">{{ slice.pct }}%</span>
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: slice.color }" />
+          <span class="truncate" :style="{ color: mutedTextColor }">{{ slice.label }}</span>
+          <span class="font-semibold ml-auto pl-2">{{ slice.pct }}%</span>
         </div>
       </div>
     </div>
 
-    <!-- Bar Chart -->
-    <div v-else-if="element.chartType === 'bar'" class="flex-1 flex items-end gap-1.5 px-3 pb-3 pt-2">
+    <div v-else-if="element.chartType === 'bar'" class="flex-1 flex items-end gap-2 px-4 pb-4 pt-3">
       <div
-        v-for="(d, i) in chartData"
-        :key="i"
+        v-for="(item, index) in chartData"
+        :key="index"
         class="flex-1 flex flex-col items-center gap-1 min-w-0"
       >
-        <span class="text-[0.55rem] font-semibold" style="color: rgba(61,24,32,0.5);">{{ d.value }}</span>
+        <span class="text-[10px] font-semibold" :style="{ color: mutedTextColor }">{{ item.value }}</span>
         <div
-          class="w-full rounded-t transition-all"
-          :style="`height: ${Math.max(4, (d.value / maxValue) * 80)}px; background: ${PALETTE[i % PALETTE.length]};`"
+          class="w-full rounded-t-xl transition-all"
+          :style="{
+            height: `${Math.max(6, (item.value / maxValue) * 110)}px`,
+            background: palette[index % palette.length],
+          }"
         />
-        <span class="text-[0.55rem] truncate w-full text-center" style="color: rgba(61,24,32,0.45);">{{ d.label }}</span>
+        <span class="text-[10px] truncate w-full text-center" :style="{ color: mutedTextColor }">{{ item.label }}</span>
       </div>
     </div>
 
-    <!-- Line Chart -->
-    <div v-else-if="element.chartType === 'line'" class="flex-1 relative p-2">
-      <svg class="w-full h-full overflow-visible">
+    <div v-else class="flex-1 relative p-3">
+      <svg class="w-full h-full overflow-visible" viewBox="0 0 160 100" preserveAspectRatio="none">
         <defs>
-          <linearGradient id="line-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" :stop-color="PALETTE[0]" stop-opacity="0.2" />
-            <stop offset="100%" :stop-color="PALETTE[0]" stop-opacity="0" />
+          <linearGradient :id="lineGradientId" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" :stop-color="palette[0]" stop-opacity="0.25" />
+            <stop offset="100%" :stop-color="palette[0]" stop-opacity="0" />
           </linearGradient>
         </defs>
+
         <template v-if="chartData.length >= 2">
-          <!-- Area fill -->
           <path
-            :d="linePoints(160, 100) + ` L 160 100 L 0 100 Z`"
-            fill="url(#line-fill)"
+            :d="linePoints(160, 100) + ' L 160 100 L 0 100 Z'"
+            :fill="`url(#${lineGradientId})`"
           />
-          <!-- Line -->
           <path
             :d="linePoints(160, 100)"
             fill="none"
-            :stroke="PALETTE[0]"
-            stroke-width="2"
+            :stroke="palette[0]"
+            stroke-width="2.5"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
-          <!-- Dots -->
           <circle
-            v-for="(d, i) in chartData"
-            :key="i"
-            :cx="24 + (i / (chartData.length - 1)) * 112"
-            :cy="24 + 52 - (d.value / maxValue) * 52"
-            r="3"
-            :fill="PALETTE[0]"
-            stroke="white"
+            v-for="(item, index) in chartData"
+            :key="index"
+            :cx="24 + (index / (chartData.length - 1)) * 112"
+            :cy="24 + 52 - (item.value / maxValue) * 52"
+            r="3.5"
+            :fill="palette[0]"
+            :stroke="surfaceColor"
             stroke-width="1.5"
           />
         </template>
-        <text
-          v-if="chartData.length < 2"
-          x="50%"
-          y="50%"
-          text-anchor="middle"
-          dominant-baseline="middle"
-          class="text-xs"
-          style="fill: rgba(61,24,32,0.25); font-size: 11px;"
-        >
-          Not enough data
-        </text>
       </svg>
     </div>
   </div>
