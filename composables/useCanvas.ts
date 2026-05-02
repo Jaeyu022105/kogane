@@ -149,6 +149,10 @@ export function useCanvas() {
     selectedId.value = id;
   }
 
+  function markSaved() {
+    isDirty.value = false;
+  }
+
   function bringForward(id: string) {
     snapshot();
     const element = getLayerElements().find((item) => item.id === id);
@@ -266,5 +270,6 @@ export function useCanvas() {
     pasteElement,
     duplicateElement,
     setCamera,
+    markSaved,
   };
 }

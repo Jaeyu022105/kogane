@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onBeforeUnmount } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import {
   BarChart2,
   Copy,
@@ -53,6 +54,7 @@ const {
   cameraX,
   cameraY,
   setCamera,
+  markSaved,
 } = useCanvas();
 
 interface BuilderPaletteItem {
@@ -179,7 +181,11 @@ async function loadTerminals() {
   }
 }
 
-function selectTerminal(id: string) {
+async function selectTerminal(id: string) {
+  if (selectedTerminal.value && isDirty.value) {
+    await saveLayout();
+  }
+
   selectedTerminal.value = id;
   const terminal = terminals.value.find((item) => item.id === id);
   if (!terminal) return;
@@ -206,6 +212,7 @@ async function saveLayout() {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: { terminalId: selectedTerminal.value, layout: layout.value },
     });
+    markSaved();
   } finally {
     saving.value = false;
   }
@@ -516,18 +523,54 @@ function createModalLayer() {
   addModal(`Modal ${(layout.value.modals?.length ?? 0) + 1}`, 'custom');
 }
 
+watch(() => business.value?.id, loadTerminals);
+
+// Auto-save logic
+let autoSaveTimeout: any = null;
+
+watch(layout, () => {
+  if (!isDirty.value || !selectedTerminal.value) return;
+
+  if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+  autoSaveTimeout = setTimeout(() => {
+    if (isDirty.value && selectedTerminal.value && !saving.value) {
+      saveLayout();
+    }
+  }, 3000);
+}, { deep: true });
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isDirty.value) {
+    const confirmLeave = confirm('You have unsaved changes. Are you sure you want to leave?');
+    if (confirmLeave) {
+      next();
+    } else {
+      next(false);
+    }
+  } else {
+    next();
+  }
+});
+
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+}
+
 onMounted(() => {
   loadTerminals();
   window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('beforeunload', handleBeforeUnload);
   canvasWrapper.value?.addEventListener('wheel', handleWheel, { passive: false });
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('beforeunload', handleBeforeUnload);
   canvasWrapper.value?.removeEventListener('wheel', handleWheel);
 });
-
-watch(() => business.value?.id, loadTerminals);
 </script>
 
 <template>
