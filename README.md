@@ -35,11 +35,16 @@ Define your domain model. Postfolio handles the DDL (Data Definition Language) f
 ### 2. UI Builder
 A professional, Figma/Canva-inspired design environment. Design staff-facing screens using modular elements like Table Views, Cart Widgets, and Input Fields. It features:
 - **Event System**: Build complex logic without writing code—like mapping an input field's value to a database insert action triggered by a button click.
+- **Transactional Branching**: Create reliable workflows with conditional execution (`condition` JS expressions) and nested `onSuccess` / `onFailure` event routing.
+- **Hardware Integration**: Built-in support for hardware barcode and QR scanners via burst-mode analysis, seamlessly bridging the gap between physical inputs and web events.
 - **Smart Properties**: A dynamic top bar for quick style adjustments, paired with a collapsible advanced properties sidebar for deep customization.
 - **Canvas Controls**: Infinite panning and scaling, along with standard keybinds (`Ctrl+C`, `Ctrl+V`, `Ctrl+D`) for rapid prototyping.
 
 ### 3. Terminals
-Deploy specific layouts to physical or web-based terminals. Staff log in with a **secure PIN**. The interface is hydrated dynamically from the JSON layout definition and scaled to fit any screen perfectly.
+Deploy specific layouts to physical or web-based terminals. The interface is hydrated dynamically from the JSON layout definition and scaled to fit any screen perfectly.
+- **Staff Access**: Traditional role-based access secured by a staff PIN lock screen.
+- **Public / Kiosk Mode**: Easily spin up anonymous, public-facing terminals (e.g., self-serve kiosks, digital menus) with a unique URL slug (`/t/[slug]`).
+- **Context Injection**: Pass contextual data via URL parameters (e.g., `?table_id=3`) directly into the terminal's event runtime as `$$session.*` variables for powerful dynamic interactions.
 
 ---
 
