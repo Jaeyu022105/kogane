@@ -239,6 +239,13 @@ function applyThemeToCurrentWidgets() {
           textColor: theme.panelText,
           borderColor: theme.panelBorder,
         };
+      case 'scan-field':
+        return {
+          ...element,
+          backgroundColor: theme.panelHeaderBackground,
+          textColor: theme.panelText,
+          borderColor: theme.panelBorder,
+        };
       default:
         return element;
     }
@@ -621,6 +628,7 @@ function applyThemeToCurrentWidgets() {
               <option value="number">Number</option>
               <option value="date">Date</option>
               <option value="select">Select</option>
+              <option value="scan">Scan (hardware scanner)</option>
             </select>
             <input :value="(selectedElement as any).defaultValue ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Default value" @input="patch({ defaultValue: ($event.target as HTMLInputElement).value || undefined } as any)" />
             <input
@@ -695,6 +703,16 @@ function applyThemeToCurrentWidgets() {
             </select>
             <input :value="(selectedElement as any).pathTemplate ?? ''" class="input-warm w-full px-3 py-1.5 text-sm font-mono" placeholder="receipts/{{date}}.png" @input="patch({ pathTemplate: ($event.target as HTMLInputElement).value || undefined } as any)" />
             <input :value="stringifyCsv((selectedElement as any).accept)" class="input-warm w-full px-3 py-1.5 text-sm" placeholder=".png, .jpg, image/*" @input="patch({ accept: parseCsv(($event.target as HTMLInputElement).value) } as any)" />
+          </template>
+
+          <template v-else-if="selectedElement.type === 'scan-field'">
+            <input :value="(selectedElement as any).fieldName" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Field name (e.g. barcode)" @input="patch({ fieldName: ($event.target as HTMLInputElement).value } as any)" />
+            <input :value="(selectedElement as any).placeholder ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Placeholder text" @input="patch({ placeholder: ($event.target as HTMLInputElement).value || undefined } as any)" />
+            <div>
+              <label class="text-[10px] text-gray-400 mb-0.5 block">Burst threshold (ms)</label>
+              <input type="number" :value="(selectedElement as any).burstThresholdMs ?? 40" min="10" max="200" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="40" @input="patch({ burstThresholdMs: Number(($event.target as HTMLInputElement).value) } as any)" />
+            </div>
+            <p class="text-[11px] leading-relaxed" style="color: rgba(61,24,32,0.4);">Keystrokes faster than this threshold (ms) are treated as scanner input and auto-committed. Increase if your scanner is slow.</p>
           </template>
         </section>
 
@@ -988,6 +1006,53 @@ function applyThemeToCurrentWidgets() {
               <input type="number" :value="(selectedElement as any).radius ?? 18" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Radius" @input="patch({ radius: Number(($event.target as HTMLInputElement).value) } as any)" />
             </div>
           </template>
+
+          <template v-else-if="selectedElement.type === 'scan-field'">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-400 mb-0.5 block">Field BG</label>
+                <div class="flex gap-2">
+                  <input
+                    type="color"
+                    :value="colorPickerValue((selectedElement as any).backgroundColor, layout.theme.panelHeaderBackground)"
+                    class="h-9 w-11 rounded-lg border bg-white px-1"
+                    style="border-color: rgba(61,24,32,0.12);"
+                    @input="patch({ backgroundColor: ($event.target as HTMLInputElement).value || undefined } as any)"
+                  />
+                  <input :value="(selectedElement as any).backgroundColor ?? ''" class="input-warm flex-1 px-3 py-1.5 text-sm" placeholder="Field background" @input="patch({ backgroundColor: ($event.target as HTMLInputElement).value || undefined } as any)" />
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-400 mb-0.5 block">Text</label>
+                <div class="flex gap-2">
+                  <input
+                    type="color"
+                    :value="colorPickerValue((selectedElement as any).textColor, layout.theme.panelText)"
+                    class="h-9 w-11 rounded-lg border bg-white px-1"
+                    style="border-color: rgba(61,24,32,0.12);"
+                    @input="patch({ textColor: ($event.target as HTMLInputElement).value || undefined } as any)"
+                  />
+                  <input :value="(selectedElement as any).textColor ?? ''" class="input-warm flex-1 px-3 py-1.5 text-sm" placeholder="Text color" @input="patch({ textColor: ($event.target as HTMLInputElement).value || undefined } as any)" />
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-400 mb-0.5 block">Border</label>
+                <div class="flex gap-2">
+                  <input
+                    type="color"
+                    :value="colorPickerValue((selectedElement as any).borderColor, layout.theme.panelBorder)"
+                    class="h-9 w-11 rounded-lg border bg-white px-1"
+                    style="border-color: rgba(61,24,32,0.12);"
+                    @input="patch({ borderColor: ($event.target as HTMLInputElement).value || undefined } as any)"
+                  />
+                  <input :value="(selectedElement as any).borderColor ?? ''" class="input-warm flex-1 px-3 py-1.5 text-sm" placeholder="Border color" @input="patch({ borderColor: ($event.target as HTMLInputElement).value || undefined } as any)" />
+                </div>
+              </div>
+              <input type="number" :value="(selectedElement as any).radius ?? 12" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Radius" @input="patch({ radius: Number(($event.target as HTMLInputElement).value) } as any)" />
+            </div>
+          </template>
         </section>
 
         <section class="px-4 py-3 space-y-3">
@@ -1064,6 +1129,38 @@ function applyThemeToCurrentWidgets() {
             <input v-if="eventBinding.action.type === 'navigate'" :value="eventBinding.action.url ?? ''" class="input-warm w-full px-2 py-1.5 text-xs" placeholder="https://..." @input="updateEventAction(index, { url: ($event.target as HTMLInputElement).value || undefined })" />
             <textarea v-if="['insert','update','emit'].includes(eventBinding.action.type)" :value="stringifyJson(eventBinding.action.payload ?? {})" rows="4" class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none" @input="updateEventAction(index, { payload: parseJsonPayload(($event.target as HTMLTextAreaElement).value) })" />
             <input v-if="eventBinding.action.type === 'upload'" :value="eventBinding.action.path ?? ''" class="input-warm w-full px-2 py-1.5 text-xs font-mono" placeholder="assets/logo.png" @input="updateEventAction(index, { path: ($event.target as HTMLInputElement).value || undefined })" />
+
+            <div class="pt-2 border-t mt-2" style="border-color: rgba(61,24,32,0.08);">
+              <label class="text-[10px] text-gray-400 mb-0.5 block">Condition (JS Expression)</label>
+              <input
+                :value="eventBinding.action.condition ?? ''"
+                class="input-warm w-full px-2 py-1.5 text-xs font-mono"
+                placeholder="inputs.cart_total <= session.balance"
+                @input="updateEventAction(index, { condition: ($event.target as HTMLInputElement).value || undefined })"
+              />
+            </div>
+            
+            <div>
+              <label class="text-[10px] text-gray-400 mb-0.5 block">On Success (Action JSON)</label>
+              <textarea
+                :value="stringifyJson(eventBinding.action.onSuccess ?? {})"
+                rows="2"
+                class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
+                placeholder='{"type":"navigate","url":"..."}'
+                @input="updateEventAction(index, { onSuccess: parseJsonPayload(($event.target as HTMLTextAreaElement).value) })"
+              />
+            </div>
+            
+            <div>
+              <label class="text-[10px] text-gray-400 mb-0.5 block">On Failure (Action JSON)</label>
+              <textarea
+                :value="stringifyJson(eventBinding.action.onFailure ?? {})"
+                rows="2"
+                class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
+                placeholder='{"type":"emit","event":"error"}'
+                @input="updateEventAction(index, { onFailure: parseJsonPayload(($event.target as HTMLTextAreaElement).value) })"
+              />
+            </div>
           </div>
         </section>
       </div>

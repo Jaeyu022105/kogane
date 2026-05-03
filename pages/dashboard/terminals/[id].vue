@@ -14,6 +14,7 @@ const { tables, fetchTables } = useSchema(businessId);
 
 const loading = ref(false);
 const saving = ref(false);
+const savingPublic = ref(false);
 const deleting = ref(false);
 const error = ref<string | null>(null);
 const terminal = ref<{
@@ -21,8 +22,13 @@ const terminal = ref<{
   display_name: string;
   role: string;
   permissions: TerminalPermissions;
+  is_public: boolean;
+  public_slug: string | null;
 } | null>(null);
 const permissions = ref<TerminalPermissions>(normalizePermissions(DEFAULT_TERMINAL_PERMISSIONS));
+const isPublic = ref(false);
+const publicSlug = ref('');
+const publicUrl = computed(() => publicSlug.value ? `/t/${publicSlug.value}` : null);
 
 async function loadTerminal() {
   if (!route.params.id) return;
@@ -41,6 +47,8 @@ async function loadTerminal() {
 
     terminal.value = res.terminal;
     permissions.value = normalizePermissions(res.terminal.permissions);
+    isPublic.value = Boolean(res.terminal.is_public);
+    publicSlug.value = res.terminal.public_slug ?? '';
   } catch (err) {
     error.value = (err as Error).message;
   } finally {
@@ -79,6 +87,31 @@ function setReportsVisibility(value: boolean) {
     ...permissions.value,
     reports: { visible: value },
   };
+}
+
+async function savePublicSettings() {
+  if (!terminal.value || !business.value) return;
+  savingPublic.value = true;
+  error.value = null;
+
+  try {
+    await $fetch<{ success: boolean; error: string | null }>(
+      `/api/terminals/${terminal.value.id}/public`,
+      {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: {
+          businessId: business.value.id,
+          isPublic: isPublic.value,
+          publicSlug: publicSlug.value.trim() || null,
+        },
+      },
+    );
+  } catch (err) {
+    error.value = (err as Error).message;
+  } finally {
+    savingPublic.value = false;
+  }
 }
 
 async function savePermissions() {
@@ -352,6 +385,63 @@ watch(businessId, fetchTables);
                   </label>
                 </div>
               </div>
+            </div>
+
+            <!-- ── Public Access ────────────────────────────────────────────── -->
+            <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-5">
+              <div>
+                <h3 class="font-serif text-lg font-normal mb-1" style="color: rgb(var(--shell-sidebar));">Public Access</h3>
+                <p class="text-xs leading-relaxed" style="color: rgba(61,24,32,0.4);">Allow this terminal to be opened without a PIN via a unique URL. Useful for customer-facing kiosks and QR-code order screens.</p>
+              </div>
+
+              <div class="flex items-center justify-between p-3.5 rounded-2xl border transition-all" :class="isPublic ? 'bg-[#3d1820]/[0.02] border-[#3d1820]/10' : 'bg-transparent border-black/[0.06]'">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-black/5" style="color: rgba(61,24,32,0.6);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">Enable Public Mode</p>
+                    <p class="text-[10px] font-medium" style="color: rgba(61,24,32,0.4);">No PIN required for guests</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" :checked="isPublic" @change="isPublic = ($event.target as HTMLInputElement).checked" />
+                  <div class="w-11 h-6 bg-black/[0.08] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3d1820]"></div>
+                </label>
+              </div>
+
+              <div v-if="isPublic" class="space-y-3">
+                <div>
+                  <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Public Slug</label>
+                  <div class="flex gap-2">
+                    <span class="flex items-center px-3 text-xs rounded-l-xl border border-r-0" style="background: rgba(61,24,32,0.03); border-color: rgba(61,24,32,0.1); color: rgba(61,24,32,0.4);">/t/</span>
+                    <input
+                      v-model="publicSlug"
+                      class="input-warm flex-1 px-3 py-2 text-sm rounded-l-none"
+                      placeholder="table-3, kiosk-lobby"
+                      pattern="[a-z0-9-]+"
+                    />
+                  </div>
+                  <p class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Lowercase letters, numbers, and hyphens only.</p>
+                </div>
+
+                <div v-if="publicUrl" class="p-3 rounded-xl font-mono text-xs break-all" style="background: rgba(61,24,32,0.03); color: rgba(61,24,32,0.6); border: 1px solid rgba(61,24,32,0.08);">
+                  {{ publicUrl }}
+                </div>
+
+                <p class="text-[11px] leading-relaxed" style="color: rgba(61,24,32,0.4);">
+                  Append query parameters to pre-fill session variables — e.g. <code class="bg-black/5 px-1 rounded">?table_id=3</code> is accessible as <code class="bg-black/5 px-1 rounded">$$session.table_id</code> in all event bindings.
+                </p>
+              </div>
+
+              <button
+                class="w-full text-sm font-semibold px-5 py-2.5 rounded-2xl transition-all disabled:opacity-40"
+                style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar)); border: 1px solid rgba(61,24,32,0.08);"
+                :disabled="savingPublic"
+                @click="savePublicSettings"
+              >
+                {{ savingPublic ? 'Saving...' : 'Save Public Settings' }}
+              </button>
             </div>
 
             <!-- ── Terminal Stats ────────────────────────────────────────────── -->

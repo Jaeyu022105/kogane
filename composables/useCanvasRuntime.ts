@@ -23,12 +23,14 @@ interface RuntimeState {
   uploads: Record<string, string>;
   permissions: TerminalPermissions;
   activeModalId: string | null;
+  sessionVars: Record<string, unknown>;
 }
 
 interface RuntimeContext {
   terminalId: string;
   businessId: string;
   layout: UiLayout | null;
+  sessionVars: Record<string, unknown>;
 }
 
 type RuntimeListener = (payload?: unknown) => void;
@@ -49,11 +51,13 @@ export function useCanvasRuntime() {
     uploads: {},
     permissions: normalizePermissions(),
     activeModalId: null,
+    sessionVars: {},
   }));
   const context = useState<RuntimeContext>('postfolio:runtime:context', () => ({
     terminalId: '',
     businessId: '',
     layout: null,
+    sessionVars: {},
   }));
   const { enqueue } = useEventQueue();
   const { alert } = useModal();
@@ -67,6 +71,7 @@ export function useCanvasRuntime() {
       uploads: {},
       permissions: normalizePermissions(),
       activeModalId: null,
+      sessionVars: {},
     };
     loadedElements.clear();
     listeners.clear();
@@ -77,13 +82,16 @@ export function useCanvasRuntime() {
     businessId: string;
     layout: UiLayout;
     permissions?: TerminalPermissions;
+    sessionVars?: Record<string, unknown>;
   }) {
     context.value = {
       terminalId: options.terminalId,
       businessId: options.businessId,
       layout: options.layout,
+      sessionVars: options.sessionVars ?? {},
     };
     runtimeState.value.permissions = normalizePermissions(options.permissions);
+    runtimeState.value.sessionVars = options.sessionVars ?? {};
     runtimeState.value.activeModalId = null;
     loadedElements.clear();
   }
@@ -94,6 +102,11 @@ export function useCanvasRuntime() {
 
   function setCartValue(items: unknown[]) {
     runtimeState.value.cart = items;
+  }
+
+  function setSessionVar(key: string, value: unknown) {
+    runtimeState.value.sessionVars[key] = value;
+    context.value.sessionVars[key] = value;
   }
 
   function on(eventName: string, handler: RuntimeListener) {
@@ -183,6 +196,7 @@ export function useCanvasRuntime() {
       cart: runtimeState.value.cart,
       inputs: runtimeState.value.inputs,
       uploads: runtimeState.value.uploads,
+      session: runtimeState.value.sessionVars,
       elementId: element.id,
     }) ?? `${element.id}/${file.name}`);
 
@@ -241,6 +255,29 @@ export function useCanvasRuntime() {
     };
   }
 
+  function resolverContext(elementId?: string): import('~/lib/runtime').RuntimeResolverContext {
+    return {
+      cart: runtimeState.value.cart,
+      inputs: runtimeState.value.inputs,
+      uploads: runtimeState.value.uploads,
+      session: runtimeState.value.sessionVars,
+      elementId,
+    };
+  }
+
+  function evaluateCondition(condition: string | undefined): boolean {
+    if (!condition || !condition.trim()) return true;
+
+    try {
+      const ctx = resolverContext();
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('inputs', 'session', 'cart', `return !!(${condition})`);
+      return fn(ctx.inputs, ctx.session ?? {}, ctx.cart);
+    } catch {
+      return false;
+    }
+  }
+
   async function dispatch(action: RuntimeActionDefinition, options: {
     element: ElementDef;
     trigger: EventTrigger;
@@ -254,8 +291,23 @@ export function useCanvasRuntime() {
       return null;
     }
 
+    /* evaluate condition guard — dispatch onFailure branch if condition is falsy */
+    if (action.condition !== undefined) {
+      const passed = evaluateCondition(action.condition);
+
+      if (!passed) {
+        if (action.onFailure) {
+          return dispatch(action.onFailure, options);
+        }
+
+        return null;
+      }
+    }
+
     if (action.type === 'emit') {
       emitLocal(action.event ?? 'runtime:event', action.payload);
+
+      if (action.onSuccess) await dispatch(action.onSuccess, options);
       return null;
     }
 
@@ -263,48 +315,46 @@ export function useCanvasRuntime() {
       if (import.meta.client && action.url) {
         window.location.href = action.url;
       }
+
+      if (action.onSuccess) await dispatch(action.onSuccess, options);
       return null;
     }
 
     if (action.type === 'upload') {
-      return runUploadAction(options.element, action);
+      try {
+        const result = await runUploadAction(options.element, action);
+        if (action.onSuccess) await dispatch(action.onSuccess, options);
+        return result;
+      } catch {
+        if (action.onFailure) await dispatch(action.onFailure, options);
+        return null;
+      }
     }
 
     if (action.type === 'query') {
       const resolvedWhere = action.where
-        ? resolveRuntimePayload(action.where, {
-            cart: runtimeState.value.cart,
-            inputs: runtimeState.value.inputs,
-            uploads: runtimeState.value.uploads,
-            elementId: options.element.id,
-          }) as Record<string, unknown>
+        ? resolveRuntimePayload(action.where, resolverContext(options.element.id)) as Record<string, unknown>
         : undefined;
 
-      return runQueryAction(options.element.id, {
-        ...action,
-        where: resolvedWhere as any,
-      }, options.trigger);
+      try {
+        const result = await runQueryAction(options.element.id, {
+          ...action,
+          where: resolvedWhere as any,
+        }, options.trigger);
+
+        if (action.onSuccess) await dispatch(action.onSuccess, options);
+        return result;
+      } catch {
+        if (action.onFailure) await dispatch(action.onFailure, options);
+        return null;
+      }
     }
 
-    const resolvedPayload = resolveRuntimePayload(action.payload, {
-      cart: runtimeState.value.cart,
-      inputs: runtimeState.value.inputs,
-      uploads: runtimeState.value.uploads,
-      elementId: options.element.id,
-    });
-    const resolvedRowId = resolveRuntimePayload(action.rowId, {
-      cart: runtimeState.value.cart,
-      inputs: runtimeState.value.inputs,
-      uploads: runtimeState.value.uploads,
-      elementId: options.element.id,
-    });
+    const ctx = resolverContext(options.element.id);
+    const resolvedPayload = resolveRuntimePayload(action.payload, ctx);
+    const resolvedRowId = resolveRuntimePayload(action.rowId, ctx);
     const resolvedWhere = action.where
-      ? resolveRuntimePayload(action.where, {
-          cart: runtimeState.value.cart,
-          inputs: runtimeState.value.inputs,
-          uploads: runtimeState.value.uploads,
-          elementId: options.element.id,
-        }) as Record<string, unknown>
+      ? resolveRuntimePayload(action.where, ctx) as Record<string, unknown>
       : undefined;
 
     const runtimeAction: RuntimeActionDefinition = {
@@ -325,11 +375,15 @@ export function useCanvasRuntime() {
 
     const rollback = applyOptimisticMutation(runtimeAction, resolvedPayload);
 
-    if (shouldQueueAction(runtimeAction)) {
-      return enqueue(envelope, rollback);
+    try {
+      const result = await enqueue(envelope, rollback);
+      if (action.onSuccess) await dispatch(action.onSuccess, options);
+      return result;
+    } catch {
+      rollback();
+      if (action.onFailure) await dispatch(action.onFailure, options);
+      return null;
     }
-
-    return null;
   }
 
   async function triggerElement(element: ElementDef, trigger: EventTrigger) {
@@ -425,6 +479,7 @@ export function useCanvasRuntime() {
     emitLocal,
     setInputValue,
     setCartValue,
+    setSessionVar,
     dispatch,
     triggerElement,
     loadElement,

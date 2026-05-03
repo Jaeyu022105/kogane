@@ -11,7 +11,8 @@ export type ElementType =
   | 'input-field'
   | 'chart'
   | 'upload'
-  | 'cart-widget';
+  | 'cart-widget'
+  | 'scan-field';
 
 export type QuerySource = 'business-table' | 'audit-log';
 
@@ -79,6 +80,12 @@ export interface RuntimeActionDefinition {
   path?: RuntimePayloadValue;
   accept?: string[];
   url?: string;
+  /** Optional JS expression string evaluated against runtime context. Action is skipped if falsy. */
+  condition?: string;
+  /** Action to fire when this action succeeds (or condition passes). */
+  onSuccess?: RuntimeActionDefinition;
+  /** Action to fire when this action fails or condition is falsy. */
+  onFailure?: RuntimeActionDefinition;
 }
 
 export interface ElementEventBinding {
@@ -144,7 +151,7 @@ export interface InputFieldElementDef extends BaseElementDef {
   type: 'input-field';
   fieldName: string;
   placeholder?: string;
-  inputType: 'text' | 'number' | 'date' | 'select';
+  inputType: 'text' | 'number' | 'date' | 'select' | 'scan';
   options?: string[];
   submitGroup?: string;
   defaultValue?: string;
@@ -203,6 +210,18 @@ export interface CartWidgetElementDef extends BaseElementDef {
   radius?: number;
 }
 
+export interface ScanFieldElementDef extends BaseElementDef {
+  type: 'scan-field';
+  fieldName: string;
+  placeholder?: string;
+  /** Milliseconds between keystrokes — bursts faster than this are treated as scanner input. */
+  burstThresholdMs?: number;
+  backgroundColor?: string;
+  textColor?: string;
+  borderColor?: string;
+  radius?: number;
+}
+
 export type ElementDef =
   | ButtonElementDef
   | TextElementDef
@@ -211,7 +230,8 @@ export type ElementDef =
   | InputFieldElementDef
   | ChartElementDef
   | UploadElementDef
-  | CartWidgetElementDef;
+  | CartWidgetElementDef
+  | ScanFieldElementDef;
 
 export type LegacyActionType =
   | 'none'
@@ -282,6 +302,7 @@ export const TRIGGERS_BY_ELEMENT_TYPE: Record<ElementType, EventTrigger[]> = {
   chart: ['load'],
   upload: ['click'],
   'cart-widget': [],
+  'scan-field': ['input:commit'],
 };
 
 function clone<T>(value: T): T {
@@ -537,6 +558,18 @@ function normalizeElement(raw: unknown): ElementDef | null {
         borderColor: typeof source.borderColor === 'string' ? source.borderColor : undefined,
         radius: source.radius != null ? Number(source.radius) : undefined,
       } as CartWidgetElementDef;
+    case 'scan-field':
+      return {
+        ...base,
+        type: 'scan-field',
+        fieldName: String(source.fieldName ?? 'scan_value'),
+        placeholder: typeof source.placeholder === 'string' ? source.placeholder : undefined,
+        burstThresholdMs: source.burstThresholdMs != null ? Number(source.burstThresholdMs) : undefined,
+        backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
+        textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
+        borderColor: typeof source.borderColor === 'string' ? source.borderColor : undefined,
+        radius: source.radius != null ? Number(source.radius) : undefined,
+      } as ScanFieldElementDef;
     default:
       return null;
   }

@@ -13,6 +13,7 @@ import InputFieldEl from '~/components/elements/InputFieldEl.vue';
 import ChartEl from '~/components/elements/ChartEl.vue';
 import UploadEl from '~/components/elements/UploadEl.vue';
 import CartWidgetEl from '~/components/elements/CartWidgetEl.vue';
+import ScanFieldEl from '~/components/elements/ScanFieldEl.vue';
 
 const props = defineProps<{
   element: ElementDef;
@@ -36,6 +37,7 @@ const ELEMENT_COMPONENT_MAP: Record<string, unknown> = {
   chart: ChartEl,
   upload: UploadEl,
   'cart-widget': CartWidgetEl,
+  'scan-field': ScanFieldEl,
 };
 
 const component = computed(() => ELEMENT_COMPONENT_MAP[props.element.type] ?? null);

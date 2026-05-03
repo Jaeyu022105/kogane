@@ -16,6 +16,7 @@ export interface RuntimeResolverContext {
   cart: unknown[];
   inputs: Record<string, unknown>;
   uploads: Record<string, string>;
+  session?: Record<string, unknown>;
   elementId?: string;
 }
 
@@ -42,6 +43,10 @@ export function resolveRuntimePayload(
 
     if (value.startsWith('$$upload.')) {
       return context.uploads[value.replace('$$upload.', '')] ?? null;
+    }
+
+    if (value.startsWith('$$session.')) {
+      return context.session?.[value.replace('$$session.', '')] ?? null;
     }
 
     if (value === '$$element.id') {

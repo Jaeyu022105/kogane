@@ -47,6 +47,8 @@ export class SqliteAdapter implements DbAdapter {
         pin_length    INTEGER NOT NULL DEFAULT 4,
         permissions   TEXT DEFAULT '{}',
         ui_layout     TEXT DEFAULT '{}',
+        is_public     INTEGER NOT NULL DEFAULT 0,
+        public_slug   TEXT UNIQUE,
         created_at    TEXT DEFAULT (datetime('now'))
       )
     `);
@@ -85,6 +87,14 @@ export class SqliteAdapter implements DbAdapter {
 
     try {
       this.db.run("ALTER TABLE terminals ADD COLUMN permissions TEXT DEFAULT '{}'");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE terminals ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE terminals ADD COLUMN public_slug TEXT");
     } catch (e) { }
   }
 
