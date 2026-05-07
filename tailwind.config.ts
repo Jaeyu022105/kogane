@@ -22,17 +22,17 @@ export default {
           sidebar: 'rgb(var(--shell-sidebar) / <alpha-value>)',
           pink:    'rgb(var(--shell-pink) / <alpha-value>)',
         },
-        cream: {
-          DEFAULT: '#f5ede4',
-          dark:    '#edddd0',
+        bg1: {
+          DEFAULT: '#F6E6D7',
+          dark:    '#E3C7B9',
         },
-        maroon: {
-          DEFAULT: '#3d1820',
-          light:   '#5c2530',
-          dark:    '#2a0f16',
+        dark: {
+          DEFAULT: '#68293A',
+          light:   '#8b3a4f',
+          deep:    '#4d1e2b',
         },
-        rose: {
-          warm: '#e8748a',
+        brand: {
+          pink: '#FF5776',
         },
       },
       fontFamily: {

@@ -7,25 +7,25 @@
 
 /* ── Shell tokens (fixed, not business-themed) ───────────────── */
 :root {
-  --shell-bg:           245 237 228;   /* cream #f5ede4 */
-  --shell-sidebar:      61  24  32;    /* maroon #3d1820 */
-  --shell-sidebar-text: 245 237 228;   /* cream text in sidebar */
-  --shell-pink:         232 116 138;   /* accent pink #e8748a */
-  --shell-border:       61  24  32;    /* maroon borders */
+  --shell-bg:           255 255 255;  /* white */
+  --shell-sidebar:      104 41  58;    /* dark #68293A */
+  --shell-sidebar-text: 246 230 215;   /* bg1 text in sidebar */
+  --shell-pink:         255 87  118;   /* brand #FF5776 */
+  --shell-border:       104 41  58;    /* dark borders */
 
   /* Business brand tokens — overridden per-business via theming system */
-  --color-primary:    61  24  32;     /* maroon */
-  --color-secondary:  232 116 138;    /* pink */
-  --color-accent:     232 116 138;    /* pink */
-  --color-background: 245 237 228;    /* cream */
+  --color-primary:    104 41  58;     /* dark */
+  --color-secondary:  255 87  118;    /* brand */
+  --color-accent:     255 87  118;    /* brand */
+  --color-background: 246 230 215;    /* bg1 */
   --color-surface:    255 255 255;    /* white */
-  --color-border:     61  24  32;
-  --color-text:       61  24  32;
-  --color-muted:      168 130 135;
+  --color-border:     104 41  58;
+  --color-text:       104 41  58;
+  --color-muted:      163 121 133;
 
   /* Scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(232,116,138,0.35) transparent;
+  scrollbar-color: rgba(255,87,118,0.35) transparent;
 }
 
 /* ── Base resets ─────────────────────────────────────────────── */
@@ -44,7 +44,7 @@ html, body {
 /* ── Scrollbar ───────────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: rgba(232,116,138,0.4); border-radius: 99px; }
+::-webkit-scrollbar-thumb  { background: rgba(255,87,118,0.4); border-radius: 99px; }
 
 /* ── Utility layers ──────────────────────────────────────────── */
 @layer components {
@@ -122,6 +122,29 @@ html, body {
   }
   .btn-pink:hover  { opacity: 0.88; }
   .btn-pink:active { transform: scale(0.97); }
+
+  /*
+   * Ribbon bookmark tail — confirm/accept/important buttons ONLY.
+   * Usage: class="btn-primary btn-ribbon"
+   * Set --ribbon-color inline to match the button background.
+   */
+  .btn-ribbon {
+    position: relative;
+    overflow: visible;
+  }
+
+  .btn-ribbon::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 14px;
+    width: 24px;
+    height: 11px;
+    background: var(--ribbon-color, rgb(var(--shell-sidebar)));
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 52%, 0 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
 
   /* Form inputs */
   .input-warm {
