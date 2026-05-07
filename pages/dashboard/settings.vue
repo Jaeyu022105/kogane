@@ -5,10 +5,11 @@
 
 definePageMeta({ layout: 'dashboard' });
 
-import { Check } from 'lucide-vue-next';
+import { Check, Sparkles } from 'lucide-vue-next';
 
 const { authHeaders }             = useAuth();
 const { business, fetchBusiness, updateTheme } = useBusiness();
+const { openOnboarding }          = useOnboarding();
 
 const businessName = ref('');
 const saving       = ref(false);
@@ -261,6 +262,29 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
             <span class="text-xs" style="color: rgba(61,24,32,0.65);">{{ new Date(business.createdAt).toLocaleDateString() }}</span>
           </div>
         </div>
+      </div>
+
+      <!-- Workspace setup -->
+      <div class="bg-white rounded-2xl p-6 space-y-3 shadow-warm">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Workspace Setup</h2>
+            <p class="text-sm mt-1" style="color: rgba(61,24,32,0.5);">Re-run the onboarding wizard to configure your business type and feature tables.</p>
+          </div>
+          <div
+            class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+            style="background: rgba(232,116,138,0.1);"
+          >
+            <Sparkles class="w-5 h-5" style="color: rgb(232,116,138);" />
+          </div>
+        </div>
+        <button
+          class="w-full py-2.5 text-sm font-semibold rounded-full transition-all active:scale-[0.98]"
+          style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar)); border: 1.5px solid rgba(61,24,32,0.12);"
+          @click="openOnboarding"
+        >
+          Open setup wizard
+        </button>
       </div>
 
     </div>

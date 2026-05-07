@@ -2,11 +2,13 @@
 /**
  * Dashboard layout — persistent sidebar + main shell.
  * Redirects to login if no session is found.
+ * Shows onboarding modal on first login when no business exists.
  */
 
 const router  = useRouter();
-const { session, isLoggedIn, logout } = useAuth();
-const { business, fetchBusiness }     = useBusiness();
+const { session, isLoggedIn, logout }   = useAuth();
+const { business, fetchBusiness }       = useBusiness();
+const { showOnboarding, openOnboarding, closeOnboarding } = useOnboarding();
 
 onMounted(async () => {
   if (!isLoggedIn.value) {
@@ -18,7 +20,10 @@ onMounted(async () => {
     });
     return;
   }
+
   await fetchBusiness();
+
+  if (!business.value) openOnboarding();
 });
 
 import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3 } from 'lucide-vue-next';
@@ -118,5 +123,8 @@ function handleLogout() {
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden" style="background: rgb(var(--shell-bg));">
       <slot />
     </div>
+
+    <!-- Onboarding modal (first-time + re-opened from settings) -->
+    <OnboardingModal v-if="showOnboarding" @done="closeOnboarding" />
   </div>
 </template>
