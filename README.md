@@ -12,6 +12,7 @@ Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Po
 - **UI-Driven**: Build interfaces using a Figma-like visual canvas. Drag, drop, and configure.
 - **Terminal Isolation**: Deploy role-based "Terminals" that are isolated, secure, and authenticated via PIN.
 - **Dynamic Theming**: Brand colors and typography propagate instantly across every generated interface.
+- **Integrated Marketing**: Professional landing, features, and pricing pages built-in to handle business conversion from day one.
 
 ---
 
@@ -60,6 +61,7 @@ Postfolio features a "Cream & Maroon" design system:
 - **Typography**: A harmonious blend of *Inter* (sans-serif) for utility and *DM Serif Display* (serif) for elegance.
 - **Interface**: A warm, tactile feel with soft shadows, rounded corners, and micro-animations.
 - **Staff View**: Minimalist and high-contrast, optimized for efficiency and low cognitive load.
+- **Marketing Site**: A premium public-facing presence using a refined "Marketing Shell" layout with blurred sticky headers and rich typography.
 
 ---
 
