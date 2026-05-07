@@ -29,6 +29,12 @@ Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Po
 
 ## 📐 How it Works
 
+### 0. Smart Onboarding
+Designed specifically for SMEs, Postfolio features an **Intelligent Setup Wizard** that bypasses technical complexity.
+- **Industry Presets**: Choose from predefined business types (Restaurant, Logistics, Retail, etc.) to immediately apply optimized schema templates.
+- **Modular Features**: A "Preset + Override" system allows users to pick high-level features (Order Tracking, Inventory, Invoicing) which automatically provision the necessary database tables and relations.
+- **Instant Provisioning**: The onboarding flow uses a unified transactional API to create the business identity and seed the database schema in a single, seamless step.
+
 ### 1. Database Editor
 Define your domain model. Postfolio handles the DDL (Data Definition Language) for you. It features an **Interactive Table Editor** for direct inline data manipulation and a **Relational Schema Visualizer** that draws dynamic connection arrows for foreign keys. It includes a built-in **Normalization Analyzer** that suggests schema improvements (targeting 3.5NF / Boyce-Codd) to ensure your data stays clean as you scale.
 
