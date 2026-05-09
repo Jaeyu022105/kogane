@@ -338,7 +338,7 @@ function getTablePositionSafe(name: string) {
 </script>
 
 <template>
-  <div class="flex-1 flex overflow-hidden" style="background: rgb(var(--shell-bg));">
+  <div class="flex-1 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Left sidebar: schema / table tree ──────────────────────────────── -->
     <aside class="w-56 shrink-0 flex flex-col overflow-hidden" style="background: #1a0e11; border-right: 1px solid rgba(255,255,255,0.05);">
       <!-- Header -->

@@ -6,8 +6,8 @@
  */
 
 const router  = useRouter();
-const { session, isLoggedIn, logout }   = useAuth();
-const { business, fetchBusiness }       = useBusiness();
+const { session, isLoggedIn, logout }         = useAuth();
+const { business, fetchBusiness }             = useBusiness();
 const { showOnboarding, openOnboarding, closeOnboarding } = useOnboarding();
 
 onMounted(async () => {
@@ -30,11 +30,11 @@ import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3
 
 const navItems = [
   { label: 'Overview',  icon: LayoutDashboard, to: '/dashboard' },
-  { label: 'Database',  icon: Database, to: '/dashboard/database' },
-  { label: 'Terminals', icon: Terminal, to: '/dashboard/terminals' },
-  { label: 'Audit Log', icon: Shield, to: '/dashboard/audit' },
-  { label: 'Reports',   icon: BarChart3, to: '/dashboard/reports' },
-  { label: 'Settings',  icon: Settings, to: '/dashboard/settings' },
+  { label: 'Database',  icon: Database,         to: '/dashboard/database' },
+  { label: 'Terminals', icon: Terminal,          to: '/dashboard/terminals' },
+  { label: 'Audit Log', icon: Shield,            to: '/dashboard/audit' },
+  { label: 'Reports',   icon: BarChart3,         to: '/dashboard/reports' },
+  { label: 'Settings',  icon: Settings,          to: '/dashboard/settings' },
 ];
 
 const route = useRoute();
@@ -55,76 +55,128 @@ function handleLogout() {
 
 <template>
   <div class="flex h-dvh overflow-hidden" style="background: rgb(var(--shell-bg));">
-    <!-- Sidebar -->
-    <aside
-      class="w-52 flex flex-col shrink-0"
-      style="background: rgb(var(--shell-sidebar));"
-    >
-      <!-- Logo -->
-      <div class="px-5 py-5 flex items-center gap-3" style="border-bottom: 1px solid rgba(245,237,228,0.1);">
-        <div
-          class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm"
-          style="background: rgb(var(--shell-pink)); color: #fff;"
-        >
-          P
-        </div>
-        <span class="font-serif text-base leading-none" style="color: rgb(var(--shell-sidebar-text));">
-          <span style="color: rgb(var(--shell-pink));">Post</span><strong>folio</strong>
-        </span>
-      </div>
 
-      <!-- Business name chip -->
-      <div v-if="business?.name" class="mx-3 mt-3 px-3 py-1.5 rounded-lg text-xs truncate" style="background: rgba(245,237,228,0.08); color: rgba(245,237,228,0.55);">
-        {{ business.name }}
+    <!-- ── Sidebar ───────────────────────────────────────────────── -->
+    <aside
+      class="w-[200px] flex flex-col shrink-0"
+      style="background: #ffffff; border-right: 1px solid rgba(61,24,32,0.08);"
+    >
+      <!-- Wordmark -->
+      <div class="px-5 py-5" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+            style="background: rgb(var(--shell-pink)); color: #fff;"
+          >
+            P
+          </div>
+          <span class="font-serif text-sm leading-none" style="color: rgb(var(--shell-sidebar));">
+            <span style="color: rgb(var(--shell-pink));">Post</span><strong>folio</strong>
+          </span>
+        </div>
+
+        <div v-if="business?.name" class="mt-3">
+          <p class="text-[10px] font-mono uppercase tracking-widest mb-0.5" style="color: rgba(61,24,32,0.4);">Workspace</p>
+          <p class="text-xs truncate" style="color: rgb(var(--shell-sidebar));">{{ business.name }}</p>
+        </div>
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-2 py-4 space-y-0.5">
+      <nav class="flex-1 px-2 pt-4 space-y-0.5">
         <NuxtLink
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150"
-          :class="isActive(item.to) ? 'nav-link-active font-medium' : ''"
-          :style="isActive(item.to) ? '' : 'color: rgba(245,237,228,0.5);'"
-          @mouseenter="(e: MouseEvent) => { if (!isActive(item.to)) (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.85)'; (e.currentTarget as HTMLElement).style.background = 'rgba(245,237,228,0.07)' }"
-          @mouseleave="(e: MouseEvent) => { if (!isActive(item.to)) (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.5)'; (e.currentTarget as HTMLElement).style.background = '' }"
+          class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-150"
+          :class="isActive(item.to) ? 'sidebar-nav-active' : ''"
+          style="text-decoration: none;"
         >
-          <component :is="item.icon" class="w-4 h-4 opacity-70" />
-          {{ item.label }}
+          <component
+            :is="item.icon"
+            class="w-3.5 h-3.5 shrink-0 transition-colors duration-150"
+            :style="isActive(item.to) ? 'color: #fff;' : 'color: rgba(61,24,32,0.4);'"
+          />
+          <span
+            class="transition-colors duration-150"
+            :style="isActive(item.to) ? 'color: #fff; font-weight: 600;' : 'color: rgba(61,24,32,0.7);'"
+          >
+            {{ item.label }}
+          </span>
         </NuxtLink>
       </nav>
 
       <!-- User footer -->
-      <div class="px-4 py-4 flex items-center gap-3" style="border-top: 1px solid rgba(245,237,228,0.1);">
-        <div
-          class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
-          style="background: rgba(232,116,138,0.25); color: rgb(var(--shell-pink));"
-        >
-          {{ session?.email?.[0]?.toUpperCase() ?? 'A' }}
+      <div class="px-4 py-4" style="border-top: 1px solid rgba(245,237,228,0.08);">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+            style="background: rgba(255,87,118,0.2); color: rgb(var(--shell-pink));"
+          >
+            {{ session?.email?.[0]?.toUpperCase() ?? 'A' }}
+          </div>
+          <p class="text-[11px] flex-1 min-w-0 truncate" style="color: rgb(var(--shell-sidebar));">
+            {{ session?.email ?? 'Admin' }}
+          </p>
+          <button
+            class="shrink-0 transition-colors duration-150"
+            style="color: rgba(61,24,32,0.4);"
+            title="Log out"
+            @click="handleLogout"
+            @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgb(var(--shell-sidebar))'"
+            @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.4)'"
+          >
+            <Power class="w-3.5 h-3.5" />
+          </button>
         </div>
-        <p class="text-xs flex-1 min-w-0 truncate" style="color: rgba(245,237,228,0.55);">
-          {{ session?.email ?? 'Admin' }}
-        </p>
-        <button
-          class="text-xs transition-colors"
-          style="color: rgba(245,237,228,0.3);"
-          title="Log out"
-          @click="handleLogout"
-          @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.75)'"
-          @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.3)'"
-        >
-          <Power class="w-4 h-4" />
-        </button>
       </div>
     </aside>
 
-    <!-- Main -->
+    <!-- ── Main content area ──────────────────────────────────────── -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden" style="background: rgb(var(--shell-bg));">
       <slot />
     </div>
 
-    <!-- Onboarding modal (first-time + re-opened from settings) -->
+    <!-- Onboarding modal -->
     <OnboardingModal v-if="showOnboarding" @done="closeOnboarding" />
   </div>
 </template>
+
+<style scoped>
+.sidebar-nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgb(var(--shell-pink)), transparent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 0;
+}
+
+.sidebar-nav-item:not(.sidebar-nav-active):hover::before {
+  opacity: 0.15;
+}
+
+.sidebar-nav-item.sidebar-nav-active::before {
+  opacity: 1;
+}
+
+.sidebar-nav-item > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-nav-item.sidebar-nav-active span,
+.sidebar-nav-item.sidebar-nav-active svg {
+  color: #fff !important;
+}
+
+.sidebar-nav-item:not(.sidebar-nav-active):hover span,
+.sidebar-nav-item:not(.sidebar-nav-active):hover svg {
+  color: rgb(var(--shell-sidebar)) !important;
+}
+</style>

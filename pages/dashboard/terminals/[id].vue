@@ -192,7 +192,7 @@ watch(businessId, fetchTables);
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto" style="background: rgb(var(--shell-bg));">
+  <div class="flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <header class="px-8 py-6 flex items-center justify-between sticky top-0 z-50 bg-[#fdf7f2]/80 backdrop-blur-xl border-b border-black/[0.03]">
       <div class="flex items-center gap-6">
         <button class="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5" style="color: rgba(61,24,32,0.5);" @click="router.push('/dashboard/terminals')">

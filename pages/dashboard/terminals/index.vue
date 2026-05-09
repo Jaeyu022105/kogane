@@ -141,7 +141,7 @@ watch(() => business.value?.id, loadTerminals);
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col overflow-hidden" style="background: rgb(var(--shell-bg));">
+  <div class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Page header ──────────────────────────────────────────────────────── -->
     <div
       class="px-8 py-5 flex items-center justify-between shrink-0"

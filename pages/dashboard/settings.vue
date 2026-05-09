@@ -5,17 +5,17 @@
 
 definePageMeta({ layout: 'dashboard' });
 
-import { Check, Sparkles } from 'lucide-vue-next';
+import { Check, Sparkles, Upload } from 'lucide-vue-next';
 
-const { authHeaders }             = useAuth();
+const { authHeaders }                        = useAuth();
 const { business, fetchBusiness, updateTheme } = useBusiness();
-const { openOnboarding }          = useOnboarding();
+const { openOnboarding }                     = useOnboarding();
 
-const businessName = ref('');
-const saving       = ref(false);
+const businessName  = ref('');
+const saving        = ref(false);
 const uploadingLogo = ref(false);
-const error        = ref<string | null>(null);
-const success      = ref(false);
+const error         = ref<string | null>(null);
+const success       = ref(false);
 
 const palette = reactive({
   primary:    '#3b82f6',
@@ -55,9 +55,9 @@ async function saveTheme() {
 async function uploadLogo() {
   if (!import.meta.client) return;
 
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
+  const input    = document.createElement('input');
+  input.type     = 'file';
+  input.accept   = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
   input.click();
 
   input.onchange = async () => {
@@ -65,18 +65,18 @@ async function uploadLogo() {
     if (!file) return;
 
     uploadingLogo.value = true;
-    error.value = null;
+    error.value         = null;
 
     try {
-      const ext = file.name.includes('.') ? file.name.split('.').pop() : 'png';
+      const ext  = file.name.includes('.') ? file.name.split('.').pop() : 'png';
       const form = new FormData();
-      form.append('file', file);
+      form.append('file',   file);
       form.append('bucket', 'assets');
-      form.append('path', `logo.${ext}`);
+      form.append('path',   `logo.${ext}`);
 
       const res = await $fetch<{ url: string; error: string | null }>('/api/storage/upload', {
         method: 'POST',
-        body: form,
+        body:   form,
       });
 
       if (res.error) {
@@ -128,164 +128,178 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto" style="background: rgb(var(--shell-bg));">
-    <header
-      class="px-8 py-5"
-      style="border-bottom: 1px solid rgba(61,24,32,0.1);"
-    >
-      <h1 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">Settings</h1>
-      <p class="text-sm mt-0.5" style="color: rgba(61,24,32,0.45);">Branding and business configuration</p>
-    </header>
+  <div class="flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
-    <div class="px-8 py-7 max-w-2xl space-y-6">
+    <!-- ── Header ───────────────────────────────────────────────── -->
+    <div class="px-10 pt-10 pb-8" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
+      <h1 class="font-serif font-normal text-2xl" style="color: rgb(var(--shell-sidebar));">Settings</h1>
+      <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Branding and business configuration</p>
+    </div>
 
-      <!-- No business yet -->
-      <div v-if="!business" class="bg-white rounded-xl p-6 space-y-4 shadow-warm">
-        <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Create Your Business</h2>
-        <p class="text-sm" style="color: rgba(61,24,32,0.5);">Set up your workspace to start building.</p>
+    <div class="px-10 py-8 max-w-xl space-y-10">
+
+      <!-- ── No business yet ───────────────────────────────────── -->
+      <section v-if="!business" class="space-y-4">
+        <div>
+          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-2" style="color: rgba(61,24,32,0.3);">Setup</p>
+          <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Create your workspace</h2>
+          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.45);">Set up your business to start building internal tools.</p>
+        </div>
+
         <input
           v-model="businessName"
-          class="input-warm w-full px-4 py-2.5 text-sm"
+          class="input-warm w-full px-4 py-3 text-sm"
           placeholder="My Business Name"
         />
+
         <div
           v-if="error"
-          class="text-xs px-3 py-2 rounded-md"
-          style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+          class="text-xs px-3 py-2 rounded"
+          style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #dc2626;"
         >
           {{ error }}
         </div>
+
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40"
-          style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
+          class="w-full py-3 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary"
           :disabled="!businessName.trim() || saving"
           @click="createBusiness"
         >
-          {{ saving ? 'Setting up…' : 'Create Business' }}
+          {{ saving ? 'Setting up…' : 'Create business' }}
         </button>
-      </div>
+      </section>
 
-      <!-- Theme editor -->
-      <div v-if="business" class="bg-white rounded-xl p-6 space-y-5 shadow-warm">
-        <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Brand Colors</h2>
+      <!-- ── Brand Colors ──────────────────────────────────────── -->
+      <section v-if="business" class="space-y-5">
+        <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
+          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">Branding</p>
+          <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Brand colors</h2>
+        </div>
 
-        <div class="flex items-center gap-4 rounded-xl border px-4 py-4" style="border-color: rgba(61,24,32,0.08);">
-          <div class="h-16 w-16 overflow-hidden rounded-xl border bg-[#f7f1eb]" style="border-color: rgba(61,24,32,0.08);">
-            <img v-if="business.logoUrl" :src="business.logoUrl" alt="Business logo" class="h-full w-full object-cover" />
-            <div v-else class="h-full w-full flex items-center justify-center text-sm font-semibold" style="color: rgba(61,24,32,0.35);">Logo</div>
+        <!-- Logo -->
+        <div class="flex items-center gap-4">
+          <div
+            class="w-14 h-14 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
+            style="background: rgba(61,24,32,0.05); border: 1px solid rgba(61,24,32,0.1);"
+          >
+            <img v-if="business.logoUrl" :src="business.logoUrl" alt="Business logo" class="w-full h-full object-cover" />
+            <span v-else class="text-xs font-mono" style="color: rgba(61,24,32,0.3);">Logo</span>
           </div>
-          <div class="flex-1">
-            <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">Business Logo</p>
-            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Stored through the shared upload abstraction.</p>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">Business logo</p>
+            <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">PNG, JPG, SVG, or WebP</p>
           </div>
           <button
-            class="rounded-lg px-4 py-2 text-sm font-semibold transition-all disabled:opacity-40"
-            style="background: rgba(61,24,32,0.08); color: rgb(var(--shell-sidebar));"
+            class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all disabled:opacity-40 shrink-0 btn-ghost"
             :disabled="uploadingLogo"
             @click="uploadLogo"
           >
-            {{ uploadingLogo ? 'Uploading...' : 'Upload Logo' }}
+            <Upload class="w-3.5 h-3.5" />
+            {{ uploadingLogo ? 'Uploading…' : 'Upload' }}
           </button>
         </div>
 
+        <!-- Color swatches preview strip -->
+        <div class="flex gap-2 h-2 rounded overflow-hidden">
+          <div
+            v-for="field in COLOR_FIELDS"
+            :key="field.key"
+            class="flex-1 transition-colors"
+            :style="{ background: palette[field.key] }"
+            :title="field.label"
+          />
+        </div>
+
+        <!-- Color fields -->
         <div class="grid grid-cols-2 gap-4">
           <div v-for="field in COLOR_FIELDS" :key="field.key" class="space-y-2">
-            <label class="text-xs font-semibold" style="color: rgba(61,24,32,0.55);">{{ field.label }}</label>
+            <label class="text-[10px] font-mono uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">
+              {{ field.label }}
+            </label>
             <div class="flex items-center gap-2">
               <input
                 type="color"
                 v-model="palette[field.key]"
-                class="w-9 h-9 rounded-md cursor-pointer"
-                style="border: 1.5px solid rgba(61,24,32,0.15); background: transparent;"
+                class="w-8 h-8 rounded cursor-pointer shrink-0"
+                style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; padding: 1px;"
               />
               <input
                 v-model="palette[field.key]"
-                class="input-warm flex-1 px-3 py-1.5 text-sm font-mono"
+                class="input-warm flex-1 px-3 py-2 text-xs font-mono"
                 placeholder="#000000"
               />
             </div>
           </div>
         </div>
 
-        <!-- Preview swatches -->
-        <div class="flex gap-2 pt-1">
-          <div
-            v-for="field in COLOR_FIELDS"
-            :key="field.key"
-            class="flex-1 h-7 rounded-md transition-colors"
-            :style="{ background: palette[field.key] }"
-            :title="field.label"
-          />
-        </div>
-
+        <!-- Feedback -->
         <div
           v-if="error"
-          class="text-xs px-3 py-2 rounded-md"
-          style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+          class="text-xs px-3 py-2 rounded"
+          style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #dc2626;"
         >
           {{ error }}
         </div>
+
         <div
           v-if="success"
-          class="text-xs px-3 py-2 rounded-md"
-          style="background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2); color: #15803d;"
+          class="text-xs px-3 py-2 rounded flex items-center gap-1.5"
+          style="background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); color: #15803d;"
         >
-          <div class="flex items-center gap-1.5">
-            Theme saved! <Check class="w-3.5 h-3.5" />
-          </div>
+          <Check class="w-3.5 h-3.5" /> Theme saved
         </div>
 
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40"
-          style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary"
           :disabled="saving"
           @click="saveTheme"
         >
-          {{ saving ? 'Saving…' : 'Save Theme' }}
+          {{ saving ? 'Saving…' : 'Save theme' }}
         </button>
-      </div>
+      </section>
 
-      <!-- Business info -->
-      <div v-if="business" class="bg-white rounded-xl p-6 space-y-3 shadow-warm">
-        <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Business Info</h2>
-        <div class="space-y-3">
-          <div class="flex justify-between items-center py-2" style="border-bottom: 1px solid rgba(61,24,32,0.07);">
-            <span class="text-xs font-semibold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">ID</span>
-            <span class="text-xs font-mono" style="color: rgba(61,24,32,0.65);">{{ business.id }}</span>
-          </div>
-          <div class="flex justify-between items-center py-2" style="border-bottom: 1px solid rgba(61,24,32,0.07);">
-            <span class="text-xs font-semibold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">Schema</span>
-            <span class="text-xs font-mono" style="color: rgba(61,24,32,0.65);">{{ business.schemaName }}</span>
-          </div>
-          <div class="flex justify-between items-center py-2">
-            <span class="text-xs font-semibold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">Created</span>
-            <span class="text-xs" style="color: rgba(61,24,32,0.65);">{{ new Date(business.createdAt).toLocaleDateString() }}</span>
-          </div>
+      <!-- ── Business Info ──────────────────────────────────────── -->
+      <section v-if="business" class="space-y-3">
+        <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
+          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">Info</p>
+          <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Business details</h2>
         </div>
-      </div>
 
-      <!-- Workspace setup -->
-      <div class="bg-white rounded-xl p-6 space-y-3 shadow-warm">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Workspace Setup</h2>
-            <p class="text-sm mt-1" style="color: rgba(61,24,32,0.5);">Re-run the onboarding wizard to configure your business type and feature tables.</p>
-          </div>
+        <div class="space-y-0">
           <div
-            class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-            style="background: rgba(232,116,138,0.1);"
+            v-for="(item, i) in [
+              { label: 'ID',      value: business.id },
+              { label: 'Schema',  value: business.schemaName },
+              { label: 'Created', value: new Date(business.createdAt).toLocaleDateString() },
+            ]"
+            :key="i"
+            class="flex items-center justify-between py-3"
+            style="border-bottom: 1px solid rgba(61,24,32,0.06);"
           >
-            <Sparkles class="w-5 h-5" style="color: rgb(232,116,138);" />
+            <span class="text-[10px] font-mono uppercase tracking-widest" style="color: rgba(61,24,32,0.35);">
+              {{ item.label }}
+            </span>
+            <span class="text-xs font-mono" style="color: rgba(61,24,32,0.6);">{{ item.value }}</span>
           </div>
         </div>
+      </section>
+
+      <!-- ── Workspace Setup ────────────────────────────────────── -->
+      <section class="space-y-3">
+        <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
+          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">Onboarding</p>
+          <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Workspace setup</h2>
+          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Re-run the wizard to reconfigure your business type and feature tables.</p>
+        </div>
+
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all active:scale-[0.98]"
-          style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar)); border: 1.5px solid rgba(61,24,32,0.12);"
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 btn-ghost"
           @click="openOnboarding"
         >
+          <Sparkles class="w-4 h-4" style="color: rgb(232,116,138);" />
           Open setup wizard
         </button>
-      </div>
+      </section>
 
     </div>
   </div>
