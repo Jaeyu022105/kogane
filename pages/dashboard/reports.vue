@@ -79,16 +79,16 @@ watch([activeTab, group], loadReport);
           </h1>
           <p class="text-sm mt-0.5" style="color: rgba(61,24,32,0.45);">Operational summaries, activity reports, and custom read-only SQL</p>
         </div>
-        <button class="rounded-xl px-4 py-2 text-sm font-semibold inline-flex items-center gap-2" style="background: rgba(61,24,32,0.08); color: rgb(var(--shell-sidebar));" @click="exportCsv">
+        <button class="rounded-lg px-4 py-2 text-sm font-semibold inline-flex items-center gap-2" style="background: rgba(61,24,32,0.08); color: rgb(var(--shell-sidebar));" @click="exportCsv">
           <Download class="w-4 h-4" /> Export CSV
         </button>
       </div>
     </header>
 
     <div class="px-8 py-7 space-y-6">
-      <div class="bg-white rounded-2xl p-5 shadow-warm space-y-4">
+      <div class="bg-white rounded-xl p-5 shadow-warm space-y-4">
         <div class="flex flex-wrap gap-2">
-          <button v-for="tab in ['transactions','table-activity','inpoint-activity','custom']" :key="tab" class="rounded-full px-4 py-2 text-sm font-medium capitalize" :style="activeTab === tab ? 'background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));' : 'background: rgba(61,24,32,0.06); color: rgba(61,24,32,0.55);'" @click="activeTab = tab as any">
+          <button v-for="tab in ['transactions','table-activity','inpoint-activity','custom']" :key="tab" class="rounded-md px-4 py-1.5 text-sm font-medium capitalize" :style="activeTab === tab ? 'background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));' : 'background: rgba(61,24,32,0.06); color: rgba(61,24,32,0.55);'" @click="activeTab = tab as any">
             {{ tab.replace('-', ' ') }}
           </button>
         </div>
@@ -101,7 +101,7 @@ watch([activeTab, group], loadReport);
             <option value="week">By week</option>
             <option value="month">By month</option>
           </select>
-          <button class="rounded-xl px-4 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2" style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));" @click="loadReport">
+          <button class="rounded-lg px-4 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2" style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));" @click="loadReport">
             <Play class="w-4 h-4" /> Run
           </button>
         </div>
@@ -111,7 +111,7 @@ watch([activeTab, group], loadReport);
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-warm overflow-hidden">
+      <div class="bg-white rounded-xl shadow-warm overflow-hidden">
         <div class="px-5 py-4" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
           <p class="text-sm font-semibold capitalize" style="color: rgb(var(--shell-sidebar));">{{ activeTab.replace('-', ' ') }}</p>
         </div>

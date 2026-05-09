@@ -155,7 +155,7 @@ watch(() => business.value?.id, loadTerminals);
       </div>
 
       <button
-        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all disabled:opacity-50"
+        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
         style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
         :disabled="!business"
         :title="!business ? 'Please create a business in Settings first' : 'Create new terminal'"
@@ -212,7 +212,7 @@ watch(() => business.value?.id, loadTerminals);
         <div
           v-for="ip in terminals"
           :key="ip.id"
-          class="group rounded-2xl p-5 flex flex-col gap-4 transition-all"
+          class="group rounded-xl p-5 flex flex-col gap-4 transition-all"
           style="background: white; border: 1px solid rgba(61,24,32,0.08);"
           @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.18)'"
           @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.08)'"
@@ -247,7 +247,7 @@ watch(() => business.value?.id, loadTerminals);
           <div class="flex items-center gap-2 mt-auto">
             <NuxtLink
               :to="`/dashboard/builder?terminal=${ip.id}`"
-              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-md transition-all"
               style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.06); text-decoration: none;"
             >
               <div class="flex items-center justify-center gap-1.5">
@@ -256,7 +256,7 @@ watch(() => business.value?.id, loadTerminals);
             </NuxtLink>
             <NuxtLink
               :to="`/dashboard/terminals/${ip.id}`"
-              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-md transition-all"
               style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06); text-decoration: none;"
             >
               <div class="flex items-center justify-center gap-1.5">
@@ -265,7 +265,7 @@ watch(() => business.value?.id, loadTerminals);
             </NuxtLink>
             <NuxtLink
               :to="`/terminal/${ip.id}`"
-              class="text-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+              class="text-center text-xs font-semibold px-3 py-1.5 rounded-md transition-all"
               style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.1); text-decoration: none;"
             >
               <div class="flex items-center justify-center gap-1.5">
@@ -285,7 +285,7 @@ watch(() => business.value?.id, loadTerminals);
         style="background: rgba(15,5,7,0.4); backdrop-filter: blur(8px);"
         @click.self="showForm = false"
       >
-        <div class="w-full max-w-sm bg-white rounded-3xl p-7 space-y-5 shadow-2xl">
+        <div class="w-full max-w-sm bg-white rounded-xl p-7 space-y-5 shadow-2xl">
           <div>
             <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Terminal</h2>
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Give it a name and share the PIN with your staff.</p>
@@ -374,7 +374,7 @@ watch(() => business.value?.id, loadTerminals);
 
           <div
             v-if="error"
-            class="text-xs px-3 py-2 rounded-xl"
+            class="text-xs px-3 py-2 rounded-md"
             style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
           >
             {{ error }}
@@ -382,14 +382,14 @@ watch(() => business.value?.id, loadTerminals);
 
           <div class="flex gap-3 pt-1">
             <button
-              class="flex-1 py-2.5 text-sm font-medium rounded-full transition-all"
+              class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all"
               style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65);"
               @click="showForm = false"
             >
               Cancel
             </button>
             <button
-              class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40"
+              class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40"
               style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
               :disabled="!form.displayName || !form.pin || saving"
               @click="createTerminal"

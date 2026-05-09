@@ -29,7 +29,7 @@ const plans = [
     period:   'per month',
     tagline:  'For growing businesses that need more layouts, terminals, and team members.',
     cta:      'Start free trial',
-    ctaStyle: 'maroon',
+    ctaStyle: 'primary',
     popular:  true,
     features: [
       'Unlimited tables & layouts',
@@ -62,7 +62,7 @@ const plans = [
 const faqs = [
   {
     q: 'Do I need a credit card to start?',
-    a: 'No. The Starter plan is completely free with no credit card required. Upgrade only when you\'re ready.',
+    a: "No. The Starter plan is completely free with no credit card required. Upgrade only when you're ready.",
   },
   {
     q: 'Can I switch plans later?',
@@ -74,7 +74,7 @@ const faqs = [
   },
   {
     q: 'Is my data safe?',
-    a: 'Absolutely. Production data lives in Supabase (PostgreSQL), with role-level security and no shared tenancy on Enterprise.',
+    a: 'Absolutely. Production data lives in Supabase (PostgreSQL), with row-level security and no shared tenancy on Enterprise.',
   },
   {
     q: 'Can I self-host Postfolio?',
@@ -93,16 +93,21 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 <template>
   <!-- ── Hero ─────────────────────────────────────────────── -->
   <section class="pricing-hero">
-    <p class="overline">Pricing</p>
-    <h1 class="pricing-headline">Simple, honest pricing.<br><em>No surprises.</em></h1>
-    <p class="pricing-sub">
-      Start free and scale as your business grows. Every plan includes access to the full Postfolio platform.
-    </p>
+    <div class="m-inner pricing-hero-inner">
+      <p class="m-overline">Pricing</p>
+      <h1 class="m-heading-lg">
+        Simple, honest pricing.<br>
+        <em>No surprises.</em>
+      </h1>
+      <p class="m-sub" style="margin: 0 auto;">
+        Start free and scale as your business grows. Every plan includes access to the full Postfolio platform.
+      </p>
+    </div>
   </section>
 
   <!-- ── Plans ─────────────────────────────────────────────── -->
   <section class="section-plans">
-    <div class="plans-inner">
+    <div class="m-inner plans-inner">
       <div class="plans-grid">
         <div
           v-for="plan in plans"
@@ -131,7 +136,12 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 
           <ul class="plan-features">
             <li v-for="feat in plan.features" :key="feat">
-              <span class="feat-check">✓</span>
+              <!-- check icon -->
+              <span class="feat-check">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
               {{ feat }}
             </li>
           </ul>
@@ -140,20 +150,29 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
     </div>
   </section>
 
-  <!-- ── Compare toggle note ────────────────────────────────── -->
+  <!-- ── Note banner ────────────────────────────────────────── -->
   <section class="section-note">
-    <div class="note-inner">
-      <span class="note-icon">💡</span>
-      <p>All plans include the Schema Editor, UI Builder, Terminal Deployer, and Smart Onboarding. Limits apply only to scale, not capability.</p>
+    <div class="m-inner">
+      <div class="note-inner">
+        <!-- info icon -->
+        <span class="note-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </span>
+        <p>All plans include the Schema Editor, UI Builder, Terminal Deployer, and Smart Onboarding. Limits apply only to scale, not capability.</p>
+      </div>
     </div>
   </section>
 
   <!-- ── FAQ ───────────────────────────────────────────────── -->
   <section class="section-faq">
     <div class="faq-inner">
-      <div class="section-label-block">
-        <p class="overline">FAQ</p>
-        <h2 class="section-heading">Common questions.</h2>
+      <div class="m-label-block">
+        <p class="m-overline">FAQ</p>
+        <h2 class="m-heading">Common questions.</h2>
       </div>
 
       <div class="faq-list">
@@ -166,7 +185,16 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
         >
           <div class="faq-question">
             <span>{{ faq.q }}</span>
-            <span class="faq-arrow">{{ openFaq === i ? '−' : '+' }}</span>
+            <!-- plus / minus icon -->
+            <span class="faq-arrow">
+              <svg v-if="openFaq !== i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </span>
           </div>
           <div v-if="openFaq === i" class="faq-answer">{{ faq.a }}</div>
         </div>
@@ -175,65 +203,31 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   </section>
 
   <!-- ── CTA ───────────────────────────────────────────────── -->
-  <section class="section-cta">
-    <div class="cta-inner">
-      <h2 class="cta-heading">Still have questions?</h2>
-      <p class="cta-sub">We're happy to walk you through the platform or set up a personalised demo.</p>
-      <div class="cta-btns">
-        <NuxtLink to="/login" class="btn-hero-primary">Start for free</NuxtLink>
-        <a href="mailto:hello@postfolio.io" class="btn-hero-ghost light">Contact sales →</a>
+  <section class="m-cta-strip">
+    <div class="m-cta-inner">
+      <h2 class="m-cta-heading">Still have <em>questions?</em></h2>
+      <p class="m-cta-sub">We're happy to walk you through the platform or set up a personalised demo.</p>
+      <div class="m-cta-btns">
+        <NuxtLink to="/login" class="m-btn-primary ribbon">Start for free</NuxtLink>
+        <a href="mailto:hello@postfolio.io" class="m-btn-ghost">Contact sales →</a>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.overline {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #e8748a;
-  margin-bottom: 1rem;
-}
-
-.section-heading {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
-  color: #3d1820;
-  line-height: 1.2;
-  margin: 0 0 1rem;
-}
-
-.section-label-block { text-align: center; margin-bottom: 3rem; }
-
 /* ── Hero ─────────────────────────────────────────────── */
 .pricing-hero {
-  padding: 5.5rem 2rem 4rem;
+  padding: 5.5rem 0 4rem;
   text-align: center;
-  background: radial-gradient(ellipse 65% 55% at 50% 0%, rgba(232, 116, 138, 0.1) 0%, transparent 70%);
+  background: radial-gradient(ellipse 65% 55% at 50% 0%, rgba(255, 87, 118, 0.08) 0%, transparent 70%);
 }
 
-.pricing-headline {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(2.4rem, 5vw, 3.5rem);
-  color: #3d1820;
-  line-height: 1.12;
-  margin: 0 0 1.25rem;
-}
-.pricing-headline em { font-style: italic; color: #e8748a; }
-
-.pricing-sub {
-  font-size: 1.1rem;
-  color: rgba(61, 24, 32, 0.6);
-  line-height: 1.7;
-  max-width: 520px;
-  margin: 0 auto;
-}
+.pricing-hero-inner { max-width: 640px; }
 
 /* ── Plans ────────────────────────────────────────────── */
-.section-plans { padding: 3rem 2rem 5rem; }
-.plans-inner { max-width: 1060px; margin: 0 auto; }
+.section-plans { padding: 3rem 0 5rem; }
+.plans-inner { max-width: 1060px; }
 
 .plans-grid {
   display: grid;
@@ -245,20 +239,23 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 .plan-card {
   position: relative;
   padding: 2rem;
-  border-radius: 1.5rem;
-  background: #fff;
-  border: 1px solid rgba(61, 24, 32, 0.1);
-  box-shadow: 0 2px 12px rgba(61, 24, 32, 0.06);
+  border-radius: 0.75rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.1);
+  box-shadow: 0 2px 12px rgba(104, 41, 58, 0.06);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.plan-card:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(61, 24, 32, 0.1); }
+.plan-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(104, 41, 58, 0.1);
+}
 
 .plan-card--popular {
-  border-color: #3d1820;
-  box-shadow: 0 8px 32px rgba(61, 24, 32, 0.14);
+  border-color: #68293A;
+  box-shadow: 0 8px 32px rgba(104, 41, 58, 0.14);
 }
 
 .popular-badge {
@@ -267,9 +264,9 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   left: 50%;
   transform: translateX(-50%);
   padding: 0.3rem 1rem;
-  background: #3d1820;
-  color: #f5ede4;
-  border-radius: 9999px;
+  background: #68293A;
+  color: #F6E6D7;
+  border-radius: 0.4rem;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -282,7 +279,7 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(61, 24, 32, 0.45);
+  color: rgba(104, 41, 58, 0.45);
   margin: 0;
 }
 
@@ -290,63 +287,83 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 .plan-price {
   font-family: 'DM Serif Display', serif;
   font-size: 2.75rem;
-  color: #3d1820;
+  color: #68293A;
   line-height: 1;
 }
-.plan-period { font-size: 0.85rem; color: rgba(61, 24, 32, 0.45); }
+.plan-period { font-size: 0.85rem; color: rgba(104, 41, 58, 0.45); }
 
-.plan-tagline { font-size: 0.875rem; color: rgba(61, 24, 32, 0.6); line-height: 1.55; margin: 0; }
+.plan-tagline { font-size: 0.875rem; color: rgba(104, 41, 58, 0.6); line-height: 1.55; margin: 0; }
 
 .plan-cta {
   display: block;
   text-align: center;
   padding: 0.7rem 1.25rem;
-  border-radius: 9999px;
+  border-radius: 0.5rem;
   font-weight: 700;
   font-size: 0.9rem;
   text-decoration: none;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: opacity 0.15s, transform 0.1s, border-color 0.15s, background 0.15s;
   margin-top: 0.25rem;
 }
-.plan-cta--maroon { background: #3d1820; color: #f5ede4; box-shadow: 0 4px 14px rgba(61, 24, 32, 0.2); }
-.plan-cta--maroon:hover  { opacity: 0.88; }
-.plan-cta--maroon:active { transform: scale(0.97); }
-.plan-cta--ghost  { border: 1.5px solid rgba(61, 24, 32, 0.2); color: #3d1820; }
-.plan-cta--ghost:hover { border-color: rgba(61, 24, 32, 0.45); background: rgba(61, 24, 32, 0.03); }
+
+.plan-cta--primary {
+  background: #68293A;
+  color: #F6E6D7;
+  box-shadow: 0 4px 14px rgba(104, 41, 58, 0.22);
+}
+.plan-cta--primary:hover  { opacity: 0.88; }
+.plan-cta--primary:active { transform: scale(0.97); }
+
+.plan-cta--ghost {
+  border: 1.5px solid rgba(104, 41, 58, 0.2);
+  color: #68293A;
+}
+.plan-cta--ghost:hover {
+  border-color: rgba(104, 41, 58, 0.45);
+  background: rgba(104, 41, 58, 0.03);
+}
 
 .plan-divider {
   height: 1px;
-  background: rgba(61, 24, 32, 0.07);
+  background: rgba(104, 41, 58, 0.07);
   margin: 0.5rem 0;
 }
 
-.plan-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.65rem; }
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
 .plan-features li {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: rgba(61, 24, 32, 0.72);
+  color: rgba(104, 41, 58, 0.72);
   line-height: 1.45;
 }
 
 .feat-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: rgba(61, 24, 32, 0.08);
-  color: #3d1820;
-  font-size: 0.65rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(104, 41, 58, 0.08);
+  color: #68293A;
   margin-top: 0.15rem;
 }
+.feat-check svg { width: 9px; height: 9px; }
 
-/* ── Note ─────────────────────────────────────────────── */
-.section-note { padding: 0 2rem 4rem; }
+/* ── Note banner ──────────────────────────────────────── */
+.section-note { padding: 0 0 4rem; }
+
 .note-inner {
   max-width: 760px;
   margin: 0 auto;
@@ -354,30 +371,43 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   align-items: flex-start;
   gap: 0.85rem;
   padding: 1.25rem 1.5rem;
-  background: rgba(232, 116, 138, 0.07);
-  border: 1px solid rgba(232, 116, 138, 0.2);
-  border-radius: 1rem;
+  background: rgba(255, 87, 118, 0.06);
+  border: 1px solid rgba(255, 87, 118, 0.18);
+  border-radius: 0.75rem;
   font-size: 0.9rem;
-  color: rgba(61, 24, 32, 0.7);
+  color: rgba(104, 41, 58, 0.7);
   line-height: 1.6;
 }
-.note-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+
+.note-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  color: #FF5776;
+  margin-top: 0.1rem;
+}
+.note-icon svg { width: 1.1rem; height: 1.1rem; }
+
+.note-inner p { margin: 0; }
 
 /* ── FAQ ──────────────────────────────────────────────── */
-.section-faq { padding: 5rem 2rem; background: #fff; }
+.section-faq { padding: 5rem 2rem; background: #FFFFFF; }
 .faq-inner { max-width: 760px; margin: 0 auto; }
 
 .faq-list { display: flex; flex-direction: column; gap: 0; }
 
 .faq-item {
-  border-bottom: 1px solid rgba(61, 24, 32, 0.08);
+  border-bottom: 1px solid rgba(104, 41, 58, 0.08);
   cursor: pointer;
   transition: background 0.15s;
   border-radius: 0.5rem;
   padding: 0 0.5rem;
 }
-.faq-item:first-child { border-top: 1px solid rgba(61, 24, 32, 0.08); }
-.faq-item:hover { background: rgba(61, 24, 32, 0.02); }
+.faq-item:first-child { border-top: 1px solid rgba(104, 41, 58, 0.08); }
+.faq-item:hover { background: rgba(104, 41, 58, 0.02); }
 
 .faq-question {
   display: flex;
@@ -386,57 +416,29 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   padding: 1.1rem 0;
   font-weight: 600;
   font-size: 0.95rem;
-  color: #3d1820;
+  color: #68293A;
   gap: 1rem;
   user-select: none;
 }
 
 .faq-arrow {
-  font-size: 1.2rem;
-  font-weight: 400;
-  color: #e8748a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #FF5776;
   transition: transform 0.15s;
 }
+.faq-arrow svg { width: 1rem; height: 1rem; }
 
 .faq-answer {
   padding: 0 0 1.1rem;
   font-size: 0.9rem;
-  color: rgba(61, 24, 32, 0.65);
+  color: rgba(104, 41, 58, 0.65);
   line-height: 1.7;
 }
-
-/* ── CTA ──────────────────────────────────────────────── */
-.section-cta { padding: 5rem 2rem; background: #3d1820; text-align: center; }
-.cta-inner { max-width: 580px; margin: 0 auto; }
-
-.cta-heading {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  color: #f5ede4;
-  margin: 0 0 1rem;
-  line-height: 1.15;
-}
-
-.cta-sub { font-size: 1.05rem; color: rgba(245, 237, 228, 0.6); line-height: 1.65; margin-bottom: 2rem; }
-.cta-btns { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
-
-.btn-hero-primary {
-  padding: 0.8rem 1.85rem;
-  background: #f5ede4;
-  color: #3d1820;
-  border-radius: 9999px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  text-decoration: none;
-  transition: opacity 0.15s, transform 0.1s;
-}
-.btn-hero-primary:hover  { opacity: 0.88; }
-.btn-hero-primary:active { transform: scale(0.97); }
-
-.btn-hero-ghost { padding: 0.8rem 1.5rem; font-weight: 600; font-size: 0.95rem; text-decoration: none; transition: opacity 0.15s; }
-.btn-hero-ghost.light { color: rgba(245, 237, 228, 0.7); }
-.btn-hero-ghost.light:hover { color: #f5ede4; }
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 860px) {

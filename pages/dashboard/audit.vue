@@ -56,7 +56,7 @@ onMounted(loadEntries);
     </header>
 
     <div class="px-8 py-7 space-y-6">
-      <div class="bg-white rounded-2xl p-5 shadow-warm">
+      <div class="bg-white rounded-xl p-5 shadow-warm">
         <div class="flex items-center gap-2 mb-4">
           <Filter class="w-4 h-4" style="color: rgba(61,24,32,0.45);" />
           <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">Filters</p>
@@ -71,13 +71,13 @@ onMounted(loadEntries);
           <input v-model="tableFilter" class="input-warm px-3 py-2 text-sm" placeholder="Target table" />
           <input v-model="from" type="date" class="input-warm px-3 py-2 text-sm" />
           <input v-model="to" type="date" class="input-warm px-3 py-2 text-sm" />
-          <button class="rounded-xl px-4 py-2 text-sm font-semibold" style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));" @click="loadEntries">
+          <button class="rounded-lg px-4 py-2 text-sm font-semibold" style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));" @click="loadEntries">
             Apply
           </button>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-warm overflow-hidden">
+      <div class="bg-white rounded-xl shadow-warm overflow-hidden">
         <div class="px-5 py-4 flex items-center justify-between" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
           <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">{{ total }} events</p>
           <p class="text-xs" style="color: rgba(61,24,32,0.4);">Newest first</p>
@@ -90,7 +90,7 @@ onMounted(loadEntries);
         <div v-else class="divide-y" style="divide-color: rgba(61,24,32,0.06);">
           <div v-for="entry in entries" :key="entry.id" class="px-5 py-4 space-y-2">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide" style="background: rgba(61,24,32,0.08); color: rgba(61,24,32,0.6);">{{ entry.action_type }}</span>
+              <span class="rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide" style="background: rgba(61,24,32,0.08); color: rgba(61,24,32,0.6);">{{ entry.action_type }}</span>
               <span class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">{{ entry.actor_name }}</span>
               <span class="text-xs" style="color: rgba(61,24,32,0.4);">{{ entry.actor_type }}</span>
               <span class="text-xs" style="color: rgba(61,24,32,0.4);">{{ new Date(entry.created_at).toLocaleString() }}</span>
@@ -99,18 +99,18 @@ onMounted(loadEntries);
               <span v-if="entry.target_table" class="font-mono">{{ entry.target_table }}</span>
               <span v-if="entry.target_id" class="font-mono"> / {{ entry.target_id }}</span>
             </div>
-            <div v-if="entry.metadata" class="rounded-2xl bg-[#f7f1eb] px-4 py-3 text-xs font-mono overflow-auto" style="color: rgba(61,24,32,0.62);">
+            <div v-if="entry.metadata" class="rounded-lg bg-[#f7f1eb] px-4 py-3 text-xs font-mono overflow-auto" style="color: rgba(61,24,32,0.62);">
               {{ JSON.stringify(parseAuditJson(entry.metadata), null, 2) }}
             </div>
           </div>
         </div>
 
         <div class="px-5 py-4 flex items-center justify-between" style="border-top: 1px solid rgba(61,24,32,0.08);">
-          <button class="rounded-xl px-4 py-2 text-sm" style="border: 1px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);" :disabled="page <= 1" @click="page--; loadEntries()">
+          <button class="rounded-lg px-4 py-2 text-sm" style="border: 1px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);" :disabled="page <= 1" @click="page--; loadEntries()">
             Previous
           </button>
           <span class="text-xs" style="color: rgba(61,24,32,0.45);">Page {{ page }}</span>
-          <button class="rounded-xl px-4 py-2 text-sm" style="border: 1px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);" :disabled="page * perPage >= total" @click="page++; loadEntries()">
+          <button class="rounded-lg px-4 py-2 text-sm" style="border: 1px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.6);" :disabled="page * perPage >= total" @click="page++; loadEntries()">
             Next
           </button>
         </div>

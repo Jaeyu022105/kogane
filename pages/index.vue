@@ -6,20 +6,38 @@ useSeoMeta({
   description: 'Build, deploy, and manage beautiful internal tools without writing frontend code. POS systems, inventory trackers, staff dashboards — all from one platform.',
 });
 
+/* SVG path strings for industry chips */
+const industryIcons: Record<string, string> = {
+  restaurant: 'M18 8h1a4 4 0 0 1 0 8h-1 M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z M6 1v3 M10 1v3 M14 1v3',
+  logistics:  'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
+  retail:     'M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0',
+  healthcare: 'M22 12h-4l-3 9L9 3l-3 9H2',
+  construct:  'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
+  finance:    'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+};
+
 const industries = [
-  { icon: '🍽️', name: 'Restaurant & Café' },
-  { icon: '📦', name: 'Logistics & Shipping' },
-  { icon: '🛍️', name: 'Retail & POS' },
-  { icon: '🏥', name: 'Healthcare' },
-  { icon: '🏗️', name: 'Construction' },
-  { icon: '📊', name: 'Finance & CRM' },
+  { iconKey: 'restaurant', name: 'Restaurant & Café'   },
+  { iconKey: 'logistics',  name: 'Logistics & Shipping' },
+  { iconKey: 'retail',     name: 'Retail & POS'         },
+  { iconKey: 'healthcare', name: 'Healthcare'           },
+  { iconKey: 'construct',  name: 'Construction'         },
+  { iconKey: 'finance',    name: 'Finance & CRM'        },
 ];
 
+/* SVG path strings for pillar cards */
+const pillarIcons: Record<string, string> = {
+  schema:   'M4 7h16 M4 12h16 M4 17h10 M16 17l2 2 4-4',
+  builder:  'M12 2L3 14h9l-1 8 10-12h-9l1-8z',
+  terminal: 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z M8 10l2 2-2 2 M12 14h4',
+  onboard:  'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7 M9 12h6 M9 16h4',
+};
+
 const pillars = [
-  { icon: '🗄️', title: 'Schema Editor',    body: 'Design your database with an interactive table editor and live relational visualizer.' },
-  { icon: '🎨', title: 'Visual UI Builder', body: 'Drag-and-drop interfaces with an event system, transactional branching, and scanner support.' },
-  { icon: '📺', title: 'Instant Terminals', body: 'Deploy staff-facing or public kiosk terminals with role-based PIN access and unique URLs.' },
-  { icon: '⚡', title: 'Smart Onboarding',  body: 'Industry presets auto-provision your setup. Go from zero to a working tool in minutes.' },
+  { iconKey: 'schema',   title: 'Schema Editor',    body: 'Design your database with an interactive table editor and live relational visualizer.' },
+  { iconKey: 'builder',  title: 'Visual UI Builder', body: 'Drag-and-drop interfaces with an event system, transactional branching, and scanner support.' },
+  { iconKey: 'terminal', title: 'Instant Terminals', body: 'Deploy staff-facing or public kiosk terminals with role-based PIN access and unique URLs.' },
+  { iconKey: 'onboard',  title: 'Smart Onboarding',  body: 'Industry presets auto-provision your setup. Go from zero to a working tool in minutes.' },
 ];
 
 const tableRows = [
@@ -51,8 +69,8 @@ const tableRows = [
       </p>
 
       <div class="hero-cta">
-        <NuxtLink to="/login" class="btn-primary btn-ribbon">Start building free</NuxtLink>
-        <NuxtLink to="/features" class="btn-ghost-link">See how it works →</NuxtLink>
+        <NuxtLink to="/login" class="m-btn-primary ribbon">Start building free</NuxtLink>
+        <NuxtLink to="/features" class="m-btn-ghost">See how it works →</NuxtLink>
       </div>
     </div>
 
@@ -102,10 +120,14 @@ const tableRows = [
   <!-- ── Industry strip ────────────────────────────────────── -->
   <section class="section-industries">
     <div class="section-inner">
-      <p class="overline">Works for any business</p>
+      <p class="m-overline">Works for any business</p>
       <div class="industry-grid">
         <div v-for="ind in industries" :key="ind.name" class="industry-chip">
-          <span>{{ ind.icon }}</span>
+          <span class="chip-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path :d="industryIcons[ind.iconKey]" />
+            </svg>
+          </span>
           <span>{{ ind.name }}</span>
         </div>
       </div>
@@ -115,14 +137,18 @@ const tableRows = [
   <!-- ── Pillars ───────────────────────────────────────────── -->
   <section class="section-pillars">
     <div class="section-inner">
-      <div class="section-label-block">
-        <p class="overline">The Platform</p>
-        <h2 class="section-heading">Everything you need,<br><em>nothing you don't.</em></h2>
-        <p class="section-sub">Four integrated modules that take you from data model to deployed staff terminal.</p>
+      <div class="m-label-block">
+        <p class="m-overline">The Platform</p>
+        <h2 class="m-heading">Everything you need,<br><em>nothing you don't.</em></h2>
+        <p class="m-sub">Four integrated modules that take you from data model to deployed staff terminal.</p>
       </div>
       <div class="pillar-grid">
         <div v-for="p in pillars" :key="p.title" class="pillar-card">
-          <span class="pillar-icon">{{ p.icon }}</span>
+          <span class="pillar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path :d="pillarIcons[p.iconKey]" />
+            </svg>
+          </span>
           <h3 class="pillar-title">{{ p.title }}</h3>
           <p class="pillar-body">{{ p.body }}</p>
           <NuxtLink to="/features" class="pillar-link">Learn more →</NuxtLink>
@@ -135,12 +161,12 @@ const tableRows = [
   <section class="section-philosophy">
     <div class="section-inner philosophy-inner">
       <div class="philosophy-text">
-        <p class="overline">Our philosophy</p>
-        <h2 class="section-heading">Most internal tools are either too rigid or too ugly.</h2>
-        <p class="section-sub">
+        <p class="m-overline">Our philosophy</p>
+        <h2 class="m-heading">Most internal tools are either too rigid or too ugly.</h2>
+        <p class="m-sub">
           SaaS tools lock you into their model. Custom builds look terrible and take months. Postfolio is built on the belief that internal tools should feel as premium as the products they support — and be ready in minutes.
         </p>
-        <NuxtLink to="/features" class="btn-secondary" style="margin-top: 1.75rem;">Explore the platform →</NuxtLink>
+        <NuxtLink to="/features" class="m-btn-secondary" style="margin-top: 1.75rem;">Explore the platform →</NuxtLink>
       </div>
       <div class="philosophy-badges">
         <div class="badge-card badge-plain">
@@ -164,13 +190,13 @@ const tableRows = [
   </section>
 
   <!-- ── CTA ───────────────────────────────────────────────── -->
-  <section class="section-cta">
-    <div class="section-inner cta-inner">
-      <h2 class="cta-heading">Ready to build something <em>beautiful?</em></h2>
-      <p class="cta-sub">Join forward-thinking businesses using Postfolio to manage their operations in style.</p>
-      <div class="cta-btns">
-        <NuxtLink to="/login" class="btn-primary btn-ribbon">Get started — it's free</NuxtLink>
-        <NuxtLink to="/pricing" class="btn-ghost-link">View pricing →</NuxtLink>
+  <section class="m-cta-strip">
+    <div class="m-cta-inner">
+      <h2 class="m-cta-heading">Ready to build something <em>beautiful?</em></h2>
+      <p class="m-cta-sub">Join forward-thinking businesses using Postfolio to manage their operations in style.</p>
+      <div class="m-cta-btns">
+        <NuxtLink to="/login" class="m-btn-primary ribbon">Get started — it's free</NuxtLink>
+        <NuxtLink to="/pricing" class="m-btn-ghost">View pricing →</NuxtLink>
       </div>
     </div>
   </section>
@@ -183,103 +209,6 @@ const tableRows = [
   margin: 0 auto;
   padding: 0 2rem;
 }
-
-.overline {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #FF5776;
-  margin-bottom: 0.85rem;
-}
-
-.section-heading {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(1.9rem, 3.6vw, 2.5rem);
-  color: #68293A;
-  line-height: 1.18;
-  margin: 0 0 0.9rem;
-  text-decoration: none;
-}
-.section-heading em { font-style: italic; color: #FF5776; text-decoration: none; }
-
-.section-sub {
-  font-size: 1rem;
-  color: rgba(104, 41, 58, 0.58);
-  line-height: 1.7;
-  max-width: 520px;
-}
-
-.section-label-block {
-  text-align: center;
-  max-width: 560px;
-  margin: 0 auto 3.5rem;
-}
-.section-label-block .section-sub { margin: 0 auto; }
-
-/* ── Buttons ─────────────────────────────────────────── */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.7rem 1.6rem;
-  background: #68293A;
-  color: #F6E6D7;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.925rem;
-  text-decoration: none;
-  overflow: visible;
-  transition: opacity 0.15s, transform 0.1s;
-  box-shadow: 0 3px 14px rgba(104, 41, 58, 0.22);
-}
-.btn-primary:hover  { opacity: 0.88; }
-.btn-primary:active { transform: scale(0.97); }
-
-.btn-light {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.7rem 1.6rem;
-  background: #F6E6D7;
-  color: #68293A;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.925rem;
-  text-decoration: none;
-  overflow: visible;
-  transition: opacity 0.15s, transform 0.1s;
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.1);
-}
-.btn-light:hover  { opacity: 0.88; }
-.btn-light:active { transform: scale(0.97); }
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.7rem 1.6rem;
-  background: transparent;
-  color: #68293A;
-  border: 1.5px solid rgba(104, 41, 58, 0.25);
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.925rem;
-  text-decoration: none;
-  transition: border-color 0.15s, background 0.15s;
-}
-.btn-secondary:hover { border-color: rgba(104, 41, 58, 0.5); background: rgba(104, 41, 58, 0.04); }
-
-.btn-ghost-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.7rem 1rem;
-  color: #68293A;
-  font-weight: 600;
-  font-size: 0.925rem;
-  text-decoration: none;
-  transition: opacity 0.15s;
-}
-.btn-ghost-link:hover { opacity: 0.55; }
-.btn-ghost-link.ghost-light { color: rgba(246, 230, 215, 0.75); }
-.btn-ghost-link.ghost-light:hover { opacity: 0.8; }
 
 /* ── Hero ─────────────────────────────────────────────── */
 .hero {
@@ -536,7 +465,30 @@ const tableRows = [
   box-shadow: 0 6px 22px rgba(104, 41, 58, 0.09);
 }
 
-.pillar-icon  { font-size: 1.5rem; }
+.pillar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 87, 118, 0.1);
+  color: #FF5776;
+  flex-shrink: 0;
+}
+.pillar-icon svg { width: 1.1rem; height: 1.1rem; }
+
+.chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  color: rgba(104, 41, 58, 0.55);
+  flex-shrink: 0;
+}
+.chip-icon svg { width: 1.1rem; height: 1.1rem; }
+
 .pillar-title { font-weight: 700; font-size: 0.98rem; color: #68293A; margin: 0; }
 .pillar-body  { font-size: 0.845rem; color: rgba(104, 41, 58, 0.58); line-height: 1.6; flex: 1; margin: 0; }
 .pillar-link  { font-size: 0.79rem; font-weight: 600; color: #FF5776; text-decoration: none; margin-top: 0.3rem; }
@@ -575,42 +527,7 @@ const tableRows = [
 .badge-body  { font-size: 0.81rem; line-height: 1.55; margin: 0; opacity: 0.74; }
 .badge-dark .badge-body, .badge-brand .badge-body { opacity: 0.82; }
 
-/* ── CTA ──────────────────────────────────────────────── */
-.section-cta {
-  padding: 5.5rem 0;
-  background: #FFFFFF;
-  border-top: 1px solid rgba(104, 41, 58, 0.07);
-}
-
-.cta-inner {
-  text-align: center;
-  max-width: 620px;
-}
-
-.cta-heading {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(1.85rem, 3.6vw, 2.6rem);
-  color: #68293A;
-  line-height: 1.15;
-  margin: 0 0 0.85rem;
-  text-decoration: none;
-}
-.cta-heading em { font-style: italic; color: #FF5776; text-decoration: none; }
-
-.cta-sub {
-  font-size: 1rem;
-  color: rgba(104, 41, 58, 0.52);
-  line-height: 1.65;
-  margin-bottom: 2rem;
-}
-
-.cta-btns {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
+/* ── CTA — handled by .m-cta-strip in marketing.css ──── */
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {

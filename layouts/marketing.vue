@@ -151,7 +151,7 @@ onMounted(() => {
 
 .nav-link {
   padding: 0.4rem 0.85rem;
-  border-radius: 9999px;
+  border-radius: 0.5rem;
   font-size: 0.9rem;
   font-weight: 500;
   color: rgba(104, 41, 58, 0.6);

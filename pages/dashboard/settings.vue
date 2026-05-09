@@ -140,7 +140,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
     <div class="px-8 py-7 max-w-2xl space-y-6">
 
       <!-- No business yet -->
-      <div v-if="!business" class="bg-white rounded-2xl p-6 space-y-4 shadow-warm">
+      <div v-if="!business" class="bg-white rounded-xl p-6 space-y-4 shadow-warm">
         <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Create Your Business</h2>
         <p class="text-sm" style="color: rgba(61,24,32,0.5);">Set up your workspace to start building.</p>
         <input
@@ -150,13 +150,13 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
         />
         <div
           v-if="error"
-          class="text-xs px-3 py-2 rounded-xl"
+          class="text-xs px-3 py-2 rounded-md"
           style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
         >
           {{ error }}
         </div>
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40"
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40"
           style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
           :disabled="!businessName.trim() || saving"
           @click="createBusiness"
@@ -166,11 +166,11 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
       </div>
 
       <!-- Theme editor -->
-      <div v-if="business" class="bg-white rounded-2xl p-6 space-y-5 shadow-warm">
+      <div v-if="business" class="bg-white rounded-xl p-6 space-y-5 shadow-warm">
         <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Brand Colors</h2>
 
-        <div class="flex items-center gap-4 rounded-2xl border px-4 py-4" style="border-color: rgba(61,24,32,0.08);">
-          <div class="h-16 w-16 overflow-hidden rounded-2xl border bg-[#f7f1eb]" style="border-color: rgba(61,24,32,0.08);">
+        <div class="flex items-center gap-4 rounded-xl border px-4 py-4" style="border-color: rgba(61,24,32,0.08);">
+          <div class="h-16 w-16 overflow-hidden rounded-xl border bg-[#f7f1eb]" style="border-color: rgba(61,24,32,0.08);">
             <img v-if="business.logoUrl" :src="business.logoUrl" alt="Business logo" class="h-full w-full object-cover" />
             <div v-else class="h-full w-full flex items-center justify-center text-sm font-semibold" style="color: rgba(61,24,32,0.35);">Logo</div>
           </div>
@@ -179,7 +179,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Stored through the shared upload abstraction.</p>
           </div>
           <button
-            class="rounded-full px-4 py-2 text-sm font-semibold transition-all disabled:opacity-40"
+            class="rounded-lg px-4 py-2 text-sm font-semibold transition-all disabled:opacity-40"
             style="background: rgba(61,24,32,0.08); color: rgb(var(--shell-sidebar));"
             :disabled="uploadingLogo"
             @click="uploadLogo"
@@ -195,7 +195,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
               <input
                 type="color"
                 v-model="palette[field.key]"
-                class="w-9 h-9 rounded-lg cursor-pointer"
+                class="w-9 h-9 rounded-md cursor-pointer"
                 style="border: 1.5px solid rgba(61,24,32,0.15); background: transparent;"
               />
               <input
@@ -212,7 +212,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
           <div
             v-for="field in COLOR_FIELDS"
             :key="field.key"
-            class="flex-1 h-7 rounded-full transition-colors"
+            class="flex-1 h-7 rounded-md transition-colors"
             :style="{ background: palette[field.key] }"
             :title="field.label"
           />
@@ -220,14 +220,14 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
 
         <div
           v-if="error"
-          class="text-xs px-3 py-2 rounded-xl"
+          class="text-xs px-3 py-2 rounded-md"
           style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
         >
           {{ error }}
         </div>
         <div
           v-if="success"
-          class="text-xs px-3 py-2 rounded-xl"
+          class="text-xs px-3 py-2 rounded-md"
           style="background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2); color: #15803d;"
         >
           <div class="flex items-center gap-1.5">
@@ -236,7 +236,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
         </div>
 
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40"
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40"
           style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
           :disabled="saving"
           @click="saveTheme"
@@ -246,7 +246,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
       </div>
 
       <!-- Business info -->
-      <div v-if="business" class="bg-white rounded-2xl p-6 space-y-3 shadow-warm">
+      <div v-if="business" class="bg-white rounded-xl p-6 space-y-3 shadow-warm">
         <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Business Info</h2>
         <div class="space-y-3">
           <div class="flex justify-between items-center py-2" style="border-bottom: 1px solid rgba(61,24,32,0.07);">
@@ -265,7 +265,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
       </div>
 
       <!-- Workspace setup -->
-      <div class="bg-white rounded-2xl p-6 space-y-3 shadow-warm">
+      <div class="bg-white rounded-xl p-6 space-y-3 shadow-warm">
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Workspace Setup</h2>
@@ -279,7 +279,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
           </div>
         </div>
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-full transition-all active:scale-[0.98]"
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all active:scale-[0.98]"
           style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar)); border: 1.5px solid rgba(61,24,32,0.12);"
           @click="openOnboarding"
         >
