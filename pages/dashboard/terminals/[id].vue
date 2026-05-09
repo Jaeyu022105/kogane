@@ -221,8 +221,7 @@ watch(businessId, fetchTables);
           </div>
         </button>
         <button
-          class="group relative text-sm font-semibold px-6 py-2.5 rounded-2xl transition-all disabled:opacity-40 overflow-hidden shadow-warm"
-          style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
+          class="group relative text-sm font-semibold px-6 py-2.5 rounded-2xl transition-all disabled:opacity-40 overflow-hidden shadow-warm btn-primary btn-ribbon"
           :disabled="saving || !terminal"
           @click="savePermissions"
         >

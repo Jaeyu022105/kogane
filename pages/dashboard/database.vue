@@ -460,8 +460,7 @@ function getTablePositionSafe(name: string) {
             Drop Table
           </button>
           <button
-            class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-            style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
+            class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all btn-primary btn-ribbon"
             @click="loadRows"
           >
             <div class="flex items-center gap-1.5">
@@ -479,8 +478,7 @@ function getTablePositionSafe(name: string) {
             <Database class="w-12 h-12 mx-auto" style="color: rgba(61,24,32,0.12);" />
             <p class="text-sm" style="color: rgba(61,24,32,0.3);">Pick a table from the sidebar</p>
             <button
-              class="mt-2 text-xs font-semibold px-4 py-2 rounded-full transition-all"
-              style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
+              class="mt-2 text-xs font-semibold px-4 py-2 rounded-full transition-all btn-primary btn-ribbon"
               @click="showNewTable = true"
             >
               <div class="flex items-center justify-center gap-1.5">
@@ -715,8 +713,7 @@ function getTablePositionSafe(name: string) {
             <p class="text-xs" style="color: rgba(61,24,32,0.45);">{{ preset.description }}</p>
             <button
               :disabled="applyingId === preset.id"
-              class="w-full py-1.5 text-xs rounded-full font-semibold transition-all disabled:opacity-50"
-              style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
+              class="w-full py-1.5 text-xs rounded-full font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
               @click="applyPreset(preset.id)"
             >
               {{ applyingId === preset.id ? 'Applying…' : 'Apply Preset' }}
@@ -832,8 +829,7 @@ function getTablePositionSafe(name: string) {
                 Cancel
               </button>
               <button
-                class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40"
-                style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
+                class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40 btn-primary btn-ribbon"
                 :disabled="!newTableName.trim() || saving"
                 @click="handleCreate"
               >

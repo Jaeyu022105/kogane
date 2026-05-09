@@ -161,7 +161,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
         </div>
 
         <button
-          class="w-full py-3 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary"
+          class="w-full py-3 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
           :disabled="!businessName.trim() || saving"
           @click="createBusiness"
         >
@@ -250,7 +250,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
         </div>
 
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary"
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
           :disabled="saving"
           @click="saveTheme"
         >

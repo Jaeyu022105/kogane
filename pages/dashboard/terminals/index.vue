@@ -155,8 +155,7 @@ watch(() => business.value?.id, loadTerminals);
       </div>
 
       <button
-        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
-        style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
+        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 btn-primary btn-ribbon"
         :disabled="!business"
         :title="!business ? 'Please create a business in Settings first' : 'Create new terminal'"
         @click="showForm = true"
@@ -389,8 +388,7 @@ watch(() => business.value?.id, loadTerminals);
               Cancel
             </button>
             <button
-              class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40"
-              style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 2px 8px rgba(61,24,32,0.2);"
+              class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="!form.displayName || !form.pin || saving"
               @click="createTerminal"
             >

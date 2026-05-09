@@ -126,7 +126,7 @@ watch([activeTab, group], loadReport);
           <option value="month">By month</option>
         </select>
         <button
-          class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all active:scale-[0.97] btn-primary"
+          class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all active:scale-[0.97] btn-primary btn-ribbon"
           @click="loadReport"
         >
           <Play class="w-3.5 h-3.5" /> Run

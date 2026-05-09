@@ -106,7 +106,7 @@ function relativeTime(iso: string) {
         <input v-model="to"   type="date" class="input-warm px-3 py-2 text-xs" />
 
         <button
-          class="px-4 py-2 text-xs font-semibold rounded-lg transition-all active:scale-[0.97] btn-primary"
+          class="px-4 py-2 text-xs font-semibold rounded-lg transition-all active:scale-[0.97] btn-primary btn-ribbon"
           @click="loadEntries"
         >
           Apply
