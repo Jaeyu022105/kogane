@@ -71,8 +71,8 @@ onMounted(() => {
 
         <div class="footer-links-group">
           <p class="footer-col-title">Legal</p>
-          <a href="#" class="footer-link">Privacy</a>
-          <a href="#" class="footer-link">Terms</a>
+          <NuxtLink to="/privacy" class="footer-link">Privacy</NuxtLink>
+          <NuxtLink to="/terms" class="footer-link">Terms</NuxtLink>
         </div>
       </div>
 

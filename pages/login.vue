@@ -262,6 +262,10 @@ async function handleAction() {
           <a href="#" @click.prevent="mode = 'signup'" class="link-text">Back to sign up</a>
         </p>
 
+        <p class="login-legal">
+          By continuing, you agree to our <NuxtLink to="/terms" class="link-text">Terms of Service</NuxtLink> and <NuxtLink to="/privacy" class="link-text">Privacy Policy</NuxtLink>.
+        </p>
+
         <button
           v-if="exitTarget && mode === 'login'"
           class="login-return"
@@ -596,6 +600,13 @@ input:checked + .toggle-slider:before {
   text-align: center;
   color: rgba(104, 41, 58, 0.5);
   margin: 0;
+}
+.login-legal {
+  font-size: 0.75rem;
+  text-align: center;
+  color: rgba(104, 41, 58, 0.45);
+  margin: 0;
+  line-height: 1.4;
 }
 .link-text {
   color: #FF5776;
