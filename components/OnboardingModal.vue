@@ -12,27 +12,49 @@ import {
   ChevronLeft,
   Check,
   Sparkles,
+  UploadCloud,
+  AlertTriangle,
+  Database,
+  CreditCard,
+  Network,
+  X
 } from 'lucide-vue-next';
 import type { SchemaDef, TableDef } from '~/lib/schemaUtils';
 
-const emit = defineEmits<{ done: [] }>();
+const emit = defineEmits<{ done: [], close: [] }>();
 
 const { authHeaders } = useAuth();
-const { fetchBusiness } = useBusiness();
+const { business, fetchBusiness } = useBusiness();
 
 // ── Step state ────────────────────────────────────────────────────────────────
-const step = ref<1 | 2 | 3>(1);
+const step = ref<1 | 2 | 3 | 4>(1);
 
-// Step 1
+// Step 1: Basics
 const businessName = ref('');
+const logoUrl = ref<string | null>(null);
+const colorPalette = ref<{ primary: string }>({ primary: '#68293A' });
 const selectedType = ref<string | null>(null);
 
-// Step 2
+// Step 2: Features
 const selectedPreset  = ref<string | null>(null);
 const selectedFeatures = ref<Set<string>>(new Set());
 
 const submitting = ref(false);
 const submitError = ref<string | null>(null);
+
+function handleLogoUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    logoUrl.value = reader.result as string;
+    // Simulate AI predicting color from logo
+    const colors = ['#e8748a', '#8b5cf6', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#14b8a6', '#68293A'];
+    colorPalette.value.primary = colors[Math.floor(Math.random() * colors.length)];
+  };
+  reader.readAsDataURL(file);
+}
 
 // ── Business types ────────────────────────────────────────────────────────────
 const businessTypes = [
@@ -46,11 +68,12 @@ const businessTypes = [
   { id: 'other',       label: 'Other',       icon: Building2,       color: '#6b7280' },
 ];
 
-// ── Feature catalogue (each feature maps to tables) ──────────────────────────
+// ── Feature catalogue ────────────────────────────────────────────────────────
 interface Feature {
   id: string;
   label: string;
   description: string;
+  availableFor: string[];
   tables: TableDef[];
 }
 
@@ -59,6 +82,7 @@ const FEATURES: Feature[] = [
     id: 'orders',
     label: 'Order Tracking',
     description: 'Track customer orders and their statuses',
+    availableFor: ['restaurant', 'retail', 'logistics', 'other'],
     tables: [
       {
         name: 'orders',
@@ -84,6 +108,7 @@ const FEATURES: Feature[] = [
     id: 'inventory',
     label: 'Inventory',
     description: 'Manage stock levels and product catalog',
+    availableFor: ['restaurant', 'retail', 'logistics', 'other'],
     tables: [
       {
         name: 'products',
@@ -102,6 +127,7 @@ const FEATURES: Feature[] = [
     id: 'customers',
     label: 'Customer Records',
     description: 'Store and manage customer profiles',
+    availableFor: ['restaurant', 'retail', 'logistics', 'accounting', 'clinic', 'services', 'education', 'other'],
     tables: [
       {
         name: 'customers',
@@ -119,6 +145,7 @@ const FEATURES: Feature[] = [
     id: 'staff',
     label: 'Staff Management',
     description: 'Track employees, roles, and schedules',
+    availableFor: ['restaurant', 'retail', 'logistics', 'accounting', 'clinic', 'services', 'education', 'other'],
     tables: [
       {
         name: 'staff',
@@ -136,6 +163,7 @@ const FEATURES: Feature[] = [
     id: 'appointments',
     label: 'Appointments',
     description: 'Schedule and track bookings or appointments',
+    availableFor: ['clinic', 'services', 'education', 'restaurant', 'other'],
     tables: [
       {
         name: 'appointments',
@@ -154,6 +182,7 @@ const FEATURES: Feature[] = [
     id: 'invoices',
     label: 'Invoicing',
     description: 'Generate and track client invoices',
+    availableFor: ['accounting', 'services', 'clinic', 'education', 'other'],
     tables: [
       {
         name: 'invoices',
@@ -172,6 +201,7 @@ const FEATURES: Feature[] = [
     id: 'expenses',
     label: 'Expense Tracking',
     description: 'Log and categorise business expenses',
+    availableFor: ['accounting', 'services', 'education', 'other'],
     tables: [
       {
         name: 'expenses',
@@ -189,6 +219,7 @@ const FEATURES: Feature[] = [
     id: 'deliveries',
     label: 'Deliveries',
     description: 'Track delivery routes and statuses',
+    availableFor: ['logistics', 'retail', 'other'],
     tables: [
       {
         name: 'deliveries',
@@ -205,7 +236,12 @@ const FEATURES: Feature[] = [
   },
 ];
 
-// ── Presets per business type ─────────────────────────────────────────────────
+const availableFeaturesForType = computed(() => {
+  if (!selectedType.value) return FEATURES;
+  return FEATURES.filter(f => f.availableFor.includes(selectedType.value!));
+});
+
+// ── Presets ───────────────────────────────────────────────────────────────────
 interface Preset {
   id: string;
   label: string;
@@ -252,7 +288,6 @@ const currentPresets = computed<Preset[]>(() =>
   selectedType.value ? (PRESETS_BY_TYPE[selectedType.value] ?? []) : [],
 );
 
-// When a preset is selected, sync feature checkboxes
 function applyPreset(preset: Preset) {
   selectedPreset.value  = preset.id;
   selectedFeatures.value = new Set(preset.features);
@@ -265,27 +300,28 @@ function toggleFeature(id: string) {
   } else {
     selectedFeatures.value.add(id);
   }
-  // Trigger reactivity
   selectedFeatures.value = new Set(selectedFeatures.value);
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
-function selectType(id: string) {
-  selectedType.value    = id;
-  selectedPreset.value  = null;
-  selectedFeatures.value = new Set();
-
-  const firstPreset = currentPresets.value[0];
-  if (firstPreset) applyPreset(firstPreset);
-
+function goToFeatures() {
+  if (!businessName.value.trim() || !selectedType.value) return;
+  // auto select first preset if nothing is selected yet
+  if (selectedFeatures.value.size === 0 && currentPresets.value.length > 0) {
+    applyPreset(currentPresets.value[0]);
+  }
   step.value = 2;
 }
 
-function goBack() {
-  step.value = 1;
+function goToReview() {
+  step.value = 3;
 }
 
-// ── Submit ────────────────────────────────────────────────────────────────────
+function close() {
+  if (step.value === 4 || submitting.value) return;
+  emit('close');
+}
+
 const schemaDef = computed<SchemaDef>(() => {
   const tables: TableDef[] = [];
   for (const feature of FEATURES) {
@@ -296,12 +332,12 @@ const schemaDef = computed<SchemaDef>(() => {
   return { tables };
 });
 
-async function handleSubmit() {
-  if (!businessName.value.trim()) {
-    submitError.value = 'Please enter your business name.';
-    return;
-  }
+const monthlyTotal = computed(() => {
+  return 15 + (selectedFeatures.value.size * 5);
+});
 
+// ── Submit ────────────────────────────────────────────────────────────────────
+async function handleSubmit() {
   submitting.value = true;
   submitError.value = null;
 
@@ -314,6 +350,9 @@ async function handleSubmit() {
         businessType: selectedType.value,
         features:     [...selectedFeatures.value],
         schemaDef:    schemaDef.value,
+        logoUrl:      logoUrl.value,
+        colorPalette: colorPalette.value,
+        override:     !!business.value,
       },
     });
 
@@ -323,272 +362,310 @@ async function handleSubmit() {
     }
 
     await fetchBusiness();
-    step.value = 3;
+    step.value = 4;
   } catch (err) {
     submitError.value = (err as Error).message;
   } finally {
     submitting.value = false;
   }
 }
-
-const selectedTypeMeta = computed(() =>
-  businessTypes.find(t => t.id === selectedType.value),
-);
 </script>
 
 <template>
   <Teleport to="body">
-    <div
-      class="fixed inset-0 z-[200] flex items-center justify-center px-4"
-      style="background: rgba(10, 3, 6, 0.55); backdrop-filter: blur(12px);"
-    >
+    <div class="modal-overlay" @click.self="close">
       <!-- Panel -->
-      <div
-        class="w-full bg-white relative overflow-hidden"
-        style="
-          max-width: 780px;
-          border-radius: 28px;
-          border: 1px solid rgba(61,24,32,0.1);
-          box-shadow: 0 32px 80px rgba(61,24,32,0.22), 0 4px 16px rgba(61,24,32,0.08);
-          max-height: 90dvh;
-          display: flex;
-          flex-direction: column;
-        "
-      >
-        <!-- Decorative blob -->
-        <div
-          class="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full"
-          style="background: radial-gradient(circle, rgba(232,116,138,0.12) 0%, transparent 70%);"
-        />
+      <div class="modal-card">
+        
+        <!-- Close Button (Not visible in step 4) -->
+        <button v-if="step !== 4" class="modal-close" @click="close" aria-label="Close">
+          <X class="w-5 h-5" />
+        </button>
 
-        <!-- ── Step 1: Business type ──────────────────────────────────────── -->
+        <!-- ── Step 1: Basics ────────────────────────────────────────────── -->
         <Transition name="slide">
-          <div v-if="step === 1" class="flex flex-col" style="min-height: 0;">
-            <div class="px-8 pt-8 pb-5 shrink-0">
-              <div class="flex items-center gap-2 mb-1">
-                <div
-                  class="w-7 h-7 rounded-xl flex items-center justify-center font-bold text-sm"
-                  style="background: rgb(61,24,32); color: #fff;"
-                >
-                  P
-                </div>
-                <span class="text-xs font-semibold" style="color: rgba(61,24,32,0.4);">Postfolio · Setup</span>
-              </div>
-              <h1 class="font-serif text-2xl mt-3" style="color: rgb(61,24,32);">
-                What kind of business do you run?
-              </h1>
-              <p class="text-sm mt-1.5" style="color: rgba(61,24,32,0.5);">
-                We'll suggest the right features and starter tables for you.
-              </p>
+          <div v-if="step === 1" class="flex flex-col h-full">
+            <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)]">
+              <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 1 of 3</p>
+              <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Workspace basics</h1>
+              <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Tell us about your business to get started.</p>
             </div>
 
-            <div class="px-8 pb-8 overflow-y-auto" style="flex: 1; min-height: 0;">
-              <div class="grid grid-cols-4 gap-3">
-                <button
-                  v-for="type in businessTypes"
-                  :key="type.id"
-                  class="relative flex flex-col items-center gap-2.5 py-5 px-3 rounded-2xl text-center transition-all duration-150 group"
-                  :style="selectedType === type.id
-                    ? `background: ${type.color}14; border: 2px solid ${type.color}; box-shadow: 0 4px 16px ${type.color}28;`
-                    : 'background: #fdf7f2; border: 2px solid rgba(61,24,32,0.07);'"
-                  @click="selectType(type.id)"
-                >
-                  <div
-                    class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-                    :style="`background: ${type.color}18; color: ${type.color};`"
-                  >
-                    <component :is="type.icon" class="w-5 h-5" />
+            <div class="px-10 py-8 overflow-y-auto flex-1 space-y-10">
+              <!-- Brand Identity -->
+              <div>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Identity</h2>
+                <div class="flex items-start gap-8">
+                  <!-- Logo Upload -->
+                  <label class="block cursor-pointer group shrink-0">
+                    <input type="file" accept="image/*" class="hidden" @change="handleLogoUpload" />
+                    <div class="w-24 h-24 border-[1.5px] border-dashed border-[rgba(104,41,58,0.2)] rounded-xl flex flex-col items-center justify-center bg-[rgba(104,41,58,0.02)] transition-all group-hover:border-[rgba(104,41,58,0.4)] group-hover:bg-[#F6E6D7] overflow-hidden">
+                      <img v-if="logoUrl" :src="logoUrl" class="w-full h-full object-contain p-2" />
+                      <template v-else>
+                        <UploadCloud class="w-6 h-6 mb-1 text-[rgba(104,41,58,0.3)] group-hover:text-[rgba(104,41,58,0.6)]" />
+                        <span class="text-[10px] text-[rgba(104,41,58,0.5)] font-medium">Upload</span>
+                      </template>
+                    </div>
+                  </label>
+
+                  <!-- Name & Color -->
+                  <div class="flex-1 space-y-4">
+                    <div>
+                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">Business Name</label>
+                      <input
+                        v-model="businessName"
+                        type="text"
+                        placeholder="e.g. Sakura Café"
+                        class="field-input max-w-sm"
+                      />
+                    </div>
+                    <div>
+                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">Primary Color</label>
+                      <div class="flex items-center gap-3">
+                        <input type="color" v-model="colorPalette.primary" class="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent" />
+                        <span class="text-xs font-mono text-[rgba(104,41,58,0.6)]">{{ colorPalette.primary.toUpperCase() }}</span>
+                        <span v-if="logoUrl" class="text-[10px] px-2 py-1 rounded bg-[rgba(104,41,58,0.06)] text-[#68293A]">
+                          ✨ Predicted from logo
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <span class="text-xs font-semibold" style="color: rgb(61,24,32);">{{ type.label }}</span>
+                </div>
+              </div>
+
+              <!-- Industry -->
+              <div>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Industry</h2>
+                <div class="grid grid-cols-4 gap-3">
+                  <button
+                    v-for="type in businessTypes"
+                    :key="type.id"
+                    class="type-card relative flex flex-col items-center gap-2.5 py-5 px-3 text-center cursor-pointer"
+                    :class="{ 'active': selectedType === type.id }"
+                    @click="selectedType = type.id"
+                  >
+                    <div
+                      class="w-10 h-10 rounded-lg flex items-center justify-center transition-all"
+                      :style="`background: ${type.color}18; color: ${type.color};`"
+                    >
+                      <component :is="type.icon" class="w-5 h-5" />
+                    </div>
+                    <span class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ type.label }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-end bg-[rgba(104,41,58,0.01)]">
+              <button
+                class="btn-nav"
+                :disabled="!businessName.trim() || !selectedType"
+                @click="goToFeatures"
+              >
+                Continue <ChevronRight class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </Transition>
+
+        <!-- ── Step 2: Features ──────────────────────────────────────────── -->
+        <Transition name="slide">
+          <div v-if="step === 2" class="flex flex-col h-full">
+            <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
+              <div>
+                <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 2 of 3</p>
+                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Select features</h1>
+                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Customize the modules you need for your operations.</p>
+              </div>
+            </div>
+
+            <div class="flex-1 flex overflow-hidden">
+              <!-- Presets -->
+              <div class="w-64 shrink-0 overflow-y-auto p-6 bg-white border-r border-[rgba(104,41,58,0.06)]">
+                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Presets</p>
+                <div class="space-y-1.5">
+                  <button
+                    v-for="preset in currentPresets"
+                    :key="preset.id"
+                    class="preset-card w-full text-left px-4 py-3 text-[rgb(var(--shell-sidebar))]"
+                    :class="{ 'active': selectedPreset === preset.id }"
+                    @click="applyPreset(preset)"
+                  >
+                    <p class="text-xs font-semibold">{{ preset.label }}</p>
+                    <p class="text-[11px] mt-0.5 opacity-70">{{ preset.description }}</p>
+                  </button>
+
+                  <div class="pt-3 mt-3 border-t border-[rgba(104,41,58,0.06)]">
+                    <button
+                      class="preset-card w-full text-left px-4 py-3 text-[rgb(var(--shell-sidebar))]"
+                      :class="{ 'active': selectedPreset === null }"
+                      @click="() => { selectedPreset = null; selectedFeatures = new Set(); }"
+                    >
+                      <p class="text-xs font-semibold">Custom</p>
+                      <p class="text-[11px] mt-0.5 opacity-70">Pick manually</p>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Checklist -->
+              <div class="flex-1 overflow-y-auto p-6 bg-[#fdf7f2]">
+                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Available Modules</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    v-for="feature in availableFeaturesForType"
+                    :key="feature.id"
+                    class="feature-card flex items-start gap-3 p-4 text-left cursor-pointer"
+                    :class="{ 'active': selectedFeatures.has(feature.id) }"
+                    @click="toggleFeature(feature.id)"
+                  >
+                    <div
+                      class="mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all border"
+                      :class="selectedFeatures.has(feature.id) ? 'bg-[rgb(var(--shell-sidebar))] border-[rgb(var(--shell-sidebar))]' : 'border-[rgba(104,41,58,0.3)] bg-white'"
+                    >
+                      <Check v-if="selectedFeatures.has(feature.id)" class="w-3 h-3 text-white" />
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ feature.label }}</p>
+                      <p class="text-[11px] mt-0.5 text-[rgba(104,41,58,0.6)]">{{ feature.description }}</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-between items-center bg-[rgba(104,41,58,0.01)]">
+              <button class="btn-nav-ghost" @click="step = 1">
+                <ChevronLeft class="w-4 h-4" /> Back
+              </button>
+              <div class="flex items-center gap-4">
+                <span class="text-xs text-[rgba(104,41,58,0.6)] font-mono">
+                  {{ selectedFeatures.size }} module(s) selected
+                </span>
+                <button
+                  class="btn-nav"
+                  @click="goToReview"
+                >
+                  Review & Confirm <ChevronRight class="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         </Transition>
 
-        <!-- ── Step 2: Features ───────────────────────────────────────────── -->
+        <!-- ── Step 3: Review & Confirm ──────────────────────────────────── -->
         <Transition name="slide">
-          <div v-if="step === 2" class="flex flex-col" style="min-height: 0; flex: 1;">
-            <!-- Header -->
-            <div class="px-8 pt-8 pb-5 shrink-0">
-              <button
-                class="flex items-center gap-1.5 text-xs mb-4 transition-colors"
-                style="color: rgba(61,24,32,0.45);"
-                @click="goBack"
-                @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgb(61,24,32)'"
-                @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.45)'"
-              >
-                <ChevronLeft class="w-3.5 h-3.5" />
-                Back
-              </button>
-              <div class="flex items-center gap-2 mb-1">
-                <div
-                  v-if="selectedTypeMeta"
-                  class="w-7 h-7 rounded-xl flex items-center justify-center"
-                  :style="`background: ${selectedTypeMeta.color}18; color: ${selectedTypeMeta.color};`"
-                >
-                  <component :is="selectedTypeMeta.icon" class="w-4 h-4" />
-                </div>
-                <span class="text-xs font-semibold" style="color: rgba(61,24,32,0.4);">
-                  {{ selectedTypeMeta?.label }}
-                </span>
-              </div>
-              <h1 class="font-serif text-2xl mt-2" style="color: rgb(61,24,32);">
-                What features do you need?
-              </h1>
-              <p class="text-sm mt-1" style="color: rgba(61,24,32,0.5);">
-                Pick a preset or mix and match the features on the right.
-              </p>
-            </div>
-
-            <!-- Business name -->
-            <div class="px-8 pb-4 shrink-0">
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">
-                Business name
-              </label>
-              <input
-                v-model="businessName"
-                type="text"
-                placeholder="e.g. Sakura Café"
-                class="input-warm w-full px-4 py-2.5 text-sm"
-              />
-            </div>
-
-            <!-- Two-col layout -->
-            <div class="flex gap-0 overflow-hidden" style="flex: 1; min-height: 0; border-top: 1px solid rgba(61,24,32,0.07);">
-              <!-- Left: Presets -->
-              <div
-                class="shrink-0 overflow-y-auto py-4 px-4"
-                style="width: 200px; border-right: 1px solid rgba(61,24,32,0.07); background: #fdf7f2;"
-              >
-                <p class="text-xs font-bold uppercase tracking-widest mb-3 px-2" style="color: rgba(61,24,32,0.35);">
-                  Presets
-                </p>
-                <div class="space-y-1">
-                  <button
-                    v-for="preset in currentPresets"
-                    :key="preset.id"
-                    class="w-full text-left px-3 py-2.5 rounded-xl transition-all"
-                    :style="selectedPreset === preset.id
-                      ? 'background: rgb(61,24,32); color: #fff;'
-                      : 'color: rgb(61,24,32);'"
-                    @click="applyPreset(preset)"
-                    @mouseenter="(e: MouseEvent) => { if (selectedPreset !== preset.id) (e.currentTarget as HTMLElement).style.background = 'rgba(61,24,32,0.07)' }"
-                    @mouseleave="(e: MouseEvent) => { if (selectedPreset !== preset.id) (e.currentTarget as HTMLElement).style.background = '' }"
-                  >
-                    <p class="text-xs font-semibold leading-snug">{{ preset.label }}</p>
-                    <p
-                      class="text-xs leading-snug mt-0.5 truncate"
-                      :style="selectedPreset === preset.id ? 'color: rgba(245,237,228,0.6);' : 'color: rgba(61,24,32,0.45);'"
-                    >
-                      {{ preset.description }}
-                    </p>
-                  </button>
-                </div>
-
-                <div class="mt-3 pt-3" style="border-top: 1px solid rgba(61,24,32,0.07);">
-                  <button
-                    class="w-full text-left px-3 py-2.5 rounded-xl transition-all"
-                    :style="selectedPreset === null
-                      ? 'background: rgb(61,24,32); color: #fff;'
-                      : 'color: rgba(61,24,32,0.6);'"
-                    @click="() => { selectedPreset = null; selectedFeatures = new Set(); }"
-                    @mouseenter="(e: MouseEvent) => { if (selectedPreset !== null) (e.currentTarget as HTMLElement).style.background = 'rgba(61,24,32,0.07)' }"
-                    @mouseleave="(e: MouseEvent) => { if (selectedPreset !== null) (e.currentTarget as HTMLElement).style.background = '' }"
-                  >
-                    <p class="text-xs font-semibold">Custom</p>
-                    <p
-                      class="text-xs mt-0.5"
-                      :style="selectedPreset === null ? 'color: rgba(245,237,228,0.6);' : 'color: rgba(61,24,32,0.35);'"
-                    >
-                      Pick manually
-                    </p>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Right: Feature checkboxes -->
-              <div class="flex-1 overflow-y-auto py-4 px-5">
-                <p class="text-xs font-bold uppercase tracking-widest mb-3 px-1" style="color: rgba(61,24,32,0.35);">
-                  Options
-                </p>
-                <div class="grid grid-cols-2 gap-2">
-                  <button
-                    v-for="feature in FEATURES"
-                    :key="feature.id"
-                    class="flex items-start gap-3 p-3 rounded-2xl text-left transition-all"
-                    :style="selectedFeatures.has(feature.id)
-                      ? 'background: rgba(61,24,32,0.06); border: 1.5px solid rgba(61,24,32,0.2);'
-                      : 'background: #fdf7f2; border: 1.5px solid rgba(61,24,32,0.07);'"
-                    @click="toggleFeature(feature.id)"
-                  >
-                    <div
-                      class="mt-0.5 w-4 h-4 rounded-md shrink-0 flex items-center justify-center transition-all"
-                      :style="selectedFeatures.has(feature.id)
-                        ? 'background: rgb(61,24,32); border: 1.5px solid rgb(61,24,32);'
-                        : 'background: transparent; border: 1.5px solid rgba(61,24,32,0.25);'"
-                    >
-                      <Check v-if="selectedFeatures.has(feature.id)" class="w-2.5 h-2.5 text-white" />
-                    </div>
-                    <div style="min-width: 0;">
-                      <p class="text-xs font-semibold leading-snug" style="color: rgb(61,24,32);">
-                        {{ feature.label }}
-                      </p>
-                      <p class="text-xs mt-0.5 leading-snug" style="color: rgba(61,24,32,0.45);">
-                        {{ feature.description }}
-                      </p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div
-              class="px-8 py-4 shrink-0 flex items-center justify-between"
-              style="border-top: 1px solid rgba(61,24,32,0.08);"
-            >
+          <div v-if="step === 3" class="flex flex-col h-full">
+            <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
               <div>
-                <p v-if="submitError" class="text-xs" style="color: #dc2626;">{{ submitError }}</p>
-                <p v-else class="text-xs" style="color: rgba(61,24,32,0.4);">
-                  {{ selectedFeatures.size }} feature{{ selectedFeatures.size === 1 ? '' : 's' }} selected
-                  · {{ schemaDef.tables.length }} table{{ schemaDef.tables.length === 1 ? '' : 's' }} will be created
-                </p>
+                <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 3 of 3</p>
+                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Review & Confirm</h1>
+                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Verify your schema and pricing before provisioning.</p>
               </div>
-              <button
-                class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-50"
-                style="background: rgb(61,24,32); color: rgb(245,237,228); box-shadow: 0 4px 16px rgba(61,24,32,0.25);"
-                :disabled="submitting || !businessName.trim()"
-                @click="handleSubmit"
-              >
-                <span>{{ submitting ? 'Setting up…' : 'Set up workspace' }}</span>
-                <ChevronRight v-if="!submitting" class="w-4 h-4" />
+            </div>
+
+            <div class="flex-1 flex overflow-hidden">
+              <!-- ERD Preview -->
+              <div class="flex-1 overflow-y-auto p-6 bg-[#fdf7f2]">
+                <div class="flex items-center gap-2 mb-4">
+                  <Database class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Schema Preview (ERD)</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div v-for="table in schemaDef.tables" :key="table.name" class="feature-card bg-white p-4">
+                    <div class="flex items-center gap-2 border-b border-[rgba(104,41,58,0.06)] pb-2 mb-3">
+                      <Network class="w-3.5 h-3.5 text-[rgba(104,41,58,0.5)]" />
+                      <span class="text-xs font-mono font-bold text-[rgb(var(--shell-sidebar))]">{{ table.name }}</span>
+                    </div>
+                    <div class="space-y-1.5">
+                      <div v-for="col in table.columns" :key="col.name" class="flex items-center justify-between text-[11px] font-mono">
+                        <span class="text-[rgb(var(--shell-sidebar))]">{{ col.name }}</span>
+                        <span class="text-[rgba(104,41,58,0.5)]">{{ col.type }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="schemaDef.tables.length === 0" class="text-center py-10 text-[rgba(104,41,58,0.5)] text-sm">
+                  No tables will be provisioned. You can add them later.
+                </div>
+              </div>
+
+              <!-- Pricing & Summary -->
+              <div class="w-72 shrink-0 overflow-y-auto p-6 bg-white border-l border-[rgba(104,41,58,0.06)] flex flex-col">
+                <div class="flex items-center gap-2 mb-4">
+                  <CreditCard class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Pricing</p>
+                </div>
+
+                <div class="feature-card bg-white p-4 space-y-4 mb-6">
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-[rgba(104,41,58,0.7)]">Base Platform</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">$15<span class="text-xs text-[rgba(104,41,58,0.5)] font-normal">/mo</span></span>
+                  </div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-[rgba(104,41,58,0.7)]">Features ({{ selectedFeatures.size }})</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">${{ selectedFeatures.size * 5 }}<span class="text-xs text-[rgba(104,41,58,0.5)] font-normal">/mo</span></span>
+                  </div>
+                  <div class="pt-3 border-t border-[rgba(104,41,58,0.08)] flex justify-between items-center">
+                    <span class="font-bold text-[rgb(var(--shell-sidebar))]">Total</span>
+                    <span class="font-bold text-lg text-[rgb(var(--shell-sidebar))]">${{ monthlyTotal }}<span class="text-xs text-[rgba(104,41,58,0.5)] font-normal">/mo</span></span>
+                  </div>
+                </div>
+
+                <!-- Warning Block -->
+                <div v-if="business" class="mt-auto mb-4 p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
+                  <div class="flex items-center gap-2 mb-2">
+                    <AlertTriangle class="w-4 h-4 text-red-600" />
+                    <span class="text-xs font-bold text-red-700 uppercase tracking-widest">Override Warning</span>
+                  </div>
+                  <p class="text-xs text-red-700 leading-relaxed">
+                    You already have a workspace set up. Provisioning will <strong>overwrite</strong> your existing configuration and table structures.
+                  </p>
+                </div>
+
+                <div v-if="submitError" class="mb-4 text-xs text-red-600 font-semibold bg-red-50 p-3 rounded-lg border border-red-200">
+                  {{ submitError }}
+                </div>
+
+                <button
+                  class="btn-nav btn-ribbon w-full"
+                  style="--ribbon-color: #68293A"
+                  :disabled="submitting"
+                  @click="handleSubmit"
+                >
+                  <Sparkles v-if="!submitting" class="w-4 h-4 text-[rgb(var(--shell-pink))]" />
+                  {{ submitting ? 'Provisioning...' : 'Provision Workspace' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-between items-center bg-[rgba(104,41,58,0.01)]">
+              <button class="btn-nav-ghost" @click="step = 2">
+                <ChevronLeft class="w-4 h-4" /> Back
               </button>
             </div>
           </div>
         </Transition>
 
-        <!-- ── Step 3: Done ───────────────────────────────────────────────── -->
+        <!-- ── Step 4: Done ───────────────────────────────────────────────── -->
         <Transition name="slide">
-          <div v-if="step === 3" class="flex flex-col items-center justify-center px-8 py-16 text-center">
-            <div
-              class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
-              style="background: rgba(61,24,32,0.07);"
-            >
-              <Sparkles class="w-8 h-8" style="color: rgb(232,116,138);" />
+          <div v-if="step === 4" class="flex flex-col items-center justify-center px-10 py-20 text-center h-full bg-white">
+            <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 bg-[#F6E6D7] border border-[rgba(104,41,58,0.1)]">
+              <Sparkles class="w-10 h-10 text-[rgb(var(--shell-pink))]" />
             </div>
-            <h2 class="font-serif text-2xl mb-2" style="color: rgb(61,24,32);">
-              You're all set!
+            <h2 class="font-serif text-3xl mb-3 text-[rgb(var(--shell-sidebar))]">
+              Workspace ready!
             </h2>
-            <p class="text-sm max-w-sm" style="color: rgba(61,24,32,0.5);">
-              Your workspace has been configured. You can always add more tables and features from the Database editor.
+            <p class="text-sm max-w-md text-[rgba(104,41,58,0.6)] leading-relaxed">
+              Your database schema has been successfully provisioned. You can modify your tables or invite team members from the dashboard.
             </p>
             <button
-              class="mt-8 px-7 py-3 rounded-full text-sm font-semibold transition-all active:scale-[0.97]"
-              style="background: rgb(61,24,32); color: rgb(245,237,228); box-shadow: 0 4px 16px rgba(61,24,32,0.2);"
+              class="mt-10 btn-nav"
               @click="emit('done')"
             >
-              Go to dashboard
+              Go to Dashboard
             </button>
           </div>
         </Transition>
@@ -598,12 +675,171 @@ const selectedTypeMeta = computed(() =>
 </template>
 
 <style scoped>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(104, 41, 58, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 900px;
+  max-height: 90dvh;
+  background: #FFFFFF;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(104, 41, 58, 0.09);
+  box-shadow: 0 8px 32px rgba(104, 41, 58, 0.1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  color: rgba(104, 41, 58, 0.5);
+  background: transparent;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  z-index: 10;
+}
+.modal-close:hover {
+  background: rgba(104, 41, 58, 0.05);
+  border-color: rgba(104, 41, 58, 0.1);
+  color: rgba(104, 41, 58, 0.8);
+}
+
+.btn-nav {
+  padding: 0.65rem 1.25rem;
+  background: #68293A;
+  color: #F6E6D7;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-nav:hover    { opacity: 0.88; }
+.btn-nav:active   { transform: scale(0.98); }
+.btn-nav:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-nav-ghost {
+  padding: 0.65rem 1.25rem;
+  background: transparent;
+  color: rgba(104, 41, 58, 0.68);
+  border: 1.5px solid rgba(104, 41, 58, 0.12);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-nav-ghost:hover {
+  border-color: rgba(104, 41, 58, 0.3);
+  background: rgba(104, 41, 58, 0.03);
+}
+
+.field-input {
+  background: #FDFAF7;
+  border: 1.5px solid rgba(104, 41, 58, 0.15);
+  border-radius: 0.5rem;
+  color: #68293A;
+  font-size: 0.9rem;
+  padding: 0.6rem 0.85rem;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field-input::placeholder { color: rgba(104, 41, 58, 0.3); }
+.field-input:focus {
+  outline: none;
+  border-color: rgba(104, 41, 58, 0.45);
+  box-shadow: 0 0 0 3px rgba(104, 41, 58, 0.07);
+}
+
+.type-card {
+  border-radius: 0.5rem;
+  border: 1.5px solid rgba(104, 41, 58, 0.15);
+  background: transparent;
+  transition: all 0.15s;
+}
+.type-card:hover {
+  background: rgba(104, 41, 58, 0.03);
+}
+.type-card.active {
+  border-color: rgba(104, 41, 58, 0.5);
+  background: rgba(104, 41, 58, 0.05);
+}
+
+.feature-card {
+  border-radius: 0.5rem;
+  border: 1.5px solid rgba(104, 41, 58, 0.15);
+  background: transparent;
+  transition: all 0.15s;
+}
+.feature-card:hover {
+  background: rgba(104, 41, 58, 0.03);
+}
+.feature-card.active {
+  border-color: rgba(104, 41, 58, 0.5);
+  background: rgba(104, 41, 58, 0.05);
+}
+
+.preset-card {
+  border-radius: 0.5rem;
+  transition: all 0.15s;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.preset-card:hover {
+  background: rgba(104, 41, 58, 0.03);
+}
+.preset-card.active {
+  background: #68293A;
+  color: #F6E6D7;
+}
+.preset-card.active p {
+  color: #F6E6D7;
+}
+.preset-card.active p.opacity-70 {
+  opacity: 0.8;
+}
+
 .slide-enter-active,
 .slide-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
   position: absolute;
   width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
 }
-.slide-enter-from { opacity: 0; transform: translateX(24px); }
-.slide-leave-to   { opacity: 0; transform: translateX(-24px); }
+.slide-enter-from { opacity: 0; transform: translateX(20px); }
+.slide-leave-to   { opacity: 0; transform: translateX(-20px); }
 </style>

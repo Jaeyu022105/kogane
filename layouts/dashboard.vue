@@ -137,7 +137,7 @@ function handleLogout() {
     </div>
 
     <!-- Onboarding modal -->
-    <OnboardingModal v-if="showOnboarding" @done="closeOnboarding" />
+    <OnboardingModal v-if="showOnboarding" @done="closeOnboarding" @close="closeOnboarding" />
   </div>
 </template>
 

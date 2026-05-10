@@ -1,12 +1,22 @@
 <script setup lang="ts">
+import { Camera, QrCode } from 'lucide-vue-next';
+
 definePageMeta({ layout: 'default' });
 
 const router = useRouter();
 const route  = useRoute();
 const { isLoggedIn, devLogin, loadDevSession } = useAuth();
 
+const mode = ref<'login' | 'signup' | '2fa-setup'>('login');
+
+// Form state
 const email    = ref('admin@postfolio.dev');
 const password = ref('');
+const fullName = ref('');
+const username = ref('');
+const enable2FA = ref(false);
+const verificationCode = ref('');
+
 const error    = ref<string | null>(null);
 const loading  = ref(false);
 
@@ -38,34 +48,61 @@ onMounted(() => {
   if (isLoggedIn.value) router.push(redirectTarget.value);
 });
 
-async function handleLogin() {
-  if (!email.value) return;
+async function handleAction() {
+  error.value = null;
 
-  loading.value = true;
-  error.value   = null;
-
-  try {
-    const res = await $fetch<{ session: { userId: string; email: string; token: string } | null; error: string | null }>(
-      '/api/auth/login',
-      {
+  if (mode.value === 'login')
+  {
+    if (!email.value) return;
+    loading.value = true;
+    try {
+      const res = await $fetch<{ session: any; error: string | null }>('/api/auth/login', {
         method: 'POST',
         body: { email: email.value, password: password.value },
-      },
-    );
+      });
 
-    if (res.error || !res.session)
+      if (res.error || !res.session)
+      {
+        error.value = res.error ?? 'Login failed';
+        return;
+      }
+
+      devLogin(email.value);
+      router.push(redirectTarget.value);
+    } catch (err) {
+      error.value = (err as Error).message;
+    } finally {
+      loading.value = false;
+    }
+  }
+  else if (mode.value === 'signup')
+  {
+    if (!email.value || !password.value || !fullName.value || !username.value)
     {
-      error.value = res.error ?? 'Login failed';
-
+      error.value = 'Please fill in all required fields.';
       return;
     }
 
-    devLogin(email.value);
+    if (enable2FA.value)
+    {
+      mode.value = '2fa-setup';
+    }
+    else
+    {
+      devLogin(email.value, { fullName: fullName.value, username: username.value, has2fa: false });
+      router.push(redirectTarget.value);
+    }
+  }
+  else if (mode.value === '2fa-setup')
+  {
+    if (verificationCode.value.length < 6)
+    {
+      error.value = 'Please enter a valid 6-digit code.';
+      return;
+    }
+    
+    devLogin(email.value, { fullName: fullName.value, username: username.value, has2fa: true });
     router.push(redirectTarget.value);
-  } catch (err) {
-    error.value = (err as Error).message;
-  } finally {
-    loading.value = false;
   }
 }
 </script>
@@ -76,9 +113,9 @@ async function handleLogin() {
     <div class="login-blob login-blob--top" />
     <div class="login-blob login-blob--bottom" />
 
-    <div class="login-wrap">
+    <div class="login-wrap" :class="{ 'login-wrap--wide': mode === 'signup' }">
       <!-- brand mark -->
-      <div class="login-brand">
+      <div class="login-brand" :style="mode === 'signup' ? 'justify-content: center;' : ''">
         <div class="brand-mark">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="3" />
@@ -95,44 +132,108 @@ async function handleLogin() {
 
       <!-- card -->
       <div class="login-card">
-        <div class="login-card-header">
-          <h2 class="login-title">Admin login</h2>
+        <div class="login-card-header" :style="mode === 'signup' ? 'text-align: center;' : ''">
+          <h2 class="login-title">
+            {{ mode === 'login' ? 'Admin login' : mode === 'signup' ? 'Create an account' : 'Set up 2FA' }}
+          </h2>
           <p class="login-subtitle">
-            {{ exitTarget
-              ? 'Sign in to continue to the admin view, or return to the terminal.'
-              : 'Sign in to manage your workspace.'
-            }}
+            <template v-if="mode === 'login'">
+              {{ exitTarget ? 'Sign in to continue to the admin view.' : 'Sign in to manage your workspace.' }}
+            </template>
+            <template v-else-if="mode === 'signup'">
+              Get started by creating your administrator profile.
+            </template>
+            <template v-else>
+              Scan the QR code with your authenticator app and enter the code below.
+            </template>
           </p>
         </div>
 
-        <form class="login-form" @submit.prevent="handleLogin">
-          <div class="field">
-            <label for="login-email" class="field-label">Email</label>
-            <input
-              id="login-email"
-              v-model="email"
-              type="email"
-              required
-              autocomplete="email"
-              class="field-input"
-              placeholder="you@company.com"
-            />
-          </div>
+        <form class="login-form" @submit.prevent="handleAction">
+          
+          <template v-if="mode === 'signup'">
+            <!-- Profile upload -->
+            <div class="profile-upload-wrapper">
+              <div class="profile-upload">
+                <Camera class="w-6 h-6" style="color: rgba(104,41,58,0.4);" />
+              </div>
+              <span class="profile-upload-text">Upload photo</span>
+            </div>
 
-          <div class="field">
-            <label for="login-password" class="field-label">Password</label>
-            <input
-              id="login-password"
-              v-model="password"
-              type="password"
-              autocomplete="current-password"
-              class="field-input"
-              placeholder="········"
-            />
-          </div>
+            <div class="signup-grid">
+              <div class="field">
+                <label for="signup-fullname" class="field-label">Full Name</label>
+                <input id="signup-fullname" v-model="fullName" type="text" required class="field-input" placeholder="Jane Doe" />
+              </div>
+              <div class="field">
+                <label for="signup-username" class="field-label">Username</label>
+                <input id="signup-username" v-model="username" type="text" required class="field-input" placeholder="janedoe" />
+              </div>
+              <div class="field">
+                <label for="signup-email" class="field-label">Email</label>
+                <input id="signup-email" v-model="email" type="email" required class="field-input" placeholder="you@company.com" />
+              </div>
+              <div class="field">
+                <label for="signup-password" class="field-label">Password</label>
+                <input id="signup-password" v-model="password" type="password" required class="field-input" placeholder="········" />
+              </div>
+            </div>
+
+            <div class="toggle-wrap">
+              <label class="toggle-switch">
+                <input type="checkbox" v-model="enable2FA" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Enable Two-Factor Authentication</span>
+            </div>
+          </template>
+
+          <template v-if="mode === 'login'">
+            <div class="field">
+              <label for="login-email" class="field-label">Email</label>
+              <input
+                id="login-email"
+                v-model="email"
+                type="email"
+                required
+                autocomplete="email"
+                class="field-input"
+                placeholder="you@company.com"
+              />
+            </div>
+            <div class="field">
+              <label for="login-password" class="field-label">Password</label>
+              <input
+                id="login-password"
+                v-model="password"
+                type="password"
+                autocomplete="current-password"
+                class="field-input"
+                placeholder="········"
+              />
+            </div>
+          </template>
+
+          <template v-if="mode === '2fa-setup'">
+            <div class="qr-placeholder">
+              <QrCode class="w-16 h-16" style="color: #68293A;" />
+              <p class="qr-text">Scan with Authy, Google Authenticator, etc.</p>
+            </div>
+            <div class="field">
+              <label for="2fa-code" class="field-label">Verification Code</label>
+              <input
+                id="2fa-code"
+                v-model="verificationCode"
+                type="text"
+                required
+                class="field-input text-center text-lg tracking-widest"
+                placeholder="000000"
+                maxlength="6"
+              />
+            </div>
+          </template>
 
           <div v-if="error" class="login-error">
-            <!-- warning icon -->
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -147,19 +248,28 @@ async function handleLogin() {
             :disabled="loading"
             class="login-submit"
           >
-            {{ loading ? 'Signing in…' : 'Sign in' }}
+            {{ mode === 'login' ? (loading ? 'Signing in…' : 'Sign in') : mode === 'signup' ? (enable2FA ? 'Continue to 2FA' : 'Sign up') : 'Complete setup' }}
           </button>
         </form>
 
+        <p v-if="mode === 'login'" class="login-dev-note">
+          Don't have an account? <a href="#" @click.prevent="mode = 'signup'" class="link-text">Sign up</a>
+        </p>
+        <p v-else-if="mode === 'signup'" class="login-dev-note">
+          Already have an account? <a href="#" @click.prevent="mode = 'login'" class="link-text">Sign in</a>
+        </p>
+        <p v-else-if="mode === '2fa-setup'" class="login-dev-note">
+          <a href="#" @click.prevent="mode = 'signup'" class="link-text">Back to sign up</a>
+        </p>
+
         <button
-          v-if="exitTarget"
+          v-if="exitTarget && mode === 'login'"
           class="login-return"
           @click="leaveLoginPage"
         >
           Return to terminal
         </button>
 
-        <p class="login-dev-note">Dev mode — any credentials are accepted</p>
       </div>
     </div>
   </div>
@@ -208,6 +318,10 @@ async function handleLogin() {
   width: 100%;
   max-width: 26rem;
   animation: fade-up 0.35s ease both;
+  transition: max-width 0.3s ease;
+}
+.login-wrap--wide {
+  max-width: 32rem;
 }
 
 @keyframes fade-up {
@@ -221,6 +335,7 @@ async function handleLogin() {
   align-items: center;
   gap: 0.85rem;
   margin-bottom: 2rem;
+  transition: justify-content 0.3s ease;
 }
 
 .brand-mark {
@@ -285,6 +400,12 @@ async function handleLogin() {
 /* ── Form ─────────────────────────────────────────────── */
 .login-form { display: flex; flex-direction: column; gap: 1rem; }
 
+.signup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .field-label {
@@ -311,6 +432,108 @@ async function handleLogin() {
   outline: none;
   border-color: rgba(104, 41, 58, 0.45);
   box-shadow: 0 0 0 3px rgba(104, 41, 58, 0.07);
+}
+
+/* ── Signup specific ───────────────────────────────────── */
+.profile-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile-upload {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: rgba(104, 41, 58, 0.05);
+  border: 1.5px dashed rgba(104, 41, 58, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.profile-upload:hover {
+  background: rgba(104, 41, 58, 0.08);
+}
+.profile-upload-text {
+  font-size: 0.76rem;
+  color: rgba(104, 41, 58, 0.5);
+  font-weight: 600;
+}
+
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(104, 41, 58, 0.08);
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(104, 41, 58, 0.15);
+  transition: .4s;
+  border-radius: 20px;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+input:checked + .toggle-slider {
+  background-color: #68293A;
+}
+input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+}
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #68293A;
+}
+
+/* ── 2FA specific ─────────────────────────────────────── */
+.qr-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(104, 41, 58, 0.03);
+  border: 1px dashed rgba(104, 41, 58, 0.15);
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.qr-text {
+  font-size: 0.85rem;
+  color: rgba(104, 41, 58, 0.6);
+  margin: 0;
+  text-align: center;
 }
 
 /* ── Error ────────────────────────────────────────────── */
@@ -342,6 +565,7 @@ async function handleLogin() {
   cursor: pointer;
   transition: opacity 0.15s, transform 0.1s;
   box-shadow: 0 4px 16px rgba(104, 41, 58, 0.25);
+  margin-top: 0.5rem;
 }
 .login-submit:hover    { opacity: 0.88; }
 .login-submit:active   { transform: scale(0.98); }
@@ -366,11 +590,25 @@ async function handleLogin() {
   background: rgba(104, 41, 58, 0.03);
 }
 
-/* ── Dev note ─────────────────────────────────────────── */
+/* ── Dev note & Links ─────────────────────────────────── */
 .login-dev-note {
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   text-align: center;
-  color: rgba(104, 41, 58, 0.3);
+  color: rgba(104, 41, 58, 0.5);
   margin: 0;
+}
+.link-text {
+  color: #FF5776;
+  font-weight: 600;
+  text-decoration: none;
+}
+.link-text:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .signup-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

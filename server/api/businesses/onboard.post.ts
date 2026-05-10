@@ -18,33 +18,55 @@ export default defineEventHandler(async (event) => {
     businessType: string;
     features: string[];
     schemaDef: SchemaDef;
+    logoUrl?: string;
+    colorPalette?: any;
+    override?: boolean;
   }>(event);
 
   if (!body.businessName?.trim()) return { error: 'Business name is required', business: null };
 
-  const { data: existing } = await db.queryOne(
-    'SELECT id FROM businesses WHERE admin_user_id = ?',
+  const { data: existing } = await db.queryOne<{ id: string; schema_name: string }>(
+    'SELECT id, schema_name FROM businesses WHERE admin_user_id = ?',
     [userId],
   );
 
-  if (existing) return { error: 'Admin already has a business', business: null };
+  let schemaName = '';
+  let business = null;
 
-  const schemaName = `biz_${userId.replace(/-/g, '').slice(0, 20)}`;
+  if (existing) {
+    if (!body.override) return { error: 'Admin already has a business. Use override to overwrite.', business: null };
+    
+    schemaName = existing.schema_name;
+    const { error: updateErr } = await db.update('businesses', {
+      name: body.businessName.trim(),
+      logo_url: body.logoUrl || null,
+      color_palette: JSON.stringify(body.colorPalette || {}),
+    }, { id: existing.id });
 
-  try {
-    validateIdentifier(schemaName);
-  } catch {
-    return { error: 'Could not generate a valid schema name', business: null };
+    if (updateErr) return { error: updateErr, business: null };
+    
+    const { data: b } = await db.queryOne('SELECT * FROM businesses WHERE id = ?', [existing.id]);
+    business = b;
+  } else {
+    schemaName = `biz_${userId.replace(/-/g, '').slice(0, 20)}`;
+
+    try {
+      validateIdentifier(schemaName);
+    } catch {
+      return { error: 'Could not generate a valid schema name', business: null };
+    }
+
+    const { data: newBiz, error } = await db.insert('businesses', {
+      admin_user_id: userId,
+      name: body.businessName.trim(),
+      logo_url: body.logoUrl || null,
+      color_palette: JSON.stringify(body.colorPalette || {}),
+      schema_name: schemaName,
+    });
+
+    if (error || !newBiz) return { error: error ?? 'Insert failed', business: null };
+    business = newBiz;
   }
-
-  const { data: business, error } = await db.insert('businesses', {
-    admin_user_id: userId,
-    name: body.businessName.trim(),
-    color_palette: JSON.stringify({}),
-    schema_name: schemaName,
-  });
-
-  if (error || !business) return { error: error ?? 'Insert failed', business: null };
 
   const isDevMode = process.env.DEV_MODE === 'true';
   const dialect   = isDevMode ? 'sqlite' : 'postgres';

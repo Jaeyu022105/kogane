@@ -11,32 +11,29 @@ const plans = [
     name:     'Starter',
     price:    'Free',
     period:   'forever',
-    tagline:  'Perfect for solo operators and small teams getting started.',
+    tagline:  'Perfect for solo operators getting started.',
     cta:      'Get started',
     ctaStyle: 'ghost',
     popular:  false,
     features: [
       '1 business workspace',
-      'Up to 5 database tables',
-      '3 UI layouts',
-      '2 deployed terminals',
+      'Up to 3 core features',
       'Community support',
     ],
   },
   {
-    name:     'Growth',
-    price:    '$29',
-    period:   'per month',
-    tagline:  'For growing businesses that need more layouts, terminals, and team members.',
+    name:     'Flexible',
+    price:    '$15',
+    period:   'base / month',
+    tagline:  'Pay a flat base fee, then simply extend your plan based on the features you activate during onboarding.',
     cta:      'Start free trial',
     ctaStyle: 'primary',
     popular:  true,
     features: [
-      'Unlimited tables & layouts',
-      'Unlimited terminals',
-      'Up to 10 staff accounts',
+      'Everything in Starter',
+      '+$5/mo per active feature module',
+      'Unlimited terminals & tables',
       'Hardware scanner integration',
-      'Dynamic theming',
       'Priority email support',
     ],
   },
@@ -49,11 +46,10 @@ const plans = [
     ctaStyle: 'ghost',
     popular:  false,
     features: [
-      'Everything in Growth',
+      'Volume discount on features',
       'Unlimited staff accounts',
       'Custom domain for terminals',
       'SSO / SAML integration',
-      'Dedicated Supabase instance',
       'SLA & dedicated support',
     ],
   },
@@ -63,6 +59,10 @@ const faqs = [
   {
     q: 'Do I need a credit card to start?',
     a: "No. The Starter plan is completely free with no credit card required. Upgrade only when you're ready.",
+  },
+  {
+    q: 'How does the feature-based pricing work?',
+    a: 'You pay a flat $15/mo base fee. As you activate distinct feature modules (like Inventory, Appointments, or Orders) during onboarding or later, your plan simply scales by $5/mo per module.',
   },
   {
     q: 'Can I switch plans later?',
@@ -79,10 +79,6 @@ const faqs = [
   {
     q: 'Can I self-host Postfolio?',
     a: 'Postfolio is open-source friendly. Contact us for Enterprise self-hosting options and Docker deployment guides.',
-  },
-  {
-    q: 'What counts as a database table?',
-    a: 'Each table you create in the Schema Editor counts. Starter supports up to 5; Growth and Enterprise have no limits.',
   },
 ];
 

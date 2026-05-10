@@ -10,6 +10,10 @@ export interface AdminSession {
   userId: string;
   email: string;
   token: string;
+  fullName?: string;
+  username?: string;
+  profilePicture?: string;
+  has2fa?: boolean;
 }
 
 const session = ref<AdminSession | null>(null);
@@ -17,9 +21,13 @@ const session = ref<AdminSession | null>(null);
 export function useAuth() {
   const isLoggedIn = computed(() => session.value !== null);
 
-  // ── Dev Mode ─────────────────────────────────────────────────────────────
-  function devLogin(email: string) {
-    session.value = { userId: 'dev-admin', email, token: 'dev-admin-token' };
+  function devLogin(email: string, extra?: Partial<AdminSession>) {
+    session.value = { 
+      userId: 'dev-admin', 
+      email, 
+      token: 'dev-admin-token',
+      ...extra 
+    };
     localStorage.setItem('dev-session', JSON.stringify(session.value));
   }
 
