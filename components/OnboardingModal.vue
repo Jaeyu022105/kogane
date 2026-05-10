@@ -294,13 +294,36 @@ function applyPreset(preset: Preset) {
 }
 
 function toggleFeature(id: string) {
-  selectedPreset.value = null;
   if (selectedFeatures.value.has(id)) {
     selectedFeatures.value.delete(id);
   } else {
     selectedFeatures.value.add(id);
   }
   selectedFeatures.value = new Set(selectedFeatures.value);
+
+  let matchingPreset = null;
+
+  for (let i = currentPresets.value.length - 1; i >= 0; --i) {
+    const preset = currentPresets.value[i];
+
+    if (preset.features.length === selectedFeatures.value.size) {
+      let allMatch = true;
+
+      for (let j = preset.features.length - 1; j >= 0; --j) {
+        if (!selectedFeatures.value.has(preset.features[j])) {
+          allMatch = false;
+          break;
+        }
+      }
+
+      if (allMatch) {
+        matchingPreset = preset.id;
+        break;
+      }
+    }
+  }
+
+  selectedPreset.value = matchingPreset;
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
