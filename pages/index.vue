@@ -52,39 +52,6 @@ const tableRows = [
 <template>
   <!-- ── Hero ─────────────────────────────────────────────── -->
   <section class="hero">
-    <!-- faded rotating flower decorations -->
-    <svg class="flower flower-tl" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g opacity="0.12" fill="#FF5776">
-        <circle cx="50" cy="25" r="22" />
-        <circle cx="50" cy="75" r="22" />
-        <circle cx="25" cy="50" r="22" />
-        <circle cx="75" cy="50" r="22" />
-        <circle cx="50" cy="50" r="18" />
-      </g>
-    </svg>
-
-    <svg class="flower flower-br" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g opacity="0.08" fill="#68293A">
-        <circle cx="50" cy="28" r="22" />
-        <circle cx="71" cy="43" r="22" />
-        <circle cx="63" cy="68" r="22" />
-        <circle cx="37" cy="68" r="22" />
-        <circle cx="29" cy="43" r="22" />
-        <circle cx="50" cy="50" r="18" />
-      </g>
-    </svg>
-
-    <svg class="flower flower-tr" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g opacity="0.06" fill="#FF5776">
-        <circle cx="50" cy="22" r="20" />
-        <circle cx="78" cy="42" r="20" />
-        <circle cx="67" cy="75" r="20" />
-        <circle cx="33" cy="75" r="20" />
-        <circle cx="22" cy="42" r="20" />
-        <circle cx="50" cy="50" r="15" />
-      </g>
-    </svg>
-
     <div class="hero-inner">
       <div class="hero-badge">
         <span class="badge-dot" />
@@ -93,7 +60,7 @@ const tableRows = [
 
       <h1 class="hero-headline">
         Internal tools that
-        <em><span class="hl-block">feel as good</span></em>
+        <em>feel as good</em>
         as the products they support.
       </h1>
 
@@ -172,7 +139,7 @@ const tableRows = [
     <div class="section-inner">
       <div class="m-label-block">
         <p class="m-overline">The Platform</p>
-        <h2 class="m-heading">Everything you need,<br><em><span class="hl-block hl-block--sm">nothing you don't.</span></em></h2>
+        <h2 class="m-heading">Everything you need,<br><em>nothing you don't.</em></h2>
         <p class="m-sub">Four integrated modules that take you from data model to deployed staff terminal.</p>
       </div>
       <div class="pillar-grid">
@@ -195,7 +162,7 @@ const tableRows = [
     <div class="section-inner philosophy-inner">
       <div class="philosophy-text">
         <p class="m-overline">Our philosophy</p>
-        <h2 class="m-heading">Most internal tools are either <span class="hl-block hl-block--maroon">too rigid</span> or <span class="hl-block hl-block--maroon">too ugly.</span></h2>
+        <h2 class="m-heading">Most internal tools are either too rigid or too ugly.</h2>
         <p class="m-sub">
           SaaS tools lock you into their model. Custom builds look terrible and take months. Postfolio is built on the belief that internal tools should feel as premium as the products they support — and be ready in minutes.
         </p>
@@ -225,7 +192,7 @@ const tableRows = [
   <!-- ── CTA ───────────────────────────────────────────────── -->
   <section class="m-cta-strip">
     <div class="m-cta-inner">
-      <h2 class="m-cta-heading">Ready to build something <em><span class="hl-block">beautiful?</span></em></h2>
+      <h2 class="m-cta-heading">Ready to build something <em>beautiful?</em></h2>
       <p class="m-cta-sub">Join forward-thinking businesses using Postfolio to manage their operations in style.</p>
       <div class="m-cta-btns">
         <NuxtLink to="/login" class="m-btn-primary ribbon">Get started — it's free</NuxtLink>
@@ -243,65 +210,6 @@ const tableRows = [
   padding: 0 2rem;
 }
 
-/* ── Highlight block (blocky background on em text) ────── */
-.hl-block {
-  position: relative;
-  display: inline-block;
-  background: #FF5776;
-  color: #FFFFFF;
-  padding: 0.1em 0.3em;
-  margin: -0.1em -0.1em;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  line-height: 1;
-  z-index: 2;
-  font-style: normal;
-}
-
-.hl-block--sm {
-  font-size: 0.92em;
-  padding: 0.06em 0.2em 0.08em;
-}
-
-.hl-block--maroon {
-  background: #68293A;
-  color: #F6E6D7;
-}
-
-/* ── Flower decorations ───────────────────────────────── */
-.flower {
-  position: absolute;
-  pointer-events: none;
-  will-change: transform;
-}
-
-.flower-tl {
-  width: 340px;
-  height: 340px;
-  top: -80px;
-  left: -120px;
-  animation: spin-cw 28s linear infinite;
-}
-
-.flower-br {
-  width: 360px;
-  height: 360px;
-  bottom: -160px;
-  right: -140px;
-  animation: spin-ccw 36s linear infinite;
-}
-
-.flower-tr {
-  width: 220px;
-  height: 220px;
-  top: 30px;
-  right: -30px;
-  animation: spin-cw 22s linear infinite;
-}
-
-@keyframes spin-cw  { from { transform: rotate(0deg); }   to { transform: rotate(360deg); } }
-@keyframes spin-ccw { from { transform: rotate(0deg); }   to { transform: rotate(-360deg); } }
-
 /* ── Hero ─────────────────────────────────────────────── */
 .hero {
   position: relative;
@@ -312,7 +220,7 @@ const tableRows = [
   max-width: 1160px;
   margin: 0 auto;
   padding: 5.5rem 2rem 6rem;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .hero-badge {
