@@ -70,9 +70,13 @@ async function saveEdit() {
 
 // ── Create table form ──────────────────────────────────────────────────────
 
+interface UINewColumn extends ColumnDef {
+  _fkTable?: string;
+}
+
 const showNewTable = ref(false);
 const newTableName = ref('');
-const newColumns   = ref<ColumnDef[]>([{ name: '', type: 'text', nullable: true }]);
+const newColumns   = ref<UINewColumn[]>([{ name: '', type: 'text', nullable: true }]);
 const hints        = ref<NormalizationHint[]>([]);
 const saving       = ref(false);
 const formError    = ref<string | null>(null);
@@ -114,7 +118,18 @@ async function handleCreate() {
 
   const def: TableDef = {
     name:    newTableName.value.trim(),
-    columns: newColumns.value.filter(c => c.name.trim()),
+    columns: newColumns.value.filter(c => c.name.trim()).map(c => {
+      const col: ColumnDef = {
+        name: c.name,
+        type: c.type,
+        nullable: c.nullable,
+        unique: c.unique,
+      };
+      if (c._fkTable) {
+        col.references = { table: c._fkTable, column: 'id' };
+      }
+      return col;
+    }),
   };
 
   const err = await createTable(def);
@@ -783,26 +798,42 @@ function getTablePositionSafe(name: string) {
                 <div
                   v-for="(col, idx) in newColumns"
                   :key="idx"
-                  class="grid gap-2 items-center"
-                  style="grid-template-columns: 1fr 110px auto auto;"
+                  class="flex flex-col gap-2.5 p-3 rounded-xl transition-all"
+                  style="border: 1px solid rgba(61,24,32,0.1); background: rgba(61,24,32,0.015);"
                 >
-                  <input v-model="col.name" class="input-warm px-3 py-1.5 text-sm font-mono" placeholder="column_name" />
-                  <select v-model="col.type" class="input-warm px-2 py-1.5 text-xs">
-                    <option v-for="t in COLUMN_TYPES" :key="t" :value="t">{{ COLUMN_TYPE_LABELS[t] }}</option>
-                  </select>
-                  <label class="flex items-center gap-1 text-xs whitespace-nowrap cursor-pointer" style="color: rgba(61,24,32,0.5);">
-                    <input type="checkbox" v-model="col.nullable" />
-                    Null
-                  </label>
-                  <button
-                    class="text-sm transition-colors"
-                    style="color: rgba(61,24,32,0.25);"
-                    @click="removeColumn(idx)"
-                    @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = '#dc2626'"
-                    @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.25)'"
-                  >
-                    <X class="w-4 h-4" />
-                  </button>
+                  <div class="grid gap-2 items-center" style="grid-template-columns: 1fr 110px auto auto;">
+                    <input v-model="col.name" class="input-warm px-3 py-1.5 text-sm font-mono" placeholder="column_name" />
+                    <select v-model="col.type" class="input-warm px-2 py-1.5 text-xs">
+                      <option v-for="t in COLUMN_TYPES" :key="t" :value="t">{{ COLUMN_TYPE_LABELS[t] }}</option>
+                    </select>
+                    <label class="flex items-center gap-1 text-xs whitespace-nowrap cursor-pointer" style="color: rgba(61,24,32,0.5);">
+                      <input type="checkbox" v-model="col.nullable" />
+                      Null
+                    </label>
+                    <button
+                      class="text-sm transition-colors"
+                      style="color: rgba(61,24,32,0.25);"
+                      @click="removeColumn(idx)"
+                      @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = '#dc2626'"
+                      @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.25)'"
+                    >
+                      <X class="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div class="flex items-center gap-4 pl-1">
+                    <label class="flex items-center gap-1 text-xs whitespace-nowrap cursor-pointer" style="color: rgba(61,24,32,0.5);">
+                      <input type="checkbox" v-model="col.unique" />
+                      Unique
+                    </label>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs" style="color: rgba(61,24,32,0.4);">Foreign Key:</span>
+                      <select v-model="col._fkTable" class="input-warm px-2 py-1 text-xs" style="min-width: 120px;">
+                        <option value="">None</option>
+                        <option v-for="t in tables" :key="t" :value="t">{{ t }}</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
