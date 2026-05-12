@@ -6,6 +6,7 @@ definePageMeta({ layout: 'default' });
 const router = useRouter();
 const route  = useRoute();
 const { isLoggedIn, devLogin, loadDevSession } = useAuth();
+const { openOnboarding }                        = useOnboarding();
 
 const mode = ref<'login' | 'signup' | '2fa-setup'>('login');
 
@@ -90,6 +91,8 @@ async function handleAction() {
     else
     {
       devLogin(email.value, { fullName: fullName.value, username: username.value, has2fa: false });
+      
+      openOnboarding();
       router.push(redirectTarget.value);
     }
   }
@@ -102,6 +105,8 @@ async function handleAction() {
     }
     
     devLogin(email.value, { fullName: fullName.value, username: username.value, has2fa: true });
+    
+    openOnboarding();
     router.push(redirectTarget.value);
   }
 }

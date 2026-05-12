@@ -56,6 +56,7 @@ export function useBusiness() {
       });
 
       if (res.error || !res.business) {
+        business.value = null;
         error.value = res.error ?? 'No business found';
         return;
       }
@@ -82,6 +83,7 @@ export function useBusiness() {
 
       applyTheme(palette);
     } catch (err) {
+      business.value = null;
       error.value = (err as Error).message;
     } finally {
       loading.value = false;
