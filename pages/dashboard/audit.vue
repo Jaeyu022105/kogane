@@ -82,7 +82,7 @@ function relativeTime(iso: string) {
         <p class="text-[10px] font-mono uppercase tracking-[0.18em]" style="color: rgba(61,24,32,0.35);">Audit Log</p>
       </div>
       <h1 class="font-serif font-normal text-2xl" style="color: rgb(var(--shell-sidebar));">Activity trail</h1>
-      <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Append-only record of runtime mutations, uploads, and schema changes</p>
+      <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Append-only record of workspace activity, uploads, and important changes</p>
     </div>
 
     <div class="px-10 py-7 space-y-6">

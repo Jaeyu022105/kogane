@@ -14,6 +14,8 @@ export interface AdminSession {
   username?: string;
   profilePicture?: string;
   has2fa?: boolean;
+  languagePreference?: string;
+  isEnterprise?: boolean;
 }
 
 const session = ref<AdminSession | null>(null);

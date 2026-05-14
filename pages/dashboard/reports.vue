@@ -4,6 +4,7 @@ import { BarChart3, Download, Play } from 'lucide-vue-next';
 definePageMeta({ layout: 'dashboard' });
 
 const { authHeaders } = useAuth();
+const { isEnterprise } = useEnterpriseAccess();
 
 const activeTab  = ref<'transactions' | 'table-activity' | 'inpoint-activity' | 'custom'>('transactions');
 const from       = ref(new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString().slice(0, 10));
@@ -14,17 +15,36 @@ const rows       = ref<Record<string, unknown>[]>([]);
 const customSql  = ref('SELECT * FROM transactions');
 const customColumns = ref<string[]>([]);
 
-const TABS = [
-  { key: 'transactions',      label: 'Transactions' },
-  { key: 'table-activity',    label: 'Table activity' },
-  { key: 'inpoint-activity',  label: 'Inpoint activity' },
-  { key: 'custom',            label: 'Custom SQL' },
-] as const;
+const TABS = computed(() => {
+  const tabs = [
+    { key: 'transactions',   label: 'Transactions' },
+    { key: 'table-activity', label: 'Workspace activity' },
+  ];
+
+  if (isEnterprise.value) {
+    tabs.push(
+      { key: 'inpoint-activity', label: 'Runtime activity' },
+      { key: 'custom',           label: 'Custom SQL' },
+    );
+  }
+
+  return tabs;
+});
+
+const activeTabLabel = computed(() =>
+  TABS.value.find((tab) => tab.key === activeTab.value)?.label ?? 'Report',
+);
 
 async function loadReport() {
   loading.value = true;
   try {
+    if (!TABS.value.some((tab) => tab.key === activeTab.value)) {
+      activeTab.value = 'transactions';
+    }
+
     if (activeTab.value === 'custom') {
+      if (!isEnterprise.value) return;
+
       const res = await $fetch<{ columns: string[]; rows: Record<string, unknown>[]; error: string | null }>('/api/reports/custom', {
         method:  'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -83,7 +103,7 @@ watch([activeTab, group], loadReport);
           <p class="text-[10px] font-mono uppercase tracking-[0.18em]" style="color: rgba(61,24,32,0.35);">Reports</p>
         </div>
         <h1 class="font-serif font-normal text-2xl" style="color: rgb(var(--shell-sidebar));">Data summaries</h1>
-        <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Operational summaries, activity reports, and custom read-only SQL</p>
+        <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Operational summaries and preset workspace activity reports</p>
       </div>
 
       <button
@@ -148,7 +168,7 @@ watch([activeTab, group], loadReport);
 
         <div class="px-5 py-3 flex items-center justify-between" style="background: rgba(61,24,32,0.02); border-bottom: 1px solid rgba(61,24,32,0.07);">
           <p class="text-[10px] font-mono uppercase tracking-widest" style="color: rgba(61,24,32,0.35);">
-            {{ TABS.find(t => t.key === activeTab)?.label }}
+            {{ activeTabLabel }}
           </p>
           <p class="text-[10px] font-mono" style="color: rgba(61,24,32,0.3);">{{ rows.length }} row{{ rows.length !== 1 ? 's' : '' }}</p>
         </div>

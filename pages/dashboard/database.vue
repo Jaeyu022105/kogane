@@ -4,6 +4,8 @@ import { Database, Hexagon, RefreshCw, Plus, ArrowLeft, ArrowRight, X } from 'lu
 
 definePageMeta({ layout: 'dashboard' });
 
+const router = useRouter();
+const { isEnterprise } = useEnterpriseAccess();
 const { business } = useBusiness();
 const businessId   = computed(() => business.value?.id);
 
@@ -187,11 +189,18 @@ async function applyPreset(presetId: string) {
 }
 
 onMounted(async () => {
+  if (!isEnterprise.value) {
+    router.replace('/dashboard');
+    return;
+  }
+
   await fetchTables();
   await loadPresets();
 });
 
-watch(businessId, fetchTables);
+watch(businessId, () => {
+  if (isEnterprise.value) fetchTables();
+});
 
 // ── Column type badge color ────────────────────────────────────────────────
 
@@ -353,7 +362,7 @@ function getTablePositionSafe(name: string) {
 </script>
 
 <template>
-  <div class="flex-1 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div v-if="isEnterprise" class="flex-1 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Left sidebar: schema / table tree ──────────────────────────────── -->
     <aside class="w-56 shrink-0 flex flex-col overflow-hidden" style="background: #1a0e11; border-right: 1px solid rgba(255,255,255,0.05);">
       <!-- Header -->

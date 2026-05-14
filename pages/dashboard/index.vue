@@ -3,22 +3,72 @@ definePageMeta({ layout: 'dashboard' });
 
 const { business } = useBusiness();
 const { session }  = useAuth();
+const { openOnboarding } = useOnboarding();
+const { isEnterprise } = useEnterpriseAccess();
 
-import { Database, Palette, Terminal, Settings, Shield, BarChart3, ArrowRight } from 'lucide-vue-next';
+import { Database, Palette, Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles } from 'lucide-vue-next';
 
 const now = new Date();
 const hour = now.getHours();
 const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 const firstName = session?.email?.split('@')[0] ?? 'Admin';
 
-const quickActions = [
-  { label: 'Database Editor', body: 'Design your schema tables, columns, and relationships visually.', icon: Database,  to: '/dashboard/database',  index: '01' },
-  { label: 'UI Builder',      body: 'Drag and drop interfaces for your terminals with reactive state.', icon: Palette,   to: '/dashboard/builder',   index: '02' },
-  { label: 'Terminals',       body: 'Deploy and manage staff-facing terminals with role-based access.', icon: Terminal,  to: '/dashboard/terminals', index: '03' },
-  { label: 'Audit Log',       body: 'Track data mutations, logins, and all terminal activity.',       icon: Shield,    to: '/dashboard/audit',     index: '04' },
-  { label: 'Reports',         body: 'View summaries, analytics, and run custom SQL queries.',         icon: BarChart3, to: '/dashboard/reports',   index: '05' },
-  { label: 'Settings',        body: 'Configure your branding, theme, and workspace details.',         icon: Settings,  to: '/dashboard/settings',  index: '06' },
-];
+interface QuickAction {
+  label: string;
+  body: string;
+  icon: any;
+  to?: string;
+  action?: 'onboarding';
+  index: string;
+}
+
+const quickActions = computed<QuickAction[]>(() => {
+  const actions: Omit<QuickAction, 'index'>[] = [
+    {
+      label: 'Preset Setup',
+      body: 'Choose or revise your industry preset, language, and workspace style.',
+      icon: Sparkles,
+      action: 'onboarding',
+    },
+    {
+      label: 'Reports',
+      body: 'View preset business summaries and export operational data.',
+      icon: BarChart3,
+      to: '/dashboard/reports',
+    },
+    {
+      label: 'Audit Log',
+      body: 'Review workspace activity, sign-ins, and important changes.',
+      icon: Shield,
+      to: '/dashboard/audit',
+    },
+    {
+      label: 'Settings',
+      body: 'Configure branding, theme colors, and workspace details.',
+      icon: Settings,
+      to: '/dashboard/settings',
+    },
+  ];
+
+  if (isEnterprise.value) {
+    actions.splice(
+      1,
+      0,
+      { label: 'Database Editor', body: 'Design schema tables, columns, and relationships visually.', icon: Database, to: '/dashboard/database' },
+      { label: 'UI Builder', body: 'Build custom layouts with the internal visual editor.', icon: Palette, to: '/dashboard/builder' },
+      { label: 'Terminals', body: 'Deploy and manage staff-facing runtime screens with role access.', icon: Terminal, to: '/dashboard/terminals' },
+    );
+  }
+
+  return actions.map((action, index) => ({
+    ...action,
+    index: String(index + 1).padStart(2, '0'),
+  }));
+});
+
+function runQuickAction(action: QuickAction) {
+  if (action.action === 'onboarding') openOnboarding();
+}
 </script>
 
 <template>
@@ -29,10 +79,10 @@ const quickActions = [
       <div class="flex flex-col gap-6 max-w-4xl">
         <div class="flex items-center gap-3">
           <span class="status-badge">
-            <span class="badge-dot" /> Development Mode
+            <span class="badge-dot" /> Preset Mode
           </span>
-          <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.5);">
-            Schema: {{ business?.schemaName ?? 'Not configured' }}
+          <span v-if="isEnterprise" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.5);">
+            Enterprise tools enabled
           </span>
         </div>
 
@@ -44,7 +94,7 @@ const quickActions = [
             {{ greeting }}, <span style="font-weight: 500;">{{ firstName }}</span><span style="color: rgb(var(--shell-pink));">.</span>
           </h1>
           <p class="mt-4 text-[1.05rem] leading-relaxed" style="color: rgba(61,24,32,0.6); max-width: 600px;">
-            Welcome to the Postfolio dashboard for <strong style="color: rgb(var(--shell-sidebar)); font-weight: 600;">{{ business?.name ?? 'your workspace' }}</strong>. Select a module below to start building your internal tools.
+            Welcome to the Postfolio dashboard for <strong style="color: rgb(var(--shell-sidebar)); font-weight: 600;">{{ business?.name ?? 'your workspace' }}</strong>. Start from presets, then refine only the options your team needs.
           </p>
         </div>
       </div>
@@ -59,28 +109,52 @@ const quickActions = [
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        <NuxtLink
-          v-for="action in quickActions"
-          :key="action.to"
-          :to="action.to"
-          class="dash-card group"
-        >
-          <div class="flex items-start justify-between mb-5">
-            <div class="icon-chip">
-              <component :is="action.icon" class="w-6 h-6" />
+        <template v-for="action in quickActions" :key="action.label">
+          <NuxtLink
+            v-if="action.to"
+            :to="action.to"
+            class="dash-card group"
+          >
+            <div class="flex items-start justify-between mb-5">
+              <div class="icon-chip">
+                <component :is="action.icon" class="w-6 h-6" />
+              </div>
+              <span class="text-xs font-mono font-bold tracking-widest transition-opacity duration-300 opacity-30 group-hover:opacity-100" style="color: rgb(var(--shell-sidebar));">
+                {{ action.index }}
+              </span>
             </div>
-            <span class="text-xs font-mono font-bold tracking-widest transition-opacity duration-300 opacity-30 group-hover:opacity-100" style="color: rgb(var(--shell-sidebar));">
-              {{ action.index }}
-            </span>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-serif text-xl mb-1.5" style="color: rgb(var(--shell-sidebar));">{{ action.label }}</h3>
-            <p class="text-sm leading-relaxed" style="color: rgba(61,24,32,0.55);">{{ action.body }}</p>
-          </div>
-          <div class="card-arrow">
-            Open module <ArrowRight class="w-3.5 h-3.5 stroke-[2.5]" />
-          </div>
-        </NuxtLink>
+            <div class="flex-1">
+              <h3 class="font-serif text-xl mb-1.5" style="color: rgb(var(--shell-sidebar));">{{ action.label }}</h3>
+              <p class="text-sm leading-relaxed" style="color: rgba(61,24,32,0.55);">{{ action.body }}</p>
+            </div>
+            <div class="card-arrow">
+              Open module <ArrowRight class="w-3.5 h-3.5 stroke-[2.5]" />
+            </div>
+          </NuxtLink>
+
+          <button
+            v-else
+            type="button"
+            class="dash-card group"
+            @click="runQuickAction(action)"
+          >
+            <div class="flex items-start justify-between mb-5">
+              <div class="icon-chip">
+                <component :is="action.icon" class="w-6 h-6" />
+              </div>
+              <span class="text-xs font-mono font-bold tracking-widest transition-opacity duration-300 opacity-30 group-hover:opacity-100" style="color: rgb(var(--shell-sidebar));">
+                {{ action.index }}
+              </span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-serif text-xl mb-1.5" style="color: rgb(var(--shell-sidebar));">{{ action.label }}</h3>
+              <p class="text-sm leading-relaxed" style="color: rgba(61,24,32,0.55);">{{ action.body }}</p>
+            </div>
+            <div class="card-arrow">
+              Open setup <ArrowRight class="w-3.5 h-3.5 stroke-[2.5]" />
+            </div>
+          </button>
+        </template>
       </div>
     </div>
   </div>
@@ -120,11 +194,14 @@ const quickActions = [
   flex-direction: column;
   padding: 2rem;
   background: #FFFFFF;
+  width: 100%;
+  text-align: left;
   border-radius: 1.25rem;
   border: 1px solid rgba(61,24,32,0.06);
   box-shadow: 0 4px 12px rgba(61,24,32,0.02);
   transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s;
   text-decoration: none;
+  cursor: pointer;
   position: relative;
   overflow: hidden;
   min-height: 220px;

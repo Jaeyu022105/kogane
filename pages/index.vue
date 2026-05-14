@@ -2,8 +2,8 @@
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       'Postfolio — Schema-Driven Internal Tool Builder',
-  description: 'Build, deploy, and manage beautiful internal tools without writing frontend code. POS systems, inventory trackers, staff dashboards — all from one platform.',
+  title:       'Postfolio — Preset Internal Workspaces',
+  description: 'Launch beautiful preset workspaces for POS, inventory, CRM, and operations without writing frontend code.',
 });
 
 /* SVG path strings for industry chips */
@@ -34,18 +34,18 @@ const pillarIcons: Record<string, string> = {
 };
 
 const pillars = [
-  { iconKey: 'schema',   title: 'Schema Editor',    body: 'Design your database with an interactive table editor and live relational visualizer.' },
-  { iconKey: 'builder',  title: 'Visual UI Builder', body: 'Drag-and-drop interfaces with an event system, transactional branching, and scanner support.' },
-  { iconKey: 'terminal', title: 'Instant Terminals', body: 'Deploy staff-facing or public kiosk terminals with role-based PIN access and unique URLs.' },
-  { iconKey: 'onboard',  title: 'Smart Onboarding',  body: 'Industry presets auto-provision your setup. Go from zero to a working tool in minutes.' },
+  { iconKey: 'onboard',  title: 'Guided Setup',     body: 'Choose your language, industry, and workspace style before setup starts.' },
+  { iconKey: 'schema',   title: 'Industry Presets', body: 'Start from ready-made workflows for sales, inventory, appointments, CRM, and more.' },
+  { iconKey: 'builder',  title: 'Style Presets',    body: 'Pick visual treatments that match how your staff need to scan, tap, and work.' },
+  { iconKey: 'terminal', title: 'Managed Launch',   body: 'Postfolio assembles the screens, data, and access rules behind the scenes.' },
 ];
 
 const tableRows = [
-  { col: 'id',          type: 'uuid',      key: 'PK', keyClass: 'pk' },
-  { col: 'name',        type: 'varchar',   key: '',   keyClass: '' },
-  { col: 'price',       type: 'decimal',   key: '',   keyClass: '' },
-  { col: 'category_id', type: 'uuid',      key: 'FK', keyClass: 'fk' },
-  { col: 'created_at',  type: 'timestamp', key: '',   keyClass: '' },
+  { col: 'Orders',      type: 'Cashier', key: 'Ready', keyClass: 'pk' },
+  { col: 'Inventory',   type: 'Ops',     key: '',      keyClass: '' },
+  { col: 'Customers',   type: 'CRM',     key: '',      keyClass: '' },
+  { col: 'Reports',     type: 'Manager', key: 'Live',  keyClass: 'fk' },
+  { col: 'Brand style', type: 'Warm',    key: '',      keyClass: '' },
 ];
 </script>
 
@@ -65,7 +65,7 @@ const tableRows = [
       </h1>
 
       <p class="hero-sub">
-        Postfolio is a schema-driven platform for building and deploying custom internal tools — POS systems, inventory dashboards, CRM portals — without writing a single line of frontend code.
+        Postfolio helps teams launch preset POS, inventory, appointment, and CRM workspaces without writing frontend code or managing technical setup.
       </p>
 
       <div class="hero-cta">
@@ -80,11 +80,11 @@ const tableRows = [
           <div class="preview-dots">
             <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
           </div>
-          <span class="preview-title">Schema Editor</span>
+          <span class="preview-title">Preset Setup</span>
         </div>
         <div class="preview-table">
           <div class="table-head">
-            <span>Column</span><span>Type</span><span>Key</span>
+            <span>Workflow</span><span>Preset</span><span>Status</span>
           </div>
           <div v-for="(row, i) in tableRows" :key="row.col" class="table-row" :class="{ 'row-alt': i % 2 !== 0 }">
             <span class="col-name">{{ row.col }}</span>
@@ -100,7 +100,7 @@ const tableRows = [
           <div class="preview-dots">
             <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
           </div>
-          <span class="preview-title">POS Terminal</span>
+          <span class="preview-title">POS Workspace</span>
         </div>
         <div class="terminal-mock">
           <div class="terminal-items">
@@ -140,7 +140,7 @@ const tableRows = [
       <div class="m-label-block">
         <p class="m-overline">The Platform</p>
         <h2 class="m-heading">Everything you need,<br><em>nothing you don't.</em></h2>
-        <p class="m-sub">Four integrated modules that take you from data model to deployed staff terminal.</p>
+        <p class="m-sub">Four guided steps take you from business type to a working preset workspace.</p>
       </div>
       <div class="pillar-grid">
         <div v-for="p in pillars" :key="p.title" class="pillar-card">
@@ -170,20 +170,20 @@ const tableRows = [
       </div>
       <div class="philosophy-badges">
         <div class="badge-card badge-plain">
-          <p class="badge-title">Schema-First</p>
-          <p class="badge-body">Your data model is the source of truth. Postfolio handles everything else automatically.</p>
+          <p class="badge-title">Preset-First</p>
+          <p class="badge-body">Start from a complete workflow instead of a blank technical canvas.</p>
         </div>
         <div class="badge-card badge-dark">
-          <p class="badge-title">UI-Driven</p>
-          <p class="badge-body">Design staff-facing interfaces in a Figma-like canvas — no HTML required.</p>
+          <p class="badge-title">Style Options</p>
+          <p class="badge-body">Choose polished interface styles without editing layouts by hand.</p>
         </div>
         <div class="badge-card badge-brand">
-          <p class="badge-title">Terminal Isolation</p>
-          <p class="badge-body">Deploy role-based terminals that are secure, authenticated, and purpose-built.</p>
+          <p class="badge-title">Role-Aware</p>
+          <p class="badge-body">Each workspace can expose only the actions a staff role needs.</p>
         </div>
         <div class="badge-card badge-outline">
           <p class="badge-title">Dynamic Theming</p>
-          <p class="badge-body">Your brand colors propagate instantly across every generated interface.</p>
+          <p class="badge-body">Your brand colors propagate instantly across every preset workspace.</p>
         </div>
       </div>
     </div>
@@ -317,7 +317,7 @@ const tableRows = [
   margin-left: 0.2rem;
 }
 
-/* Schema table */
+/* Preset table */
 .preview-table { padding: 0.6rem; display: flex; flex-direction: column; }
 
 .table-head {
@@ -370,7 +370,7 @@ const tableRows = [
 .key-badge.pk { background: rgba(104, 41, 58, 0.1); color: #68293A; }
 .key-badge.fk { background: transparent; color: rgba(104, 41, 58, 0.5); border: 1px solid rgba(104, 41, 58, 0.18); }
 
-/* Terminal preview */
+/* Workspace preview */
 .terminal-mock { padding: 0.85rem; }
 .terminal-items { display: flex; flex-direction: column; margin-bottom: 0.7rem; }
 

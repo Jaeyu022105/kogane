@@ -26,6 +26,8 @@ import { STATION_OBJECTS, type StationObjectElementBlueprint } from '~/lib/stati
 
 definePageMeta({ layout: 'dashboard' });
 
+const router = useRouter();
+const { isEnterprise } = useEnterpriseAccess();
 const { authHeaders } = useAuth();
 const { business } = useBusiness();
 const {
@@ -169,7 +171,7 @@ const extraPaletteItems = computed(() => {
 });
 
 async function loadTerminals() {
-  if (!business.value) return;
+  if (!isEnterprise.value || !business.value) return;
   const res = await $fetch<{ terminals: any[]; error: string | null }>('/api/terminals', {
     headers: authHeaders(),
     query: { businessId: business.value.id },
@@ -560,6 +562,11 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 }
 
 onMounted(() => {
+  if (!isEnterprise.value) {
+    router.replace('/dashboard');
+    return;
+  }
+
   loadTerminals();
   window.addEventListener('keydown', handleKeydown);
   window.addEventListener('beforeunload', handleBeforeUnload);
@@ -574,7 +581,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col overflow-hidden bg-[#f6efe8]">
+  <div v-if="isEnterprise" class="flex-1 flex flex-col overflow-hidden bg-[#f6efe8]">
     <header class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-6 py-3 shrink-0 bg-[#fdf7f2]" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
       <div class="flex items-center gap-4 min-w-0">
         <div class="flex items-center gap-2 text-lg font-semibold" style="color: rgb(var(--shell-sidebar));">

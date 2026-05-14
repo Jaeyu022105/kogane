@@ -15,11 +15,21 @@ const email    = ref('admin@postfolio.dev');
 const password = ref('');
 const fullName = ref('');
 const username = ref('');
+const languagePreference = ref('en');
 const enable2FA = ref(false);
 const verificationCode = ref('');
 
 const error    = ref<string | null>(null);
 const loading  = ref(false);
+
+const languageOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'fil', label: 'Filipino' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'zh', label: 'Chinese' },
+];
 
 const redirectTarget = computed(() => {
   const target = typeof route.query.redirect === 'string'
@@ -78,7 +88,7 @@ async function handleAction() {
   }
   else if (mode.value === 'signup')
   {
-    if (!email.value || !password.value || !fullName.value || !username.value)
+    if (!email.value || !password.value || !fullName.value || !username.value || !languagePreference.value)
     {
       error.value = 'Please fill in all required fields.';
       return;
@@ -90,7 +100,12 @@ async function handleAction() {
     }
     else
     {
-      devLogin(email.value, { fullName: fullName.value, username: username.value, has2fa: false });
+      devLogin(email.value, {
+        fullName: fullName.value,
+        username: username.value,
+        languagePreference: languagePreference.value,
+        has2fa: false,
+      });
       
       openOnboarding();
       router.push(redirectTarget.value);
@@ -104,7 +119,12 @@ async function handleAction() {
       return;
     }
     
-    devLogin(email.value, { fullName: fullName.value, username: username.value, has2fa: true });
+    devLogin(email.value, {
+      fullName: fullName.value,
+      username: username.value,
+      languagePreference: languagePreference.value,
+      has2fa: true,
+    });
     
     openOnboarding();
     router.push(redirectTarget.value);
@@ -131,7 +151,7 @@ async function handleAction() {
           <h1 class="brand-name">
             <span class="brand-name-pink">Post</span>folio
           </h1>
-          <p class="brand-tagline">Internal tool builder</p>
+          <p class="brand-tagline">Preset workspace setup</p>
         </div>
       </div>
 
@@ -177,6 +197,14 @@ async function handleAction() {
               <div class="field">
                 <label for="signup-email" class="field-label">Email</label>
                 <input id="signup-email" v-model="email" type="email" required class="field-input" placeholder="you@company.com" />
+              </div>
+              <div class="field">
+                <label for="signup-language" class="field-label">Preferred Language</label>
+                <select id="signup-language" v-model="languagePreference" required class="field-input">
+                  <option v-for="language in languageOptions" :key="language.value" :value="language.value">
+                    {{ language.label }}
+                  </option>
+                </select>
               </div>
               <div class="field">
                 <label for="signup-password" class="field-label">Password</label>

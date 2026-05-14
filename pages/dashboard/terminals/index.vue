@@ -4,6 +4,8 @@ import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 
 definePageMeta({ layout: 'dashboard' });
 
+const router = useRouter();
+const { isEnterprise } = useEnterpriseAccess();
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
 const { confirm, alert } = useModal();
@@ -39,7 +41,7 @@ function copyPin() {
 }
 
 async function loadTerminals() {
-  if (!business.value) return;
+  if (!isEnterprise.value || !business.value) return;
   loading.value = true;
 
   try {
@@ -136,12 +138,19 @@ async function deleteTerminal(terminalId: string, displayName: string) {
   }
 }
 
-onMounted(loadTerminals);
+onMounted(() => {
+  if (!isEnterprise.value) {
+    router.replace('/dashboard');
+    return;
+  }
+
+  loadTerminals();
+});
 watch(() => business.value?.id, loadTerminals);
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div v-if="isEnterprise" class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Page header ──────────────────────────────────────────────────────── -->
     <div
       class="px-8 py-5 flex items-center justify-between shrink-0"

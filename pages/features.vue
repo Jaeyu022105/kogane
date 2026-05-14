@@ -3,7 +3,7 @@ definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
   title:       'Features — Postfolio',
-  description: 'Explore every module of Postfolio: Schema Editor, Visual UI Builder, Terminal Deployer, and Smart Onboarding.',
+  description: 'Explore Postfolio presets, guided setup, style options, managed launch, and reporting.',
 });
 
 /* SVG path data for module icons — keeps template lean */
@@ -26,45 +26,45 @@ const extraIcons = {
 const modules = [
   {
     tag:    'Module 01',
-    title:  'Smart Onboarding',
-    body:   'Select your industry, pick the features you need, and Postfolio provisions your entire database schema in a single transactional step. No SQL. No config files.',
-    points: ['Industry presets (Café, Retail, CRM, Logistics…)', 'Preset + Override feature selection', 'Instant schema provisioning via unified API', 'Re-configurable at any time from settings'],
+    title:  'Guided Setup',
+    body:   'Choose your language, industry, brand color, and preferred workspace style before your account starts running.',
+    points: ['Language preference before account creation', 'Industry selection for cafe, retail, CRM, logistics, and more', 'Brand color and logo setup', 'Re-configurable from settings'],
     iconKey: 'onboarding' as keyof typeof icons,
     color:  'cream',
   },
   {
     tag:    'Module 02',
-    title:  'Schema Editor',
-    body:   'Design your domain model with a visual table editor. Foreign keys are drawn as live arrows. A built-in normalization analyzer targets 3.5NF / BCNF and flags issues before they become technical debt.',
-    points: ['Interactive inline data editor', 'Live relational schema visualizer', 'Normalization analyzer (3.5NF / BCNF)', 'Auto-generated DDL, no raw SQL required'],
+    title:  'Industry Presets',
+    body:   'Start from ready-made operating models instead of configuring technical pieces from scratch.',
+    points: ['Preset packs for cafe, retail, logistics, clinic, services, education, and accounting', 'Built-in workflows for orders, inventory, customers, staff, appointments, invoices, and deliveries', 'Managed setup behind the scenes', 'Easy preset changes later'],
     iconKey: 'schema' as keyof typeof icons,
     color:  'maroon',
   },
   {
     tag:    'Module 03',
-    title:  'Visual UI Builder',
-    body:   'A Figma-inspired canvas where you drag, drop, and wire up components. An event system handles everything from database inserts to conditional branching — entirely without code.',
-    points: ['Infinite panning & zooming canvas', 'Drag-and-drop elements (Tables, Carts, Inputs…)', 'No-code event system with transactional branching', 'Hardware barcode & QR scanner support', 'Smart Properties bar + advanced sidebar'],
+    title:  'Style Presets',
+    body:   'Choose from polished interface styles that match how your team actually works.',
+    points: ['Warm minimal screens for everyday teams', 'Compact operations layouts for dense workflows', 'High-contrast kiosk-style views', 'Editorial layouts for client-facing moments'],
     iconKey: 'builder' as keyof typeof icons,
     color:  'pink',
   },
   {
     tag:    'Module 04',
-    title:  'Terminal Deployer',
-    body:   'Publish any layout to a dedicated terminal — staff-facing, kiosk, or public. Each terminal gets a unique URL slug, PIN-based role access, and context injection via query parameters.',
-    points: ['Staff terminals with PIN authentication', 'Public / kiosk mode with unique URL slugs', 'Context injection via $$session.* variables', 'Pixel-perfect scaling on any screen size'],
+    title:  'Managed Launch',
+    body:   'Postfolio assembles the workspace, access rules, and live screens for you while the technical layer stays out of sight.',
+    points: ['Role-aware staff access', 'Responsive screens for phones, tablets, and counters', 'Activity history and reports', 'No technical setup'],
     iconKey: 'terminal' as keyof typeof icons,
     color:  'cream',
   },
 ];
 
 const extras = [
-  { iconKey: 'lock',     title: 'Role-Based Access',    body: 'Every terminal enforces staff roles through secure PIN authentication.' },
-  { iconKey: 'palette',  title: 'Dynamic Theming',       body: 'Brand colors propagate instantly across every generated interface.' },
-  { iconKey: 'mobile',   title: 'Responsive by Default', body: 'Layouts scale perfectly from kiosk displays to mobile browsers.' },
-  { iconKey: 'zap',      title: 'Bun-Powered Runtime',   body: 'Ultra-fast server built on Bun and Nuxt 3 — cold starts in milliseconds.' },
-  { iconKey: 'database', title: 'Hybrid Database',       body: 'SQLite locally, Supabase/PostgreSQL in production. Toggle with one env var.' },
-  { iconKey: 'link',     title: 'URL Context Injection',  body: 'Pass contextual data (table_id, session vars) directly into terminal events.' },
+  { iconKey: 'lock',     title: 'Role-Based Access',     body: 'Staff see the workflows and actions that fit their job.' },
+  { iconKey: 'palette',  title: 'Dynamic Theming',       body: 'Brand colors propagate instantly across every preset workspace.' },
+  { iconKey: 'mobile',   title: 'Responsive by Default', body: 'Screens stay usable from counters to mobile browsers.' },
+  { iconKey: 'zap',      title: 'Fast Setup',            body: 'Move from signup to a working workspace in minutes.' },
+  { iconKey: 'database', title: 'Managed Data',          body: 'The underlying data model is handled for you.' },
+  { iconKey: 'link',     title: 'Shareable Views',       body: 'Share the right workspace view with the right team member.' },
 ];
 </script>
 
@@ -74,11 +74,11 @@ const extras = [
     <div class="m-inner feat-hero-inner">
       <p class="m-overline">The Platform</p>
       <h1 class="m-heading-lg">
-        Four modules.<br>
-        <em>One seamless platform.</em>
+        Preset workspaces.<br>
+        <em>Managed behind the scenes.</em>
       </h1>
       <p class="feat-sub m-sub" style="margin: 0 auto;">
-        Postfolio is built from four deeply integrated modules that take you from a blank slate to a fully deployed internal tool — without touching frontend code.
+        Postfolio takes you from language preference and industry choice to a working preset workspace without exposing the technical layer.
       </p>
     </div>
   </section>
@@ -163,7 +163,7 @@ const extras = [
   <section class="m-cta-strip">
     <div class="m-cta-inner">
       <h2 class="m-cta-heading">Ready to see it <em>in action?</em></h2>
-      <p class="m-cta-sub">Start building your first internal tool today. No credit card required.</p>
+      <p class="m-cta-sub">Start with a preset workspace today. No credit card required.</p>
       <div class="m-cta-btns">
         <NuxtLink to="/login" class="m-btn-primary ribbon">Get started free</NuxtLink>
         <NuxtLink to="/pricing" class="m-btn-ghost">See pricing →</NuxtLink>

@@ -53,7 +53,7 @@ onMounted(() => {
       <div class="footer-inner">
         <div class="footer-brand">
           <span class="logo-wordmark footer-logo">Postfolio</span>
-          <p class="footer-tagline">Schema-driven internal tools for modern SMEs.</p>
+          <p class="footer-tagline">Preset internal workspaces for modern SMEs.</p>
         </div>
 
         <div class="footer-links-group">

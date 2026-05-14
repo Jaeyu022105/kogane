@@ -9,6 +9,7 @@ const router  = useRouter();
 const { session, isLoggedIn, logout }         = useAuth();
 const { business, fetchBusiness }             = useBusiness();
 const { showOnboarding, openOnboarding, closeOnboarding } = useOnboarding();
+const { isEnterprise }                        = useEnterpriseAccess();
 
 onMounted(async () => {
   if (!isLoggedIn.value) {
@@ -28,14 +29,25 @@ onMounted(async () => {
 
 import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3 } from 'lucide-vue-next';
 
-const navItems = [
-  { label: 'Overview',  icon: LayoutDashboard, to: '/dashboard' },
-  { label: 'Database',  icon: Database,         to: '/dashboard/database' },
-  { label: 'Terminals', icon: Terminal,          to: '/dashboard/terminals' },
-  { label: 'Audit Log', icon: Shield,            to: '/dashboard/audit' },
-  { label: 'Reports',   icon: BarChart3,         to: '/dashboard/reports' },
-  { label: 'Settings',  icon: Settings,          to: '/dashboard/settings' },
-];
+const navItems = computed(() => {
+  const items = [
+    { label: 'Overview',  icon: LayoutDashboard, to: '/dashboard' },
+    { label: 'Audit Log', icon: Shield,          to: '/dashboard/audit' },
+    { label: 'Reports',   icon: BarChart3,       to: '/dashboard/reports' },
+    { label: 'Settings',  icon: Settings,        to: '/dashboard/settings' },
+  ];
+
+  if (isEnterprise.value) {
+    items.splice(
+      1,
+      0,
+      { label: 'Database',  icon: Database,  to: '/dashboard/database' },
+      { label: 'Terminals', icon: Terminal,  to: '/dashboard/terminals' },
+    );
+  }
+
+  return items;
+});
 
 const route = useRoute();
 function isActive(to: string) {

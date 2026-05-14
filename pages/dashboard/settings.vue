@@ -10,6 +10,7 @@ import { Check, Sparkles, Upload } from 'lucide-vue-next';
 const { authHeaders }                        = useAuth();
 const { business, fetchBusiness, updateTheme } = useBusiness();
 const { openOnboarding }                     = useOnboarding();
+const { isEnterprise }                       = useEnterpriseAccess();
 
 const businessName  = ref('');
 const saving        = ref(false);
@@ -125,6 +126,21 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
   { key: 'accent',     label: 'Accent' },
   { key: 'background', label: 'Background' },
 ];
+
+const businessDetailItems = computed(() => {
+  if (!business.value) return [];
+
+  const items = [
+    { label: 'ID',      value: business.value.id },
+    { label: 'Created', value: new Date(business.value.createdAt).toLocaleDateString() },
+  ];
+
+  if (isEnterprise.value) {
+    items.splice(1, 0, { label: 'Schema', value: business.value.schemaName });
+  }
+
+  return items;
+});
 </script>
 
 <template>
@@ -267,11 +283,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
 
         <div class="space-y-0">
           <div
-            v-for="(item, i) in [
-              { label: 'ID',      value: business.id },
-              { label: 'Schema',  value: business.schemaName },
-              { label: 'Created', value: new Date(business.createdAt).toLocaleDateString() },
-            ]"
+            v-for="(item, i) in businessDetailItems"
             :key="i"
             class="flex items-center justify-between py-3"
             style="border-bottom: 1px solid rgba(61,24,32,0.06);"
@@ -289,7 +301,7 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
         <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
           <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">Onboarding</p>
           <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Workspace setup</h2>
-          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Re-run the wizard to reconfigure your business type and feature tables.</p>
+          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">Re-run the wizard to reconfigure your business preset and workspace style.</p>
         </div>
 
         <button

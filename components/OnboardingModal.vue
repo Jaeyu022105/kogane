@@ -14,16 +14,13 @@ import {
   Sparkles,
   UploadCloud,
   AlertTriangle,
-  Database,
-  CreditCard,
-  Network,
   X
 } from 'lucide-vue-next';
 import type { SchemaDef, TableDef } from '~/lib/schemaUtils';
 
 const emit = defineEmits<{ done: [], close: [] }>();
 
-const { authHeaders } = useAuth();
+const { authHeaders, session } = useAuth();
 const { business, fetchBusiness } = useBusiness();
 
 // ── Step state ────────────────────────────────────────────────────────────────
@@ -34,6 +31,8 @@ const businessName = ref('');
 const logoUrl = ref<string | null>(null);
 const colorPalette = ref<{ primary: string }>({ primary: '#68293A' });
 const selectedType = ref<string | null>(null);
+const languagePreference = ref(session.value?.languagePreference ?? 'en');
+const uiStyle = ref('warm-minimal');
 
 // Step 2: Features
 const selectedPreset  = ref<string | null>(null);
@@ -66,6 +65,42 @@ const businessTypes = [
   { id: 'services',    label: 'Services',    icon: Wrench,          color: '#ec4899' },
   { id: 'education',   label: 'Education',   icon: GraduationCap,   color: '#14b8a6' },
   { id: 'other',       label: 'Other',       icon: Building2,       color: '#6b7280' },
+];
+
+const languageOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'fil', label: 'Filipino' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'zh', label: 'Chinese' },
+];
+
+const UI_STYLE_PRESETS = [
+  {
+    id: 'warm-minimal',
+    label: 'Warm Minimal',
+    description: 'Soft, simple screens for everyday staff workflows.',
+    swatches: ['#68293A', '#F6E6D7', '#FF5776'],
+  },
+  {
+    id: 'compact-ops',
+    label: 'Compact Ops',
+    description: 'Dense dashboards for teams that scan lots of information.',
+    swatches: ['#1F2937', '#E5E7EB', '#0EA5E9'],
+  },
+  {
+    id: 'high-contrast',
+    label: 'High Contrast',
+    description: 'Clear kiosk-style layouts for busy counters and shared devices.',
+    swatches: ['#111827', '#FFFFFF', '#22C55E'],
+  },
+  {
+    id: 'editorial',
+    label: 'Editorial',
+    description: 'Larger type and calmer spacing for client-facing views.',
+    swatches: ['#3D1820', '#FFF7ED', '#F59E0B'],
+  },
 ];
 
 // ── Feature catalogue ────────────────────────────────────────────────────────
@@ -280,12 +315,28 @@ const PRESETS_BY_TYPE: Record<string, Preset[]> = {
     { id: 'school',     label: 'School',      description: 'Enrolment and staff management', features: ['customers', 'staff', 'expenses'] },
   ],
   other: [
-    { id: 'custom',     label: 'Custom',      description: 'Pick exactly what you need', features: [] },
+    { id: 'starter',    label: 'Starter Workspace', description: 'A flexible preset for teams still refining their workflow', features: ['customers', 'staff'] },
   ],
 };
 
 const currentPresets = computed<Preset[]>(() =>
   selectedType.value ? (PRESETS_BY_TYPE[selectedType.value] ?? []) : [],
+);
+
+const selectedPresetRecord = computed(() =>
+  currentPresets.value.find((preset) => preset.id === selectedPreset.value) ?? null,
+);
+
+const selectedUiStyleRecord = computed(() =>
+  UI_STYLE_PRESETS.find((style) => style.id === uiStyle.value) ?? UI_STYLE_PRESETS[0],
+);
+
+const selectedLanguageLabel = computed(() =>
+  languageOptions.find((language) => language.value === languagePreference.value)?.label ?? 'English',
+);
+
+const selectedFeaturesList = computed(() =>
+  FEATURES.filter((feature) => selectedFeatures.value.has(feature.id)),
 );
 
 function applyPreset(preset: Preset) {
@@ -337,6 +388,9 @@ function goToFeatures() {
 }
 
 function goToReview() {
+  if (!selectedPreset.value && currentPresets.value.length > 0) {
+    applyPreset(currentPresets.value[0]);
+  }
   step.value = 3;
 }
 
@@ -374,7 +428,12 @@ async function handleSubmit() {
         features:     [...selectedFeatures.value],
         schemaDef:    schemaDef.value,
         logoUrl:      logoUrl.value,
-        colorPalette: colorPalette.value,
+        colorPalette: {
+          ...colorPalette.value,
+          languagePreference: languagePreference.value,
+          uiStyle: uiStyle.value,
+          onboardingPreset: selectedPreset.value,
+        },
         override:     !!business.value,
       },
     });
@@ -452,6 +511,14 @@ async function handleSubmit() {
                         </span>
                       </div>
                     </div>
+                    <div>
+                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">Workspace Language</label>
+                      <select v-model="languagePreference" class="field-input max-w-sm">
+                        <option v-for="language in languageOptions" :key="language.value" :value="language.value">
+                          {{ language.label }}
+                        </option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -497,8 +564,8 @@ async function handleSubmit() {
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
               <div>
                 <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 2 of 3</p>
-                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Select features</h1>
-                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Customize the modules you need for your operations.</p>
+                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Choose a preset</h1>
+                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Pick the closest workflow and the visual style you want us to generate.</p>
               </div>
             </div>
 
@@ -518,7 +585,7 @@ async function handleSubmit() {
                     <p class="text-[11px] mt-0.5 opacity-70">{{ preset.description }}</p>
                   </button>
 
-                  <div class="pt-3 mt-3 border-t border-[rgba(104,41,58,0.06)]">
+                  <div v-if="false" class="pt-3 mt-3 border-t border-[rgba(104,41,58,0.06)]">
                     <button
                       class="preset-card w-full text-left px-4 py-3 text-[rgb(var(--shell-sidebar))]"
                       :class="{ 'active': selectedPreset === null }"
@@ -533,26 +600,47 @@ async function handleSubmit() {
 
               <!-- Checklist -->
               <div class="flex-1 overflow-y-auto p-6 bg-[#fdf7f2]">
-                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Available Modules</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Included workflows</p>
                 <div class="grid grid-cols-2 gap-3">
                   <button
-                    v-for="feature in availableFeaturesForType"
+                    v-for="feature in selectedFeaturesList"
                     :key="feature.id"
-                    class="feature-card flex items-start gap-3 p-4 text-left cursor-pointer"
-                    :class="{ 'active': selectedFeatures.has(feature.id) }"
-                    @click="toggleFeature(feature.id)"
+                    class="feature-card active flex items-start gap-3 p-4 text-left cursor-default"
+                    disabled
                   >
-                    <div
-                      class="mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all border"
-                      :class="selectedFeatures.has(feature.id) ? 'bg-[rgb(var(--shell-sidebar))] border-[rgb(var(--shell-sidebar))]' : 'border-[rgba(104,41,58,0.3)] bg-white'"
-                    >
-                      <Check v-if="selectedFeatures.has(feature.id)" class="w-3 h-3 text-white" />
+                    <div class="mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all border bg-[rgb(var(--shell-sidebar))] border-[rgb(var(--shell-sidebar))]">
+                      <Check class="w-3 h-3 text-white" />
                     </div>
                     <div>
                       <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ feature.label }}</p>
                       <p class="text-[11px] mt-0.5 text-[rgba(104,41,58,0.6)]">{{ feature.description }}</p>
                     </div>
                   </button>
+                </div>
+                <div class="mt-6">
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Interface style</p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <button
+                      v-for="style in UI_STYLE_PRESETS"
+                      :key="style.id"
+                      class="style-card text-left p-4"
+                      :class="{ 'active': uiStyle === style.id }"
+                      @click="uiStyle = style.id"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ style.label }}</p>
+                        <div class="flex gap-1 shrink-0">
+                          <span
+                            v-for="swatch in style.swatches"
+                            :key="swatch"
+                            class="w-4 h-4 rounded-full border border-black/5"
+                            :style="{ background: swatch }"
+                          />
+                        </div>
+                      </div>
+                      <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.6)]">{{ style.description }}</p>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -563,10 +651,11 @@ async function handleSubmit() {
               </button>
               <div class="flex items-center gap-4">
                 <span class="text-xs text-[rgba(104,41,58,0.6)] font-mono">
-                  {{ selectedFeatures.size }} module(s) selected
+                  {{ selectedPresetRecord?.label ?? 'Preset required' }} / {{ selectedUiStyleRecord.label }}
                 </span>
                 <button
                   class="btn-nav"
+                  :disabled="!selectedPreset"
                   @click="goToReview"
                 >
                   Review & Confirm <ChevronRight class="w-4 h-4" />
@@ -583,57 +672,60 @@ async function handleSubmit() {
               <div>
                 <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 3 of 3</p>
                 <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Review & Confirm</h1>
-                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Verify your schema and pricing before provisioning.</p>
+                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">We will create a preset workspace and keep the setup details managed behind the scenes.</p>
               </div>
             </div>
 
             <div class="flex-1 flex overflow-hidden">
-              <!-- ERD Preview -->
+              <!-- Preset Summary -->
               <div class="flex-1 overflow-y-auto p-6 bg-[#fdf7f2]">
                 <div class="flex items-center gap-2 mb-4">
-                  <Database class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
-                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Schema Preview (ERD)</p>
+                  <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Preset Summary</p>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
-                  <div v-for="table in schemaDef.tables" :key="table.name" class="feature-card bg-white p-4">
+                  <div v-for="feature in selectedFeaturesList" :key="feature.id" class="feature-card bg-white p-4">
                     <div class="flex items-center gap-2 border-b border-[rgba(104,41,58,0.06)] pb-2 mb-3">
-                      <Network class="w-3.5 h-3.5 text-[rgba(104,41,58,0.5)]" />
-                      <span class="text-xs font-mono font-bold text-[rgb(var(--shell-sidebar))]">{{ table.name }}</span>
+                      <Sparkles class="w-3.5 h-3.5 text-[rgba(104,41,58,0.5)]" />
+                      <span class="text-xs font-bold text-[rgb(var(--shell-sidebar))]">{{ feature.label }}</span>
                     </div>
-                    <div class="space-y-1.5">
-                      <div v-for="col in table.columns" :key="col.name" class="flex items-center justify-between text-[11px] font-mono">
-                        <span class="text-[rgb(var(--shell-sidebar))]">{{ col.name }}</span>
-                        <span class="text-[rgba(104,41,58,0.5)]">{{ col.type }}</span>
-                      </div>
-                    </div>
+                    <p class="text-xs leading-relaxed text-[rgba(104,41,58,0.58)]">{{ feature.description }}</p>
                   </div>
                 </div>
 
-                <div v-if="schemaDef.tables.length === 0" class="text-center py-10 text-[rgba(104,41,58,0.5)] text-sm">
-                  No tables will be provisioned. You can add them later.
+                <div v-if="selectedFeaturesList.length === 0" class="text-center py-10 text-[rgba(104,41,58,0.5)] text-sm">
+                  Choose a preset to continue.
                 </div>
               </div>
 
-              <!-- Pricing & Summary -->
+              <!-- Workspace Summary -->
               <div class="w-72 shrink-0 overflow-y-auto p-6 bg-white border-l border-[rgba(104,41,58,0.06)] flex flex-col">
                 <div class="flex items-center gap-2 mb-4">
-                  <CreditCard class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
-                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Pricing</p>
+                  <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Workspace</p>
                 </div>
 
                 <div class="feature-card bg-white p-4 space-y-4 mb-6">
                   <div class="flex justify-between items-center text-sm">
-                    <span class="text-[rgba(104,41,58,0.7)]">Base Platform</span>
-                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">$15<span class="text-xs text-[rgba(104,41,58,0.5)] font-normal">/mo</span></span>
+                    <span class="text-[rgba(104,41,58,0.7)]">Preset</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedPresetRecord?.label ?? 'None' }}</span>
                   </div>
                   <div class="flex justify-between items-center text-sm">
-                    <span class="text-[rgba(104,41,58,0.7)]">Features ({{ selectedFeatures.size }})</span>
-                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">${{ selectedFeatures.size * 5 }}<span class="text-xs text-[rgba(104,41,58,0.5)] font-normal">/mo</span></span>
+                    <span class="text-[rgba(104,41,58,0.7)]">Style</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedUiStyleRecord.label }}</span>
                   </div>
                   <div class="pt-3 border-t border-[rgba(104,41,58,0.08)] flex justify-between items-center">
-                    <span class="font-bold text-[rgb(var(--shell-sidebar))]">Total</span>
-                    <span class="font-bold text-lg text-[rgb(var(--shell-sidebar))]">${{ monthlyTotal }}<span class="text-xs text-[rgba(104,41,58,0.5)] font-normal">/mo</span></span>
+                    <span class="font-bold text-[rgb(var(--shell-sidebar))]">Language</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedLanguageLabel }}</span>
+                  </div>
+                  <div class="flex gap-2 h-7 rounded-lg overflow-hidden border border-black/5">
+                    <div
+                      v-for="swatch in selectedUiStyleRecord.swatches"
+                      :key="swatch"
+                      class="flex-1"
+                      :style="{ background: swatch }"
+                    />
                   </div>
                 </div>
 
@@ -644,7 +736,7 @@ async function handleSubmit() {
                     <span class="text-xs font-bold text-red-700 uppercase tracking-widest">Override Warning</span>
                   </div>
                   <p class="text-xs text-red-700 leading-relaxed">
-                    You already have a workspace set up. Provisioning will <strong>overwrite</strong> your existing configuration and table structures.
+                    You already have a workspace set up. This will replace your current preset configuration.
                   </p>
                 </div>
 
@@ -659,7 +751,7 @@ async function handleSubmit() {
                   @click="handleSubmit"
                 >
                   <Sparkles v-if="!submitting" class="w-4 h-4 text-[rgb(var(--shell-pink))]" />
-                  {{ submitting ? 'Provisioning...' : 'Provision Workspace' }}
+                  {{ submitting ? 'Creating...' : 'Create Workspace' }}
                 </button>
               </div>
             </div>
@@ -682,7 +774,7 @@ async function handleSubmit() {
               Workspace ready!
             </h2>
             <p class="text-sm max-w-md text-[rgba(104,41,58,0.6)] leading-relaxed">
-              Your database schema has been successfully provisioned. You can modify your tables or invite team members from the dashboard.
+              Your preset workspace is ready. You can adjust branding, reports, and setup choices from the dashboard.
             </p>
             <button
               class="mt-10 btn-nav"
@@ -852,6 +944,20 @@ async function handleSubmit() {
 }
 .preset-card.active p.opacity-70 {
   opacity: 0.8;
+}
+
+.style-card {
+  border-radius: 0.5rem;
+  transition: all 0.15s;
+  background: #ffffff;
+  border: 1.5px solid rgba(104, 41, 58, 0.12);
+}
+.style-card:hover {
+  background: rgba(104, 41, 58, 0.03);
+}
+.style-card.active {
+  border-color: rgba(104, 41, 58, 0.5);
+  background: rgba(104, 41, 58, 0.05);
 }
 
 .slide-enter-active,

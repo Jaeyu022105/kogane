@@ -31,8 +31,11 @@ definePageMeta({ layout: 'marketing' });
       
       <h2>4. Limitations</h2>
       <p>In no event shall Postfolio or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Postfolio's website, even if Postfolio or a Postfolio authorized representative has been notified orally or in writing of the possibility of such damage.</p>
+
+      <h2>5. Standard Plan Limits and Exclusions</h2>
+      <p>Standard preset plans do not include fully customizable database modeling, direct UI editor access, source-code export, executable-code export, or bespoke runtime code unless those capabilities are explicitly included in a separate written agreement.</p>
       
-      <h2>5. Revisions and Errata</h2>
+      <h2>6. Revisions and Errata</h2>
       <p>The materials appearing on Postfolio's website could include technical, typographical, or photographic errors. Postfolio does not warrant that any of the materials on its website are accurate, complete or current. Postfolio may make changes to the materials contained on its website at any time without notice.</p>
     </div>
   </div>

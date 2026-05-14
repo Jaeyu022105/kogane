@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       'Pricing — Postfolio',
+  title:       'Pricing â€” Postfolio',
   description: `Simple, transparent pricing for businesses of every size. Start free, scale when you're ready.`,
 });
 
@@ -17,7 +17,8 @@ const plans = [
     popular:  false,
     features: [
       '1 business workspace',
-      'Up to 3 core features',
+      '1 active preset workspace',
+      'Basic style presets',
       'Community support',
     ],
   },
@@ -25,32 +26,16 @@ const plans = [
     name:     'Flexible',
     price:    '$15',
     period:   'base / month',
-    tagline:  'Pay a flat base fee, then simply extend your plan based on the features you activate during onboarding.',
+    tagline:  'Start with a flat base fee, then add preset packs as your workflows grow.',
     cta:      'Start free trial',
     ctaStyle: 'primary',
     popular:  true,
     features: [
       'Everything in Starter',
-      '+$5/mo per active feature module',
-      'Unlimited terminals & tables',
-      'Hardware scanner integration',
+      '+$5/mo per active preset pack',
+      'More industry and style presets',
+      'CSV exports and activity reports',
       'Priority email support',
-    ],
-  },
-  {
-    name:     'Enterprise',
-    price:    'Custom',
-    period:   'contact us',
-    tagline:  'For large organisations with custom data, compliance, and SLA requirements.',
-    cta:      'Contact sales',
-    ctaStyle: 'ghost',
-    popular:  false,
-    features: [
-      'Volume discount on features',
-      'Unlimited staff accounts',
-      'Custom domain for terminals',
-      'SSO / SAML integration',
-      'SLA & dedicated support',
     ],
   },
 ];
@@ -61,24 +46,24 @@ const faqs = [
     a: "No. The Starter plan is completely free with no credit card required. Upgrade only when you're ready.",
   },
   {
-    q: 'How does the feature-based pricing work?',
-    a: 'You pay a flat $15/mo base fee. As you activate distinct feature modules (like Inventory, Appointments, or Orders) during onboarding or later, your plan simply scales by $5/mo per module.',
+    q: 'How does preset-based pricing work?',
+    a: 'You pay a flat $15/mo base fee. As you activate additional preset packs, your plan scales by $5/mo per pack.',
   },
   {
     q: 'Can I switch plans later?',
-    a: 'Yes — upgrade or downgrade at any time. Changes take effect on your next billing cycle.',
+    a: 'Yes â€” upgrade or downgrade at any time. Changes take effect on your next billing cycle.',
   },
   {
-    q: 'What\'s a "terminal"?',
-    a: 'A terminal is a deployed, purpose-built interface — like a POS screen, self-serve kiosk, or staff dashboard — accessed via a unique URL.',
+    q: 'What is included in a preset?',
+    a: 'A preset includes the workflow, fields, reports, and interface style needed for a common business operation.',
   },
   {
     q: 'Is my data safe?',
-    a: 'Absolutely. Production data lives in Supabase (PostgreSQL), with row-level security and no shared tenancy on Enterprise.',
+    a: 'Yes. Postfolio keeps each workspace isolated and uses managed access controls for account and workspace data.',
   },
   {
-    q: 'Can I self-host Postfolio?',
-    a: 'Postfolio is open-source friendly. Contact us for Enterprise self-hosting options and Docker deployment guides.',
+    q: 'Can I change presets later?',
+    a: 'Yes. You can re-run setup from the dashboard and move to a better-fitting preset as your workflow changes.',
   },
 ];
 
@@ -87,7 +72,7 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 </script>
 
 <template>
-  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <!-- —— Hero ——————————————————————————————————————————————— -->
   <section class="pricing-hero">
     <div class="m-inner pricing-hero-inner">
       <p class="m-overline">Pricing</p>
@@ -96,12 +81,12 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
         <em>No surprises.</em>
       </h1>
       <p class="m-sub" style="margin: 0 auto;">
-        Start free and scale as your business grows. Every plan includes access to the full Postfolio platform.
+        Start free and scale as your business grows. Every plan includes access to Postfolio presets and managed setup.
       </p>
     </div>
   </section>
 
-  <!-- ── Plans ─────────────────────────────────────────────── -->
+  <!-- —— Plans ——————————————————————————————————————————————— -->
   <section class="section-plans">
     <div class="m-inner plans-inner">
       <div class="plans-grid">
@@ -146,7 +131,7 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
     </div>
   </section>
 
-  <!-- ── Note banner ────────────────────────────────────────── -->
+  <!-- —— Note banner —————————————————————————————————————————— -->
   <section class="section-note">
     <div class="m-inner">
       <div class="note-inner">
@@ -158,12 +143,12 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </span>
-        <p>All plans include the Schema Editor, UI Builder, Terminal Deployer, and Smart Onboarding. Limits apply only to scale, not capability.</p>
+        <p>Preset plans include guided onboarding, style presets, reports, and managed workspace setup. Fully custom data modeling, visual editor access, and executable code export are outside standard preset plans.</p>
       </div>
     </div>
   </section>
 
-  <!-- ── FAQ ───────────────────────────────────────────────── -->
+  <!-- —— FAQ ————————————————————————————————————————————————— -->
   <section class="section-faq">
     <div class="faq-inner">
       <div class="m-label-block">
@@ -198,21 +183,21 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
     </div>
   </section>
 
-  <!-- ── CTA ───────────────────────────────────────────────── -->
+  <!-- —— CTA ————————————————————————————————————————————————— -->
   <section class="m-cta-strip">
     <div class="m-cta-inner">
       <h2 class="m-cta-heading">Still have <em>questions?</em></h2>
-      <p class="m-cta-sub">We're happy to walk you through the platform or set up a personalised demo.</p>
+      <p class="m-cta-sub">Start with a preset and refine your workspace as your operations grow.</p>
       <div class="m-cta-btns">
         <NuxtLink to="/login" class="m-btn-primary ribbon">Start for free</NuxtLink>
-        <a href="mailto:hello@postfolio.io" class="m-btn-ghost">Contact sales →</a>
+        <NuxtLink to="/features" class="m-btn-ghost">Explore presets â†’</NuxtLink>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-/* ── Hero ─────────────────────────────────────────────── */
+/* —— Hero ——————————————————————————————————————————————— */
 .pricing-hero {
   padding: 5.5rem 0 4rem;
   text-align: center;
@@ -221,13 +206,13 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 
 .pricing-hero-inner { max-width: 640px; }
 
-/* ── Plans ────────────────────────────────────────────── */
+/* —— Plans —————————————————————————————————————————————— */
 .section-plans { padding: 3rem 0 5rem; }
 .plans-inner { max-width: 1060px; }
 
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
   align-items: start;
 }
@@ -357,7 +342,7 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 }
 .feat-check svg { width: 9px; height: 9px; }
 
-/* ── Note banner ──────────────────────────────────────── */
+/* —— Note banner ———————————————————————————————————————— */
 .section-note { padding: 0 0 4rem; }
 
 .note-inner {
@@ -389,7 +374,7 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
 
 .note-inner p { margin: 0; }
 
-/* ── FAQ ──────────────────────────────────────────────── */
+/* —— FAQ ———————————————————————————————————————————————— */
 .section-faq { padding: 5rem 2rem; background: #FFFFFF; }
 .faq-inner { max-width: 760px; margin: 0 auto; }
 
@@ -436,7 +421,7 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   line-height: 1.7;
 }
 
-/* ── Responsive ──────────────────────────────────────── */
+/* —— Responsive ———————————————————————————————————————— */
 @media (max-width: 860px) {
   .plans-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
 }
