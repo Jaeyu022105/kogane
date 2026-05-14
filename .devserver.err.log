@@ -1,30 +1,11 @@
 
-[43m[30m WARN [39m[49m [Vue Router warn]: uncaught error during route navigation:
+[90m[[90mnitro[90m][39m [41m[30m ERROR [39m[49m RollupError: server/api/businesses/onboard.post.ts (12:32): "inferStarterTerminals" is not exported by "server/utils/managedTerminals.ts", imported by "server/api/businesses/onboard.post.ts".
 
 
-[41m[30m ERROR [39m[49m Cannot find module '~/components/elements/TableViewEl.vue' imported from 'C:/Users/Jaime/Downloads/postfolio/components/ElementRenderer.vue'.
-
-- If you rely on tsconfig.json's "paths" to resolve modules, please install "vite-tsconfig-paths" plugin to handle module resolution.
-- Make sure you don't have relative aliases in your Vitest config. Use absolute paths instead. Read more: https://vitest.dev/guide/common-errors
-
-    [90mat [39m_resolveUrl ([36mnode_modules\vite-node\dist\client-C7yCjfvf.mjs:198:38[39m)
-    [90mat [39mprocessTicksAndRejections ([36mnative:7:39[39m)
-
-
-[43m[30m WARN [39m[49m [Vue Router warn]: uncaught error during route navigation:
-
-
-[41m[30m ERROR [39m[49m Cannot find module '~/components/elements/TableViewEl.vue' imported from 'C:/Users/Jaime/Downloads/postfolio/components/ElementRenderer.vue'.
-
-- If you rely on tsconfig.json's "paths" to resolve modules, please install "vite-tsconfig-paths" plugin to handle module resolution.
-- Make sure you don't have relative aliases in your Vitest config. Use absolute paths instead. Read more: https://vitest.dev/guide/common-errors
-
-    [90mat [39m_resolveUrl ([36mnode_modules\vite-node\dist\client-C7yCjfvf.mjs:198:38[39m)
-    [90mat [39mprocessTicksAndRejections ([36mnative:7:39[39m)
-
-
-[43m[30m WARN [39m[49m [nuxt] Failed to stringify dev server logs. Received [36mDevalueError: Cannot stringify arbitrary non-POJOs[39m. You can define your own reducer/reviver for rich types following the instructions in https://nuxt.com/docs/api/composables/use-nuxt-app#payload.
-
-
-[41m[30m ERROR [39m[49m Pre-transform error: Failed to load url /components/elements/TableViewEl.vue (resolved id: C:/Users/Jaime/Downloads/postfolio/components/elements/TableViewEl.vue) in C:/Users/Jaime/Downloads/postfolio/components/ElementRenderer.vue. Does the file exist?
+10: import { validateIdentifier, buildCreateTableSql } from '~/lib/schemaUtils';
+11: import type { SchemaDef } from '~/lib/schemaUtils';
+12: import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/managedTerminals';
+                                    ^
+13: 
+14: export default defineEventHandler(async (event) => {
 

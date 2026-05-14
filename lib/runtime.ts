@@ -1,6 +1,6 @@
 import type { ElementDef, EventTrigger, RuntimeActionDefinition, RuntimePayloadValue } from '~/lib/uiTypes';
 
-export const CANVAS_RUNTIME_KEY = 'postfolio:canvas-runtime';
+export const CANVAS_RUNTIME_KEY = 'kogane:canvas-runtime';
 
 export interface RuntimeEventEnvelope {
   inpoint_id: string;

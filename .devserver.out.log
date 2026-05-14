@@ -7,430 +7,110 @@
 [90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
 [33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
 
-[32m√[39m Vite client built in 48ms
-[32m√[39m Vite server built in 294ms
-[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 657.65ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 4334ms
+[36mi[39m Re-optimizing dependencies because lockfile has changed
+[32m√[39m Vite client built in 77ms
+[32m√[39m Vite server built in 279ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 5548ms
+[36mi[39m Vite server warmed up in 2ms
+[36mi[39m Vite client warmed up in 6ms
+[32m√[39m Vite server hmr 1 files in 1776.084ms
+[32m√[39m Vite server hmr 1 files in 0.003ms
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 821ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 683ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 718ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 710ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 885ms
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x3)[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x4)[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x5)[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x6)[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 712ms
+[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
+[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
+[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
+
+[32m√[39m Vite client built in 17ms
+[32m√[39m Vite server built in 1774ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2362ms
 [36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 3ms
-[32m√[39m Vite server hmr 1 files in 1505.448ms
+[36mi[39m Vite client warmed up in 2ms
+[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
+[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
+[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
+
+[32m√[39m Vite client built in 195ms
+[32m√[39m Vite server built in 1466ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2384ms
+[36mi[39m Vite server warmed up in 1ms
+[36mi[39m Vite client warmed up in 2ms
+[32m√[39m Vite server hmr 1 files in 1680.887ms
 [36mi[39m [32m✨ new dependencies optimized: [33mlucide-vue-next[32m[39m
 [36mi[39m [32m✨ optimized dependencies changed. reloading[39m
-[32m√[39m Vite server hmr 3 files in 0.003ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue, /components/ElementRenderer.vue, /components/elements/InputFieldEl.vue, /components/elements/UploadEl.vue, /components/elements/ChartEl.vue, /components/elements/TableViewEl.vue, /components/elements/TextEl.vue, /components/elements/ButtonEl.vue, /components/elements/ImageEl.vue[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 744ms
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/index.vue[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 613ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 544ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /components/elements/ChartEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mpage reload [39m[2mcomponents/elements/ChartEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mpage reload [39m[2mcomponents/elements/ChartEl.vue[22m
-[32m√[39m Vite server hmr 20 files in 495.667ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /components/elements/TableViewEl.vue[22m
-[32m√[39m Vite server hmr 12 files in 6.435ms
-[36mi[39m [32mpage reload [39m[2mcomponents/elements/TableViewEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mpage reload [39m[2mcomponents/elements/TableViewEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[32m√[39m Vite server hmr 12 files in 21.855ms
-[36mi[39m [32mhmr update [39m[2m/components/elements/ButtonEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/InputFieldEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/UploadEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/ChartEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/TableViewEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /components/PropertiesPanel.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /components/PropertiesPanel.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /components/PropertiesPanel.vue[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs, /pages/dashboard/builder.vue?macro=true[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs, /pages/dashboard/builder.vue?macro=true[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/components/Canvas.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/TableViewEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/ChartEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs, /pages/dashboard/builder.vue?macro=true[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs, /pages/dashboard/builder.vue?macro=true[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/ChartEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 109ms
-[32m√[39m Vite server built in 1036ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1994ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 3ms
-[32m√[39m Vite server hmr 1 files in 910.251ms
+[32m√[39m Vite server hmr 1 files in 0.003ms
 [32m√[39m Vite server hmr 1 files in 0.004ms
+[36mi[39m [32mhmr update [39m[2m/components/OnboardingModal.vue[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1306ms
+[36mi[39m [32mhmr update [39m[2m/components/OnboardingModal.vue[22m[2m (x2)[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1216ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 829ms
 [36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue, /pages/terminal/[id].vue, /components/ElementRenderer.vue, /components/elements/InputFieldEl.vue, /components/elements/UploadEl.vue, /components/elements/ChartEl.vue, /components/elements/TableViewEl.vue, /components/elements/TextEl.vue, /components/elements/ButtonEl.vue, /components/elements/ImageEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/index.vue, /pages/dashboard/builder.vue, /pages/terminal/[id].vue, /pages/dashboard/terminals/[id].vue[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 848ms
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
+[36mi[39m [32mpage reload [39m[2mcomponents/elements/CartWidgetEl.vue[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
+[36mi[39m [32mpage reload [39m[2mcomponents/elements/CartWidgetEl.vue[22m
+[32m√[39m Vite server hmr 23 files in 504.065ms
 [36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
 [36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/components/ElementRenderer.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1300ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 903ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 727ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 623ms
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/t/[slug].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/t/[slug].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/OnboardingModal.vue, /components/OnboardingModal.vue?direct&vue&type=style&index=0&scoped=9b540e42&lang.css, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
+[36mi[39m [32mpage reload [39m[2mcomponents/OnboardingModal.vue[22m
 [36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2639ms
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/t/[slug].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/t/[slug].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
 [36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/index.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/terminal/[id].vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/components/PropertiesPanel.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/CartWidgetEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/[id].vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/terminals/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 977ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 140ms
-[32m√[39m Vite server built in 1361ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1754ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 114ms
-[32m√[39m Vite server built in 1428ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2046ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[32m√[39m Vite server hmr 1 files in 1105.527ms
-[36mi[39m [32mhmr update [39m[2m/pages/terminal/[id].vue, /pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue, /components/ElementRenderer.vue, /components/elements/InputFieldEl.vue, /components/elements/UploadEl.vue, /components/elements/ChartEl.vue, /components/elements/TableViewEl.vue, /components/elements/TextEl.vue, /components/elements/ButtonEl.vue, /components/elements/ImageEl.vue, /components/elements/CartWidgetEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 541ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/components/Canvas.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 502ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/terminal/[id].vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/components/PropertiesPanel.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m
-[36mi[39m [32mhmr update [39m[2m/pages/terminal/[id].vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/terminal/[id].vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 887ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 119ms
-[32m√[39m Vite server built in 1195ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1757ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m [32mhmr update [39m[2m/pages/login.vue?macro=true, /assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/login.vue?macro=true, /assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 835ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 785ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 119ms
-[32m√[39m Vite server built in 1013ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1750ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 94ms
-[32m√[39m Vite server built in 1313ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2035ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[32m√[39m Vite server hmr 1 files in 950.647ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs, /pages/login.vue?macro=true[22m
-[36mi[39m [32mhmr update [39m[2m/pages/login.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/login.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/index.vue, /pages/terminal/[id].vue, /pages/dashboard/terminals/[id].vue, /pages/dashboard/builder.vue[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 665ms
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m[2m (x2)[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 571ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/CartWidgetEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/components/PropertiesPanel.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[32m√[39m Vite server hmr 23 files in 734.056ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 726ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 672ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 28ms
-[32m√[39m Vite server built in 1137ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1739ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 108ms
-[32m√[39m Vite server built in 1018ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2225ms
-[36mi[39m Vite server warmed up in 2ms
-[36mi[39m Vite client warmed up in 3ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[32m√[39m Vite server hmr 7 files in 1065.908ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/components/PropertiesPanel.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 145ms
-[32m√[39m Vite server built in 1337ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2024ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 114ms
-[32m√[39m Vite server built in 850ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2410ms
-[36mi[39m Vite server warmed up in 2ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 101ms
-[32m√[39m Vite server built in 1272ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2059ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 102ms
-[32m√[39m Vite server built in 1003ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2341ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 1ms
-[32m√[39m Vite server hmr 1 files in 920.097ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 104ms
-[32m√[39m Vite server built in 884ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2148ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 3ms
-[32m√[39m Vite server hmr 1 files in 1055.736ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 647ms
-[36mi[39m [32mhmr update [39m[2m/components/elements/CartWidgetEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 680ms
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue, /pages/terminal/[id].vue, /components/ElementRenderer.vue, /components/elements/InputFieldEl.vue, /components/elements/UploadEl.vue, /components/elements/ChartEl.vue, /components/elements/TableViewEl.vue, /components/elements/TextEl.vue, /components/elements/ButtonEl.vue, /components/elements/ImageEl.vue, /components/elements/CartWidgetEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue, /pages/terminal/[id].vue, /components/ElementRenderer.vue, /components/elements/InputFieldEl.vue, /components/elements/UploadEl.vue, /components/elements/ChartEl.vue, /components/elements/TableViewEl.vue, /components/elements/TextEl.vue, /components/elements/ButtonEl.vue, /components/elements/ImageEl.vue, /components/elements/CartWidgetEl.vue[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1150ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 137ms
-[32m√[39m Vite server built in 908ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2356ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 3ms
-[32m√[39m Vite server hmr 1 files in 956.916ms
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue, /components/Canvas.vue, /components/PropertiesPanel.vue, /pages/terminal/[id].vue, /components/ElementRenderer.vue, /components/elements/InputFieldEl.vue, /components/elements/UploadEl.vue, /components/elements/ChartEl.vue, /components/elements/TableViewEl.vue, /components/elements/TextEl.vue, /components/elements/ButtonEl.vue, /components/elements/ImageEl.vue, /components/elements/CartWidgetEl.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 873ms
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/index.vue, /pages/dashboard/builder.vue, /pages/terminal/[id].vue[22m
-[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.server.mjs[39m in 795.05ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1016ms
-[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.client.mjs[39m in 802.89ms
-[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 805.47ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 736ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 900ms
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 923ms
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/builder.vue[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/components/elements/TableViewEl.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 749ms
-[36mi[39m [32mhmr update [39m[2m/components/PropertiesPanel.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[32m√[39m Vite server hmr 24 files in 470.104ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 98ms
-[32m√[39m Vite server built in 1393ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1764ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
-[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
-[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
-
-[32m√[39m Vite client built in 107ms
-[32m√[39m Vite server built in 1369ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2020ms
-[36mi[39m Vite server warmed up in 1ms
-[36mi[39m Vite client warmed up in 2ms
-[32m√[39m Vite server hmr 3 files in 1034.774ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mpage reload [39m[2mlayouts/dashboard.vue[22m
-[36mi[39m [32mhmr update [39m[2m/layouts/dashboard.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/[id].vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/terminals/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/[id].vue, /pages/dashboard/terminals/index.vue[22m
-[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/login.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/login.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs, /pages/dashboard/terminals/index.vue?macro=true[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/index.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1660ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 513ms
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/terminal/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/[id].vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/terminals/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mpage reload [39m[2mlayouts/dashboard.vue[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m[2m (x2)[22m
-[36mi[39m [32mhmr update [39m[2m/layouts/dashboard.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/builder.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/[id].vue, /pages/dashboard/terminals/index.vue[22m
-[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
 [36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/login.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
 [36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/login.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs, /pages/dashboard/terminals/index.vue?macro=true[22m
-[36mi[39m [32mhmr update [39m[2m/pages/dashboard/terminals/index.vue, /assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/dashboard/terminals/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1469ms
-[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 547ms
+[36mi[39m [32mhmr update [39m[2m/components/OnboardingModal.vue, /components/OnboardingModal.vue?direct&vue&type=style&index=0&scoped=9b540e42&lang.css, /assets/css/tailwind.css, /assets/css/tailwind.css?direct[22m
+[36mi[39m [32mpage reload [39m[2mcomponents/OnboardingModal.vue[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /pages/t/[slug].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/tailwind.css, /assets/css/tailwind.css?direct, /pages/t/[slug].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2FJaime%2FDownloads%2Fpostfolio%2F.nuxt%2Froutes.mjs[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1812ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.server.mjs[39m in 595.16ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.client.mjs[39m in 605.19ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 630.11ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 976ms
+[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
+[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
+[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
+
+[32m√[39m Vite client built in 195ms
+[32m√[39m Vite server built in 2255ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 4168ms
+[36mi[39m Vite server warmed up in 1ms
+[36mi[39m Vite client warmed up in 3ms
+[36mi[39m .nuxt/dist directory has been removed. Restarting Nuxt...
+[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using Tailwind CSS from ~/assets/css/tailwind.css
+[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
+
+[32m√[39m Vite client built in 14ms
+[32m√[39m Vite server built in 1826ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 4426ms
+[36mi[39m Vite server warmed up in 2ms
+[36mi[39m Vite client warmed up in 3ms
+[32m√[39m Vite server hmr 1 files in 1434.776ms

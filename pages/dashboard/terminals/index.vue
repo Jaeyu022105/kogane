@@ -1,6 +1,8 @@
-<script setup lang="ts">
-import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight, Shield, Trash2 } from 'lucide-vue-next';
+﻿<script setup lang="ts">
+import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight, Trash2, Link2, KeyRound, Settings2 } from 'lucide-vue-next';
 import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { defaultLayoutVariantForPreset, layoutVariantsForPreset } from '~/lib/starterWorkstations';
+import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -10,7 +12,16 @@ const { authHeaders } = useAuth();
 const { business }    = useBusiness();
 const { confirm, alert } = useModal();
 
-const terminals  = ref<any[]>([]);
+const terminals  = ref<Array<{
+  id: string;
+  display_name: string;
+  role: string;
+  permissions: string | null;
+  ui_layout: string | null;
+  pin_code: string | null;
+  is_public: number | boolean | null;
+  public_slug: string | null;
+}>>([]);
 const loading    = ref(false);
 const showForm   = ref(false);
 const saving     = ref(false);
@@ -18,13 +29,32 @@ const deletingId = ref<string | null>(null);
 const error      = ref<string | null>(null);
 const pinVisible = ref(false);
 const pinCopied  = ref(false);
+const copiedLinkId = ref<string | null>(null);
+const copiedPinId = ref<string | null>(null);
 
 const form = reactive({
   displayName: '',
   pin:         '',
   resolution:  '1280x720',
   presetKey:   TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register',
+  layoutVariant: defaultLayoutVariantForPreset(TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register'),
 });
+
+const currentLayoutVariants = computed(() => layoutVariantsForPreset(form.presetKey));
+
+watch(() => form.presetKey, (nextPresetKey) => {
+  const preferred = business.value?.colorPalette?.terminalLayouts?.[nextPresetKey];
+  const allowed = layoutVariantsForPreset(nextPresetKey).map((variant) => variant.id);
+
+  if (preferred && allowed.includes(preferred)) {
+    form.layoutVariant = preferred;
+    return;
+  }
+
+  if (!allowed.includes(form.layoutVariant)) {
+    form.layoutVariant = defaultLayoutVariantForPreset(nextPresetKey);
+  }
+}, { immediate: true });
 
 function onPinInput(e: Event) {
   const el = e.target as HTMLInputElement;
@@ -38,6 +68,37 @@ function copyPin() {
   navigator.clipboard.writeText(form.pin);
   pinCopied.value = true;
   setTimeout(() => (pinCopied.value = false), 1500);
+}
+
+function resolveTerminalUrl(terminal: { id: string; is_public: number | boolean | null; public_slug: string | null }) {
+  if (!import.meta.client) return '';
+
+  const path = terminal.is_public && terminal.public_slug
+    ? `/t/${terminal.public_slug}`
+    : `/terminal/${terminal.id}`;
+
+  return new URL(path, window.location.origin).toString();
+}
+
+async function copyTerminalLink(terminal: { id: string; is_public: number | boolean | null; public_slug: string | null }) {
+  const target = resolveTerminalUrl(terminal);
+  if (!target) return;
+
+  await navigator.clipboard.writeText(target);
+  copiedLinkId.value = terminal.id;
+  setTimeout(() => {
+    if (copiedLinkId.value === terminal.id) copiedLinkId.value = null;
+  }, 1500);
+}
+
+async function copyTerminalPin(terminal: { id: string; pin_code: string | null }) {
+  if (!terminal.pin_code) return;
+
+  await navigator.clipboard.writeText(terminal.pin_code);
+  copiedPinId.value = terminal.id;
+  setTimeout(() => {
+    if (copiedPinId.value === terminal.id) copiedPinId.value = null;
+  }, 1500);
 }
 
 async function loadTerminals() {
@@ -59,7 +120,7 @@ async function createTerminal() {
   if (!business.value) return;
   if (!form.displayName.trim() || !form.pin) return;
   if (!/^\d{4,8}$/.test(form.pin)) {
-    error.value = 'PIN must be 4–8 digits (numbers only)';
+    error.value = 'PIN must be 4-8 digits (numbers only)';
     return;
   }
 
@@ -76,6 +137,7 @@ async function createTerminal() {
         pin:         form.pin,
         resolution:  form.resolution,
         presetKey:   form.presetKey,
+        layoutVariant: form.layoutVariant,
       },
     });
 
@@ -90,6 +152,7 @@ async function createTerminal() {
     form.displayName = '';
     form.pin         = '';
     form.presetKey   = TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register';
+    form.layoutVariant = defaultLayoutVariantForPreset(form.presetKey);
     await loadTerminals();
   } catch (err: any) {
     console.error('[createTerminal]', err);
@@ -151,7 +214,7 @@ watch(() => business.value?.id, loadTerminals);
 
 <template>
   <div v-if="isEnterprise" class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
-    <!-- ── Page header ──────────────────────────────────────────────────────── -->
+    <!-- â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div
       class="px-8 py-5 flex items-center justify-between shrink-0"
       style="background: white; border-bottom: 1px solid rgba(61,24,32,0.08);"
@@ -159,7 +222,7 @@ watch(() => business.value?.id, loadTerminals);
       <div>
         <h1 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">Terminals</h1>
         <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">
-          Staff terminals · {{ terminals.length }} registered
+          Staff terminals - {{ terminals.length }} registered
         </p>
       </div>
 
@@ -176,7 +239,7 @@ watch(() => business.value?.id, loadTerminals);
       </button>
     </div>
 
-    <!-- ── Content area ─────────────────────────────────────────────────────── -->
+    <!-- â”€â”€ Content area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="flex-1 overflow-y-auto px-8 py-6">
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center py-20">
@@ -225,6 +288,8 @@ watch(() => business.value?.id, loadTerminals);
           @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.18)'"
           @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.08)'"
         >
+          <TerminalThumbnail :layout="ip.ui_layout" :title="ip.display_name" />
+
           <!-- Avatar + name -->
           <div class="flex items-center gap-3">
             <div
@@ -237,7 +302,7 @@ watch(() => business.value?.id, loadTerminals);
               <p class="font-semibold text-sm truncate" style="color: rgb(var(--shell-sidebar));">
                 {{ ip.display_name }}
               </p>
-              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.35);">Terminal</p>
+              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.35);">{{ ip.role }}</p>
             </div>
             <button
               class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-all"
@@ -248,6 +313,26 @@ watch(() => business.value?.id, loadTerminals);
             >
               <div v-if="deletingId === ip.id" class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
               <Trash2 v-else class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              class="text-xs font-medium px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5"
+              style="color: rgba(61,24,32,0.65); background: rgba(61,24,32,0.06);"
+              @click="copyTerminalLink(ip)"
+            >
+              <Link2 class="w-3.5 h-3.5" />
+              {{ copiedLinkId === ip.id ? 'Copied Link' : 'Copy Link' }}
+            </button>
+            <button
+              class="text-xs font-medium px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
+              style="color: rgba(61,24,32,0.65); background: rgba(61,24,32,0.06);"
+              :disabled="!ip.pin_code"
+              @click="copyTerminalPin(ip)"
+            >
+              <KeyRound class="w-3.5 h-3.5" />
+              {{ copiedPinId === ip.id ? 'Copied PIN' : 'Copy PIN' }}
             </button>
           </div>
 
@@ -268,11 +353,11 @@ watch(() => business.value?.id, loadTerminals);
               style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06); text-decoration: none;"
             >
               <div class="flex items-center justify-center gap-1.5">
-                <Shield class="w-3.5 h-3.5" /> Permissions
+                <Settings2 class="w-3.5 h-3.5" /> Options
               </div>
             </NuxtLink>
             <NuxtLink
-              :to="`/terminal/${ip.id}`"
+              :to="ip.is_public && ip.public_slug ? `/t/${ip.public_slug}` : `/terminal/${ip.id}`"
               class="text-center text-xs font-semibold px-3 py-1.5 rounded-md transition-all"
               style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.1); text-decoration: none;"
             >
@@ -285,7 +370,7 @@ watch(() => business.value?.id, loadTerminals);
       </div>
     </div>
 
-    <!-- ── Create form modal ─────────────────────────────────────────────────── -->
+    <!-- â”€â”€ Create form modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <Transition name="v">
       <div
         v-if="showForm"
@@ -296,7 +381,7 @@ watch(() => business.value?.id, loadTerminals);
         <div class="w-full max-w-sm bg-white rounded-xl p-7 space-y-5 shadow-2xl">
           <div>
             <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Terminal</h2>
-            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Give it a name and share the PIN with your staff.</p>
+            <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Give it a name, set a PIN, and Kogane will create the starter layout automatically.</p>
           </div>
 
           <div class="space-y-4">
@@ -310,7 +395,7 @@ watch(() => business.value?.id, loadTerminals);
             </div>
 
             <div>
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">PIN (4–8 digits)</label>
+              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">PIN (4-8 digits)</label>
               <div class="relative">
                 <input
                   :value="form.pin"
@@ -320,7 +405,7 @@ watch(() => business.value?.id, loadTerminals);
                   autocomplete="off"
                   class="input-warm w-full px-4 py-2.5 text-sm pr-20"
                   :style="pinVisible ? '' : '-webkit-text-security: disc;'"
-                  placeholder="••••"
+                  placeholder="0000"
                   @input="onPinInput"
                 />
                 <div class="absolute inset-y-0 right-0 flex items-center gap-0.5 pr-2">
@@ -378,6 +463,18 @@ watch(() => business.value?.id, loadTerminals);
                 </option>
               </select>
             </div>
+
+            <div v-if="currentLayoutVariants.length > 0">
+              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Layout Flavor</label>
+              <select v-model="form.layoutVariant" class="input-warm w-full px-4 py-2.5 text-sm">
+                <option v-for="variant in currentLayoutVariants" :key="variant.id" :value="variant.id">
+                  {{ variant.label }}
+                </option>
+              </select>
+              <p class="text-[11px] mt-1" style="color: rgba(61,24,32,0.42);">
+                {{ currentLayoutVariants.find((variant) => variant.id === form.layoutVariant)?.description }}
+              </p>
+            </div>
           </div>
 
           <div
@@ -401,7 +498,7 @@ watch(() => business.value?.id, loadTerminals);
               :disabled="!form.displayName || !form.pin || saving"
               @click="createTerminal"
             >
-              {{ saving ? 'Creating…' : 'Create' }}
+              {{ saving ? 'Creating...' : 'Create' }}
             </button>
           </div>
         </div>
@@ -409,3 +506,5 @@ watch(() => business.value?.id, loadTerminals);
     </Transition>
   </div>
 </template>
+
+

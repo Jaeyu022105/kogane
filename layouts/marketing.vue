@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useLocale();
 const route = useRoute();
+const { isLoggedIn, loadDevSession } = useAuth();
 
 const navLinks = computed(() => [
   { label: t('nav_features'), to: '/features' },
@@ -10,6 +11,7 @@ const navLinks = computed(() => [
 const scrolled = ref(false);
 
 onMounted(() => {
+  loadDevSession();
   const handler = () => { scrolled.value = window.scrollY > 24; };
   window.addEventListener('scroll', handler, { passive: true });
   onUnmounted(() => window.removeEventListener('scroll', handler));
@@ -22,7 +24,7 @@ onMounted(() => {
     <header class="marketing-nav" :class="{ scrolled }">
       <div class="nav-inner">
         <NuxtLink to="/" class="nav-logo">
-          <span class="logo-wordmark">Postfolio</span>
+          <span class="logo-wordmark">Kogane</span>
           <span class="logo-dot" />
         </NuxtLink>
 
@@ -39,8 +41,11 @@ onMounted(() => {
         </nav>
 
         <div class="nav-actions">
-          <NuxtLink to="/login" class="btn-ghost-sm">{{ t('nav_signin') }}</NuxtLink>
-          <NuxtLink to="/login?mode=signup" class="btn-maroon-sm">{{ t('nav_getstarted') }}</NuxtLink>
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="btn-ghost-sm">{{ t('nav_dashboard') }}</NuxtLink>
+          <template v-else>
+            <NuxtLink to="/login" class="btn-ghost-sm">{{ t('nav_signin') }}</NuxtLink>
+            <NuxtLink to="/login?mode=signup" class="btn-maroon-sm">{{ t('nav_getstarted') }}</NuxtLink>
+          </template>
         </div>
       </div>
     </header>
@@ -54,7 +59,7 @@ onMounted(() => {
     <footer class="marketing-footer">
       <div class="footer-inner">
         <div class="footer-brand">
-          <span class="logo-wordmark footer-logo">Postfolio</span>
+          <span class="logo-wordmark footer-logo">Kogane</span>
           <p class="footer-tagline">{{ t('footer_tagline') }}</p>
         </div>
 
@@ -79,7 +84,7 @@ onMounted(() => {
       </div>
 
       <div class="footer-bottom">
-        <span>Â© {{ new Date().getFullYear() }} Postfolio. {{ t('footer_rights') }}</span>
+        <span>© {{ new Date().getFullYear() }} Kogane. {{ t('footer_rights') }}</span>
       </div>
     </footer>
   </div>
@@ -252,3 +257,4 @@ onMounted(() => {
   .nav-links { display: none; }
 }
 </style>
+

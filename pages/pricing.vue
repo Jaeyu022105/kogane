@@ -3,7 +3,7 @@ const { t } = useLocale();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       t('pricing_hero_overline') + ' — Postfolio',
+  title:       `${t('pricing_hero_overline')} - Kogane`,
   description: t('pricing_hero_sub'),
 });
 

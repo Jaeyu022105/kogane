@@ -1,12 +1,12 @@
-# Postfolio — Schema-Driven Internal Tool Builder
+# Kogane — Schema-Driven Internal Tool Builder
 
-Postfolio is a high-performance, modular platform designed to help businesses build, deploy, and manage custom internal tools. It bridges the gap between raw database management and specialized user interfaces, allowing you to create everything from POS terminals and inventory trackers to staff dashboards without writing a single line of frontend code.
+Kogane is a high-performance, modular platform designed to help businesses build, deploy, and manage custom internal tools. It bridges the gap between raw database management and specialized user interfaces, allowing you to create everything from POS terminals and inventory trackers to staff dashboards without writing a single line of frontend code.
 
 ---
 
 ## ✦ Core Philosophy
 
-Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Postfolio** is built on the belief that internal tools should feel as premium as the products they support.
+Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Kogane** is built on the belief that internal tools should feel as premium as the products they support.
 
 - **Schema-First**: Your data defines your capability. Design your database schema directly within the platform.
 - **UI-Driven**: Build interfaces using a Figma-like visual canvas. Drag, drop, and configure.
@@ -31,13 +31,13 @@ Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Po
 ## 📐 How it Works
 
 ### 0. Smart Onboarding
-Designed specifically for SMEs, Postfolio features an **Intelligent Setup Wizard** that bypasses technical complexity.
+Designed specifically for SMEs, Kogane features an **Intelligent Setup Wizard** that bypasses technical complexity.
 - **Industry Presets**: Choose from predefined business types (Restaurant, Logistics, Retail, etc.) to immediately apply optimized schema templates.
 - **Modular Features**: A "Preset + Override" system allows users to pick high-level features (Order Tracking, Inventory, Invoicing) which automatically provision the necessary database tables and relations.
 - **Instant Provisioning**: The onboarding flow uses a unified transactional API to create the business identity and seed the database schema in a single, seamless step.
 
 ### 1. Database Editor
-Define your domain model. Postfolio handles the DDL (Data Definition Language) for you. It features an **Interactive Table Editor** for direct inline data manipulation and a **Relational Schema Visualizer** that draws dynamic connection arrows for foreign keys. It includes a built-in **Normalization Analyzer** that suggests schema improvements (targeting 3.5NF / Boyce-Codd) to ensure your data stays clean as you scale.
+Define your domain model. Kogane handles the DDL (Data Definition Language) for you. It features an **Interactive Table Editor** for direct inline data manipulation and a **Relational Schema Visualizer** that draws dynamic connection arrows for foreign keys. It includes a built-in **Normalization Analyzer** that suggests schema improvements (targeting 3.5NF / Boyce-Codd) to ensure your data stays clean as you scale.
 
 ### 2. UI Builder
 A professional, Figma/Canva-inspired design environment. Design staff-facing screens using modular elements like Table Views, Cart Widgets, and Input Fields. It features:
@@ -57,7 +57,7 @@ Deploy specific layouts to physical or web-based terminals. The interface is hyd
 
 ## 🎨 Aesthetics & Experience
 
-Postfolio features a "Cream & Maroon" design system:
+Kogane features a "Cream & Maroon" design system:
 - **Typography**: A harmonious blend of *Inter* (sans-serif) for utility and *DM Serif Display* (serif) for elegance.
 - **Interface**: A warm, tactile feel with soft shadows, rounded corners, and micro-animations.
 - **Staff View**: Minimalist and high-contrast, optimized for efficiency and low cognitive load.
@@ -79,7 +79,7 @@ bun run dev
 ```
 
 ### Environment Config
-Postfolio uses a hybrid database strategy. Toggle between local development and production Supabase via `.env`:
+Kogane uses a hybrid database strategy. Toggle between local development and production Supabase via `.env`:
 
 ```env
 DEV_MODE=true  # Uses local dev.db (SQLite)
@@ -90,7 +90,7 @@ DEV_MODE=true  # Uses local dev.db (SQLite)
 
 ## 🏗 Modular Architecture
 
-Postfolio is designed for extension. Adding a new widget (e.g., a "Scanner" or "Chart") is a standardized process:
+Kogane is designed for extension. Adding a new widget (e.g., a "Scanner" or "Chart") is a standardized process:
 1. Define the **Element Schema** in `lib/uiTypes.ts`.
 2. Create the **Vue Component** in `components/elements/`.
 3. Register the component in the **Element Renderer**.

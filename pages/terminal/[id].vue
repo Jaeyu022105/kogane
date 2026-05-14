@@ -9,6 +9,7 @@ definePageMeta({ layout: 'default' });
 interface TerminalRuntimeSession {
   terminalId: string;
   displayName: string;
+  businessName?: string;
   role: string;
   permissions: any;
   uiLayout: UiLayout;
@@ -24,6 +25,7 @@ const loginError = ref<string | null>(null);
 const loading = ref(false);
 const session = ref<TerminalRuntimeSession | null>(null);
 const businessId = ref('');
+const serverBusinessName = ref('');
 const serverDisplayName = ref('');
 const serverPinLength = ref(4);
 const terminalTheme = ref<UiLayoutTheme>({ ...DEFAULT_LAYOUT_THEME });
@@ -58,6 +60,7 @@ const activeModal = computed(() =>
   session.value?.uiLayout?.modals?.find((modal) => modal.id === runtime.state.value.activeModalId) ?? null,
 );
 const activeTheme = computed(() => session.value?.uiLayout?.theme ?? terminalTheme.value ?? DEFAULT_LAYOUT_THEME);
+const surfaceRadius = computed(() => activeTheme.value.surfaceStyle === 'square' ? '18px' : '28px');
 
 function adminReturnLocation() {
   return `/dashboard/terminals/${terminalId.value}`;
@@ -84,6 +87,7 @@ function adminEntryLocation() {
 async function bootstrap() {
   const res = await $fetch<{
     businessId: string;
+    businessName?: string;
     displayName: string;
     pinLength: number;
     theme: UiLayoutTheme;
@@ -93,6 +97,7 @@ async function bootstrap() {
 
   if (res?.businessId) {
     businessId.value = res.businessId;
+    serverBusinessName.value = res.businessName ?? '';
     serverDisplayName.value = res.displayName;
     serverPinLength.value = res.pinLength || 4;
     terminalTheme.value = res.theme ?? { ...DEFAULT_LAYOUT_THEME };
@@ -105,6 +110,11 @@ function configureRuntime(currentSession: TerminalRuntimeSession) {
     businessId: businessId.value,
     layout: normalizeLayout(currentSession.uiLayout),
     permissions: currentSession.permissions,
+    sessionVars: {
+      businessName: currentSession.businessName ?? serverBusinessName.value,
+      terminalName: currentSession.displayName,
+      terminalRole: currentSession.role,
+    },
   });
 }
 
@@ -241,7 +251,7 @@ onUnmounted(() => {
       :style="{ background: activeTheme.topBarBackground, borderColor: activeTheme.panelBorder }"
     >
       <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" :style="{ background: activeTheme.accentColor }">T</div>
+        <div class="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" :style="{ background: activeTheme.accentColor }">K</div>
         <span class="text-xs font-semibold" :style="{ color: activeTheme.topBarText }">{{ session.displayName }}</span>
         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" :style="{ color: activeTheme.panelMutedText, background: activeTheme.panelHeaderBackground, border: `1px solid ${activeTheme.panelBorder}` }">{{ session.role }}</span>
       </div>
@@ -259,8 +269,29 @@ onUnmounted(() => {
         height: `${session.uiLayout?.resolution?.height ?? 720}px`,
         transform: `scale(${canvasScale})`,
         transformOrigin: 'top left',
+        background: activeTheme.canvasBackground,
+        borderRadius: surfaceRadius,
+        overflow: 'hidden',
       }"
     >
+      <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+          v-if="activeTheme.particleEffect === 'floating-orbs'"
+          class="absolute -top-20 right-10 w-80 h-80 blur-3xl opacity-35"
+          :style="{ background: `radial-gradient(circle, ${activeTheme.accentColor} 0%, transparent 72%)` }"
+        />
+        <div
+          v-if="activeTheme.particleEffect === 'floating-orbs'"
+          class="absolute bottom-0 left-0 w-96 h-96 blur-3xl opacity-20"
+          :style="{ background: `radial-gradient(circle, ${activeTheme.panelHeaderBackground} 0%, transparent 72%)` }"
+        />
+        <div
+          v-if="activeTheme.particleEffect === 'soft-grid'"
+          class="absolute inset-0 opacity-20"
+          :style="{ backgroundImage: `linear-gradient(${activeTheme.panelBorder} 1px, transparent 1px), linear-gradient(90deg, ${activeTheme.panelBorder} 1px, transparent 1px)`, backgroundSize: '32px 32px' }"
+        />
+      </div>
+
       <ElementRenderer
         v-for="el in session.uiLayout?.elements ?? []"
         :key="el.id"
@@ -273,12 +304,12 @@ onUnmounted(() => {
         class="absolute inset-0 z-[60] flex items-center justify-center bg-black/45"
       >
         <div
-          class="relative overflow-hidden rounded-[28px] border shadow-2xl"
+          class="relative overflow-hidden border shadow-2xl"
           :style="activeModal.presentation === 'fullscreen'
-            ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`
+            ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
             : activeModal.presentation === 'drawer'
-              ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`
-              : `width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`"
+              ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
+              : `width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`"
         >
           <ElementRenderer
             v-for="el in activeModal.elements"
@@ -359,10 +390,12 @@ onUnmounted(() => {
     <div class="w-full max-w-xs space-y-6 animate-fade-in">
       <div class="text-center">
         <div class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-white font-serif text-2xl mb-4 shadow-xl" :style="{ background: activeTheme.accentColor }">
-          T
+          K
         </div>
         <h1 class="text-xl font-serif font-medium" :style="{ color: activeTheme.panelText }">Terminal Login</h1>
-        <p class="text-sm mt-1" :style="{ color: activeTheme.panelMutedText }">Enter the PIN for {{ serverDisplayName || 'this terminal' }}</p>
+        <p class="text-sm mt-1" :style="{ color: activeTheme.panelMutedText }">
+          Enter the PIN for {{ serverDisplayName || 'this terminal' }}<span v-if="serverBusinessName"> at {{ serverBusinessName }}</span>
+        </p>
       </div>
 
       <div class="rounded-3xl p-6 space-y-5 shadow-2xl" :style="{ background: activeTheme.panelBackground, border: `1px solid ${activeTheme.panelBorder}` }">

@@ -18,11 +18,14 @@ export default defineEventHandler(async (event) => {
     business_id: string;
     display_name: string;
     role: string;
+    pin_code: string | null;
     permissions: string | null;
     ui_layout: string | null;
+    is_public: number | boolean | null;
+    public_slug: string | null;
     created_at: string;
   }>(
-    'SELECT id, business_id, display_name, role, permissions, ui_layout, created_at FROM terminals WHERE id = ?',
+    'SELECT id, business_id, display_name, role, pin_code, permissions, ui_layout, is_public, public_slug, created_at FROM terminals WHERE id = ?',
     [terminalId],
   );
 

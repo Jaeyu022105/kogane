@@ -27,7 +27,7 @@ onMounted(async () => {
   if (!business.value) openOnboarding();
 });
 
-import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3 } from 'lucide-vue-next';
+import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3, House } from 'lucide-vue-next';
 
 const navItems = computed(() => {
   const items = [
@@ -75,17 +75,26 @@ function handleLogout() {
     >
       <!-- Wordmark -->
       <div class="px-5 py-5" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
-        <div class="flex items-center gap-2.5">
+        <NuxtLink to="/" class="flex items-center gap-2.5 no-underline">
           <div
             class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
             style="background: rgb(var(--shell-pink)); color: #fff;"
           >
-            P
+            K
           </div>
           <span class="font-serif text-sm leading-none" style="color: rgb(var(--shell-sidebar));">
-            <span style="color: rgb(var(--shell-pink));">Post</span><strong>folio</strong>
+            <strong>Kogane</strong>
           </span>
-        </div>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/"
+          class="mt-3 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium no-underline transition-all hover:bg-black/5"
+          style="color: rgba(61,24,32,0.58);"
+        >
+          <House class="w-3.5 h-3.5" />
+          Homepage
+        </NuxtLink>
 
         <div v-if="business?.name" class="mt-3">
           <p class="text-[10px] font-mono uppercase tracking-widest mb-0.5" style="color: rgba(61,24,32,0.4);">Workspace</p>

@@ -24,8 +24,34 @@ export default defineEventHandler(async (event) => {
   }
 
   const query = body.terminalId
-    ? 'SELECT id, business_id, pin_hash, role, permissions, ui_layout, display_name FROM terminals WHERE id = ?'
-    : 'SELECT id, business_id, pin_hash, role, permissions, ui_layout, display_name FROM terminals WHERE business_id = ? AND display_name = ?';
+    ? `
+        SELECT
+          t.id,
+          t.business_id,
+          t.pin_hash,
+          t.role,
+          t.permissions,
+          t.ui_layout,
+          t.display_name,
+          b.name as business_name
+        FROM terminals t
+        JOIN businesses b ON b.id = t.business_id
+        WHERE t.id = ?
+      `
+    : `
+        SELECT
+          t.id,
+          t.business_id,
+          t.pin_hash,
+          t.role,
+          t.permissions,
+          t.ui_layout,
+          t.display_name,
+          b.name as business_name
+        FROM terminals t
+        JOIN businesses b ON b.id = t.business_id
+        WHERE t.business_id = ? AND t.display_name = ?
+      `;
   const params = body.terminalId
     ? [body.terminalId]
     : [body.businessId, body.displayName];
@@ -38,6 +64,7 @@ export default defineEventHandler(async (event) => {
     permissions: string;
     ui_layout: string;
     display_name: string;
+    business_name: string;
   }>(query, params);
 
   if (!terminal) return { error: 'Invalid credentials', session: null };
@@ -82,6 +109,7 @@ export default defineEventHandler(async (event) => {
     session: {
       terminalId: terminal.id,
       displayName: terminal.display_name,
+      businessName: terminal.business_name,
       role: terminal.role,
       permissions: normalizePermissions(terminal.permissions),
       uiLayout,

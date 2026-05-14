@@ -1,4 +1,4 @@
-import type { UiLayout } from '~/lib/uiTypes';
+﻿import type { UiLayout } from '~/lib/uiTypes';
 
 export interface BuilderPreset {
   id: string;
@@ -47,13 +47,22 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
           label: 'sale panel',
           position: { x: 40, y: 108, width: 760, height: 500, zIndex: 2 },
           title: 'Cashier Register',
-          subtitle: 'Tap products, assign a table number, and submit the current order.',
+          subtitle: 'Tap products, assign a table number, confirm payment, and submit the current order.',
           productTable: 'products',
           displayColumns: ['name', 'category'],
           priceColumn: 'price',
           orderTable: 'orders',
           submitLabel: 'Submit Order',
           emptyLabel: 'No products are ready for sale yet. Add them from a Catalog Registrar or Inventory terminal first.',
+          paymentMethods: ['cash', 'card', 'gcash'],
+          defaultPaymentMethod: 'cash',
+          enableCardReader: true,
+          cardReaderMode: 'manual',
+          cardReaderProvider: 'External Reader',
+          cardReaderLabel: 'Counter Reader',
+          enableReceiptPrinting: true,
+          receiptTitle: 'Official Receipt',
+          receiptFooter: 'Thank you for dining with us.',
           backgroundColor: '#161116',
           panelColor: 'rgba(255,255,255,0.04)',
           textColor: '#f5ede4',
@@ -541,7 +550,7 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
           label: 'search',
           position: { x: 40, y: 88, width: 300, height: 44, zIndex: 2 },
           fieldName: 'search',
-          placeholder: 'Search items…',
+          placeholder: 'Search items...',
           inputType: 'text',
         },
         {
@@ -679,3 +688,4 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
     },
   },
 ];
+

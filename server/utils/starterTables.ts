@@ -18,10 +18,15 @@ export const STARTER_BUSINESS_TABLES: Record<string, TableDef> = {
     name: 'orders',
     columns: [
       { name: 'items', type: 'text', nullable: false },
+      { name: 'line_items', type: 'text', nullable: true },
       { name: 'total', type: 'numeric', nullable: false },
       { name: 'status', type: 'text', nullable: false, default: "'pending'" },
       { name: 'table_number', type: 'text', nullable: true },
       { name: 'staff_name', type: 'text', nullable: true },
+      { name: 'payment_method', type: 'text', nullable: true },
+      { name: 'payment_status', type: 'text', nullable: true },
+      { name: 'payment_reference', type: 'text', nullable: true },
+      { name: 'receipt_number', type: 'text', nullable: true },
     ],
   },
   inventory: {

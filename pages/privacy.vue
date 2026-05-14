@@ -3,7 +3,7 @@ const { t } = useLocale();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       t('privacy_title') + ' — Postfolio',
+  title:       `${t('privacy_title')} - Kogane`,
   description: t('privacy_intro_body'),
 });
 </script>

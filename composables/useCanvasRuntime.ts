@@ -43,7 +43,7 @@ function clone<T>(value: T): T {
 }
 
 export function useCanvasRuntime() {
-  const runtimeState = useState<RuntimeState>('postfolio:runtime:state', () => ({
+  const runtimeState = useState<RuntimeState>('kogane:runtime:state', () => ({
     inputs: {},
     queryResults: {},
     queryTables: {},
@@ -53,7 +53,7 @@ export function useCanvasRuntime() {
     activeModalId: null,
     sessionVars: {},
   }));
-  const context = useState<RuntimeContext>('postfolio:runtime:context', () => ({
+  const context = useState<RuntimeContext>('kogane:runtime:context', () => ({
     terminalId: '',
     businessId: '',
     layout: null,

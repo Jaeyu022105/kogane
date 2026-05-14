@@ -15,12 +15,24 @@ export default defineEventHandler(async (event) => {
 
   const { data } = await db.queryOne<{
     business_id: string;
+    business_name: string;
     display_name: string;
     pin_length: number;
     permissions: string | null;
     ui_layout: string | null;
   }>(
-    'SELECT business_id, display_name, pin_length, permissions, ui_layout FROM terminals WHERE id = ?',
+    `
+      SELECT
+        t.business_id,
+        b.name as business_name,
+        t.display_name,
+        t.pin_length,
+        t.permissions,
+        t.ui_layout
+      FROM terminals t
+      JOIN businesses b ON b.id = t.business_id
+      WHERE t.id = ?
+    `,
     [id],
   );
 
@@ -37,6 +49,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     businessId: data.business_id,
+    businessName: data.business_name,
     displayName: data.display_name,
     pinLength: data.pin_length,
     theme: normalizeLayout(parsedLayout).theme,

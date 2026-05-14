@@ -18,13 +18,27 @@ export default defineEventHandler(async (event) => {
   const { data } = await db.queryOne<{
     id: string;
     business_id: string;
+    business_name: string;
     display_name: string;
     pin_length: number;
     permissions: string | null;
     ui_layout: string | null;
     is_public: number;
   }>(
-    'SELECT id, business_id, display_name, pin_length, permissions, ui_layout, is_public FROM terminals WHERE public_slug = ?',
+    `
+      SELECT
+        t.id,
+        t.business_id,
+        b.name as business_name,
+        t.display_name,
+        t.pin_length,
+        t.permissions,
+        t.ui_layout,
+        t.is_public
+      FROM terminals t
+      JOIN businesses b ON b.id = t.business_id
+      WHERE t.public_slug = ?
+    `,
     [slug],
   );
 
@@ -55,6 +69,7 @@ export default defineEventHandler(async (event) => {
     session: {
       terminalId: data.id,
       displayName: data.display_name,
+      businessName: data.business_name,
       businessId: data.business_id,
       role: 'guest',
       permissions: normalizePermissions(data.permissions),

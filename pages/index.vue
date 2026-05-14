@@ -1,10 +1,15 @@
 <script setup lang="ts">
 const { t } = useLocale();
+const { isLoggedIn, loadDevSession } = useAuth();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       'Postfolio — Preset Internal Workspaces',
+  title:       'Kogane - Preset Internal Workspaces',
   description: 'Launch beautiful preset workspaces for POS, inventory, CRM, and operations without writing frontend code.',
+});
+
+onMounted(() => {
+  loadDevSession();
 });
 
 /* SVG path strings for industry chips */
@@ -66,7 +71,8 @@ const tableRows = computed(() => [
       </p>
 
       <div class="hero-cta">
-        <NuxtLink to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
+        <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
+        <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
         <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
       </div>
     </div>
@@ -192,7 +198,8 @@ const tableRows = computed(() => [
       <h2 class="m-cta-heading" v-html="t('index_cta_heading')"></h2>
       <p class="m-cta-sub">{{ t('index_cta_sub') }}</p>
       <div class="m-cta-btns">
-        <NuxtLink to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
+        <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
+        <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
         <NuxtLink to="/pricing" class="m-btn-ghost">{{ t('index_cta_btn2') }}</NuxtLink>
       </div>
     </div>

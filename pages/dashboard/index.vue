@@ -94,7 +94,7 @@ function runQuickAction(action: QuickAction) {
             {{ greeting }}, <span style="font-weight: 500;">{{ firstName }}</span><span style="color: rgb(var(--shell-pink));">.</span>
           </h1>
           <p class="mt-4 text-[1.05rem] leading-relaxed" style="color: rgba(61,24,32,0.6); max-width: 600px;">
-            Welcome to the Postfolio dashboard for <strong style="color: rgb(var(--shell-sidebar)); font-weight: 600;">{{ business?.name ?? 'your workspace' }}</strong>. Start from presets, then refine only the options your team needs.
+            Welcome to the Kogane dashboard for <strong style="color: rgb(var(--shell-sidebar)); font-weight: 600;">{{ business?.name ?? 'your workspace' }}</strong>. Start from presets, then refine only the options your team needs.
           </p>
         </div>
       </div>

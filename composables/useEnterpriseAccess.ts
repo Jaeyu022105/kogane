@@ -10,7 +10,8 @@ export function useEnterpriseAccess() {
     const enabledBySession = Boolean(session.value?.isEnterprise);
     const enabledByEmail = Boolean(
       session.value?.email?.includes('+enterprise') ||
-      session.value?.email?.endsWith('@postfolio.io'),
+      session.value?.email?.endsWith('@kogane.dev') ||
+      session.value?.email?.endsWith('@kogane.io'),
     );
 
     return enabledByEnv || enabledBySession || enabledByEmail;

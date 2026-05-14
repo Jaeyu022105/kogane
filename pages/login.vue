@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Camera, QrCode } from 'lucide-vue-next';
 
 definePageMeta({ layout: 'default' });
@@ -7,13 +7,13 @@ const router = useRouter();
 const route  = useRoute();
 const { isLoggedIn, devLogin, loadDevSession } = useAuth();
 const { openOnboarding }                        = useOnboarding();
-const { t, locale, setLocale, loadLocale, availableLocales } = useLocale();
+const { t, locale, detectedLocale, setLocale, loadLocale, availableLocales, translateFor } = useLocale();
 
 const mode = ref<'login' | 'signup' | '2fa-setup'>((route.query.mode as any) || 'login');
 const signupStep = ref(0); // 0: Lang, 1: Profile, 2: Birthday, 3: Business
 
 // Form state
-const email    = ref('admin@postfolio.dev');
+const email    = ref('admin@kogane.dev');
 const password = ref('');
 const fullName = ref('');
 const username = ref('');
@@ -33,6 +33,20 @@ const verificationCode = ref('');
 
 const error    = ref<string | null>(null);
 const loading  = ref(false);
+
+const primaryTitleKey = computed(() => {
+  if (mode.value === 'login') return 'login_title';
+  if (mode.value === '2fa-setup') return '2fa_title';
+  if (signupStep.value === 0) return 'lang_picker_title';
+  if (signupStep.value === 1) return 'step1_heading';
+  if (signupStep.value === 2) return 'step2_heading';
+  return 'step3_heading';
+});
+
+const localizedEcho = computed(() => {
+  if (detectedLocale.value === 'en') return '';
+  return translateFor(detectedLocale.value, primaryTitleKey.value as any);
+});
 
 const redirectTarget = computed(() => {
   const target = typeof route.query.redirect === 'string'
@@ -195,9 +209,10 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
         </div>
         <div>
           <h1 class="brand-name">
-            <span class="brand-name-pink">Post</span>folio
+            Kogane
           </h1>
           <p class="brand-tagline">Preset workspace setup</p>
+          <p v-if="localizedEcho" class="brand-echo">{{ localizedEcho }}</p>
         </div>
       </div>
 
@@ -207,6 +222,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
         <template v-if="mode === 'signup' && signupStep === 0">
            <div class="login-card-header">
              <h2 class="login-title">{{ t('lang_picker_title') }}</h2>
+             <p v-if="localizedEcho" class="login-echo">{{ localizedEcho }}</p>
              <p class="login-subtitle">{{ t('lang_picker_subtitle') }}</p>
            </div>
            
@@ -235,6 +251,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
             <h2 class="login-title">
               {{ mode === 'login' ? t('login_title') : mode === 'signup' ? t('signup_title') : t('2fa_title') }}
             </h2>
+            <p v-if="localizedEcho && !(mode === 'signup' && signupStep === 0)" class="login-echo">
+              {{ localizedEcho }}
+            </p>
             <p class="login-subtitle">
               <template v-if="mode === 'login'">
                 {{ exitTarget ? t('login_subtitle_redirect') : t('login_subtitle_default') }}
@@ -386,7 +405,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                   type="password"
                   autocomplete="current-password"
                   class="field-input"
-                  placeholder="········"
+                  placeholder="Enter password"
                 />
               </div>
               
@@ -469,7 +488,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 </template>
 
 <style scoped>
-/* ── Shell ────────────────────────────────────────────── */
+/* â”€â”€ Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-shell {
   min-height: 100dvh;
   display: flex;
@@ -504,7 +523,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   background: radial-gradient(circle, rgba(104, 41, 58, 0.07) 0%, transparent 70%);
 }
 
-/* ── Content wrap ─────────────────────────────────────── */
+/* â”€â”€ Content wrap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-wrap {
   position: relative;
   z-index: 1;
@@ -522,7 +541,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Brand mark ───────────────────────────────────────── */
+/* â”€â”€ Brand mark â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-brand {
   display: flex;
   align-items: center;
@@ -553,7 +572,6 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   margin: 0;
   text-decoration: none;
 }
-.brand-name-pink { color: #FF5776; }
 
 .brand-tagline {
   font-size: 0.76rem;
@@ -561,7 +579,14 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   margin: 0.2rem 0 0;
 }
 
-/* ── Card ─────────────────────────────────────────────── */
+.brand-echo {
+  font-size: 0.72rem;
+  color: rgba(104, 41, 58, 0.32);
+  margin: 0.2rem 0 0;
+  letter-spacing: 0.04em;
+}
+
+/* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-card {
   background: #FFFFFF;
   border-radius: 0.75rem;
@@ -590,7 +615,14 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   line-height: 1.5;
 }
 
-/* ── Lang Picker ──────────────────────────────────────── */
+.login-echo {
+  font-size: 0.78rem;
+  color: rgba(104, 41, 58, 0.34);
+  margin: 0;
+  letter-spacing: 0.03em;
+}
+
+/* â”€â”€ Lang Picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lang-picker-list {
   display: flex;
   flex-direction: column;
@@ -625,10 +657,10 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   margin-top: 0.15rem;
 }
 
-/* ── Form ─────────────────────────────────────────────── */
+/* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-form { display: flex; flex-direction: column; gap: 1rem; }
 
-/* ── Signup Process ───────────────────────────────────── */
+/* â”€â”€ Signup Process â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .signup-progress {
   display: flex;
   flex-direction: column;
@@ -721,7 +753,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   box-shadow: 0 0 0 3px rgba(104, 41, 58, 0.07);
 }
 
-/* ── Signup specific ───────────────────────────────────── */
+/* â”€â”€ Signup specific â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .profile-upload-wrapper {
   display: flex;
   flex-direction: column;
@@ -804,7 +836,7 @@ input:checked + .toggle-slider:before {
   color: #68293A;
 }
 
-/* ── 2FA specific ─────────────────────────────────────── */
+/* â”€â”€ 2FA specific â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .qr-placeholder {
   display: flex;
   flex-direction: column;
@@ -823,7 +855,7 @@ input:checked + .toggle-slider:before {
   text-align: center;
 }
 
-/* ── Error ────────────────────────────────────────────── */
+/* â”€â”€ Error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-error {
   display: flex;
   align-items: center;
@@ -838,7 +870,7 @@ input:checked + .toggle-slider:before {
 }
 .login-error svg { width: 1rem; height: 1rem; flex-shrink: 0; }
 
-/* ── Submit ───────────────────────────────────────────── */
+/* â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-submit {
   width: 100%;
   padding: 0.75rem;
@@ -859,7 +891,7 @@ input:checked + .toggle-slider:before {
 .login-submit:active   { transform: scale(0.98); }
 .login-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── Return button ────────────────────────────────────── */
+/* â”€â”€ Return button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-return {
   width: 100%;
   padding: 0.75rem;
@@ -879,7 +911,7 @@ input:checked + .toggle-slider:before {
   background: rgba(104, 41, 58, 0.03);
 }
 
-/* ── Dev note & Links ─────────────────────────────────── */
+/* â”€â”€ Dev note & Links â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-dev-note {
   font-size: 0.8rem;
   text-align: center;
@@ -911,3 +943,4 @@ input:checked + .toggle-slider:before {
   }
 }
 </style>
+

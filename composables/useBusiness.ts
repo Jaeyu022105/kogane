@@ -8,9 +8,16 @@ import { useAuth } from './useAuth';
 
 export interface ColorPalette {
   primary: string;
-  secondary: string;
-  accent: string;
-  background: string;
+  secondary?: string;
+  accent?: string;
+  background?: string;
+  languagePreference?: string;
+  uiStyle?: string;
+  onboardingPreset?: string | null;
+  layoutBundle?: 'aurora-service' | 'ink-studio' | 'paper-ledger';
+  surfaceStyle?: 'rounded' | 'square';
+  particleEffect?: 'none' | 'floating-orbs' | 'soft-grid';
+  terminalLayouts?: Record<string, string>;
 }
 
 export interface Business {

@@ -16,7 +16,7 @@ interface ModalState extends ModalBaseOptions {
 type Resolver = ((value: boolean) => void) | null;
 
 export function useModal() {
-  const state = useState<ModalState>('postfolio:modal:state', () => ({
+  const state = useState<ModalState>('kogane:modal:state', () => ({
     open: false,
     kind: 'alert',
     name: null,
@@ -27,7 +27,7 @@ export function useModal() {
     confirmVariant: 'primary',
     props: null,
   }));
-  const resolver = useState<Resolver>('postfolio:modal:resolver', () => null);
+  const resolver = useState<Resolver>('kogane:modal:resolver', () => null);
 
   function reset() {
     state.value = {

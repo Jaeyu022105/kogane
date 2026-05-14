@@ -692,6 +692,31 @@ function applyThemeToCurrentWidgets() {
               <input :value="(selectedElement as any).submitLabel ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Submit label" @input="patch({ submitLabel: ($event.target as HTMLInputElement).value || undefined } as any)" />
               <input :value="(selectedElement as any).emptyLabel ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Empty products label" @input="patch({ emptyLabel: ($event.target as HTMLInputElement).value || undefined } as any)" />
             </div>
+            <input :value="stringifyCsv((selectedElement as any).paymentMethods)" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="cash, card, gcash" @input="patch({ paymentMethods: parseCsv(($event.target as HTMLInputElement).value) } as any)" />
+            <div class="grid grid-cols-2 gap-2">
+              <input :value="(selectedElement as any).defaultPaymentMethod ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Default payment" @input="patch({ defaultPaymentMethod: ($event.target as HTMLInputElement).value || undefined } as any)" />
+              <select :value="(selectedElement as any).cardReaderMode ?? 'manual'" class="input-warm w-full px-3 py-1.5 text-sm" @change="patch({ cardReaderMode: ($event.target as HTMLSelectElement).value } as any)">
+                <option value="manual">Manual confirm</option>
+                <option value="simulated">Simulated reader</option>
+                <option value="bridge">Bridge ready</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input :value="(selectedElement as any).cardReaderLabel ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Reader label" @input="patch({ cardReaderLabel: ($event.target as HTMLInputElement).value || undefined } as any)" />
+              <input :value="(selectedElement as any).cardReaderProvider ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Reader provider" @input="patch({ cardReaderProvider: ($event.target as HTMLInputElement).value || undefined } as any)" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="rounded-xl border px-3 py-2 text-xs font-medium flex items-center gap-2" style="border-color: rgba(61,24,32,0.08); color: rgba(61,24,32,0.6);">
+                <input type="checkbox" :checked="Boolean((selectedElement as any).enableCardReader)" @change="patch({ enableCardReader: ($event.target as HTMLInputElement).checked } as any)" />
+                Enable card reader
+              </label>
+              <label class="rounded-xl border px-3 py-2 text-xs font-medium flex items-center gap-2" style="border-color: rgba(61,24,32,0.08); color: rgba(61,24,32,0.6);">
+                <input type="checkbox" :checked="Boolean((selectedElement as any).enableReceiptPrinting)" @change="patch({ enableReceiptPrinting: ($event.target as HTMLInputElement).checked } as any)" />
+                Enable receipts
+              </label>
+            </div>
+            <input :value="(selectedElement as any).receiptTitle ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Receipt title" @input="patch({ receiptTitle: ($event.target as HTMLInputElement).value || undefined } as any)" />
+            <textarea :value="(selectedElement as any).receiptFooter ?? ''" rows="2" class="input-warm w-full px-3 py-1.5 text-sm resize-none" placeholder="Receipt footer or thank-you note" @input="patch({ receiptFooter: ($event.target as HTMLTextAreaElement).value || undefined } as any)" />
           </template>
 
           <template v-else-if="selectedElement.type === 'upload'">

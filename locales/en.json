@@ -2,19 +2,15 @@
   "lang_picker_title": "What language do you prefer?",
   "lang_picker_subtitle": "You can change this anytime in your settings.",
   "lang_en": "English",
-  "lang_fil": "Filipino",
   "lang_other": "Other",
-
   "step_language": "Language",
   "step_profile": "Profile",
   "step_birthday": "Birthday",
   "step_business": "Business",
-
   "signup_title": "Create an account",
   "signup_subtitle": "Get started by creating your administrator profile.",
-
   "step1_heading": "Tell us about yourself",
-  "step1_subheading": "This is how others will see you on Postfolio.",
+  "step1_subheading": "This is how others will see you on Kogane.",
   "field_fullname": "Full Name",
   "field_fullname_placeholder": "Jane Doe",
   "field_username": "Username",
@@ -24,7 +20,6 @@
   "field_password": "Password",
   "field_password_placeholder": "········",
   "upload_photo": "Upload photo",
-
   "step2_heading": "When were you born?",
   "step2_subheading": "We use your birthday to personalise your experience and verify your age.",
   "field_birth_month": "Month",
@@ -42,9 +37,8 @@
   "month_oct": "October",
   "month_nov": "November",
   "month_dec": "December",
-
   "step3_heading": "Set up your business",
-  "step3_subheading": "Tell us a little about the business you manage on Postfolio.",
+  "step3_subheading": "Tell us a little about the business you manage on Kogane.",
   "field_business_name": "Business Name",
   "field_business_name_placeholder": "Acme Studio",
   "field_business_type": "Business Type",
@@ -52,12 +46,10 @@
   "field_business_website": "Website (optional)",
   "field_business_website_placeholder": "https://yoursite.com",
   "field_2fa": "Enable Two-Factor Authentication",
-
   "btn_continue": "Continue",
   "btn_back": "Back",
   "btn_finish": "Create account",
   "btn_select": "Select",
-
   "login_title": "Admin login",
   "login_subtitle_default": "Sign in to manage your workspace.",
   "login_subtitle_redirect": "Sign in to continue to the admin view.",
@@ -75,16 +67,13 @@
   "legal_and": "and",
   "legal_privacy": "Privacy Policy",
   "return_terminal": "Return to terminal",
-
   "2fa_title": "Set up 2FA",
   "2fa_subtitle": "Scan the QR code with your authenticator app and enter the code below.",
   "field_verification_code": "Verification Code",
   "btn_complete_setup": "Complete setup",
-
   "error_fill_all": "Please fill in all required fields.",
   "error_invalid_code": "Please enter a valid 6-digit code.",
   "error_login_failed": "Login failed",
-
   "nav_features": "Features",
   "nav_pricing": "Pricing",
   "nav_signin": "Sign in",
@@ -99,43 +88,35 @@
   "footer_privacy": "Privacy",
   "footer_terms": "Terms",
   "footer_rights": "All rights reserved.",
-
   "index_hero_badge": "Now in early access",
   "index_hero_headline": "Internal tools that <em>feel as good</em> as the products they support.",
-  "index_hero_sub": "Postfolio helps teams launch preset POS, inventory, appointment, and CRM workspaces without writing frontend code or managing technical setup.",
+  "index_hero_sub": "Kogane helps teams launch preset POS, inventory, appointment, and CRM workspaces without writing frontend code or managing technical setup.",
   "index_hero_cta1": "Start building free",
   "index_hero_cta2": "See how it works →",
-
   "index_preview_setup": "Preset Setup",
   "index_preview_pos": "POS Workspace",
   "index_table_workflow": "Workflow",
   "index_table_preset": "Preset",
   "index_table_status": "Status",
-
   "index_industry_overline": "Works for any business",
-
   "index_pillars_overline": "The Platform",
   "index_pillars_heading": "Everything you need,<br><em>nothing you don't.</em>",
   "index_pillars_sub": "Four guided steps take you from business type to a working preset workspace.",
   "index_pillars_learn_more": "Learn more →",
-
   "index_philosophy_overline": "Our philosophy",
   "index_philosophy_heading": "Most internal tools are either too rigid or too ugly.",
-  "index_philosophy_sub": "SaaS tools lock you into their model. Custom builds look terrible and take months. Postfolio is built on the belief that internal tools should feel as premium as the products they support — and be ready in minutes.",
+  "index_philosophy_sub": "SaaS tools lock you into their model. Custom builds look terrible and take months. Kogane is built on the belief that internal tools should feel as premium as the products they support — and be ready in minutes.",
   "index_philosophy_cta": "Explore the platform →",
-
   "index_cta_heading": "Ready to build something <em>beautiful?</em>",
-  "index_cta_sub": "Join forward-thinking businesses using Postfolio to manage their operations in style.",
+  "index_cta_sub": "Join forward-thinking businesses using Kogane to manage their operations in style.",
   "index_cta_btn1": "Get started — it's free",
   "index_cta_btn2": "View pricing →",
-
   "ind_restaurant": "Restaurant & Café",
   "ind_logistics": "Logistics & Shipping",
   "ind_retail": "Retail & POS",
   "ind_healthcare": "Healthcare",
   "ind_construct": "Construction",
   "ind_finance": "Finance & CRM",
-
   "pillar_setup_title": "Guided Setup",
   "pillar_setup_body": "Choose your language, industry, and workspace style before setup starts.",
   "pillar_schema_title": "Industry Presets",
@@ -143,8 +124,7 @@
   "pillar_builder_title": "Style Presets",
   "pillar_builder_body": "Pick visual treatments that match how your staff need to scan, tap, and work.",
   "pillar_terminal_title": "Managed Launch",
-  "pillar_terminal_body": "Postfolio assembles the screens, data, and access rules behind the scenes.",
-
+  "pillar_terminal_body": "Kogane assembles the screens, data, and access rules behind the scenes.",
   "table_orders": "Orders",
   "table_cashier": "Cashier",
   "table_ready": "Ready",
@@ -157,7 +137,6 @@
   "table_live": "Live",
   "table_brand": "Brand style",
   "table_warm": "Warm",
-
   "badge_preset_title": "Preset-First",
   "badge_preset_body": "Start from a complete workflow instead of a blank technical canvas.",
   "badge_style_title": "Style Options",
@@ -166,11 +145,9 @@
   "badge_role_body": "Each workspace can expose only the actions a staff role needs.",
   "badge_theme_title": "Dynamic Theming",
   "badge_theme_body": "Your brand colors propagate instantly across every preset workspace.",
-
   "pricing_hero_overline": "Pricing",
   "pricing_hero_heading": "Simple, honest pricing.<br><em>No surprises.</em>",
-  "pricing_hero_sub": "Start free and scale as your business grows. Every plan includes access to Postfolio presets and managed setup.",
-
+  "pricing_hero_sub": "Start free and scale as your business grows. Every plan includes access to Kogane presets and managed setup.",
   "plan_starter_name": "Starter",
   "plan_starter_price": "Free",
   "plan_starter_period": "forever",
@@ -180,7 +157,6 @@
   "plan_starter_feat2": "1 active preset workspace",
   "plan_starter_feat3": "Basic style presets",
   "plan_starter_feat4": "Community support",
-
   "plan_flexible_name": "Flexible",
   "plan_flexible_price": "$15",
   "plan_flexible_period": "base / month",
@@ -191,14 +167,10 @@
   "plan_flexible_feat3": "More industry and style presets",
   "plan_flexible_feat4": "CSV exports and activity reports",
   "plan_flexible_feat5": "Priority email support",
-
   "plan_popular": "Most popular",
-
   "pricing_note": "Preset plans include guided onboarding, style presets, reports, and managed workspace setup. Fully custom data modeling, visual editor access, and executable code export are outside standard preset plans.",
-
   "pricing_faq_overline": "FAQ",
   "pricing_faq_heading": "Common questions.",
-
   "faq_q1": "Do I need a credit card to start?",
   "faq_a1": "No. The Starter plan is completely free with no credit card required. Upgrade only when you're ready.",
   "faq_q2": "How does preset-based pricing work?",
@@ -208,19 +180,16 @@
   "faq_q4": "What is included in a preset?",
   "faq_a4": "A preset includes the workflow, fields, reports, and interface style needed for a common business operation.",
   "faq_q5": "Is my data safe?",
-  "faq_a5": "Yes. Postfolio keeps each workspace isolated and uses managed access controls for account and workspace data.",
+  "faq_a5": "Yes. Kogane keeps each workspace isolated and uses managed access controls for account and workspace data.",
   "faq_q6": "Can I change presets later?",
   "faq_a6": "Yes. You can re-run setup from the dashboard and move to a better-fitting preset as your workflow changes.",
-
   "pricing_cta_heading": "Still have <em>questions?</em>",
   "pricing_cta_sub": "Start with a preset and refine your workspace as your operations grow.",
   "pricing_cta_btn1": "Start for free",
   "pricing_cta_btn2": "Explore presets →",
-
   "feat_hero_overline": "The Platform",
   "feat_hero_heading": "Preset workspaces.<br><em>Managed behind the scenes.</em>",
-  "feat_hero_sub": "Postfolio takes you from language preference and industry choice to a working preset workspace without exposing the technical layer.",
-
+  "feat_hero_sub": "Kogane takes you from language preference and industry choice to a working preset workspace without exposing the technical layer.",
   "mod_01_tag": "Module 01",
   "mod_01_title": "Guided Setup",
   "mod_01_body": "Choose your language, industry, brand color, and preferred workspace style before your account starts running.",
@@ -228,7 +197,6 @@
   "mod_01_p2": "Industry selection for cafe, retail, CRM, logistics, and more",
   "mod_01_p3": "Brand color and logo setup",
   "mod_01_p4": "Re-configurable from settings",
-
   "mod_02_tag": "Module 02",
   "mod_02_title": "Industry Presets",
   "mod_02_body": "Start from ready-made operating models instead of configuring technical pieces from scratch.",
@@ -236,7 +204,6 @@
   "mod_02_p2": "Built-in workflows for orders, inventory, customers, staff, appointments, invoices, and deliveries",
   "mod_02_p3": "Managed setup behind the scenes",
   "mod_02_p4": "Easy preset changes later",
-
   "mod_03_tag": "Module 03",
   "mod_03_title": "Style Presets",
   "mod_03_body": "Choose from polished interface styles that match how your team actually works.",
@@ -244,19 +211,16 @@
   "mod_03_p2": "Compact operations layouts for dense workflows",
   "mod_03_p3": "High-contrast kiosk-style views",
   "mod_03_p4": "Editorial layouts for client-facing moments",
-
   "mod_04_tag": "Module 04",
   "mod_04_title": "Managed Launch",
-  "mod_04_body": "Postfolio assembles the workspace, access rules, and live screens for you while the technical layer stays out of sight.",
+  "mod_04_body": "Kogane assembles the workspace, access rules, and live screens for you while the technical layer stays out of sight.",
   "mod_04_p1": "Role-aware staff access",
   "mod_04_p2": "Responsive screens for phones, tablets, and counters",
   "mod_04_p3": "Activity history and reports",
   "mod_04_p4": "No technical setup",
-
   "extra_overline": "And more",
   "extra_heading": "Built for the real world.",
-  "extra_sub": "Every detail of Postfolio is designed to handle the messy reality of running a business.",
-
+  "extra_sub": "Every detail of Kogane is designed to handle the messy reality of running a business.",
   "extra_role_title": "Role-Based Access",
   "extra_role_body": "Staff see the workflows and actions that fit their job.",
   "extra_theme_title": "Dynamic Theming",
@@ -269,16 +233,14 @@
   "extra_data_body": "The underlying data model is handled for you.",
   "extra_link_title": "Shareable Views",
   "extra_link_body": "Share the right workspace view with the right team member.",
-
   "feat_cta_heading": "Ready to see it <em>in action?</em>",
   "feat_cta_sub": "Start with a preset workspace today. No credit card required.",
   "feat_cta_btn1": "Get started free",
   "feat_cta_btn2": "See pricing →",
-
   "privacy_title": "Privacy Policy",
   "privacy_last_updated": "Last updated: May 10, 2026",
   "privacy_intro_title": "1. Introduction",
-  "privacy_intro_body": "Welcome to Postfolio. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.",
+  "privacy_intro_body": "Welcome to Kogane. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.",
   "privacy_data_title": "2. Data We Collect",
   "privacy_data_body": "We may collect, use, store and transfer different kinds of personal data about you which we have grouped together as follows:",
   "privacy_data_identity": "<strong>Identity Data</strong> includes first name, last name, username or similar identifier.",
@@ -294,28 +256,26 @@
   "privacy_security_body": "We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorised way, altered or disclosed. In addition, we limit access to your personal data to those employees, agents, contractors and other third parties who have a business need to know. They will only process your personal data on our instructions and they are subject to a duty of confidentiality.",
   "privacy_rights_title": "5. Your Legal Rights",
   "privacy_rights_body": "Under certain circumstances, you have rights under data protection laws in relation to your personal data, including the right to request access, correction, erasure, restriction, transfer, to object to processing, to portability of data and (where the lawful ground of processing is consent) to withdraw consent.",
-
   "terms_title": "Terms of Service",
   "terms_last_updated": "Last updated: May 10, 2026",
   "terms_agreement_title": "1. Agreement to Terms",
-  "terms_agreement_body": "By accessing the website at Postfolio, you are agreeing to be bound by these terms of service, all applicable laws and regulations, and agree that you are responsible for compliance with any applicable local laws. If you do not agree with any of these terms, you are prohibited from using or accessing this site.",
+  "terms_agreement_body": "By accessing the website at Kogane, you are agreeing to be bound by these terms of service, all applicable laws and regulations, and agree that you are responsible for compliance with any applicable local laws. If you do not agree with any of these terms, you are prohibited from using or accessing this site.",
   "terms_license_title": "2. Use License",
-  "terms_license_body": "Permission is granted to temporarily download one copy of the materials (information or software) on Postfolio's website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:",
+  "terms_license_body": "Permission is granted to temporarily download one copy of the materials (information or software) on Kogane's website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:",
   "terms_license_p1": "modify or copy the materials;",
   "terms_license_p2": "use the materials for any commercial purpose, or for any public display (commercial or non-commercial);",
-  "terms_license_p3": "attempt to decompile or reverse engineer any software contained on Postfolio's website;",
+  "terms_license_p3": "attempt to decompile or reverse engineer any software contained on Kogane's website;",
   "terms_license_p4": "remove any copyright or other proprietary notations from the materials; or",
   "terms_license_p5": "transfer the materials to another person or \"mirror\" the materials on any other server.",
-  "terms_license_footer": "This license shall automatically terminate if you violate any of these restrictions and may be terminated by Postfolio at any time.",
+  "terms_license_footer": "This license shall automatically terminate if you violate any of these restrictions and may be terminated by Kogane at any time.",
   "terms_disclaimer_title": "3. Disclaimer",
-  "terms_disclaimer_body": "The materials on Postfolio's website are provided on an 'as is' basis. Postfolio makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.",
+  "terms_disclaimer_body": "The materials on Kogane's website are provided on an 'as is' basis. Kogane makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.",
   "terms_limitations_title": "4. Limitations",
-  "terms_limitations_body": "In no event shall Postfolio or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Postfolio's website, even if Postfolio or a Postfolio authorized representative has been notified orally or in writing of the possibility of such damage.",
+  "terms_limitations_body": "In no event shall Kogane or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Kogane's website, even if Kogane or a Kogane authorized representative has been notified orally or in writing of the possibility of such damage.",
   "terms_limits_title": "5. Standard Plan Limits and Exclusions",
   "terms_limits_body": "Standard preset plans do not include fully customizable database modeling, direct UI editor access, source-code export, executable-code export, or bespoke runtime code unless those capabilities are explicitly included in a separate written agreement.",
   "terms_revisions_title": "6. Revisions and Errata",
-  "terms_revisions_body": "The materials appearing on Postfolio's website could include technical, typographical, or photographic errors. Postfolio does not warrant that any of the materials on its website are accurate, complete or current. Postfolio may make changes to the materials contained on its website at any time without notice.",
-
+  "terms_revisions_body": "The materials appearing on Kogane's website could include technical, typographical, or photographic errors. Kogane does not warrant that any of the materials on its website are accurate, complete or current. Kogane may make changes to the materials contained on its website at any time without notice.",
   "onboarding_step_indicator": "Step {step} of 3",
   "onboarding_step1_title": "Workspace basics",
   "onboarding_step1_sub": "Tell us about your business to get started.",
@@ -326,7 +286,6 @@
   "onboarding_predicted_color": "✨ Predicted from logo",
   "onboarding_language": "Workspace Language",
   "onboarding_industry": "Industry",
-
   "onboarding_step2_title": "Choose a preset",
   "onboarding_step2_sub": "Pick the closest workflow and the visual style you want us to generate.",
   "onboarding_presets": "Presets",
@@ -334,7 +293,6 @@
   "onboarding_custom_sub": "Pick manually",
   "onboarding_included_workflows": "Included workflows",
   "onboarding_interface_style": "Interface style",
-
   "onboarding_step3_title": "Review & Confirm",
   "onboarding_step3_sub": "We will create a preset workspace and keep the setup details managed behind the scenes.",
   "onboarding_summary_preset": "Preset Summary",
@@ -349,11 +307,9 @@
   "none": "None",
   "style": "Style",
   "continue": "Continue",
-
   "onboarding_step4_title": "Workspace ready!",
   "onboarding_step4_sub": "Your preset workspace is ready. You can adjust branding, reports, and setup choices from the dashboard.",
   "onboarding_go_dashboard": "Go to Dashboard",
-
   "ind_restaurant_label": "Restaurant",
   "ind_logistics_label": "Logistics",
   "ind_accounting_label": "Accounting",
@@ -362,7 +318,6 @@
   "ind_services_label": "Services",
   "ind_education_label": "Education",
   "ind_other_label": "Other",
-
   "style_warm_label": "Warm Minimal",
   "style_warm_desc": "Soft, simple screens for everyday staff workflows.",
   "style_compact_label": "Compact Ops",
@@ -370,5 +325,12 @@
   "style_contrast_label": "High Contrast",
   "style_contrast_desc": "Clear kiosk-style layouts for busy counters and shared devices.",
   "style_editorial_label": "Editorial",
-  "style_editorial_desc": "Larger type and calmer spacing for client-facing views."
+  "style_editorial_desc": "Larger type and calmer spacing for client-facing views.",
+  "lang_ph": "Filipino",
+  "lang_es": "Spanish",
+  "lang_ja": "Japanese",
+  "lang_ko": "Korean",
+  "lang_zh": "Chinese",
+  "nav_dashboard": "Dashboard",
+  "index_dashboard_cta": "Go to Dashboard"
 }

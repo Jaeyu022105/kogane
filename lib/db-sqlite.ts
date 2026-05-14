@@ -44,6 +44,7 @@ export class SqliteAdapter implements DbAdapter {
         display_name  TEXT NOT NULL,
         role          TEXT NOT NULL DEFAULT 'staff',
         pin_hash      TEXT NOT NULL,
+        pin_code      TEXT,
         pin_length    INTEGER NOT NULL DEFAULT 4,
         permissions   TEXT DEFAULT '{}',
         ui_layout     TEXT DEFAULT '{}',
@@ -83,6 +84,10 @@ export class SqliteAdapter implements DbAdapter {
 
     try {
       this.db.run("ALTER TABLE terminals ADD COLUMN pin_length INTEGER NOT NULL DEFAULT 4");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE terminals ADD COLUMN pin_code TEXT");
     } catch (e) { }
 
     try {

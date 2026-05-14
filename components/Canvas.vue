@@ -30,6 +30,8 @@ const {
 const zoom    = computed(() => props.zoom ?? 1);
 const GRID_PX = 8; // snap grid size in canvas units
 const theme   = computed(() => layout.value.theme);
+const surfaceRadius = computed(() => theme.value.surfaceStyle === 'square' ? '24px' : '32px');
+const boardRadius = computed(() => theme.value.surfaceStyle === 'square' ? '18px' : '24px');
 
 // ── Drag state ────────────────────────────────────────────────────────────────
 
@@ -229,10 +231,11 @@ function onResizeUp() {
       :style="{ transform: `translate(${cameraX}px, ${cameraY}px) scale(${zoom})`, transformOrigin: '0 0' }"
     >
       <div
-        class="rounded-[32px] border border-white/10 shadow-2xl overflow-hidden"
+        class="border border-white/10 shadow-2xl overflow-hidden"
         :style="{
           width: `${layout.resolution.width + 32}px`,
           background: `linear-gradient(180deg, ${theme.frameBackground} 0%, ${theme.frameBackground} 100%)`,
+          borderRadius: surfaceRadius,
         }"
       >
         <div
@@ -255,14 +258,33 @@ function onResizeUp() {
         <div class="p-4">
           <!-- The actual layout page / board -->
           <div
-            class="relative border shadow-2xl overflow-hidden rounded-[24px]"
+            class="relative border shadow-2xl overflow-hidden"
             :style="{
               width:  `${layout.resolution.width}px`,
               height: `${layout.resolution.height}px`,
               background: theme.canvasBackground,
               borderColor: theme.panelBorder,
+              borderRadius: boardRadius,
             }"
           >
+            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+              <div
+                v-if="theme.particleEffect === 'floating-orbs'"
+                class="absolute -top-16 right-12 w-72 h-72 blur-3xl opacity-35"
+                :style="{ background: `radial-gradient(circle, ${theme.accentColor} 0%, transparent 72%)` }"
+              />
+              <div
+                v-if="theme.particleEffect === 'floating-orbs'"
+                class="absolute bottom-0 left-0 w-80 h-80 blur-3xl opacity-20"
+                :style="{ background: `radial-gradient(circle, ${theme.panelHeaderBackground} 0%, transparent 72%)` }"
+              />
+              <div
+                v-if="theme.particleEffect === 'soft-grid'"
+                class="absolute inset-0 opacity-20"
+                :style="{ backgroundImage: `linear-gradient(${theme.panelBorder} 1px, transparent 1px), linear-gradient(90deg, ${theme.panelBorder} 1px, transparent 1px)`, backgroundSize: '32px 32px' }"
+              />
+            </div>
+
             <!-- Grid dots -->
             <svg class="absolute inset-0 pointer-events-none opacity-20" width="100%" height="100%">
               <defs>

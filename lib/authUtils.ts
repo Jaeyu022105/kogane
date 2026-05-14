@@ -13,7 +13,7 @@ import {
 } from 'h3';
 import { createClient } from '@supabase/supabase-js';
 
-const TERMINAL_SESSION_COOKIE = 'postfolio_terminal_session';
+const TERMINAL_SESSION_COOKIE = 'kogane_terminal_session';
 const TERMINAL_SESSION_TTL_MS = 1000 * 60 * 60 * 8;
 
 export interface TerminalSessionPayload {
@@ -33,7 +33,7 @@ function base64UrlDecode(value: string): string {
 }
 
 async function signValue(value: string): Promise<string> {
-  const secret = process.env.SESSION_SECRET || 'postfolio-dev-secret';
+  const secret = process.env.SESSION_SECRET || 'kogane-dev-secret';
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),

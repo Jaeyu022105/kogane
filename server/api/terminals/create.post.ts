@@ -6,13 +6,11 @@
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
-import { hashPin } from '~/lib/authUtils';
-import { DEFAULT_LAYOUT } from '~/lib/uiTypes';
-import { BUILDER_PRESETS } from '~/lib/builderPresets';
-import { presetByKey, TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { defaultLayoutVariantForPreset } from '~/lib/starterWorkstations';
 import { writeAuditLog } from '~/server/utils/audit';
 import { getBusinessForAdmin } from '~/server/utils/business';
-import { ensureStarterBusinessTables, starterTableNamesForPreset } from '~/server/utils/starterTables';
+import { createManagedTerminal } from '~/server/utils/managedTerminals';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -22,6 +20,7 @@ export default defineEventHandler(async (event) => {
     pin: string;
     resolution?: string;
     presetKey?: string;
+    layoutVariant?: string;
   }>(event);
 
   if (!body.businessId || !body.displayName || !body.pin) {
@@ -35,41 +34,27 @@ export default defineEventHandler(async (event) => {
   const { data: business } = await getBusinessForAdmin(userId, body.businessId);
   if (!business) return { error: 'Forbidden', terminal: null };
 
-  const pinHash = await hashPin(body.pin);
-  const preset = presetByKey(body.presetKey) ?? TERMINAL_PERMISSION_PRESETS[0];
-  const presetLayoutMap: Record<string, string> = {
-    'cashier-register': 'cashier-station',
-    'catalog-registrar': 'catalog-station',
-    'inventory-manager': 'inventory-station',
-    'kitchen-display': 'kitchen-station',
-    'reports-viewer': 'reports-station',
-  };
-  const initialLayoutPreset = BUILDER_PRESETS.find((item) => item.id === presetLayoutMap[preset.key]);
-  const layoutData = JSON.parse(JSON.stringify(initialLayoutPreset?.layout ?? DEFAULT_LAYOUT));
-
-  const starterTables = starterTableNamesForPreset(preset.key);
-  if (starterTables.length > 0) {
-    const starterResult = await ensureStarterBusinessTables(business.schema_name, starterTables);
-    if (starterResult.error) {
-      return { error: starterResult.error, terminal: null };
-    }
+  let brandConfig: Record<string, any> = {};
+  try {
+    const { data: businessRow } = await db.queryOne<{ color_palette: string | null }>(
+      'SELECT color_palette FROM businesses WHERE id = ?',
+      [body.businessId],
+    );
+    brandConfig = businessRow?.color_palette ? JSON.parse(businessRow.color_palette) : {};
+  } catch {
+    brandConfig = {};
   }
 
-  if (body.resolution) {
-    const [w, h] = body.resolution.split('x').map(Number);
-    if (!isNaN(w) && !isNaN(h)) {
-      layoutData.resolution = { width: w, height: h };
-    }
-  }
-
-  const { data: terminal, error } = await db.insert('terminals', {
-    business_id: body.businessId,
-    display_name: body.displayName,
-    role: preset.label,
-    pin_hash: pinHash,
-    pin_length: body.pin.length,
-    permissions: JSON.stringify(preset.permissions),
-    ui_layout: JSON.stringify(layoutData),
+  const preset = TERMINAL_PERMISSION_PRESETS.find((item) => item.key === body.presetKey) ?? TERMINAL_PERMISSION_PRESETS[0];
+  const { terminal, error } = await createManagedTerminal({
+    businessId: body.businessId,
+    businessSchema: business.schema_name,
+    displayName: body.displayName.trim(),
+    presetKey: preset.key,
+    pin: body.pin,
+    resolution: body.resolution,
+    layoutVariant: body.layoutVariant || brandConfig?.terminalLayouts?.[preset.key] || defaultLayoutVariantForPreset(preset.key),
+    brandConfig,
   });
 
   if (error) return { error, terminal: null };

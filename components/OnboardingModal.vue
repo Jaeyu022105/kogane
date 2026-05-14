@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {
   UtensilsCrossed,
   Truck,
@@ -17,46 +17,56 @@ import {
   X
 } from 'lucide-vue-next';
 import type { SchemaDef, TableDef } from '~/lib/schemaUtils';
+import { TERMINAL_PERMISSION_PRESETS, type PermissionPresetKey } from '~/lib/permissions';
+import { defaultLayoutVariantForPreset, inferStarterTerminals, layoutVariantsForPreset } from '~/lib/starterWorkstations';
+import { UI_LAYOUT_BUNDLES, buildBusinessPalette, extractPaletteFromLogoDataUrl, type LayoutBundleKey, type ParticleEffect, type SurfaceStyle } from '~/lib/workspaceBranding';
 
 const emit = defineEmits<{ done: [], close: [] }>();
 
 const { authHeaders, session } = useAuth();
 const { business, fetchBusiness } = useBusiness();
-const { t } = useLocale();
+const { t, availableLocales } = useLocale();
 
-// ── Step state ────────────────────────────────────────────────────────────────
+// â”€â”€ Step state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const step = ref<1 | 2 | 3 | 4>(1);
 
 // Step 1: Basics
 const businessName = ref('');
 const logoUrl = ref<string | null>(null);
-const colorPalette = ref<{ primary: string }>({ primary: '#68293A' });
+const colorPalette = ref(buildBusinessPalette('#68293A'));
 const selectedType = ref<string | null>(null);
 const languagePreference = ref(session.value?.languagePreference ?? 'en');
 const uiStyle = ref('warm-minimal');
+const layoutBundle = ref<LayoutBundleKey>('aurora-service');
+const surfaceStyle = ref<SurfaceStyle>('rounded');
+const particleEffect = ref<ParticleEffect>('none');
 
 // Step 2: Features
 const selectedPreset  = ref<string | null>(null);
 const selectedFeatures = ref<Set<string>>(new Set());
+const terminalStylePlan = ref<Record<string, { displayName: string; layoutVariant: string }>>({});
 
 const submitting = ref(false);
 const submitError = ref<string | null>(null);
 
-function handleLogoUpload(e: Event) {
+async function handleLogoUpload(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     logoUrl.value = reader.result as string;
-    // Simulate AI predicting color from logo
-    const colors = ['#e8748a', '#8b5cf6', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#14b8a6', '#68293A'];
-    colorPalette.value.primary = colors[Math.floor(Math.random() * colors.length)];
+
+    try {
+      colorPalette.value = await extractPaletteFromLogoDataUrl(logoUrl.value, layoutBundle.value);
+    } catch {
+      colorPalette.value = buildBusinessPalette(colorPalette.value.primary, layoutBundle.value);
+    }
   };
   reader.readAsDataURL(file);
 }
 
-// ── Business types ────────────────────────────────────────────────────────────
+// â”€â”€ Business types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const businessTypes = computed(() => [
   { id: 'restaurant',  label: t('ind_restaurant_label'),  icon: UtensilsCrossed, color: '#e8748a' },
   { id: 'logistics',   label: t('ind_logistics_label'),   icon: Truck,           color: '#8b5cf6' },
@@ -68,14 +78,12 @@ const businessTypes = computed(() => [
   { id: 'other',       label: t('ind_other_label'),       icon: Building2,       color: '#6b7280' },
 ]);
 
-const languageOptions = [
-  { value: 'en', label: 'English' },
-  { value: 'fil', label: 'Filipino' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'zh', label: 'Chinese' },
-];
+const languageOptions = computed(() =>
+  availableLocales.map((locale) => ({
+    value: locale.code,
+    label: locale.nativeLabel,
+  })),
+);
 
 const UI_STYLE_PRESETS = computed(() => [
   {
@@ -104,7 +112,18 @@ const UI_STYLE_PRESETS = computed(() => [
   },
 ]);
 
-// ── Feature catalogue ────────────────────────────────────────────────────────
+const SURFACE_STYLE_OPTIONS: Array<{ id: SurfaceStyle; label: string; description: string }> = [
+  { id: 'rounded', label: 'Rounded', description: 'Softer cards and touch-friendly controls.' },
+  { id: 'square', label: 'Square', description: 'Sharper panels with a stricter operational feel.' },
+];
+
+const PARTICLE_OPTIONS: Array<{ id: ParticleEffect; label: string; description: string }> = [
+  { id: 'none', label: 'None', description: 'Keep the background calm and clean.' },
+  { id: 'floating-orbs', label: 'Floating Orbs', description: 'Add soft moving highlights behind the layout.' },
+  { id: 'soft-grid', label: 'Soft Grid', description: 'Use a subtle animated grid for a more technical feel.' },
+];
+
+// â”€â”€ Feature catalogue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Feature {
   id: string;
   label: string;
@@ -123,19 +142,16 @@ const FEATURES: Feature[] = [
       {
         name: 'orders',
         columns: [
-          { name: 'order_number', type: 'text',    nullable: false, unique: true },
-          { name: 'status',       type: 'text',    nullable: false, default: "'pending'" },
-          { name: 'total_amount', type: 'numeric', nullable: true },
-          { name: 'notes',        type: 'text',    nullable: true },
-        ],
-      },
-      {
-        name: 'order_items',
-        columns: [
-          { name: 'order_id',  type: 'text',    nullable: false },
-          { name: 'item_name', type: 'text',    nullable: false },
-          { name: 'quantity',  type: 'integer', nullable: false, default: '1' },
-          { name: 'unit_price',type: 'numeric', nullable: true },
+          { name: 'items',             type: 'text',    nullable: false },
+          { name: 'line_items',        type: 'text',    nullable: true },
+          { name: 'total',             type: 'numeric', nullable: false },
+          { name: 'status',            type: 'text',    nullable: false, default: "'pending'" },
+          { name: 'table_number',      type: 'text',    nullable: true },
+          { name: 'staff_name',        type: 'text',    nullable: true },
+          { name: 'payment_method',    type: 'text',    nullable: true },
+          { name: 'payment_status',    type: 'text',    nullable: true },
+          { name: 'payment_reference', type: 'text',    nullable: true },
+          { name: 'receipt_number',    type: 'text',    nullable: true },
         ],
       },
     ],
@@ -277,7 +293,7 @@ const availableFeaturesForType = computed(() => {
   return FEATURES.filter(f => f.availableFor.includes(selectedType.value!));
 });
 
-// ── Presets ───────────────────────────────────────────────────────────────────
+// â”€â”€ Presets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Preset {
   id: string;
   label: string;
@@ -289,7 +305,7 @@ const PRESETS_BY_TYPE: Record<string, Preset[]> = {
   restaurant: [
     { id: 'fast-food',  label: 'Fast Food',   description: 'Quick service, high volume', features: ['orders', 'inventory', 'staff'] },
     { id: 'fine-dining',label: 'Fine Dining', description: 'Reservations and full service', features: ['orders', 'appointments', 'customers', 'staff'] },
-    { id: 'cafe',       label: 'Café',        description: 'Drinks, light bites, loyalty', features: ['orders', 'inventory', 'customers'] },
+    { id: 'cafe',       label: 'Cafe',        description: 'Drinks, light bites, loyalty', features: ['orders', 'inventory', 'customers'] },
   ],
   logistics: [
     { id: 'courier',    label: 'Courier',     description: 'Last-mile delivery tracking', features: ['deliveries', 'customers', 'staff'] },
@@ -332,12 +348,56 @@ const selectedUiStyleRecord = computed(() =>
   UI_STYLE_PRESETS.value.find((style) => style.id === uiStyle.value) ?? UI_STYLE_PRESETS.value[0],
 );
 
+const selectedBundleRecord = computed(() =>
+  UI_LAYOUT_BUNDLES.find((bundle) => bundle.key === layoutBundle.value) ?? UI_LAYOUT_BUNDLES[0],
+);
+
 const selectedLanguageLabel = computed(() =>
-  languageOptions.find((language) => language.value === languagePreference.value)?.label ?? 'English',
+  languageOptions.value.find((language) => language.value === languagePreference.value)?.label ?? 'English',
 );
 
 const selectedFeaturesList = computed(() =>
   FEATURES.filter((feature) => selectedFeatures.value.has(feature.id)),
+);
+
+const starterTerminalSeeds = computed(() =>
+  inferStarterTerminals(selectedType.value, [...selectedFeatures.value]),
+);
+
+watch(starterTerminalSeeds, (next) => {
+  const previous = terminalStylePlan.value;
+  const updated: Record<string, { displayName: string; layoutVariant: string }> = {};
+
+  for (const terminal of next) {
+    updated[terminal.presetKey] = {
+      displayName: previous[terminal.presetKey]?.displayName ?? terminal.displayName,
+      layoutVariant: previous[terminal.presetKey]?.layoutVariant ?? terminal.layoutVariant ?? defaultLayoutVariantForPreset(terminal.presetKey),
+    };
+  }
+
+  terminalStylePlan.value = updated;
+}, { immediate: true });
+
+const starterTerminalCards = computed(() =>
+  starterTerminalSeeds.value.map((terminal) => {
+    const preset = TERMINAL_PERMISSION_PRESETS.find((item) => item.key === terminal.presetKey);
+    const plan = terminalStylePlan.value[terminal.presetKey];
+
+    return {
+      ...terminal,
+      displayName: plan?.displayName ?? terminal.displayName,
+      layoutVariant: plan?.layoutVariant ?? terminal.layoutVariant ?? defaultLayoutVariantForPreset(terminal.presetKey),
+      presetLabel: preset?.label ?? terminal.presetKey,
+      presetDescription: preset?.description ?? '',
+      variants: layoutVariantsForPreset(terminal.presetKey),
+    };
+  }),
+);
+
+const terminalLayoutMap = computed(() =>
+  Object.fromEntries(
+    starterTerminalCards.value.map((terminal) => [terminal.presetKey, terminal.layoutVariant]),
+  ),
 );
 
 function applyPreset(preset: Preset) {
@@ -378,7 +438,18 @@ function toggleFeature(id: string) {
   selectedPreset.value = matchingPreset;
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
+function setTerminalLayoutVariant(presetKey: PermissionPresetKey, layoutVariant: string) {
+  const current = terminalStylePlan.value[presetKey];
+  terminalStylePlan.value = {
+    ...terminalStylePlan.value,
+    [presetKey]: {
+      displayName: current?.displayName ?? starterTerminalSeeds.value.find((terminal) => terminal.presetKey === presetKey)?.displayName ?? '',
+      layoutVariant,
+    },
+  };
+}
+
+// â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function goToFeatures() {
   if (!businessName.value.trim() || !selectedType.value) return;
   // auto select first preset if nothing is selected yet
@@ -414,7 +485,14 @@ const monthlyTotal = computed(() => {
   return 15 + (selectedFeatures.value.size * 5);
 });
 
-// ── Submit ────────────────────────────────────────────────────────────────────
+watch(layoutBundle, (nextBundle) => {
+  colorPalette.value = {
+    ...colorPalette.value,
+    ...buildBusinessPalette(colorPalette.value.primary, nextBundle),
+  };
+});
+
+// â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function handleSubmit() {
   submitting.value = true;
   submitError.value = null;
@@ -434,7 +512,16 @@ async function handleSubmit() {
           languagePreference: languagePreference.value,
           uiStyle: uiStyle.value,
           onboardingPreset: selectedPreset.value,
+          layoutBundle: layoutBundle.value,
+          surfaceStyle: surfaceStyle.value,
+          particleEffect: particleEffect.value,
+          terminalLayouts: terminalLayoutMap.value,
         },
+        terminalConfigs: starterTerminalCards.value.map((terminal) => ({
+          displayName: terminal.displayName,
+          presetKey: terminal.presetKey,
+          layoutVariant: terminal.layoutVariant,
+        })),
         override:     !!business.value,
       },
     });
@@ -465,7 +552,7 @@ async function handleSubmit() {
           <X class="w-5 h-5" />
         </button>
 
-        <!-- ── Step 1: Basics ────────────────────────────────────────────── -->
+        <!-- â”€â”€ Step 1: Basics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <Transition name="slide">
           <div v-if="step === 1" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)]">
@@ -498,7 +585,7 @@ async function handleSubmit() {
                       <input
                         v-model="businessName"
                         type="text"
-                        placeholder="e.g. Sakura Café"
+                        placeholder="e.g. Sakura Cafe"
                         class="field-input max-w-sm"
                       />
                     </div>
@@ -510,6 +597,24 @@ async function handleSubmit() {
                         <span v-if="logoUrl" class="text-[10px] px-2 py-1 rounded bg-[rgba(104,41,58,0.06)] text-[#68293A]">
                           {{ t('onboarding_predicted_color') }}
                         </span>
+                      </div>
+                      <div class="mt-3 grid grid-cols-4 gap-2 max-w-md">
+                        <div class="rounded-xl border border-black/5 p-2 bg-white/70">
+                          <div class="h-8 rounded-lg" :style="{ background: colorPalette.primary }" />
+                          <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Primary</p>
+                        </div>
+                        <div class="rounded-xl border border-black/5 p-2 bg-white/70">
+                          <div class="h-8 rounded-lg" :style="{ background: colorPalette.secondary }" />
+                          <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Secondary</p>
+                        </div>
+                        <div class="rounded-xl border border-black/5 p-2 bg-white/70">
+                          <div class="h-8 rounded-lg" :style="{ background: colorPalette.accent }" />
+                          <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Accent</p>
+                        </div>
+                        <div class="rounded-xl border border-black/5 p-2 bg-white/70">
+                          <div class="h-8 rounded-lg" :style="{ background: colorPalette.background }" />
+                          <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Frame</p>
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -559,7 +664,7 @@ async function handleSubmit() {
           </div>
         </Transition>
 
-        <!-- ── Step 2: Features ──────────────────────────────────────────── -->
+        <!-- â”€â”€ Step 2: Features â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <Transition name="slide">
           <div v-if="step === 2" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
@@ -619,6 +724,64 @@ async function handleSubmit() {
                   </button>
                 </div>
                 <div class="mt-6">
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Starter Workstations</p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div
+                      v-for="terminal in starterTerminalCards"
+                      :key="terminal.presetKey"
+                      class="style-card p-4"
+                    >
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ terminal.displayName }}</p>
+                          <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.6)]">{{ terminal.presetLabel }}</p>
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[rgba(104,41,58,0.05)] text-[rgba(104,41,58,0.45)]">
+                          {{ terminal.variants.length }} layouts
+                        </span>
+                      </div>
+                      <p class="text-[11px] mt-3 text-[rgba(104,41,58,0.56)]">{{ terminal.presetDescription }}</p>
+                      <div class="mt-4 space-y-2">
+                        <button
+                          v-for="variant in terminal.variants"
+                          :key="variant.id"
+                          class="style-card text-left p-3 w-full"
+                          :class="{ 'active': terminal.layoutVariant === variant.id }"
+                          @click="setTerminalLayoutVariant(terminal.presetKey, variant.id)"
+                        >
+                          <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ variant.label }}</p>
+                          <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.6)]">{{ variant.description }}</p>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-6">
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">UI Layout Bundle</p>
+                  <div class="grid grid-cols-3 gap-3">
+                    <button
+                      v-for="bundle in UI_LAYOUT_BUNDLES"
+                      :key="bundle.key"
+                      class="style-card text-left p-4"
+                      :class="{ 'active': layoutBundle === bundle.key }"
+                      @click="layoutBundle = bundle.key"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ bundle.label }}</p>
+                        <div class="flex gap-1 shrink-0">
+                          <span
+                            v-for="swatch in bundle.swatches"
+                            :key="swatch"
+                            class="w-4 h-4 rounded-full border border-black/5"
+                            :style="{ background: swatch }"
+                          />
+                        </div>
+                      </div>
+                      <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.6)]">{{ bundle.description }}</p>
+                    </button>
+                  </div>
+                </div>
+                <div class="mt-6">
                   <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_interface_style') }}</p>
                   <div class="grid grid-cols-2 gap-3">
                     <button
@@ -643,6 +806,38 @@ async function handleSubmit() {
                     </button>
                   </div>
                 </div>
+                <div class="mt-6 grid grid-cols-2 gap-6">
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Element Shape</p>
+                    <div class="space-y-3">
+                      <button
+                        v-for="option in SURFACE_STYLE_OPTIONS"
+                        :key="option.id"
+                        class="style-card text-left p-4 w-full"
+                        :class="{ 'active': surfaceStyle === option.id }"
+                        @click="surfaceStyle = option.id"
+                      >
+                        <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ option.label }}</p>
+                        <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.6)]">{{ option.description }}</p>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Ambient Effect</p>
+                    <div class="space-y-3">
+                      <button
+                        v-for="option in PARTICLE_OPTIONS"
+                        :key="option.id"
+                        class="style-card text-left p-4 w-full"
+                        :class="{ 'active': particleEffect === option.id }"
+                        @click="particleEffect = option.id"
+                      >
+                        <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ option.label }}</p>
+                        <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.6)]">{{ option.description }}</p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -652,7 +847,7 @@ async function handleSubmit() {
               </button>
               <div class="flex items-center gap-4">
                 <span class="text-xs text-[rgba(104,41,58,0.6)] font-mono">
-                  {{ selectedPresetRecord?.label ?? t('preset_required') }} / {{ selectedUiStyleRecord.label }}
+                  {{ selectedPresetRecord?.label ?? t('preset_required') }} / {{ selectedBundleRecord.label }} / {{ selectedUiStyleRecord.label }}
                 </span>
                 <button
                   class="btn-nav"
@@ -666,7 +861,7 @@ async function handleSubmit() {
           </div>
         </Transition>
 
-        <!-- ── Step 3: Review & Confirm ──────────────────────────────────── -->
+        <!-- â”€â”€ Step 3: Review & Confirm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <Transition name="slide">
           <div v-if="step === 3" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
@@ -698,6 +893,27 @@ async function handleSubmit() {
                 <div v-if="selectedFeaturesList.length === 0" class="text-center py-10 text-[rgba(104,41,58,0.5)] text-sm">
                   Choose a preset to continue.
                 </div>
+
+                <div v-if="starterTerminalCards.length > 0" class="mt-6">
+                  <div class="flex items-center gap-2 mb-4">
+                    <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                    <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Terminal Styles</p>
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div v-for="terminal in starterTerminalCards" :key="`${terminal.presetKey}-review`" class="feature-card bg-white p-4">
+                      <div class="flex items-center justify-between gap-3 border-b border-[rgba(104,41,58,0.06)] pb-2 mb-3">
+                        <span class="text-xs font-bold text-[rgb(var(--shell-sidebar))]">{{ terminal.displayName }}</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-[rgba(104,41,58,0.45)]">{{ terminal.presetLabel }}</span>
+                      </div>
+                      <p class="text-xs leading-relaxed text-[rgba(104,41,58,0.58)]">
+                        {{ terminal.variants.find((variant) => variant.id === terminal.layoutVariant)?.label ?? terminal.layoutVariant }}
+                      </p>
+                      <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.5)]">
+                        {{ terminal.variants.find((variant) => variant.id === terminal.layoutVariant)?.description }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Workspace Summary -->
@@ -713,8 +929,24 @@ async function handleSubmit() {
                     <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedPresetRecord?.label ?? t('none') }}</span>
                   </div>
                   <div class="flex justify-between items-center text-sm">
+                    <span class="text-[rgba(104,41,58,0.7)]">Layout Bundle</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedBundleRecord.label }}</span>
+                  </div>
+                  <div class="flex justify-between items-center text-sm">
                     <span class="text-[rgba(104,41,58,0.7)]">{{ t('style') }}</span>
                     <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedUiStyleRecord.label }}</span>
+                  </div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-[rgba(104,41,58,0.7)]">Starter Terminals</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ starterTerminalCards.length }}</span>
+                  </div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-[rgba(104,41,58,0.7)]">Element Shape</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ surfaceStyle === 'rounded' ? 'Rounded' : 'Square' }}</span>
+                  </div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-[rgba(104,41,58,0.7)]">Ambient Effect</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ particleEffect === 'floating-orbs' ? 'Floating Orbs' : particleEffect === 'soft-grid' ? 'Soft Grid' : 'None' }}</span>
                   </div>
                   <div class="pt-3 border-t border-[rgba(104,41,58,0.08)] flex justify-between items-center">
                     <span class="font-bold text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_summary_language') }}</span>
@@ -722,7 +954,25 @@ async function handleSubmit() {
                   </div>
                   <div class="flex gap-2 h-7 rounded-lg overflow-hidden border border-black/5">
                     <div
-                      v-for="swatch in selectedUiStyleRecord.swatches"
+                      class="flex-1"
+                      :style="{ background: colorPalette.primary }"
+                    />
+                    <div
+                      class="flex-1"
+                      :style="{ background: colorPalette.secondary }"
+                    />
+                    <div
+                      class="flex-1"
+                      :style="{ background: colorPalette.accent }"
+                    />
+                    <div
+                      class="flex-1"
+                      :style="{ background: colorPalette.background }"
+                    />
+                  </div>
+                  <div class="flex gap-2 h-7 rounded-lg overflow-hidden border border-black/5">
+                    <div
+                      v-for="swatch in selectedBundleRecord.swatches"
                       :key="swatch"
                       class="flex-1"
                       :style="{ background: swatch }"
@@ -765,7 +1015,7 @@ async function handleSubmit() {
           </div>
         </Transition>
 
-        <!-- ── Step 4: Done ───────────────────────────────────────────────── -->
+        <!-- â”€â”€ Step 4: Done â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <Transition name="slide">
           <div v-if="step === 4" class="flex flex-col items-center justify-center px-10 py-20 text-center h-full bg-white">
             <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 bg-[#F6E6D7] border border-[rgba(104,41,58,0.1)]">
@@ -973,3 +1223,4 @@ async function handleSubmit() {
 .slide-enter-from { opacity: 0; transform: translateX(20px); }
 .slide-leave-to   { opacity: 0; transform: translateX(-20px); }
 </style>
+

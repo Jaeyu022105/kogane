@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Shield, Sparkles, Trash2 } from 'lucide-vue-next';
+import { ArrowLeft, Shield, Sparkles, Trash2, Link2, KeyRound } from 'lucide-vue-next';
 import { DEFAULT_TERMINAL_PERMISSIONS, normalizePermissions, resolveTablePermissions, TERMINAL_PERMISSION_PRESETS, type TablePermissionKey, type TerminalPermissions } from '~/lib/permissions';
 
 definePageMeta({ layout: 'dashboard' });
@@ -16,12 +16,14 @@ const { tables, fetchTables } = useSchema(businessId);
 const loading = ref(false);
 const saving = ref(false);
 const savingPublic = ref(false);
+const savingOptions = ref(false);
 const deleting = ref(false);
 const error = ref<string | null>(null);
 const terminal = ref<{
   id: string;
   display_name: string;
   role: string;
+  pin_code: string | null;
   permissions: TerminalPermissions;
   is_public: boolean;
   public_slug: string | null;
@@ -30,6 +32,10 @@ const permissions = ref<TerminalPermissions>(normalizePermissions(DEFAULT_TERMIN
 const isPublic = ref(false);
 const publicSlug = ref('');
 const publicUrl = computed(() => publicSlug.value ? `/t/${publicSlug.value}` : null);
+const optionDisplayName = ref('');
+const optionPin = ref('');
+const copiedLink = ref(false);
+const copiedPin = ref(false);
 
 async function loadTerminal() {
   if (!route.params.id) return;
@@ -50,6 +56,8 @@ async function loadTerminal() {
     permissions.value = normalizePermissions(res.terminal.permissions);
     isPublic.value = Boolean(res.terminal.is_public);
     publicSlug.value = res.terminal.public_slug ?? '';
+    optionDisplayName.value = res.terminal.display_name ?? '';
+    optionPin.value = res.terminal.pin_code ?? '';
   } catch (err) {
     error.value = (err as Error).message;
   } finally {
@@ -81,6 +89,73 @@ function setAuditVisibility(value: boolean) {
     ...permissions.value,
     audit_log: { visible: value },
   };
+}
+
+function resolvedTerminalLink() {
+  if (!import.meta.client || !terminal.value) return '';
+
+  const path = isPublic.value && publicSlug.value
+    ? `/t/${publicSlug.value}`
+    : `/terminal/${terminal.value.id}`;
+
+  return new URL(path, window.location.origin).toString();
+}
+
+async function copyTerminalLink() {
+  const url = resolvedTerminalLink();
+  if (!url) return;
+
+  await navigator.clipboard.writeText(url);
+  copiedLink.value = true;
+  setTimeout(() => (copiedLink.value = false), 1500);
+}
+
+async function copyTerminalPin() {
+  if (!optionPin.value) return;
+
+  await navigator.clipboard.writeText(optionPin.value);
+  copiedPin.value = true;
+  setTimeout(() => (copiedPin.value = false), 1500);
+}
+
+async function saveOptions() {
+  if (!terminal.value || !business.value) return;
+  savingOptions.value = true;
+  error.value = null;
+
+  try {
+    const res = await $fetch<{ success: boolean; error: string | null; terminal: any | null }>(
+      `/api/terminals/${terminal.value.id}`,
+      {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: {
+          businessId: business.value.id,
+          displayName: optionDisplayName.value,
+          pin: optionPin.value || null,
+        },
+      },
+    );
+
+    if (res.error || !res.terminal) {
+      error.value = res.error ?? 'Unable to save terminal options';
+      return;
+    }
+
+    terminal.value = {
+      ...terminal.value,
+      ...res.terminal,
+      permissions: normalizePermissions(res.terminal.permissions ?? terminal.value.permissions),
+      is_public: Boolean(res.terminal.is_public),
+      public_slug: res.terminal.public_slug ?? publicSlug.value,
+    };
+    optionDisplayName.value = terminal.value.display_name;
+    optionPin.value = res.terminal.pin_code ?? optionPin.value;
+  } catch (err) {
+    error.value = (err as Error).message;
+  } finally {
+    savingOptions.value = false;
+  }
 }
 
 function setReportsVisibility(value: boolean) {
@@ -262,6 +337,68 @@ watch(businessId, () => {
         <!-- ── Configuration Header ─────────────────────────────────────────── -->
         <div class="grid gap-6 md:grid-cols-[1fr_320px]">
           <div class="space-y-6">
+            <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-5">
+              <div>
+                <h3 class="font-serif text-lg font-normal mb-1" style="color: rgb(var(--shell-sidebar));">Terminal Options</h3>
+                <p class="text-xs leading-relaxed" style="color: rgba(61,24,32,0.4);">Update the staff-facing title, reuse the direct link, and manage the terminal PIN from one place.</p>
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Terminal Title</label>
+                  <input
+                    v-model="optionDisplayName"
+                    class="input-warm w-full px-3 py-2.5 text-sm"
+                    placeholder="Front Counter"
+                  />
+                </div>
+
+                <div>
+                  <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">PIN</label>
+                  <input
+                    v-model="optionPin"
+                    class="input-warm w-full px-3 py-2.5 text-sm font-mono"
+                    inputmode="numeric"
+                    maxlength="8"
+                    placeholder="1234"
+                  />
+                  <p class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Use 4 to 8 digits. Saving here updates terminal sign-in immediately.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    class="text-sm font-semibold px-4 py-2.5 rounded-2xl transition-all border"
+                    style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
+                    @click="copyTerminalLink"
+                  >
+                    <div class="flex items-center justify-center gap-2">
+                      <Link2 class="w-4 h-4" />
+                      {{ copiedLink ? 'Copied Link' : 'Copy Link' }}
+                    </div>
+                  </button>
+                  <button
+                    class="text-sm font-semibold px-4 py-2.5 rounded-2xl transition-all border disabled:opacity-40"
+                    style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
+                    :disabled="!optionPin"
+                    @click="copyTerminalPin"
+                  >
+                    <div class="flex items-center justify-center gap-2">
+                      <KeyRound class="w-4 h-4" />
+                      {{ copiedPin ? 'Copied PIN' : 'Copy PIN' }}
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <button
+                class="w-full text-sm font-semibold px-5 py-2.5 rounded-2xl transition-all disabled:opacity-40"
+                style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar)); border: 1px solid rgba(61,24,32,0.08);"
+                :disabled="savingOptions"
+                @click="saveOptions"
+              >
+                {{ savingOptions ? 'Saving...' : 'Save Options' }}
+              </button>
+            </div>
             <div class="bg-white rounded-3xl p-8 shadow-warm border border-black/[0.03]">
               <div class="flex items-start justify-between gap-6">
                 <div>

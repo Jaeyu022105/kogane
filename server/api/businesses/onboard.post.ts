@@ -8,7 +8,9 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier, buildCreateTableSql } from '~/lib/schemaUtils';
+import type { PermissionPresetKey } from '~/lib/permissions';
 import type { SchemaDef } from '~/lib/schemaUtils';
+import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/managedTerminals';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -20,6 +22,13 @@ export default defineEventHandler(async (event) => {
     schemaDef: SchemaDef;
     logoUrl?: string;
     colorPalette?: any;
+    terminalConfigs?: Array<{
+      displayName: string;
+      presetKey: PermissionPresetKey;
+      layoutVariant?: string;
+      pin?: string;
+      resolution?: string;
+    }>;
     override?: boolean;
   }>(event);
 
@@ -81,6 +90,33 @@ export default defineEventHandler(async (event) => {
     const sql = buildCreateTableSql(table, schemaName, dialect);
     const { error: tableErr } = await db.execute(sql);
     if (tableErr) tableErrors.push(`${table.name}: ${tableErr}`);
+  }
+
+  if (business?.id) {
+    if (body.override) {
+      await db.delete('terminals', { business_id: business.id });
+    }
+
+    const starterTerminals = body.terminalConfigs?.length
+      ? body.terminalConfigs
+      : inferStarterTerminals(body.businessType, body.features ?? []);
+
+    for (const terminal of starterTerminals) {
+      const created = await createManagedTerminal({
+        businessId: business.id,
+        businessSchema: schemaName,
+        displayName: terminal.displayName,
+        presetKey: terminal.presetKey,
+        pin: terminal.pin,
+        resolution: terminal.resolution,
+        layoutVariant: terminal.layoutVariant,
+        brandConfig: body.colorPalette ?? {},
+      });
+
+      if (created.error) {
+        tableErrors.push(`${terminal.displayName}: ${created.error}`);
+      }
+    }
   }
 
   return {

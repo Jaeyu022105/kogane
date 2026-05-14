@@ -1,11 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
 
 /**
  * Public (guest) terminal page.
- * Accessed via /t/[slug]?table_id=3 — no login required.
+ * Accessed via /t/[slug]?table_id=3 â€” no login required.
  * The terminal must have is_public enabled in the admin dashboard.
  * URL query params are injected as $$session.* variables into the runtime.
  */
@@ -15,6 +15,7 @@ definePageMeta({ layout: 'default' });
 interface GuestSession {
   terminalId: string;
   displayName: string;
+  businessName?: string;
   businessId: string;
   role: string;
   permissions: any;
@@ -52,6 +53,7 @@ const activeTheme = computed(() => session.value?.uiLayout?.theme ?? DEFAULT_LAY
 const activeModal = computed(() =>
   session.value?.uiLayout?.modals?.find((modal) => modal.id === runtime.state.value.activeModalId) ?? null,
 );
+const surfaceRadius = computed(() => activeTheme.value.surfaceStyle === 'square' ? '18px' : '28px');
 
 async function bootstrap() {
   loading.value = true;
@@ -82,9 +84,14 @@ async function bootstrap() {
       businessId: res.session.businessId,
       layout: session.value.uiLayout,
       permissions: res.session.permissions,
-      sessionVars: Object.fromEntries(
-        Object.entries(route.query).map(([key, value]) => [key, value]),
-      ),
+      sessionVars: {
+        ...Object.fromEntries(
+          Object.entries(route.query).map(([key, value]) => [key, value]),
+        ),
+        businessName: res.session.businessName ?? '',
+        terminalName: res.session.displayName,
+        terminalRole: res.session.role,
+      },
     });
   } catch (err) {
     loadError.value = (err as Error).message;
@@ -109,7 +116,7 @@ onUnmounted(() => {
   <div class="w-full h-dvh overflow-hidden flex items-center justify-center" :style="{ background: activeTheme.frameBackground }">
     <div v-if="loading" class="flex flex-col items-center gap-3">
       <div class="w-6 h-6 rounded-full border-2 animate-spin" style="border-color: rgba(255,255,255,0.16); border-top-color: #e8748a;" />
-      <p class="text-xs" style="color: rgba(255,255,255,0.4);">Loading terminal…</p>
+      <p class="text-xs" style="color: rgba(255,255,255,0.4);">Loading terminal...</p>
     </div>
 
     <div v-else-if="loadError" class="text-center px-6">
@@ -126,8 +133,28 @@ onUnmounted(() => {
         transform: `scale(${canvasScale})`,
         transformOrigin: 'top left',
         background: activeTheme.canvasBackground,
+        borderRadius: surfaceRadius,
+        overflow: 'hidden',
       }"
     >
+      <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+          v-if="activeTheme.particleEffect === 'floating-orbs'"
+          class="absolute -top-20 right-10 w-80 h-80 blur-3xl opacity-35"
+          :style="{ background: `radial-gradient(circle, ${activeTheme.accentColor} 0%, transparent 72%)` }"
+        />
+        <div
+          v-if="activeTheme.particleEffect === 'floating-orbs'"
+          class="absolute bottom-0 left-0 w-96 h-96 blur-3xl opacity-20"
+          :style="{ background: `radial-gradient(circle, ${activeTheme.panelHeaderBackground} 0%, transparent 72%)` }"
+        />
+        <div
+          v-if="activeTheme.particleEffect === 'soft-grid'"
+          class="absolute inset-0 opacity-20"
+          :style="{ backgroundImage: `linear-gradient(${activeTheme.panelBorder} 1px, transparent 1px), linear-gradient(90deg, ${activeTheme.panelBorder} 1px, transparent 1px)`, backgroundSize: '32px 32px' }"
+        />
+      </div>
+
       <ElementRenderer
         v-for="el in session.uiLayout?.elements ?? []"
         :key="el.id"
@@ -140,12 +167,12 @@ onUnmounted(() => {
         class="absolute inset-0 z-[60] flex items-center justify-center bg-black/45"
       >
         <div
-          class="relative overflow-hidden rounded-[28px] border shadow-2xl"
+          class="relative overflow-hidden border shadow-2xl"
           :style="activeModal.presentation === 'fullscreen'
-            ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`
+            ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
             : activeModal.presentation === 'drawer'
-              ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`
-              : `width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder};`"
+              ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
+              : `width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`"
         >
           <ElementRenderer
             v-for="el in activeModal.elements"
@@ -158,3 +185,4 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+

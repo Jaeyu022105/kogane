@@ -60,6 +60,8 @@ export interface UiLayoutTheme {
   panelText: string;
   panelMutedText: string;
   panelBorder: string;
+  surfaceStyle?: 'rounded' | 'square';
+  particleEffect?: 'none' | 'floating-orbs' | 'soft-grid';
 }
 
 export interface RuntimeActionDefinition {
@@ -202,6 +204,15 @@ export interface CartWidgetElementDef extends BaseElementDef {
   orderTable?: string;
   submitLabel?: string;
   emptyLabel?: string;
+  paymentMethods?: string[];
+  defaultPaymentMethod?: string;
+  enableCardReader?: boolean;
+  cardReaderMode?: 'manual' | 'simulated' | 'bridge';
+  cardReaderProvider?: string;
+  cardReaderLabel?: string;
+  enableReceiptPrinting?: boolean;
+  receiptTitle?: string;
+  receiptFooter?: string;
   backgroundColor?: string;
   panelColor?: string;
   textColor?: string;
@@ -283,6 +294,8 @@ export const DEFAULT_LAYOUT_THEME: UiLayoutTheme = {
   panelText: '#f5ede4',
   panelMutedText: 'rgba(245,237,228,0.68)',
   panelBorder: 'rgba(255,255,255,0.08)',
+  surfaceStyle: 'rounded',
+  particleEffect: 'none',
 };
 
 export const DEFAULT_LAYOUT: UiLayout = {
@@ -324,6 +337,10 @@ function normalizeTheme(value: unknown): UiLayoutTheme {
     panelText: typeof source.panelText === 'string' ? source.panelText : DEFAULT_LAYOUT_THEME.panelText,
     panelMutedText: typeof source.panelMutedText === 'string' ? source.panelMutedText : DEFAULT_LAYOUT_THEME.panelMutedText,
     panelBorder: typeof source.panelBorder === 'string' ? source.panelBorder : DEFAULT_LAYOUT_THEME.panelBorder,
+    surfaceStyle: source.surfaceStyle === 'square' ? 'square' : 'rounded',
+    particleEffect: source.particleEffect === 'floating-orbs' || source.particleEffect === 'soft-grid'
+      ? source.particleEffect
+      : 'none',
   };
 }
 
@@ -551,6 +568,19 @@ function normalizeElement(raw: unknown): ElementDef | null {
         orderTable: typeof source.orderTable === 'string' ? source.orderTable : undefined,
         submitLabel: typeof source.submitLabel === 'string' ? source.submitLabel : undefined,
         emptyLabel: typeof source.emptyLabel === 'string' ? source.emptyLabel : undefined,
+        paymentMethods: Array.isArray(source.paymentMethods) ? source.paymentMethods.map(String) : undefined,
+        defaultPaymentMethod: typeof source.defaultPaymentMethod === 'string' ? source.defaultPaymentMethod : undefined,
+        enableCardReader: typeof source.enableCardReader === 'boolean' ? source.enableCardReader : undefined,
+        cardReaderMode: source.cardReaderMode === 'simulated' || source.cardReaderMode === 'bridge'
+          ? source.cardReaderMode
+          : source.cardReaderMode === 'manual'
+            ? 'manual'
+            : undefined,
+        cardReaderProvider: typeof source.cardReaderProvider === 'string' ? source.cardReaderProvider : undefined,
+        cardReaderLabel: typeof source.cardReaderLabel === 'string' ? source.cardReaderLabel : undefined,
+        enableReceiptPrinting: typeof source.enableReceiptPrinting === 'boolean' ? source.enableReceiptPrinting : undefined,
+        receiptTitle: typeof source.receiptTitle === 'string' ? source.receiptTitle : undefined,
+        receiptFooter: typeof source.receiptFooter === 'string' ? source.receiptFooter : undefined,
         backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
         panelColor: typeof source.panelColor === 'string' ? source.panelColor : undefined,
         textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
