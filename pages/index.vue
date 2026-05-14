@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useLocale();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
@@ -16,14 +17,14 @@ const industryIcons: Record<string, string> = {
   finance:    'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
 };
 
-const industries = [
-  { iconKey: 'restaurant', name: 'Restaurant & Café'   },
-  { iconKey: 'logistics',  name: 'Logistics & Shipping' },
-  { iconKey: 'retail',     name: 'Retail & POS'         },
-  { iconKey: 'healthcare', name: 'Healthcare'           },
-  { iconKey: 'construct',  name: 'Construction'         },
-  { iconKey: 'finance',    name: 'Finance & CRM'        },
-];
+const industries = computed(() => [
+  { iconKey: 'restaurant', name: t('ind_restaurant')   },
+  { iconKey: 'logistics',  name: t('ind_logistics') },
+  { iconKey: 'retail',     name: t('ind_retail')         },
+  { iconKey: 'healthcare', name: t('ind_healthcare')           },
+  { iconKey: 'construct',  name: t('ind_construct')         },
+  { iconKey: 'finance',    name: t('ind_finance')        },
+]);
 
 /* SVG path strings for pillar cards */
 const pillarIcons: Record<string, string> = {
@@ -33,20 +34,20 @@ const pillarIcons: Record<string, string> = {
   onboard:  'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7 M9 12h6 M9 16h4',
 };
 
-const pillars = [
-  { iconKey: 'onboard',  title: 'Guided Setup',     body: 'Choose your language, industry, and workspace style before setup starts.' },
-  { iconKey: 'schema',   title: 'Industry Presets', body: 'Start from ready-made workflows for sales, inventory, appointments, CRM, and more.' },
-  { iconKey: 'builder',  title: 'Style Presets',    body: 'Pick visual treatments that match how your staff need to scan, tap, and work.' },
-  { iconKey: 'terminal', title: 'Managed Launch',   body: 'Postfolio assembles the screens, data, and access rules behind the scenes.' },
-];
+const pillars = computed(() => [
+  { iconKey: 'onboard',  title: t('pillar_setup_title'),     body: t('pillar_setup_body') },
+  { iconKey: 'schema',   title: t('pillar_schema_title'), body: t('pillar_schema_body') },
+  { iconKey: 'builder',  title: t('pillar_builder_title'),    body: t('pillar_builder_body') },
+  { iconKey: 'terminal', title: t('pillar_terminal_title'),   body: t('pillar_terminal_body') },
+]);
 
-const tableRows = [
-  { col: 'Orders',      type: 'Cashier', key: 'Ready', keyClass: 'pk' },
-  { col: 'Inventory',   type: 'Ops',     key: '',      keyClass: '' },
-  { col: 'Customers',   type: 'CRM',     key: '',      keyClass: '' },
-  { col: 'Reports',     type: 'Manager', key: 'Live',  keyClass: 'fk' },
-  { col: 'Brand style', type: 'Warm',    key: '',      keyClass: '' },
-];
+const tableRows = computed(() => [
+  { col: t('table_orders'),      type: t('table_cashier'), key: t('table_ready'), keyClass: 'pk' },
+  { col: t('table_inventory'),   type: t('table_ops'),     key: '',      keyClass: '' },
+  { col: t('table_customers'),   type: t('table_crm'),     key: '',      keyClass: '' },
+  { col: t('table_reports'),     type: t('table_manager'), key: t('table_live'),  keyClass: 'fk' },
+  { col: t('table_brand'), type: t('table_warm'),    key: '',      keyClass: '' },
+]);
 </script>
 
 <template>
@@ -55,22 +56,18 @@ const tableRows = [
     <div class="hero-inner">
       <div class="hero-badge">
         <span class="badge-dot" />
-        Now in early access
+        {{ t('index_hero_badge') }}
       </div>
 
-      <h1 class="hero-headline">
-        Internal tools that
-        <em>feel as good</em>
-        as the products they support.
-      </h1>
+      <h1 class="hero-headline" v-html="t('index_hero_headline')"></h1>
 
       <p class="hero-sub">
-        Postfolio helps teams launch preset POS, inventory, appointment, and CRM workspaces without writing frontend code or managing technical setup.
+        {{ t('index_hero_sub') }}
       </p>
 
       <div class="hero-cta">
-        <NuxtLink to="/login" class="m-btn-primary ribbon">Start building free</NuxtLink>
-        <NuxtLink to="/features" class="m-btn-ghost">See how it works →</NuxtLink>
+        <NuxtLink to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
+        <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
       </div>
     </div>
 
@@ -80,11 +77,11 @@ const tableRows = [
           <div class="preview-dots">
             <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
           </div>
-          <span class="preview-title">Preset Setup</span>
+          <span class="preview-title">{{ t('index_preview_setup') }}</span>
         </div>
         <div class="preview-table">
           <div class="table-head">
-            <span>Workflow</span><span>Preset</span><span>Status</span>
+            <span>{{ t('index_table_workflow') }}</span><span>{{ t('index_table_preset') }}</span><span>{{ t('index_table_status') }}</span>
           </div>
           <div v-for="(row, i) in tableRows" :key="row.col" class="table-row" :class="{ 'row-alt': i % 2 !== 0 }">
             <span class="col-name">{{ row.col }}</span>
@@ -100,7 +97,7 @@ const tableRows = [
           <div class="preview-dots">
             <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
           </div>
-          <span class="preview-title">POS Workspace</span>
+          <span class="preview-title">{{ t('index_preview_pos') }}</span>
         </div>
         <div class="terminal-mock">
           <div class="terminal-items">
@@ -120,7 +117,7 @@ const tableRows = [
   <!-- ── Industry strip ────────────────────────────────────── -->
   <section class="section-industries">
     <div class="section-inner">
-      <p class="m-overline">Works for any business</p>
+      <p class="m-overline">{{ t('index_industry_overline') }}</p>
       <div class="industry-grid">
         <div v-for="ind in industries" :key="ind.name" class="industry-chip">
           <span class="chip-icon">
@@ -138,9 +135,9 @@ const tableRows = [
   <section class="section-pillars">
     <div class="section-inner">
       <div class="m-label-block">
-        <p class="m-overline">The Platform</p>
-        <h2 class="m-heading">Everything you need,<br><em>nothing you don't.</em></h2>
-        <p class="m-sub">Four guided steps take you from business type to a working preset workspace.</p>
+        <p class="m-overline">{{ t('index_pillars_overline') }}</p>
+        <h2 class="m-heading" v-html="t('index_pillars_heading')"></h2>
+        <p class="m-sub">{{ t('index_pillars_sub') }}</p>
       </div>
       <div class="pillar-grid">
         <div v-for="p in pillars" :key="p.title" class="pillar-card">
@@ -161,29 +158,29 @@ const tableRows = [
   <section class="section-philosophy">
     <div class="section-inner philosophy-inner">
       <div class="philosophy-text">
-        <p class="m-overline">Our philosophy</p>
-        <h2 class="m-heading">Most internal tools are either too rigid or too ugly.</h2>
+        <p class="m-overline">{{ t('index_philosophy_overline') }}</p>
+        <h2 class="m-heading">{{ t('index_philosophy_heading') }}</h2>
         <p class="m-sub">
-          SaaS tools lock you into their model. Custom builds look terrible and take months. Postfolio is built on the belief that internal tools should feel as premium as the products they support — and be ready in minutes.
+          {{ t('index_philosophy_sub') }}
         </p>
-        <NuxtLink to="/features" class="m-btn-secondary" style="margin-top: 1.75rem;">Explore the platform →</NuxtLink>
+        <NuxtLink to="/features" class="m-btn-secondary" style="margin-top: 1.75rem;">{{ t('index_philosophy_cta') }}</NuxtLink>
       </div>
       <div class="philosophy-badges">
         <div class="badge-card badge-plain">
-          <p class="badge-title">Preset-First</p>
-          <p class="badge-body">Start from a complete workflow instead of a blank technical canvas.</p>
+          <p class="badge-title">{{ t('badge_preset_title') }}</p>
+          <p class="badge-body">{{ t('badge_preset_body') }}</p>
         </div>
         <div class="badge-card badge-dark">
-          <p class="badge-title">Style Options</p>
-          <p class="badge-body">Choose polished interface styles without editing layouts by hand.</p>
+          <p class="badge-title">{{ t('badge_style_title') }}</p>
+          <p class="badge-body">{{ t('badge_style_body') }}</p>
         </div>
         <div class="badge-card badge-brand">
-          <p class="badge-title">Role-Aware</p>
-          <p class="badge-body">Each workspace can expose only the actions a staff role needs.</p>
+          <p class="badge-title">{{ t('badge_role_title') }}</p>
+          <p class="badge-body">{{ t('badge_role_body') }}</p>
         </div>
         <div class="badge-card badge-outline">
-          <p class="badge-title">Dynamic Theming</p>
-          <p class="badge-body">Your brand colors propagate instantly across every preset workspace.</p>
+          <p class="badge-title">{{ t('badge_theme_title') }}</p>
+          <p class="badge-body">{{ t('badge_theme_body') }}</p>
         </div>
       </div>
     </div>
@@ -192,16 +189,15 @@ const tableRows = [
   <!-- ── CTA ───────────────────────────────────────────────── -->
   <section class="m-cta-strip">
     <div class="m-cta-inner">
-      <h2 class="m-cta-heading">Ready to build something <em>beautiful?</em></h2>
-      <p class="m-cta-sub">Join forward-thinking businesses using Postfolio to manage their operations in style.</p>
+      <h2 class="m-cta-heading" v-html="t('index_cta_heading')"></h2>
+      <p class="m-cta-sub">{{ t('index_cta_sub') }}</p>
       <div class="m-cta-btns">
-        <NuxtLink to="/login" class="m-btn-primary ribbon">Get started — it's free</NuxtLink>
-        <NuxtLink to="/pricing" class="m-btn-ghost">View pricing →</NuxtLink>
+        <NuxtLink to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
+        <NuxtLink to="/pricing" class="m-btn-ghost">{{ t('index_cta_btn2') }}</NuxtLink>
       </div>
     </div>
   </section>
 </template>
-
 <style scoped>
 /* ── Shared ─────────────────────────────────────────── */
 .section-inner {

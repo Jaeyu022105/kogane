@@ -7,29 +7,32 @@ const router = useRouter();
 const route  = useRoute();
 const { isLoggedIn, devLogin, loadDevSession } = useAuth();
 const { openOnboarding }                        = useOnboarding();
+const { t, locale, setLocale, loadLocale, availableLocales } = useLocale();
 
-const mode = ref<'login' | 'signup' | '2fa-setup'>('login');
+const mode = ref<'login' | 'signup' | '2fa-setup'>((route.query.mode as any) || 'login');
+const signupStep = ref(0); // 0: Lang, 1: Profile, 2: Birthday, 3: Business
 
 // Form state
 const email    = ref('admin@postfolio.dev');
 const password = ref('');
 const fullName = ref('');
 const username = ref('');
-const languagePreference = ref('en');
+
+// Birthday state
+const birthMonth = ref('');
+const birthDay = ref('');
+const birthYear = ref('');
+
+// Business state
+const businessName = ref('');
+const businessType = ref('');
+const businessWebsite = ref('');
+
 const enable2FA = ref(false);
 const verificationCode = ref('');
 
 const error    = ref<string | null>(null);
 const loading  = ref(false);
-
-const languageOptions = [
-  { value: 'en', label: 'English' },
-  { value: 'fil', label: 'Filipino' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'zh', label: 'Chinese' },
-];
 
 const redirectTarget = computed(() => {
   const target = typeof route.query.redirect === 'string'
@@ -55,9 +58,45 @@ function leaveLoginPage() {
 }
 
 onMounted(() => {
+  loadLocale();
   loadDevSession();
   if (isLoggedIn.value) router.push(redirectTarget.value);
 });
+
+function nextStep() {
+  error.value = null;
+  if (signupStep.value === 1) {
+    if (!email.value || !password.value || !fullName.value || !username.value) {
+      error.value = t('error_fill_all');
+      return;
+    }
+  } else if (signupStep.value === 2) {
+    if (!birthMonth.value || !birthDay.value || !birthYear.value) {
+      error.value = t('error_fill_all');
+      return;
+    }
+  }
+  
+  if (signupStep.value < 3) {
+    signupStep.value++;
+  } else {
+    handleSignupSubmit();
+  }
+}
+
+function prevStep() {
+  error.value = null;
+  if (signupStep.value > 0) {
+    signupStep.value--;
+  } else {
+    mode.value = 'login';
+  }
+}
+
+function selectLanguage(code: string) {
+  setLocale(code);
+  nextStep();
+}
 
 async function handleAction() {
   error.value = null;
@@ -74,7 +113,7 @@ async function handleAction() {
 
       if (res.error || !res.session)
       {
-        error.value = res.error ?? 'Login failed';
+        error.value = res.error ?? t('error_login_failed');
         return;
       }
 
@@ -88,41 +127,24 @@ async function handleAction() {
   }
   else if (mode.value === 'signup')
   {
-    if (!email.value || !password.value || !fullName.value || !username.value || !languagePreference.value)
-    {
-      error.value = 'Please fill in all required fields.';
-      return;
-    }
-
-    if (enable2FA.value)
-    {
-      mode.value = '2fa-setup';
-    }
-    else
-    {
-      devLogin(email.value, {
-        fullName: fullName.value,
-        username: username.value,
-        languagePreference: languagePreference.value,
-        has2fa: false,
-      });
-      
-      openOnboarding();
-      router.push(redirectTarget.value);
-    }
+     if (signupStep.value < 3) {
+        nextStep();
+     } else {
+        handleSignupSubmit();
+     }
   }
   else if (mode.value === '2fa-setup')
   {
     if (verificationCode.value.length < 6)
     {
-      error.value = 'Please enter a valid 6-digit code.';
+      error.value = t('error_invalid_code');
       return;
     }
     
     devLogin(email.value, {
       fullName: fullName.value,
       username: username.value,
-      languagePreference: languagePreference.value,
+      languagePreference: locale.value,
       has2fa: true,
     });
     
@@ -130,6 +152,30 @@ async function handleAction() {
     router.push(redirectTarget.value);
   }
 }
+
+function handleSignupSubmit() {
+  if (enable2FA.value)
+  {
+    mode.value = '2fa-setup';
+  }
+  else
+  {
+    devLogin(email.value, {
+      fullName: fullName.value,
+      username: username.value,
+      languagePreference: locale.value,
+      has2fa: false,
+    });
+    
+    openOnboarding();
+    router.push(redirectTarget.value);
+  }
+}
+
+const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const days = Array.from({ length: 31 }, (_, i) => String(i + 1));
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 </script>
 
 <template>
@@ -138,9 +184,9 @@ async function handleAction() {
     <div class="login-blob login-blob--top" />
     <div class="login-blob login-blob--bottom" />
 
-    <div class="login-wrap" :class="{ 'login-wrap--wide': mode === 'signup' }">
+    <div class="login-wrap" :class="{ 'login-wrap--wide': mode === 'signup' && signupStep > 0 }">
       <!-- brand mark -->
-      <div class="login-brand" :style="mode === 'signup' ? 'justify-content: center;' : ''">
+      <div class="login-brand" :style="(mode === 'signup' && signupStep > 0) ? 'justify-content: center;' : ''">
         <div class="brand-mark">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="3" />
@@ -157,155 +203,265 @@ async function handleAction() {
 
       <!-- card -->
       <div class="login-card">
-        <div class="login-card-header" :style="mode === 'signup' ? 'text-align: center;' : ''">
-          <h2 class="login-title">
-            {{ mode === 'login' ? 'Admin login' : mode === 'signup' ? 'Create an account' : 'Set up 2FA' }}
-          </h2>
-          <p class="login-subtitle">
-            <template v-if="mode === 'login'">
-              {{ exitTarget ? 'Sign in to continue to the admin view.' : 'Sign in to manage your workspace.' }}
-            </template>
-            <template v-else-if="mode === 'signup'">
-              Get started by creating your administrator profile.
-            </template>
-            <template v-else>
-              Scan the QR code with your authenticator app and enter the code below.
-            </template>
-          </p>
-        </div>
-
-        <form class="login-form" @submit.prevent="handleAction">
-          
-          <template v-if="mode === 'signup'">
-            <!-- Profile upload -->
-            <div class="profile-upload-wrapper">
-              <div class="profile-upload">
-                <Camera class="w-6 h-6" style="color: rgba(104,41,58,0.4);" />
-              </div>
-              <span class="profile-upload-text">Upload photo</span>
-            </div>
-
-            <div class="signup-grid">
-              <div class="field">
-                <label for="signup-fullname" class="field-label">Full Name</label>
-                <input id="signup-fullname" v-model="fullName" type="text" required class="field-input" placeholder="Jane Doe" />
-              </div>
-              <div class="field">
-                <label for="signup-username" class="field-label">Username</label>
-                <input id="signup-username" v-model="username" type="text" required class="field-input" placeholder="janedoe" />
-              </div>
-              <div class="field">
-                <label for="signup-email" class="field-label">Email</label>
-                <input id="signup-email" v-model="email" type="email" required class="field-input" placeholder="you@company.com" />
-              </div>
-              <div class="field">
-                <label for="signup-language" class="field-label">Preferred Language</label>
-                <select id="signup-language" v-model="languagePreference" required class="field-input">
-                  <option v-for="language in languageOptions" :key="language.value" :value="language.value">
-                    {{ language.label }}
-                  </option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="signup-password" class="field-label">Password</label>
-                <input id="signup-password" v-model="password" type="password" required class="field-input" placeholder="········" />
-              </div>
-            </div>
-
-            <div class="toggle-wrap">
-              <label class="toggle-switch">
-                <input type="checkbox" v-model="enable2FA" />
-                <span class="toggle-slider"></span>
-              </label>
-              <span class="toggle-label">Enable Two-Factor Authentication</span>
-            </div>
-          </template>
-
-          <template v-if="mode === 'login'">
-            <div class="field">
-              <label for="login-email" class="field-label">Email</label>
-              <input
-                id="login-email"
-                v-model="email"
-                type="email"
-                required
-                autocomplete="email"
-                class="field-input"
-                placeholder="you@company.com"
-              />
-            </div>
-            <div class="field">
-              <label for="login-password" class="field-label">Password</label>
-              <input
-                id="login-password"
-                v-model="password"
-                type="password"
-                autocomplete="current-password"
-                class="field-input"
-                placeholder="········"
-              />
-            </div>
-          </template>
-
-          <template v-if="mode === '2fa-setup'">
-            <div class="qr-placeholder">
-              <QrCode class="w-16 h-16" style="color: #68293A;" />
-              <p class="qr-text">Scan with Authy, Google Authenticator, etc.</p>
-            </div>
-            <div class="field">
-              <label for="2fa-code" class="field-label">Verification Code</label>
-              <input
-                id="2fa-code"
-                v-model="verificationCode"
-                type="text"
-                required
-                class="field-input text-center text-lg tracking-widest"
-                placeholder="000000"
-                maxlength="6"
-              />
-            </div>
-          </template>
-
-          <div v-if="error" class="login-error">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            {{ error }}
+        
+        <template v-if="mode === 'signup' && signupStep === 0">
+           <div class="login-card-header">
+             <h2 class="login-title">{{ t('lang_picker_title') }}</h2>
+             <p class="login-subtitle">{{ t('lang_picker_subtitle') }}</p>
+           </div>
+           
+           <div class="lang-picker-list">
+             <button
+               v-for="lang in availableLocales"
+               :key="lang.code"
+               type="button"
+               class="lang-option"
+               @click="selectLanguage(lang.code)"
+             >
+               <span class="lang-option-native">{{ lang.nativeLabel }}</span>
+               <span class="lang-option-translated" v-if="lang.code !== 'en' || locale !== 'en'">
+                  {{ t(`lang_${lang.code}`) }}
+               </span>
+             </button>
+           </div>
+           
+           <p class="login-dev-note">
+             {{ t('have_account') }} <a href="#" @click.prevent="mode = 'login'" class="link-text">{{ t('sign_in_link') }}</a>
+           </p>
+        </template>
+        
+        <template v-else>
+          <div class="login-card-header" :style="(mode === 'signup') ? 'text-align: center;' : ''">
+            <h2 class="login-title">
+              {{ mode === 'login' ? t('login_title') : mode === 'signup' ? t('signup_title') : t('2fa_title') }}
+            </h2>
+            <p class="login-subtitle">
+              <template v-if="mode === 'login'">
+                {{ exitTarget ? t('login_subtitle_redirect') : t('login_subtitle_default') }}
+              </template>
+              <template v-else-if="mode === 'signup'">
+                {{ t('signup_subtitle') }}
+              </template>
+              <template v-else>
+                {{ t('2fa_subtitle') }}
+              </template>
+            </p>
           </div>
 
+          <form class="login-form" @submit.prevent="handleAction">
+            
+            <template v-if="mode === 'signup'">
+              
+              <!-- Progress indicator -->
+              <div class="signup-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="`width: ${((signupStep - 1) / 2) * 100}%`"></div>
+                </div>
+                <div class="progress-labels">
+                   <span :class="{'active': signupStep >= 1}">{{ t('step_profile') }}</span>
+                   <span :class="{'active': signupStep >= 2}">{{ t('step_birthday') }}</span>
+                   <span :class="{'active': signupStep >= 3}">{{ t('step_business') }}</span>
+                </div>
+              </div>
+              
+              <div class="step-header">
+                <h3 class="step-title">
+                   {{ signupStep === 1 ? t('step1_heading') : signupStep === 2 ? t('step2_heading') : t('step3_heading') }}
+                </h3>
+                <p class="step-desc">
+                   {{ signupStep === 1 ? t('step1_subheading') : signupStep === 2 ? t('step2_subheading') : t('step3_subheading') }}
+                </p>
+              </div>
+
+              <!-- Step 1: Profile -->
+              <template v-if="signupStep === 1">
+                <div class="profile-upload-wrapper">
+                  <div class="profile-upload">
+                    <Camera class="w-6 h-6" style="color: rgba(104,41,58,0.4);" />
+                  </div>
+                  <span class="profile-upload-text">{{ t('upload_photo') }}</span>
+                </div>
+
+                <div class="signup-grid">
+                  <div class="field">
+                    <label for="signup-fullname" class="field-label">{{ t('field_fullname') }}</label>
+                    <input id="signup-fullname" v-model="fullName" type="text" required class="field-input" :placeholder="t('field_fullname_placeholder')" />
+                  </div>
+                  <div class="field">
+                    <label for="signup-username" class="field-label">{{ t('field_username') }}</label>
+                    <input id="signup-username" v-model="username" type="text" required class="field-input" :placeholder="t('field_username_placeholder')" />
+                  </div>
+                  <div class="field">
+                    <label for="signup-email" class="field-label">{{ t('field_email') }}</label>
+                    <input id="signup-email" v-model="email" type="email" required class="field-input" :placeholder="t('field_email_placeholder')" />
+                  </div>
+                  <div class="field">
+                    <label for="signup-password" class="field-label">{{ t('field_password') }}</label>
+                    <input id="signup-password" v-model="password" type="password" required class="field-input" :placeholder="t('field_password_placeholder')" />
+                  </div>
+                </div>
+              </template>
+              
+              <!-- Step 2: Birthday -->
+              <template v-if="signupStep === 2">
+                <div class="signup-grid birthday-grid">
+                  <div class="field">
+                    <label for="signup-month" class="field-label">{{ t('field_birth_month') }}</label>
+                    <select id="signup-month" v-model="birthMonth" required class="field-input">
+                      <option disabled value="">{{ t('field_birth_month') }}</option>
+                      <option v-for="m in months" :key="m" :value="m">{{ t(`month_${m}`) }}</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="signup-day" class="field-label">{{ t('field_birth_day') }}</label>
+                    <select id="signup-day" v-model="birthDay" required class="field-input">
+                      <option disabled value="">{{ t('field_birth_day') }}</option>
+                      <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="signup-year" class="field-label">{{ t('field_birth_year') }}</label>
+                    <select id="signup-year" v-model="birthYear" required class="field-input">
+                      <option disabled value="">{{ t('field_birth_year') }}</option>
+                      <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                  </div>
+                </div>
+              </template>
+              
+              <!-- Step 3: Business -->
+              <template v-if="signupStep === 3">
+                <div class="signup-grid">
+                  <div class="field" style="grid-column: span 2;">
+                    <label for="signup-business-name" class="field-label">{{ t('field_business_name') }}</label>
+                    <input id="signup-business-name" v-model="businessName" type="text" class="field-input" :placeholder="t('field_business_name_placeholder')" />
+                  </div>
+                  <div class="field">
+                    <label for="signup-business-type" class="field-label">{{ t('field_business_type') }}</label>
+                    <input id="signup-business-type" v-model="businessType" type="text" class="field-input" :placeholder="t('field_business_type_placeholder')" />
+                  </div>
+                  <div class="field">
+                    <label for="signup-business-website" class="field-label">{{ t('field_business_website') }}</label>
+                    <input id="signup-business-website" v-model="businessWebsite" type="url" class="field-input" :placeholder="t('field_business_website_placeholder')" />
+                  </div>
+                </div>
+                
+                <div class="toggle-wrap">
+                  <label class="toggle-switch">
+                    <input type="checkbox" v-model="enable2FA" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="toggle-label">{{ t('field_2fa') }}</span>
+                </div>
+              </template>
+              
+              <div class="signup-actions">
+                 <button type="button" class="login-return" @click="prevStep">
+                    {{ t('btn_back') }}
+                 </button>
+                 <button type="submit" :disabled="loading" class="login-submit">
+                    {{ signupStep < 3 ? t('btn_continue') : t('btn_finish') }}
+                 </button>
+              </div>
+            </template>
+
+            <template v-if="mode === 'login'">
+              <div class="field">
+                <label for="login-email" class="field-label">{{ t('field_login_email') }}</label>
+                <input
+                  id="login-email"
+                  v-model="email"
+                  type="email"
+                  required
+                  autocomplete="email"
+                  class="field-input"
+                  placeholder="you@company.com"
+                />
+              </div>
+              <div class="field">
+                <label for="login-password" class="field-label">{{ t('field_login_password') }}</label>
+                <input
+                  id="login-password"
+                  v-model="password"
+                  type="password"
+                  autocomplete="current-password"
+                  class="field-input"
+                  placeholder="········"
+                />
+              </div>
+              
+              <button
+                id="login-submit"
+                type="submit"
+                :disabled="loading"
+                class="login-submit"
+              >
+                {{ loading ? t('btn_signing_in') : t('btn_signin') }}
+              </button>
+            </template>
+
+            <template v-if="mode === '2fa-setup'">
+              <div class="qr-placeholder">
+                <QrCode class="w-16 h-16" style="color: #68293A;" />
+                <p class="qr-text">Scan with Authy, Google Authenticator, etc.</p>
+              </div>
+              <div class="field">
+                <label for="2fa-code" class="field-label">{{ t('field_verification_code') }}</label>
+                <input
+                  id="2fa-code"
+                  v-model="verificationCode"
+                  type="text"
+                  required
+                  class="field-input text-center text-lg tracking-widest"
+                  placeholder="000000"
+                  maxlength="6"
+                />
+              </div>
+              
+              <button
+                id="login-submit"
+                type="submit"
+                :disabled="loading"
+                class="login-submit"
+              >
+                {{ t('btn_complete_setup') }}
+              </button>
+            </template>
+
+            <div v-if="error" class="login-error">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {{ error }}
+            </div>
+
+          </form>
+
+          <p v-if="mode === 'login'" class="login-dev-note">
+            {{ t('no_account') }} <a href="#" @click.prevent="mode = 'signup'; signupStep = 0;" class="link-text">{{ t('sign_up_link') }}</a>
+          </p>
+          <p v-else-if="mode === 'signup' && signupStep > 0" class="login-dev-note">
+            {{ t('have_account') }} <a href="#" @click.prevent="mode = 'login'" class="link-text">{{ t('sign_in_link') }}</a>
+          </p>
+          <p v-else-if="mode === '2fa-setup'" class="login-dev-note">
+            <a href="#" @click.prevent="mode = 'signup'" class="link-text">{{ t('back_to_signup') }}</a>
+          </p>
+
+          <p class="login-legal">
+            {{ t('legal_text') }} <NuxtLink to="/terms" class="link-text">{{ t('legal_tos') }}</NuxtLink> {{ t('legal_and') }} <NuxtLink to="/privacy" class="link-text">{{ t('legal_privacy') }}</NuxtLink>.
+          </p>
+
           <button
-            id="login-submit"
-            type="submit"
-            :disabled="loading"
-            class="login-submit"
+            v-if="exitTarget && mode === 'login'"
+            class="login-return"
+            @click="leaveLoginPage"
           >
-            {{ mode === 'login' ? (loading ? 'Signing in…' : 'Sign in') : mode === 'signup' ? (enable2FA ? 'Continue to 2FA' : 'Sign up') : 'Complete setup' }}
+            {{ t('return_terminal') }}
           </button>
-        </form>
-
-        <p v-if="mode === 'login'" class="login-dev-note">
-          Don't have an account? <a href="#" @click.prevent="mode = 'signup'" class="link-text">Sign up</a>
-        </p>
-        <p v-else-if="mode === 'signup'" class="login-dev-note">
-          Already have an account? <a href="#" @click.prevent="mode = 'login'" class="link-text">Sign in</a>
-        </p>
-        <p v-else-if="mode === '2fa-setup'" class="login-dev-note">
-          <a href="#" @click.prevent="mode = 'signup'" class="link-text">Back to sign up</a>
-        </p>
-
-        <p class="login-legal">
-          By continuing, you agree to our <NuxtLink to="/terms" class="link-text">Terms of Service</NuxtLink> and <NuxtLink to="/privacy" class="link-text">Privacy Policy</NuxtLink>.
-        </p>
-
-        <button
-          v-if="exitTarget && mode === 'login'"
-          class="login-return"
-          @click="leaveLoginPage"
-        >
-          Return to terminal
-        </button>
+          
+        </template>
 
       </div>
     </div>
@@ -434,13 +590,107 @@ async function handleAction() {
   line-height: 1.5;
 }
 
+/* ── Lang Picker ──────────────────────────────────────── */
+.lang-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.lang-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid rgba(104, 41, 58, 0.1);
+  border-radius: 0.5rem;
+  background: #FDFAF7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+.lang-option:hover {
+  border-color: rgba(104, 41, 58, 0.3);
+  background: #fdf5f0;
+  transform: translateY(-1px);
+}
+.lang-option-native {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #68293A;
+}
+.lang-option-translated {
+  font-size: 0.8rem;
+  color: rgba(104, 41, 58, 0.5);
+  margin-top: 0.15rem;
+}
+
 /* ── Form ─────────────────────────────────────────────── */
 .login-form { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── Signup Process ───────────────────────────────────── */
+.signup-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(104, 41, 58, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #68293A;
+  transition: width 0.3s ease;
+}
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(104, 41, 58, 0.4);
+  text-transform: uppercase;
+}
+.progress-labels span.active {
+  color: #68293A;
+}
+
+.step-header {
+  margin-bottom: 0.5rem;
+}
+.step-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #68293A;
+  margin: 0 0 0.25rem 0;
+}
+.step-desc {
+  font-size: 0.85rem;
+  color: rgba(104, 41, 58, 0.6);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.signup-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.signup-actions button {
+  margin-top: 0;
+}
 
 .signup-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+.birthday-grid {
+  grid-template-columns: 2fr 1fr 1fr;
 }
 
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -603,6 +853,7 @@ input:checked + .toggle-slider:before {
   transition: opacity 0.15s, transform 0.1s;
   box-shadow: 0 4px 16px rgba(104, 41, 58, 0.25);
   margin-top: 0.5rem;
+  flex: 1;
 }
 .login-submit:hover    { opacity: 0.88; }
 .login-submit:active   { transform: scale(0.98); }
@@ -621,6 +872,7 @@ input:checked + .toggle-slider:before {
   font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+  flex: 1;
 }
 .login-return:hover {
   border-color: rgba(104, 41, 58, 0.3);
@@ -652,6 +904,9 @@ input:checked + .toggle-slider:before {
 
 @media (max-width: 600px) {
   .signup-grid {
+    grid-template-columns: 1fr;
+  }
+  .birthday-grid {
     grid-template-columns: 1fr;
   }
 }

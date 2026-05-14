@@ -22,6 +22,7 @@ const emit = defineEmits<{ done: [], close: [] }>();
 
 const { authHeaders, session } = useAuth();
 const { business, fetchBusiness } = useBusiness();
+const { t } = useLocale();
 
 // ── Step state ────────────────────────────────────────────────────────────────
 const step = ref<1 | 2 | 3 | 4>(1);
@@ -56,16 +57,16 @@ function handleLogoUpload(e: Event) {
 }
 
 // ── Business types ────────────────────────────────────────────────────────────
-const businessTypes = [
-  { id: 'restaurant',  label: 'Restaurant',  icon: UtensilsCrossed, color: '#e8748a' },
-  { id: 'logistics',   label: 'Logistics',   icon: Truck,           color: '#8b5cf6' },
-  { id: 'accounting',  label: 'Accounting',  icon: Calculator,      color: '#10b981' },
-  { id: 'retail',      label: 'Retail',      icon: ShoppingBag,     color: '#f59e0b' },
-  { id: 'clinic',      label: 'Clinic',      icon: Stethoscope,     color: '#3b82f6' },
-  { id: 'services',    label: 'Services',    icon: Wrench,          color: '#ec4899' },
-  { id: 'education',   label: 'Education',   icon: GraduationCap,   color: '#14b8a6' },
-  { id: 'other',       label: 'Other',       icon: Building2,       color: '#6b7280' },
-];
+const businessTypes = computed(() => [
+  { id: 'restaurant',  label: t('ind_restaurant_label'),  icon: UtensilsCrossed, color: '#e8748a' },
+  { id: 'logistics',   label: t('ind_logistics_label'),   icon: Truck,           color: '#8b5cf6' },
+  { id: 'accounting',  label: t('ind_accounting_label'),  icon: Calculator,      color: '#10b981' },
+  { id: 'retail',      label: t('ind_retail_label'),      icon: ShoppingBag,     color: '#f59e0b' },
+  { id: 'clinic',      label: t('ind_clinic_label'),      icon: Stethoscope,     color: '#3b82f6' },
+  { id: 'services',    label: t('ind_services_label'),    icon: Wrench,          color: '#ec4899' },
+  { id: 'education',   label: t('ind_education_label'),   icon: GraduationCap,   color: '#14b8a6' },
+  { id: 'other',       label: t('ind_other_label'),       icon: Building2,       color: '#6b7280' },
+]);
 
 const languageOptions = [
   { value: 'en', label: 'English' },
@@ -76,32 +77,32 @@ const languageOptions = [
   { value: 'zh', label: 'Chinese' },
 ];
 
-const UI_STYLE_PRESETS = [
+const UI_STYLE_PRESETS = computed(() => [
   {
     id: 'warm-minimal',
-    label: 'Warm Minimal',
-    description: 'Soft, simple screens for everyday staff workflows.',
+    label: t('style_warm_label'),
+    description: t('style_warm_desc'),
     swatches: ['#68293A', '#F6E6D7', '#FF5776'],
   },
   {
     id: 'compact-ops',
-    label: 'Compact Ops',
-    description: 'Dense dashboards for teams that scan lots of information.',
+    label: t('style_compact_label'),
+    description: t('style_compact_desc'),
     swatches: ['#1F2937', '#E5E7EB', '#0EA5E9'],
   },
   {
     id: 'high-contrast',
-    label: 'High Contrast',
-    description: 'Clear kiosk-style layouts for busy counters and shared devices.',
+    label: t('style_contrast_label'),
+    description: t('style_contrast_desc'),
     swatches: ['#111827', '#FFFFFF', '#22C55E'],
   },
   {
     id: 'editorial',
-    label: 'Editorial',
-    description: 'Larger type and calmer spacing for client-facing views.',
+    label: t('style_editorial_label'),
+    description: t('style_editorial_desc'),
     swatches: ['#3D1820', '#FFF7ED', '#F59E0B'],
   },
-];
+]);
 
 // ── Feature catalogue ────────────────────────────────────────────────────────
 interface Feature {
@@ -328,7 +329,7 @@ const selectedPresetRecord = computed(() =>
 );
 
 const selectedUiStyleRecord = computed(() =>
-  UI_STYLE_PRESETS.find((style) => style.id === uiStyle.value) ?? UI_STYLE_PRESETS[0],
+  UI_STYLE_PRESETS.value.find((style) => style.id === uiStyle.value) ?? UI_STYLE_PRESETS.value[0],
 );
 
 const selectedLanguageLabel = computed(() =>
@@ -468,15 +469,15 @@ async function handleSubmit() {
         <Transition name="slide">
           <div v-if="step === 1" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)]">
-              <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 1 of 3</p>
-              <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Workspace basics</h1>
-              <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Tell us about your business to get started.</p>
+              <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">{{ t('onboarding_step_indicator', { step: 1 }) }}</p>
+              <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_step1_title') }}</h1>
+              <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">{{ t('onboarding_step1_sub') }}</p>
             </div>
 
             <div class="px-10 py-8 overflow-y-auto flex-1 space-y-10">
               <!-- Brand Identity -->
               <div>
-                <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Identity</h2>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_identity') }}</h2>
                 <div class="flex items-start gap-8">
                   <!-- Logo Upload -->
                   <label class="block cursor-pointer group shrink-0">
@@ -485,7 +486,7 @@ async function handleSubmit() {
                       <img v-if="logoUrl" :src="logoUrl" class="w-full h-full object-contain p-2" />
                       <template v-else>
                         <UploadCloud class="w-6 h-6 mb-1 text-[rgba(104,41,58,0.3)] group-hover:text-[rgba(104,41,58,0.6)]" />
-                        <span class="text-[10px] text-[rgba(104,41,58,0.5)] font-medium">Upload</span>
+                        <span class="text-[10px] text-[rgba(104,41,58,0.5)] font-medium">{{ t('onboarding_upload') }}</span>
                       </template>
                     </div>
                   </label>
@@ -493,7 +494,7 @@ async function handleSubmit() {
                   <!-- Name & Color -->
                   <div class="flex-1 space-y-4">
                     <div>
-                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">Business Name</label>
+                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_business_name') }}</label>
                       <input
                         v-model="businessName"
                         type="text"
@@ -502,17 +503,17 @@ async function handleSubmit() {
                       />
                     </div>
                     <div>
-                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">Primary Color</label>
+                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_primary_color') }}</label>
                       <div class="flex items-center gap-3">
                         <input type="color" v-model="colorPalette.primary" class="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent" />
                         <span class="text-xs font-mono text-[rgba(104,41,58,0.6)]">{{ colorPalette.primary.toUpperCase() }}</span>
                         <span v-if="logoUrl" class="text-[10px] px-2 py-1 rounded bg-[rgba(104,41,58,0.06)] text-[#68293A]">
-                          ✨ Predicted from logo
+                          {{ t('onboarding_predicted_color') }}
                         </span>
                       </div>
                     </div>
                     <div>
-                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">Workspace Language</label>
+                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_language') }}</label>
                       <select v-model="languagePreference" class="field-input max-w-sm">
                         <option v-for="language in languageOptions" :key="language.value" :value="language.value">
                           {{ language.label }}
@@ -525,7 +526,7 @@ async function handleSubmit() {
 
               <!-- Industry -->
               <div>
-                <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Industry</h2>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_industry') }}</h2>
                 <div class="grid grid-cols-4 gap-3">
                   <button
                     v-for="type in businessTypes"
@@ -547,13 +548,13 @@ async function handleSubmit() {
             </div>
 
             <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-end bg-[rgba(104,41,58,0.01)]">
-              <button
-                class="btn-nav"
-                :disabled="!businessName.trim() || !selectedType"
-                @click="goToFeatures"
-              >
-                Continue <ChevronRight class="w-4 h-4" />
-              </button>
+                  <button
+                    class="btn-nav"
+                    :disabled="!businessName.trim() || !selectedType"
+                    @click="goToFeatures"
+                  >
+                    {{ t('continue') }} <ChevronRight class="w-4 h-4" />
+                  </button>
             </div>
           </div>
         </Transition>
@@ -563,16 +564,16 @@ async function handleSubmit() {
           <div v-if="step === 2" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
               <div>
-                <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 2 of 3</p>
-                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Choose a preset</h1>
-                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">Pick the closest workflow and the visual style you want us to generate.</p>
+                <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">{{ t('onboarding_step_indicator', { step: 2 }) }}</p>
+                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_step2_title') }}</h1>
+                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">{{ t('onboarding_step2_sub') }}</p>
               </div>
             </div>
 
             <div class="flex-1 flex overflow-hidden">
               <!-- Presets -->
               <div class="w-64 shrink-0 overflow-y-auto p-6 bg-white border-r border-[rgba(104,41,58,0.06)]">
-                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Presets</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_presets') }}</p>
                 <div class="space-y-1.5">
                   <button
                     v-for="preset in currentPresets"
@@ -591,8 +592,8 @@ async function handleSubmit() {
                       :class="{ 'active': selectedPreset === null }"
                       @click="() => { selectedPreset = null; selectedFeatures = new Set(); }"
                     >
-                      <p class="text-xs font-semibold">Custom</p>
-                      <p class="text-[11px] mt-0.5 opacity-70">Pick manually</p>
+                      <p class="text-xs font-semibold">{{ t('onboarding_custom') }}</p>
+                      <p class="text-[11px] mt-0.5 opacity-70">{{ t('onboarding_custom_sub') }}</p>
                     </button>
                   </div>
                 </div>
@@ -600,7 +601,7 @@ async function handleSubmit() {
 
               <!-- Checklist -->
               <div class="flex-1 overflow-y-auto p-6 bg-[#fdf7f2]">
-                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Included workflows</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_included_workflows') }}</p>
                 <div class="grid grid-cols-2 gap-3">
                   <button
                     v-for="feature in selectedFeaturesList"
@@ -618,7 +619,7 @@ async function handleSubmit() {
                   </button>
                 </div>
                 <div class="mt-6">
-                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">Interface style</p>
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_interface_style') }}</p>
                   <div class="grid grid-cols-2 gap-3">
                     <button
                       v-for="style in UI_STYLE_PRESETS"
@@ -647,11 +648,11 @@ async function handleSubmit() {
 
             <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-between items-center bg-[rgba(104,41,58,0.01)]">
               <button class="btn-nav-ghost" @click="step = 1">
-                <ChevronLeft class="w-4 h-4" /> Back
+                <ChevronLeft class="w-4 h-4" /> {{ t('btn_back') }}
               </button>
               <div class="flex items-center gap-4">
                 <span class="text-xs text-[rgba(104,41,58,0.6)] font-mono">
-                  {{ selectedPresetRecord?.label ?? 'Preset required' }} / {{ selectedUiStyleRecord.label }}
+                  {{ selectedPresetRecord?.label ?? t('preset_required') }} / {{ selectedUiStyleRecord.label }}
                 </span>
                 <button
                   class="btn-nav"
@@ -670,9 +671,9 @@ async function handleSubmit() {
           <div v-if="step === 3" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
               <div>
-                <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">Step 3 of 3</p>
-                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">Review & Confirm</h1>
-                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">We will create a preset workspace and keep the setup details managed behind the scenes.</p>
+                <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">{{ t('onboarding_step_indicator', { step: 3 }) }}</p>
+                <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_step3_title') }}</h1>
+                <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">{{ t('onboarding_step3_sub') }}</p>
               </div>
             </div>
 
@@ -681,7 +682,7 @@ async function handleSubmit() {
               <div class="flex-1 overflow-y-auto p-6 bg-[#fdf7f2]">
                 <div class="flex items-center gap-2 mb-4">
                   <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
-                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Preset Summary</p>
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">{{ t('onboarding_summary_preset') }}</p>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
@@ -703,20 +704,20 @@ async function handleSubmit() {
               <div class="w-72 shrink-0 overflow-y-auto p-6 bg-white border-l border-[rgba(104,41,58,0.06)] flex flex-col">
                 <div class="flex items-center gap-2 mb-4">
                   <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
-                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Workspace</p>
+                  <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">{{ t('onboarding_summary_workspace') }}</p>
                 </div>
 
                 <div class="feature-card bg-white p-4 space-y-4 mb-6">
                   <div class="flex justify-between items-center text-sm">
-                    <span class="text-[rgba(104,41,58,0.7)]">Preset</span>
-                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedPresetRecord?.label ?? 'None' }}</span>
+                    <span class="text-[rgba(104,41,58,0.7)]">{{ t('onboarding_presets') }}</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedPresetRecord?.label ?? t('none') }}</span>
                   </div>
                   <div class="flex justify-between items-center text-sm">
-                    <span class="text-[rgba(104,41,58,0.7)]">Style</span>
+                    <span class="text-[rgba(104,41,58,0.7)]">{{ t('style') }}</span>
                     <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedUiStyleRecord.label }}</span>
                   </div>
                   <div class="pt-3 border-t border-[rgba(104,41,58,0.08)] flex justify-between items-center">
-                    <span class="font-bold text-[rgb(var(--shell-sidebar))]">Language</span>
+                    <span class="font-bold text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_summary_language') }}</span>
                     <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedLanguageLabel }}</span>
                   </div>
                   <div class="flex gap-2 h-7 rounded-lg overflow-hidden border border-black/5">
@@ -733,10 +734,10 @@ async function handleSubmit() {
                 <div v-if="business" class="mt-auto mb-4 p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
                   <div class="flex items-center gap-2 mb-2">
                     <AlertTriangle class="w-4 h-4 text-red-600" />
-                    <span class="text-xs font-bold text-red-700 uppercase tracking-widest">Override Warning</span>
+                    <span class="text-xs font-bold text-red-700 uppercase tracking-widest">{{ t('onboarding_override_warning_title') }}</span>
                   </div>
                   <p class="text-xs text-red-700 leading-relaxed">
-                    You already have a workspace set up. This will replace your current preset configuration.
+                    {{ t('onboarding_override_warning_body') }}
                   </p>
                 </div>
 
@@ -751,14 +752,14 @@ async function handleSubmit() {
                   @click="handleSubmit"
                 >
                   <Sparkles v-if="!submitting" class="w-4 h-4 text-[rgb(var(--shell-pink))]" />
-                  {{ submitting ? 'Creating...' : 'Create Workspace' }}
+                  {{ submitting ? t('onboarding_creating') : t('onboarding_create_btn') }}
                 </button>
               </div>
             </div>
 
             <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-between items-center bg-[rgba(104,41,58,0.01)]">
               <button class="btn-nav-ghost" @click="step = 2">
-                <ChevronLeft class="w-4 h-4" /> Back
+                <ChevronLeft class="w-4 h-4" /> {{ t('btn_back') }}
               </button>
             </div>
           </div>
@@ -771,16 +772,16 @@ async function handleSubmit() {
               <Sparkles class="w-10 h-10 text-[rgb(var(--shell-pink))]" />
             </div>
             <h2 class="font-serif text-3xl mb-3 text-[rgb(var(--shell-sidebar))]">
-              Workspace ready!
+              {{ t('onboarding_step4_title') }}
             </h2>
             <p class="text-sm max-w-md text-[rgba(104,41,58,0.6)] leading-relaxed">
-              Your preset workspace is ready. You can adjust branding, reports, and setup choices from the dashboard.
+              {{ t('onboarding_step4_sub') }}
             </p>
             <button
               class="mt-10 btn-nav"
               @click="emit('done')"
             >
-              Go to Dashboard
+              {{ t('onboarding_go_dashboard') }}
             </button>
           </div>
         </Transition>

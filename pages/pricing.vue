@@ -1,71 +1,72 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+const { t } = useLocale();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       'Pricing â€” Postfolio',
-  description: `Simple, transparent pricing for businesses of every size. Start free, scale when you're ready.`,
+  title:       t('pricing_hero_overline') + ' — Postfolio',
+  description: t('pricing_hero_sub'),
 });
 
-const plans = [
+const plans = computed(() => [
   {
-    name:     'Starter',
-    price:    'Free',
-    period:   'forever',
-    tagline:  'Perfect for solo operators getting started.',
-    cta:      'Get started',
+    name:     t('plan_starter_name'),
+    price:    t('plan_starter_price'),
+    period:   t('plan_starter_period'),
+    tagline:  t('plan_starter_tagline'),
+    cta:      t('plan_starter_cta'),
     ctaStyle: 'ghost',
     popular:  false,
     features: [
-      '1 business workspace',
-      '1 active preset workspace',
-      'Basic style presets',
-      'Community support',
+      t('plan_starter_feat1'),
+      t('plan_starter_feat2'),
+      t('plan_starter_feat3'),
+      t('plan_starter_feat4'),
     ],
   },
   {
-    name:     'Flexible',
-    price:    '$15',
-    period:   'base / month',
-    tagline:  'Start with a flat base fee, then add preset packs as your workflows grow.',
-    cta:      'Start free trial',
+    name:     t('plan_flexible_name'),
+    price:    t('plan_flexible_price'),
+    period:   t('plan_flexible_period'),
+    tagline:  t('plan_flexible_tagline'),
+    cta:      t('plan_flexible_cta'),
     ctaStyle: 'primary',
     popular:  true,
     features: [
-      'Everything in Starter',
-      '+$5/mo per active preset pack',
-      'More industry and style presets',
-      'CSV exports and activity reports',
-      'Priority email support',
+      t('plan_flexible_feat1'),
+      t('plan_flexible_feat2'),
+      t('plan_flexible_feat3'),
+      t('plan_flexible_feat4'),
+      t('plan_flexible_feat5'),
     ],
   },
-];
+]);
 
-const faqs = [
+const faqs = computed(() => [
   {
-    q: 'Do I need a credit card to start?',
-    a: "No. The Starter plan is completely free with no credit card required. Upgrade only when you're ready.",
+    q: t('faq_q1'),
+    a: t('faq_a1'),
   },
   {
-    q: 'How does preset-based pricing work?',
-    a: 'You pay a flat $15/mo base fee. As you activate additional preset packs, your plan scales by $5/mo per pack.',
+    q: t('faq_q2'),
+    a: t('faq_a2'),
   },
   {
-    q: 'Can I switch plans later?',
-    a: 'Yes â€” upgrade or downgrade at any time. Changes take effect on your next billing cycle.',
+    q: t('faq_q3'),
+    a: t('faq_a3'),
   },
   {
-    q: 'What is included in a preset?',
-    a: 'A preset includes the workflow, fields, reports, and interface style needed for a common business operation.',
+    q: t('faq_q4'),
+    a: t('faq_a4'),
   },
   {
-    q: 'Is my data safe?',
-    a: 'Yes. Postfolio keeps each workspace isolated and uses managed access controls for account and workspace data.',
+    q: t('faq_q5'),
+    a: t('faq_a5'),
   },
   {
-    q: 'Can I change presets later?',
-    a: 'Yes. You can re-run setup from the dashboard and move to a better-fitting preset as your workflow changes.',
+    q: t('faq_q6'),
+    a: t('faq_a6'),
   },
-];
+]);
 
 const openFaq = ref<number | null>(null);
 const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; };
@@ -75,13 +76,10 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   <!-- —— Hero ——————————————————————————————————————————————— -->
   <section class="pricing-hero">
     <div class="m-inner pricing-hero-inner">
-      <p class="m-overline">Pricing</p>
-      <h1 class="m-heading-lg">
-        Simple, honest pricing.<br>
-        <em>No surprises.</em>
-      </h1>
+      <p class="m-overline">{{ t('pricing_hero_overline') }}</p>
+      <h1 class="m-heading-lg" v-html="t('pricing_hero_heading')"></h1>
       <p class="m-sub" style="margin: 0 auto;">
-        Start free and scale as your business grows. Every plan includes access to Postfolio presets and managed setup.
+        {{ t('pricing_hero_sub') }}
       </p>
     </div>
   </section>
@@ -96,7 +94,7 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
           class="plan-card"
           :class="{ 'plan-card--popular': plan.popular }"
         >
-          <div v-if="plan.popular" class="popular-badge">Most popular</div>
+          <div v-if="plan.popular" class="popular-badge">{{ t('plan_popular') }}</div>
 
           <p class="plan-name">{{ plan.name }}</p>
           <div class="plan-price-row">
@@ -140,10 +138,10 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
+            <line x1="12" x2="12.01" y1="16" y2="16" />
           </svg>
         </span>
-        <p>Preset plans include guided onboarding, style presets, reports, and managed workspace setup. Fully custom data modeling, visual editor access, and executable code export are outside standard preset plans.</p>
+        <p>{{ t('pricing_note') }}</p>
       </div>
     </div>
   </section>
@@ -152,8 +150,8 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   <section class="section-faq">
     <div class="faq-inner">
       <div class="m-label-block">
-        <p class="m-overline">FAQ</p>
-        <h2 class="m-heading">Common questions.</h2>
+        <p class="m-overline">{{ t('pricing_faq_overline') }}</p>
+        <h2 class="m-heading">{{ t('pricing_faq_heading') }}</h2>
       </div>
 
       <div class="faq-list">
@@ -186,11 +184,11 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
   <!-- —— CTA ————————————————————————————————————————————————— -->
   <section class="m-cta-strip">
     <div class="m-cta-inner">
-      <h2 class="m-cta-heading">Still have <em>questions?</em></h2>
-      <p class="m-cta-sub">Start with a preset and refine your workspace as your operations grow.</p>
+      <h2 class="m-cta-heading" v-html="t('pricing_cta_heading')"></h2>
+      <p class="m-cta-sub">{{ t('pricing_cta_sub') }}</p>
       <div class="m-cta-btns">
-        <NuxtLink to="/login" class="m-btn-primary ribbon">Start for free</NuxtLink>
-        <NuxtLink to="/features" class="m-btn-ghost">Explore presets â†’</NuxtLink>
+        <NuxtLink to="/login" class="m-btn-primary ribbon">{{ t('pricing_cta_btn1') }}</NuxtLink>
+        <NuxtLink to="/features" class="m-btn-ghost">{{ t('pricing_cta_btn2') }}</NuxtLink>
       </div>
     </div>
   </section>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
+const { t } = useLocale();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       'Features — Postfolio',
-  description: 'Explore Postfolio presets, guided setup, style options, managed launch, and reporting.',
+  title:       t('nav_features') + ' — Postfolio',
+  description: t('feat_hero_sub'),
 });
 
 /* SVG path data for module icons — keeps template lean */
@@ -23,62 +24,59 @@ const extraIcons = {
   link:      'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
 };
 
-const modules = [
+const modules = computed(() => [
   {
-    tag:    'Module 01',
-    title:  'Guided Setup',
-    body:   'Choose your language, industry, brand color, and preferred workspace style before your account starts running.',
-    points: ['Language preference before account creation', 'Industry selection for cafe, retail, CRM, logistics, and more', 'Brand color and logo setup', 'Re-configurable from settings'],
+    tag:    t('mod_01_tag'),
+    title:  t('mod_01_title'),
+    body:   t('mod_01_body'),
+    points: [t('mod_01_p1'), t('mod_01_p2'), t('mod_01_p3'), t('mod_01_p4')],
     iconKey: 'onboarding' as keyof typeof icons,
     color:  'cream',
   },
   {
-    tag:    'Module 02',
-    title:  'Industry Presets',
-    body:   'Start from ready-made operating models instead of configuring technical pieces from scratch.',
-    points: ['Preset packs for cafe, retail, logistics, clinic, services, education, and accounting', 'Built-in workflows for orders, inventory, customers, staff, appointments, invoices, and deliveries', 'Managed setup behind the scenes', 'Easy preset changes later'],
+    tag:    t('mod_02_tag'),
+    title:  t('mod_02_title'),
+    body:   t('mod_02_body'),
+    points: [t('mod_02_p1'), t('mod_02_p2'), t('mod_02_p3'), t('mod_02_p4')],
     iconKey: 'schema' as keyof typeof icons,
     color:  'maroon',
   },
   {
-    tag:    'Module 03',
-    title:  'Style Presets',
-    body:   'Choose from polished interface styles that match how your team actually works.',
-    points: ['Warm minimal screens for everyday teams', 'Compact operations layouts for dense workflows', 'High-contrast kiosk-style views', 'Editorial layouts for client-facing moments'],
+    tag:    t('mod_03_tag'),
+    title:  t('mod_03_title'),
+    body:   t('mod_03_body'),
+    points: [t('mod_03_p1'), t('mod_03_p2'), t('mod_03_p3'), t('mod_03_p4')],
     iconKey: 'builder' as keyof typeof icons,
     color:  'pink',
   },
   {
-    tag:    'Module 04',
-    title:  'Managed Launch',
-    body:   'Postfolio assembles the workspace, access rules, and live screens for you while the technical layer stays out of sight.',
-    points: ['Role-aware staff access', 'Responsive screens for phones, tablets, and counters', 'Activity history and reports', 'No technical setup'],
+    tag:    t('mod_04_tag'),
+    title:  t('mod_04_title'),
+    body:   t('mod_04_body'),
+    points: [t('mod_04_p1'), t('mod_04_p2'), t('mod_04_p3'), t('mod_04_p4')],
     iconKey: 'terminal' as keyof typeof icons,
     color:  'cream',
   },
-];
+]);
 
-const extras = [
-  { iconKey: 'lock',     title: 'Role-Based Access',     body: 'Staff see the workflows and actions that fit their job.' },
-  { iconKey: 'palette',  title: 'Dynamic Theming',       body: 'Brand colors propagate instantly across every preset workspace.' },
-  { iconKey: 'mobile',   title: 'Responsive by Default', body: 'Screens stay usable from counters to mobile browsers.' },
-  { iconKey: 'zap',      title: 'Fast Setup',            body: 'Move from signup to a working workspace in minutes.' },
-  { iconKey: 'database', title: 'Managed Data',          body: 'The underlying data model is handled for you.' },
-  { iconKey: 'link',     title: 'Shareable Views',       body: 'Share the right workspace view with the right team member.' },
-];
+const extras = computed(() => [
+  { iconKey: 'lock',     title: t('extra_role_title'),     body: t('extra_role_body') },
+  { iconKey: 'palette',  title: t('extra_theme_title'),    body: t('extra_theme_body') },
+  { iconKey: 'mobile',   title: t('extra_mobile_title'),   body: t('extra_mobile_body') },
+  { iconKey: 'zap',      title: t('extra_zap_title'),      body: t('extra_zap_body') },
+  { iconKey: 'database', title: t('extra_data_title'),     body: t('extra_data_body') },
+  { iconKey: 'link',     title: t('extra_link_title'),     body: t('extra_link_body') },
+]);
 </script>
 
 <template>
   <!-- ── Hero ─────────────────────────────────────────────── -->
   <section class="feat-hero">
     <div class="m-inner feat-hero-inner">
-      <p class="m-overline">The Platform</p>
-      <h1 class="m-heading-lg">
-        Preset workspaces.<br>
-        <em>Managed behind the scenes.</em>
-      </h1>
+      <p class="m-overline">{{ t('feat_hero_overline') }}</p>
+      <h1 class="m-heading-lg" v-html="t('feat_hero_heading')"></h1>
       <p class="feat-sub m-sub" style="margin: 0 auto;">
-        Postfolio takes you from language preference and industry choice to a working preset workspace without exposing the technical layer.
+        {{ t('feat_hero_sub') }}
       </p>
     </div>
   </section>
@@ -140,9 +138,9 @@ const extras = [
   <section class="section-extras">
     <div class="extras-inner">
       <div class="m-label-block">
-        <p class="m-overline">And more</p>
-        <h2 class="m-heading">Built for the real world.</h2>
-        <p class="m-sub" style="margin: 0 auto;">Every detail of Postfolio is designed to handle the messy reality of running a business.</p>
+        <p class="m-overline">{{ t('extra_overline') }}</p>
+        <h2 class="m-heading">{{ t('extra_heading') }}</h2>
+        <p class="m-sub" style="margin: 0 auto;">{{ t('extra_sub') }}</p>
       </div>
 
       <div class="extras-grid">
@@ -162,11 +160,11 @@ const extras = [
   <!-- ── CTA ───────────────────────────────────────────────── -->
   <section class="m-cta-strip">
     <div class="m-cta-inner">
-      <h2 class="m-cta-heading">Ready to see it <em>in action?</em></h2>
-      <p class="m-cta-sub">Start with a preset workspace today. No credit card required.</p>
+      <h2 class="m-cta-heading" v-html="t('feat_cta_heading')"></h2>
+      <p class="m-cta-sub">{{ t('feat_cta_sub') }}</p>
       <div class="m-cta-btns">
-        <NuxtLink to="/login" class="m-btn-primary ribbon">Get started free</NuxtLink>
-        <NuxtLink to="/pricing" class="m-btn-ghost">See pricing →</NuxtLink>
+        <NuxtLink to="/login" class="m-btn-primary ribbon">{{ t('feat_cta_btn1') }}</NuxtLink>
+        <NuxtLink to="/pricing" class="m-btn-ghost">{{ t('feat_cta_btn2') }}</NuxtLink>
       </div>
     </div>
   </section>

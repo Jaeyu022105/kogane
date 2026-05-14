@@ -1,9 +1,11 @@
 <script setup lang="ts">
+const { t } = useLocale();
 const route = useRoute();
-const navLinks = [
-  { label: 'Features', to: '/features' },
-  { label: 'Pricing',  to: '/pricing'  },
-];
+
+const navLinks = computed(() => [
+  { label: t('nav_features'), to: '/features' },
+  { label: t('nav_pricing'),  to: '/pricing'  },
+]);
 
 const scrolled = ref(false);
 
@@ -37,8 +39,8 @@ onMounted(() => {
         </nav>
 
         <div class="nav-actions">
-          <NuxtLink to="/login" class="btn-ghost-sm">Sign in</NuxtLink>
-          <NuxtLink to="/login" class="btn-maroon-sm">Get started</NuxtLink>
+          <NuxtLink to="/login" class="btn-ghost-sm">{{ t('nav_signin') }}</NuxtLink>
+          <NuxtLink to="/login?mode=signup" class="btn-maroon-sm">{{ t('nav_getstarted') }}</NuxtLink>
         </div>
       </div>
     </header>
@@ -53,31 +55,31 @@ onMounted(() => {
       <div class="footer-inner">
         <div class="footer-brand">
           <span class="logo-wordmark footer-logo">Postfolio</span>
-          <p class="footer-tagline">Preset internal workspaces for modern SMEs.</p>
+          <p class="footer-tagline">{{ t('footer_tagline') }}</p>
         </div>
 
         <div class="footer-links-group">
-          <p class="footer-col-title">Product</p>
-          <NuxtLink to="/features" class="footer-link">Features</NuxtLink>
-          <NuxtLink to="/pricing"  class="footer-link">Pricing</NuxtLink>
+          <p class="footer-col-title">{{ t('footer_product') }}</p>
+          <NuxtLink to="/features" class="footer-link">{{ t('nav_features') }}</NuxtLink>
+          <NuxtLink to="/pricing"  class="footer-link">{{ t('nav_pricing') }}</NuxtLink>
         </div>
 
         <div class="footer-links-group">
-          <p class="footer-col-title">Company</p>
-          <a href="#" class="footer-link">About</a>
-          <a href="#" class="footer-link">Blog</a>
-          <a href="#" class="footer-link">Contact</a>
+          <p class="footer-col-title">{{ t('footer_company') }}</p>
+          <a href="#" class="footer-link">{{ t('footer_about') }}</a>
+          <a href="#" class="footer-link">{{ t('footer_blog') }}</a>
+          <a href="#" class="footer-link">{{ t('footer_contact') }}</a>
         </div>
 
         <div class="footer-links-group">
-          <p class="footer-col-title">Legal</p>
-          <NuxtLink to="/privacy" class="footer-link">Privacy</NuxtLink>
-          <NuxtLink to="/terms" class="footer-link">Terms</NuxtLink>
+          <p class="footer-col-title">{{ t('footer_legal') }}</p>
+          <NuxtLink to="/privacy" class="footer-link">{{ t('footer_privacy') }}</NuxtLink>
+          <NuxtLink to="/terms" class="footer-link">{{ t('footer_terms') }}</NuxtLink>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <span>© {{ new Date().getFullYear() }} Postfolio. All rights reserved.</span>
+        <span>© {{ new Date().getFullYear() }} Postfolio. {{ t('footer_rights') }}</span>
       </div>
     </footer>
   </div>
