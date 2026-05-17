@@ -23,9 +23,9 @@ import { UI_LAYOUT_BUNDLES, buildBusinessPalette, extractPaletteFromLogoDataUrl,
 
 const emit = defineEmits<{ done: [], close: [] }>();
 
-const { authHeaders, session } = useAuth();
+const { authHeaders } = useAuth();
 const { business, fetchBusiness } = useBusiness();
-const { t, availableLocales } = useLocale();
+const { t } = useLocale();
 
 // â”€â”€ Step state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const step = ref<1 | 2 | 3 | 4>(1);
@@ -35,7 +35,6 @@ const businessName = ref('');
 const logoUrl = ref<string | null>(null);
 const colorPalette = ref(buildBusinessPalette('#68293A'));
 const selectedType = ref<string | null>(null);
-const languagePreference = ref(session.value?.languagePreference ?? 'en');
 const uiStyle = ref('warm-minimal');
 const layoutBundle = ref<LayoutBundleKey>('aurora-service');
 const surfaceStyle = ref<SurfaceStyle>('rounded');
@@ -78,13 +77,6 @@ const businessTypes = computed(() => [
   { id: 'other',       label: t('ind_other_label'),       icon: Building2,       color: '#6b7280' },
 ]);
 
-const languageOptions = computed(() =>
-  availableLocales.map((locale) => ({
-    value: locale.code,
-    label: locale.nativeLabel,
-  })),
-);
-
 const UI_STYLE_PRESETS = computed(() => [
   {
     id: 'warm-minimal',
@@ -113,14 +105,14 @@ const UI_STYLE_PRESETS = computed(() => [
 ]);
 
 const SURFACE_STYLE_OPTIONS: Array<{ id: SurfaceStyle; label: string; description: string }> = [
-  { id: 'rounded', label: 'Rounded', description: 'Softer cards and touch-friendly controls.' },
-  { id: 'square', label: 'Square', description: 'Sharper panels with a stricter operational feel.' },
+  { id: 'rounded', label: t('surface_rounded_label'), description: t('surface_rounded_desc') },
+  { id: 'square', label: t('surface_square_label'), description: t('surface_square_desc') },
 ];
 
 const PARTICLE_OPTIONS: Array<{ id: ParticleEffect; label: string; description: string }> = [
-  { id: 'none', label: 'None', description: 'Keep the background calm and clean.' },
-  { id: 'floating-orbs', label: 'Floating Orbs', description: 'Add soft moving highlights behind the layout.' },
-  { id: 'soft-grid', label: 'Soft Grid', description: 'Use a subtle animated grid for a more technical feel.' },
+  { id: 'none', label: t('ambient_none_label'), description: t('ambient_none_desc') },
+  { id: 'floating-orbs', label: t('ambient_orbs_label'), description: t('ambient_orbs_desc') },
+  { id: 'soft-grid', label: t('ambient_grid_label'), description: t('ambient_grid_desc') },
 ];
 
 // â”€â”€ Feature catalogue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -352,10 +344,6 @@ const selectedBundleRecord = computed(() =>
   UI_LAYOUT_BUNDLES.find((bundle) => bundle.key === layoutBundle.value) ?? UI_LAYOUT_BUNDLES[0],
 );
 
-const selectedLanguageLabel = computed(() =>
-  languageOptions.value.find((language) => language.value === languagePreference.value)?.label ?? 'English',
-);
-
 const selectedFeaturesList = computed(() =>
   FEATURES.filter((feature) => selectedFeatures.value.has(feature.id)),
 );
@@ -509,7 +497,6 @@ async function handleSubmit() {
         logoUrl:      logoUrl.value,
         colorPalette: {
           ...colorPalette.value,
-          languagePreference: languagePreference.value,
           uiStyle: uiStyle.value,
           onboardingPreset: selectedPreset.value,
           layoutBundle: layoutBundle.value,
@@ -616,14 +603,6 @@ async function handleSubmit() {
                           <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Frame</p>
                         </div>
                       </div>
-                    </div>
-                    <div>
-                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_language') }}</label>
-                      <select v-model="languagePreference" class="field-input max-w-sm">
-                        <option v-for="language in languageOptions" :key="language.value" :value="language.value">
-                          {{ language.label }}
-                        </option>
-                      </select>
                     </div>
                   </div>
                 </div>
@@ -947,10 +926,6 @@ async function handleSubmit() {
                   <div class="flex justify-between items-center text-sm">
                     <span class="text-[rgba(104,41,58,0.7)]">Ambient Effect</span>
                     <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ particleEffect === 'floating-orbs' ? 'Floating Orbs' : particleEffect === 'soft-grid' ? 'Soft Grid' : 'None' }}</span>
-                  </div>
-                  <div class="pt-3 border-t border-[rgba(104,41,58,0.08)] flex justify-between items-center">
-                    <span class="font-bold text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_summary_language') }}</span>
-                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedLanguageLabel }}</span>
                   </div>
                   <div class="flex gap-2 h-7 rounded-lg overflow-hidden border border-black/5">
                     <div

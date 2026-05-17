@@ -10,7 +10,7 @@ const { openOnboarding }                        = useOnboarding();
 const { t, locale, detectedLocale, setLocale, loadLocale, availableLocales, translateFor } = useLocale();
 
 const mode = ref<'login' | 'signup' | '2fa-setup'>((route.query.mode as any) || 'login');
-const signupStep = ref(0); // 0: Lang, 1: Profile, 2: Birthday, 3: Business
+const signupStep = ref(0); // 0: Lang, 1: Profile, 2: Birthday, 3: Wizard handoff
 
 // Form state
 const email    = ref('admin@kogane.dev');
@@ -22,11 +22,6 @@ const username = ref('');
 const birthMonth = ref('');
 const birthDay = ref('');
 const birthYear = ref('');
-
-// Business state
-const businessName = ref('');
-const businessType = ref('');
-const businessWebsite = ref('');
 
 const enable2FA = ref(false);
 const verificationCode = ref('');
@@ -47,6 +42,15 @@ const localizedEcho = computed(() => {
   if (detectedLocale.value === 'en') return '';
   return translateFor(detectedLocale.value, primaryTitleKey.value as any);
 });
+
+const languagePickerTitleEcho = computed(() => translateFor('ph', 'lang_picker_title'));
+const languageOptions = computed(() =>
+  availableLocales.map((lang) => ({
+    ...lang,
+    englishLabel: translateFor('en', `lang_${lang.code}` as any),
+    nativeEcho: lang.code === 'en' ? translateFor('ph', 'lang_en') : translateFor(lang.code, `lang_${lang.code}` as any),
+  })),
+);
 
 const redirectTarget = computed(() => {
   const target = typeof route.query.redirect === 'string'
@@ -221,23 +225,21 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
         
         <template v-if="mode === 'signup' && signupStep === 0">
            <div class="login-card-header">
-             <h2 class="login-title">{{ t('lang_picker_title') }}</h2>
-             <p v-if="localizedEcho" class="login-echo">{{ localizedEcho }}</p>
+             <h2 class="login-title">{{ translateFor('en', 'lang_picker_title') }}</h2>
+             <p class="login-echo">{{ languagePickerTitleEcho }}</p>
              <p class="login-subtitle">{{ t('lang_picker_subtitle') }}</p>
            </div>
            
            <div class="lang-picker-list">
              <button
-               v-for="lang in availableLocales"
+               v-for="lang in languageOptions"
                :key="lang.code"
                type="button"
                class="lang-option"
                @click="selectLanguage(lang.code)"
              >
-               <span class="lang-option-native">{{ lang.nativeLabel }}</span>
-               <span class="lang-option-translated" v-if="lang.code !== 'en' || locale !== 'en'">
-                  {{ t(`lang_${lang.code}`) }}
-               </span>
+               <span class="lang-option-native">{{ lang.englishLabel }}</span>
+               <span class="lang-option-translated">{{ lang.nativeEcho }}</span>
              </button>
            </div>
            
@@ -351,17 +353,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               <!-- Step 3: Business -->
               <template v-if="signupStep === 3">
                 <div class="signup-grid">
-                  <div class="field" style="grid-column: span 2;">
-                    <label for="signup-business-name" class="field-label">{{ t('field_business_name') }}</label>
-                    <input id="signup-business-name" v-model="businessName" type="text" class="field-input" :placeholder="t('field_business_name_placeholder')" />
-                  </div>
-                  <div class="field">
-                    <label for="signup-business-type" class="field-label">{{ t('field_business_type') }}</label>
-                    <input id="signup-business-type" v-model="businessType" type="text" class="field-input" :placeholder="t('field_business_type_placeholder')" />
-                  </div>
-                  <div class="field">
-                    <label for="signup-business-website" class="field-label">{{ t('field_business_website') }}</label>
-                    <input id="signup-business-website" v-model="businessWebsite" type="url" class="field-input" :placeholder="t('field_business_website_placeholder')" />
+                  <div class="wizard-handoff" style="grid-column: span 2;">
+                    <p class="wizard-handoff-title">{{ t('signup_wizard_handoff_title') }}</p>
+                    <p class="wizard-handoff-body">{{ t('signup_wizard_handoff_body') }}</p>
                   </div>
                 </div>
                 
@@ -655,6 +649,26 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   font-size: 0.8rem;
   color: rgba(104, 41, 58, 0.5);
   margin-top: 0.15rem;
+}
+
+.wizard-handoff {
+  padding: 1rem;
+  border: 1px solid rgba(104, 41, 58, 0.1);
+  border-radius: 0.5rem;
+  background: #FDFAF7;
+}
+
+.wizard-handoff-title {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  color: #68293A;
+}
+
+.wizard-handoff-body {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: rgba(104, 41, 58, 0.58);
 }
 
 /* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

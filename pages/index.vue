@@ -4,8 +4,8 @@ const { isLoggedIn, loadDevSession } = useAuth();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       'Kogane - Preset Internal Workspaces',
-  description: 'Launch beautiful preset workspaces for POS, inventory, CRM, and operations without writing frontend code.',
+  title:       t('seo_home_title'),
+  description: t('seo_home_description'),
 });
 
 onMounted(() => {
@@ -107,14 +107,14 @@ const tableRows = computed(() => [
         </div>
         <div class="terminal-mock">
           <div class="terminal-items">
-            <div class="t-item"><span>Flat White</span><span>$5.50</span></div>
-            <div class="t-item t-alt"><span>Croissant</span><span>$4.00</span></div>
-            <div class="t-item"><span>Iced Matcha</span><span>$6.00</span></div>
+            <div class="t-item"><span>{{ t('index_mock_item1') }}</span><span>$5.50</span></div>
+            <div class="t-item t-alt"><span>{{ t('index_mock_item2') }}</span><span>$4.00</span></div>
+            <div class="t-item"><span>{{ t('index_mock_item3') }}</span><span>$6.00</span></div>
           </div>
           <div class="terminal-total">
-            <span>Total</span><span class="total-val">$15.50</span>
+            <span>{{ t('index_mock_total') }}</span><span class="total-val">$15.50</span>
           </div>
-          <div class="terminal-charge btn-ribbon" style="--ribbon-color: #68293A;">Charge</div>
+          <div class="terminal-charge btn-ribbon" style="--ribbon-color: #68293A;">{{ t('index_mock_charge') }}</div>
         </div>
       </div>
     </div>
@@ -154,7 +154,7 @@ const tableRows = computed(() => [
           </span>
           <h3 class="pillar-title">{{ p.title }}</h3>
           <p class="pillar-body">{{ p.body }}</p>
-          <NuxtLink to="/features" class="pillar-link">Learn more →</NuxtLink>
+          <NuxtLink to="/features" class="pillar-link">{{ t('index_pillars_learn_more') }}</NuxtLink>
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ const { session, isLoggedIn, logout }         = useAuth();
 const { business, fetchBusiness }             = useBusiness();
 const { showOnboarding, openOnboarding, closeOnboarding } = useOnboarding();
 const { isEnterprise }                        = useEnterpriseAccess();
+const { t }                                   = useLocale();
 
 onMounted(async () => {
   if (!isLoggedIn.value) {
@@ -31,18 +32,18 @@ import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3
 
 const navItems = computed(() => {
   const items = [
-    { label: 'Overview',  icon: LayoutDashboard, to: '/dashboard' },
-    { label: 'Audit Log', icon: Shield,          to: '/dashboard/audit' },
-    { label: 'Reports',   icon: BarChart3,       to: '/dashboard/reports' },
-    { label: 'Settings',  icon: Settings,        to: '/dashboard/settings' },
+    { label: t('nav_overview'),  icon: LayoutDashboard, to: '/dashboard' },
+    { label: t('nav_audit_log'), icon: Shield,          to: '/dashboard/audit' },
+    { label: t('nav_reports'),   icon: BarChart3,       to: '/dashboard/reports' },
+    { label: t('nav_settings'),  icon: Settings,        to: '/dashboard/settings' },
   ];
 
   if (isEnterprise.value) {
     items.splice(
       1,
       0,
-      { label: 'Database',  icon: Database,  to: '/dashboard/database' },
-      { label: 'Terminals', icon: Terminal,  to: '/dashboard/terminals' },
+      { label: t('nav_database'),  icon: Database,  to: '/dashboard/database' },
+      { label: t('nav_terminals'), icon: Terminal,  to: '/dashboard/terminals' },
     );
   }
 
@@ -93,11 +94,11 @@ function handleLogout() {
           style="color: rgba(61,24,32,0.58);"
         >
           <House class="w-3.5 h-3.5" />
-          Homepage
+          {{ t('nav_homepage') }}
         </NuxtLink>
 
         <div v-if="business?.name" class="mt-3">
-          <p class="text-[10px] font-mono uppercase tracking-widest mb-0.5" style="color: rgba(61,24,32,0.4);">Workspace</p>
+          <p class="text-[10px] font-mono uppercase tracking-widest mb-0.5" style="color: rgba(61,24,32,0.4);">{{ t('nav_workspace') }}</p>
           <p class="text-xs truncate" style="color: rgb(var(--shell-sidebar));">{{ business.name }}</p>
         </div>
       </div>
@@ -136,12 +137,12 @@ function handleLogout() {
             {{ session?.email?.[0]?.toUpperCase() ?? 'A' }}
           </div>
           <p class="text-[11px] flex-1 min-w-0 truncate" style="color: rgb(var(--shell-sidebar));">
-            {{ session?.email ?? 'Admin' }}
+            {{ session?.email ?? t('admin_fallback') }}
           </p>
           <button
             class="shrink-0 transition-colors duration-150"
             style="color: rgba(61,24,32,0.4);"
-            title="Log out"
+            :title="t('nav_logout')"
             @click="handleLogout"
             @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgb(var(--shell-sidebar))'"
             @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.4)'"
