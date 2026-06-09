@@ -10,46 +10,76 @@ After every meaningful prompt or implementation pass, update this file with:
 - What still needs work.
 - Any risks, assumptions, or verification results.
 
+---
+
 ## Current Project Identity
 
-The project is now called Kogane. The older name was Postfolio. Old context documents may still mention Postfolio, but new UI, docs, and copy should use Kogane unless referring to historical origin.
+**Kogane** is a **preset-driven terminal system** for small and medium businesses. The core value proposition is simple: instead of building or buying custom proprietary software, businesses get free, high-quality, and stable terminal presets that they can customize and deploy immediately.
 
-Kogane is a preset-driven internal tool builder for SMEs. It creates database tables and role-based terminal UIs for workflows such as cashier, catalog registrar, inventory, kitchen display, and reports.
+The project was originally named **Postfolio** (a schema-driven internal tool builder). It was later rebranded and reoriented into Kogane. Old references to Postfolio in code or context may still appear but are historical. All new UI, docs, and copy should use Kogane.
+
+**What Kogane is**:
+- A set of free, ready-to-use terminal presets (Cashier, Kitchen Display, Inventory, Catalog, Reports).
+- A visual UI builder so admins can customize those presets without writing code.
+- A backend that generates the right database tables when a preset is selected.
+- A terminal runtime that staff access via PIN-lock or a shareable public link.
+
+**What Kogane is not** (see Exclusions section below).
+
+---
+
+## Exclusions & Explicit Boundaries
+
+These are firm boundaries that should not be crossed or implied in any UI copy, feature, or integration:
+
+- **No real money transfer.** Kogane records payment method metadata (Cash, Card, GCash), receipt numbers, and order totals. It does not connect to bank accounts, execute real payment gateway transactions, or move actual funds. Payment methods shown in the cashier are informational labels for the cashier's reference only.
+- **No real card reader connection.** The card reader flow in the cashier terminal is a simulated bridge-ready workflow. A real hardware card reader still requires a vendor-specific SDK or a local bridge process that is not part of this codebase.
+- **No native iOS, Android, or desktop app.** Kogane runs in modern web browsers. There are no compiled native packages, no App Store submissions, and no Electron builds.
+- **No payment gateway integrations.** Stripe, PayPal, PayMongo, and equivalent services are explicitly out of scope. Do not add payment API keys, webhooks, or live payment flows.
+- **No enterprise hardware SDKs.** Barcode/QR scanner support uses browser key-burst emulation. No USB, Bluetooth, or vendor-specific driver integration is included.
+- **No paid cloud infrastructure.** The local dev environment uses SQLite via Bun. Production targets free-tier Supabase/PostgreSQL. Do not provision paid services without explicit instruction.
+- **No marketplace or plugin ecosystem.** There is no third-party extension system, plugin store, or external app marketplace.
+
+---
 
 ## Context Sources Used
 
-Temporary context folders were reviewed for this handoff:
+Earlier context folders were reviewed during the initial handoff pass:
 
-- The first context described the original Postfolio charter.
-- The second context described the Kogane initiation update.
-- The third context contained WBS/OBS style project management content.
-- The fourth context contained estimating and budget/schedule context.
+- First context: original Postfolio charter.
+- Second context: Kogane initiation update.
+- Third context: WBS/OBS project management content.
+- Fourth context: estimating and budget/schedule context.
 
-Those folders are temporary and can be deleted. The durable project context should now live in:
+Those folders are temporary and can be deleted. The durable project context lives in:
 
 - `DESIGN-DOCUMENT.md`
 - `HANDOFF.md`
 - `README.md`
 - The source code itself
 
+---
+
 ## Current App State
 
-Current implemented or partially implemented areas:
+Implemented or partially implemented areas:
 
-- Kogane rebrand is present in app identity and package metadata.
-- Localization supports `en`, `ph`, `es`, `ja`, `ko`, and `zh`; legacy `fil` should map to `ph`.
+- Kogane rebrand applied to app identity and package metadata.
+- Localization supports `en`, `ph`, `es`, `ja`, `ko`, and `zh`. Legacy `fil` should map to `ph`.
 - Marketing pages exist for home, features, pricing, terms, and privacy.
-- Login/get-started supports locale detection and dev-mode auth.
-- Onboarding creates a business, feature tables, starter terminals, branded layouts, and terminal layout variants.
-- Dashboard includes overview, database, builder, terminals, audit, reports, and settings.
-- Terminal management supports create, delete, thumbnails, copy link, copy PIN, options/detail pages, public slugs, and terminal layout editing.
-- UI Builder supports canvas editing, terminal theme editing, station objects, generic widgets, color customization, layout presets, and saving layouts.
-- Staff terminals render private routes through `/terminal/[id]` and public/shared routes through `/t/[slug]`.
-- Cashier supports table number, cart, payment method metadata, simulated/bridge-ready card reader flow, and receipt printing.
+- Login/get-started page supports locale detection and dev-mode auth.
+- Onboarding creates a business, provisions feature tables, generates starter terminals, applies layout variants, and sets branding.
+- Dashboard includes overview, database, UI builder, terminals, audit log, reports, and settings.
+- Terminal management supports create, delete, thumbnails, copy link, copy PIN, options/detail page, public slugs, and terminal layout editing.
+- UI Builder supports canvas editing, terminal theme editing, station objects, generic widgets, color customization, layout presets, and layout saves.
+- Staff terminals render on private routes (`/terminal/[id]`) and public/shared routes (`/t/[slug]`).
+- Cashier supports table number, cart, payment method metadata, simulated card reader, and browser receipt printing.
 - Catalog registrar supports product entry and catalog viewing.
 - Inventory manager supports stock views, receiving-oriented layouts, upload tools, and charts.
-- Kitchen display can view incoming orders with refresh, but status mutation is still a key missing feature.
+- Kitchen display can view incoming orders with auto-refresh. **Order status mutation is not yet implemented** (see Known Gaps).
 - Reports viewer supports audit/activity tables and charts.
+
+---
 
 ## Architecture Notes
 
@@ -58,16 +88,16 @@ Main stack:
 - Nuxt 3 and Vue 3
 - Bun runtime
 - Tailwind CSS plus custom CSS
-- SQLite in development through `bun:sqlite`
-- Supabase/PostgreSQL path for production
+- SQLite in development via `bun:sqlite`
+- Supabase/PostgreSQL intended for production
 
 Important files:
 
-- `README.md`: high-level project overview, though some text may have encoding artifacts and may lag behind code details.
+- `README.md`: high-level project overview. Some text may have encoding artifacts and may lag behind code.
 - `lib/db.ts`: database adapter switch based on `DEV_MODE`.
 - `lib/db-sqlite.ts`: local SQLite adapter; creates `dev.db`.
 - `lib/uiTypes.ts`: shared layout, element, theme, and runtime event types.
-- `lib/builderPresets.ts`: starter terminal layouts.
+- `lib/builderPresets.ts`: starter terminal layouts (the actual presets).
 - `lib/stationObjects.ts`: reusable real-world workstation objects.
 - `lib/starterWorkstations.ts`: terminal layout variant definitions.
 - `lib/workspaceBranding.ts`: layout bundles, palette building, logo palette extraction, theme application.
@@ -86,6 +116,8 @@ Important files:
 - `pages/t/[slug].vue`: public terminal runtime.
 - `server/api/runtime/event.post.ts`: runtime action execution and permissions.
 
+---
+
 ## Data Model Notes
 
 Platform tables:
@@ -95,7 +127,7 @@ Platform tables:
 - `presets`
 - `audit_log`
 
-Starter business tables:
+Starter business tables (created during onboarding):
 
 - `products`
 - `orders`
@@ -103,10 +135,9 @@ Starter business tables:
 
 Important order fields:
 
-- `items`
-- `line_items`
+- `items` / `line_items`
 - `total`
-- `status`
+- `status` (`pending`, `preparing`, `fulfilled`, `served`)
 - `table_number`
 - `staff_name`
 - `payment_method`
@@ -114,86 +145,94 @@ Important order fields:
 - `payment_reference`
 - `receipt_number`
 
-In local dev mode, business tables are represented with prefixed names in SQLite using the business schema name.
+In local dev mode, business tables use prefixed names in SQLite based on the business schema name.
+
+---
 
 ## Design Direction
 
 The UI should feel like a polished daily operations tool, not a raw developer console.
 
-Current design language:
-
 - Warm cream and maroon base identity.
 - Compact cards and panels with restrained rounded corners.
 - Premium but practical admin surfaces.
-- Staff terminals should be high contrast, readable, and task-focused.
-- Layout bundles should keep generated terminals visually consistent.
-- Individual widgets can still be customized for variety.
+- Staff terminals: high contrast, readable, task-focused.
+- Layout bundles keep generated terminals visually consistent.
+- Individual widgets can be customized for variety.
+- Avoid drifting into developer-first language in any user-facing area.
 
-Avoid drifting back into developer-first language unless the page is truly for builders or maintainers.
+---
 
-## Recent Documentation Pass
+## Documentation Pass — June 2026
 
-This pass created:
+This pass updated:
 
 - `DESIGN-DOCUMENT.md`
 - `HANDOFF.md`
 
 Why:
-
-- The team was asked to document the website, UI style, features, goals, planned features, and project context.
-- Future AI sessions should be cheaper and faster by reading handoff context before searching the full codebase.
-- Temporary context folders can be deleted after this because the important project story has been folded into durable Markdown files.
+- Project identity was updated to clearly frame Kogane as a **preset-driven terminal system** rather than a generic internal tool builder.
+- Usage examples were added to make the value proposition concrete.
+- Explicit exclusions were added to prevent scope creep and set correct expectations with stakeholders.
 
 Files touched:
-
 - `DESIGN-DOCUMENT.md`
 - `HANDOFF.md`
 
 Verification:
-
-- Documentation files were created in the project root.
 - No app code was changed in this pass.
+- Documentation was reviewed for consistency with the current codebase.
 
-## Known Gaps And Next Work
+---
 
-High priority:
+## Known Gaps & What Needs Work
 
-- Add kitchen order status controls so authorized terminals can move orders from `pending` to `fulfilled`.
-- Decide whether kitchen should remain read-only by default or use a new permission preset with update access only on `orders.status`.
-- Clean text encoding artifacts visible in README and some Vue comments/labels.
-- Confirm whether `locales/fil.json` should be removed after all legacy references are safely migrated to `ph`.
-- Verify that `scripts/seed-presets.ts` deletion is intentional, because `package.json` still has `seed:presets`.
+### Critical / Blocking
 
-Medium priority:
+- **Kitchen order status controls are missing.** The Kitchen Display preset is currently read-only. There is no way for kitchen staff to move an order from `pending` → `preparing` → `fulfilled`. The data model has the `status` field but the terminal UI and the server-side event handler do not expose a mutation action for it. This needs a new station object (or a configurable button widget) with an `UPDATE orders SET status = ? WHERE id = ?` event bound to it, plus a matching permission preset that allows kitchen terminals to update `orders.status` only.
+- **`seed:presets` script is missing.** `package.json` still has a `seed:presets` npm script but `scripts/seed-presets.ts` has been deleted. Either restore the script or remove the npm script entry to avoid confusion.
+- **Text encoding artifacts.** Some Vue component labels, README sections, and locale strings contain corrupted characters (likely from encoding during copy-paste or PDF extraction). These need a manual cleanup pass.
 
-- Improve onboarding wording for non-technical business owners.
-- Add preview thumbnails to layout-bundle selection if time allows.
-- Add clearer terminal style previews in onboarding.
-- Add more station objects for registrar, inventory, kitchen, and reports.
-- Add receipt template controls and optional receipt logo.
-- Add real provider-specific card reader bridge later.
+### High Priority
 
-Testing to run after app code changes:
+- **Localization coverage is incomplete.** Not all UI strings are covered by locale files. The `fil` → `ph` migration should be verified and any leftover `fil` references removed.
+- **Onboarding copy uses developer language.** Words like "schema", "DDL", and "runtime" appear in onboarding UI text that is aimed at non-technical business owners. These should be rewritten in plain language (e.g., "your data tables", "set up your workspace").
+- **First-run sample data is thin.** After onboarding, terminals launch with empty or near-empty data. Seeding demo products and orders would make first-run demos much more impressive and functional for evaluation.
+- **Terminal layout previews are missing.** During onboarding, users pick terminal layout variants without seeing a visual preview. Adding small preview thumbnails would significantly improve the selection experience.
 
-- `bun run build`
-- Manual browser check for onboarding, terminal creation, builder save, cashier submit, catalog product entry, and kitchen display.
-- If Bun is unavailable on PATH, use the installed Bun path or Nuxt's Node entry only for build checks.
+### Medium Priority
+
+- **Receipt templates are basic.** The current receipt output is a simple browser print. There is no way to configure a receipt logo, header, or footer template. This should be a configurable panel in terminal settings.
+- **Role permissions are coarse.** Permissions currently rely mostly on wildcard presets (e.g., full read/write on all business tables). A more granular system where each terminal can allow/deny per-table and per-action would be more secure and flexible.
+- **Real-time sync is polling-based.** The kitchen display and other auto-refresh widgets use interval polling. For true multi-device live updates, a WebSocket or Supabase Realtime channel should be added.
+- **More station objects needed.** The registrar, inventory, kitchen, and reports presets would benefit from additional reusable workstation objects (e.g., an order status toggle card, a receiving intake form, a supplier lookup widget).
+- **Card reader bridge is not implemented.** The cashier simulates a card reader flow but there is no actual bridge process. A future pass should define the protocol for a local hardware bridge (e.g., via a localhost WebSocket or COM port relay).
+
+### Low Priority / Nice To Have
+
+- **More chart presets and report templates.** The reports preset is functional but has limited default chart types and report layouts.
+- **Logo palette extraction edge cases.** Color extraction from uploaded logos can produce poor results for logos with transparent backgrounds or low-contrast palettes. Fallback logic should be improved.
+- **Settings page completeness.** The settings page allows re-running onboarding and adjusting branding but may be missing some controls (e.g., individual terminal re-theming without a full rebuild).
+
+---
 
 ## Current Git Caveats
 
-At the time this handoff was created, the worktree already had unrelated dirty state:
+At the time the initial handoff was written:
 
-- `.devserver.out.log` modified.
-- `scripts/seed-presets.ts` deleted.
+- `scripts/seed-presets.ts` was deleted but `package.json` still references `seed:presets`.
 - Temporary `context` folders were untracked and intended to be deleted by the user.
+- `.devserver.out.log` was modified.
 
-Do not restore or revert those unless the user explicitly asks.
+Do not restore or revert those changes unless the user explicitly asks.
+
+---
 
 ## Operating Guidance For Future AI
 
 - Start by reading `HANDOFF.md`, then `DESIGN-DOCUMENT.md`, then `README.md`.
-- Treat historical PDFs or context folders as background only.
-- Prefer current code over old assignment documents when there is a conflict.
-- Keep Kogane simple for daily users.
-- Update this handoff after every meaningful prompt.
-- Include why a feature was built, not only what files changed.
+- Treat historical PDFs or context folders as background only. Prefer current code.
+- When in doubt, preserve the preset-first, user-friendly philosophy. Keep language simple for daily business users.
+- Kogane is not a payment system. Do not add real money flows.
+- Update this handoff after every meaningful prompt — include why a decision was made, not just what files changed.
+- When implementing new terminal features, check `lib/uiTypes.ts`, `lib/builderPresets.ts`, and `lib/stationObjects.ts` first to understand existing type and layout conventions before adding new ones.

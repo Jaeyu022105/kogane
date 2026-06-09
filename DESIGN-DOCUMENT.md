@@ -2,30 +2,76 @@
 
 ## 1. Product Summary
 
-Kogane is a preset-driven internal tool builder for small and medium businesses. It helps an owner or admin create business workstations such as cashier registers, product catalog desks, inventory boards, kitchen displays, and reporting consoles without manually building a frontend for each staff role.
+Kogane is a preset-driven terminal system. Instead of requiring custom proprietary software or complex development, it offers a suite of free, high-quality, and stable presets for terminal workstations. This ensures small and medium businesses can deploy polished, consistent, and reliable cashier registers, product catalog desks, inventory boards, kitchen displays, and reporting consoles out-of-the-box.
 
-The project began as Postfolio, a schema-driven internal tool builder, and has since been rebranded and simplified into Kogane. The current direction is less developer-facing and more daily-user friendly: admins choose a business type, select features, pick a visual style, and Kogane generates the database tables and starter terminal interfaces for them.
+The project began as Postfolio, a schema-driven internal tool builder, and has since been rebranded and streamlined into Kogane. The current direction focuses on providing ready-to-use terminal presets that run locally or in the cloud. Admins select a pre-configured terminal type, customize its aesthetic preset, and instantly launch a functional workstation.
 
 ## 2. Product Goal
 
-The goal is to let a business owner launch practical internal tools quickly:
+The goal is to let a business owner deploy practical terminal workstations without expensive custom development:
 
-- Define or generate the business data structure.
-- Create role-specific terminals for staff.
-- Customize each terminal visually.
-- Use terminals through shareable links or locked PIN access.
-- Track activity, reports, and business operations from one admin dashboard.
+- Select from pre-configured terminal presets tailored to standard workflows.
+- Offer stable, high-quality terminal interfaces for staff members.
+- Provide visual customization through predefined layout bundles and themes.
+- Secure terminal access using simple shareable links or locked employee PINs.
+- Maintain consistency and stability across devices (tablets, desktops, phone screens).
 
-Kogane should feel approachable to non-developers while still keeping enough technical depth for schema editing, terminal customization, and future integrations.
+Kogane aims to eliminate the need for custom, proprietary operational software by providing free, extensible, and beautifully-designed terminal presets.
 
 ## 3. Target Users
 
-- Small business owners who need simple internal software but do not want to build a custom app.
-- Staff members using focused terminals for cashier, inventory, kitchen, catalog entry, or reporting.
-- Student developers and project reviewers who need to understand how schema, UI, and terminal access connect.
-- Future maintainers or AI coding agents who need enough context to continue the project without rereading every file.
+- Small business owners who want high-quality terminal workstations but want to avoid the cost and complexity of custom proprietary apps.
+- Staff members who need stable, easy-to-use interfaces for daily operations (cashiering, kitchen tracking, inventory management).
+- Developers and project reviewers looking for an open, customizable terminal system with ready-made presets.
 
-## 4. Core Website And App Areas
+## 4. Usage Examples
+
+Kogane provides terminal presets designed for specific real-world workflows. Here are typical usage examples:
+
+### Cashier Register (POS) Preset
+- **Scenario**: A cashier at a boutique coffee shop.
+- **Workflow**:
+  - The cashier opens the terminal via a locked PIN screen or direct link on a tablet (e.g. iPad).
+  - They tap items to add them to the cart, specify a table number, and select a payment method (Cash, Card, or GCash).
+  - The terminal prints a formatted receipt via the browser print interface.
+  - The transaction details are saved locally in SQLite/Supabase.
+
+### Kitchen Display System (KDS) Preset
+- **Scenario**: Kitchen staff in a busy restaurant.
+- **Workflow**:
+  - A tablet mounted in the kitchen runs the Kitchen Display preset.
+  - It automatically polls and renders active orders in a clean grid showing items, table numbers, and elapsed time.
+  - *Planned improvement*: Allow kitchen staff to change an order status from `pending` to `fulfilled` by tapping a button on the card.
+
+### Inventory Manager Preset
+- **Scenario**: A stockroom manager receiving new inventory.
+- **Workflow**:
+  - The manager accesses the Inventory terminal from a laptop or mobile barcode scanner.
+  - They review current stock levels in a table and use a scan widget (with key-burst scanner emulation) to increment or decrement product counts.
+  - Data updates are persisted immediately to the backend database.
+
+### Catalog Registrar Preset
+- **Scenario**: An admin adding new products to the catalog.
+- **Workflow**:
+  - An entry desk terminal is configured to display product details, search controls, and new product entry fields.
+  - Staff can quickly register new products, update prices, and view catalog status.
+
+### Reporting Dashboard Preset
+- **Scenario**: A store manager reviewing daily metrics.
+- **Workflow**:
+  - The manager opens a terminal preset dedicated to metrics.
+  - The screen displays dynamic charts showing hourly sales, popular items, and recent audit trails.
+
+## 5. Exclusions & Boundaries
+
+To keep Kogane focused, secure, and lightweight, the following features are explicitly out of scope:
+
+- **No Real Money Transfer**: Kogane handles transaction metadata, receipt numbers, and payment status logs (e.g. Card, Cash, GCash). It **does not transfer actual money**, connect to bank accounts, or execute real payment transactions through any payment gateway (e.g., Stripe, PayPal, PayMongo).
+- **No Native Desktop/Mobile App Packages**: The system runs entirely in modern web browsers (Safari, Chrome, Firefox) and is optimized for touch responsiveness. It does not compile into native iOS, Android, or Windows applications.
+- **No Direct Vendor Hardware SDKs**: Integrated barcode scanners use browser key-press burst analysis rather than vendor-specific USB/Bluetooth drivers. Card readers are simulated workflows ready to bridge with external SDKs but do not connect to real physical payment terminals.
+- **No Paid Host Infrastructure**: The local dev database uses Bun's built-in SQLite database engine. Deployment instructions target free-tier database providers (e.g., Supabase/PostgreSQL) and static hosting platforms, avoiding paid infrastructure costs.
+
+## 6. Core Website And App Areas
 
 ### Marketing Website
 
@@ -75,7 +121,7 @@ Terminals are staff-facing workstations. They can be opened through:
 
 Terminals use PIN-based access where appropriate. Public links are useful when employees should access only the terminal screen and should not be able to backtrack into admin setup.
 
-## 5. Current Feature Set
+## 7. Current Feature Set
 
 ### Schema And Database
 
@@ -150,7 +196,7 @@ Supported locale codes are:
 
 Legacy `fil` values should map to `ph`.
 
-## 6. UI Style Direction
+## 8. UI Style Direction
 
 Kogane should feel like a calm, premium operations tool rather than a technical admin panel. The visual direction is warm, polished, and practical.
 
@@ -192,7 +238,7 @@ Element style options currently include:
 
 Future concepts from the UI/design lead can add more style controls, but they should remain understandable to a non-technical owner.
 
-## 7. Planned Features And Improvements
+## 9. Planned Features And Improvements
 
 High-priority planned work:
 
@@ -219,7 +265,7 @@ Out of scope for the current academic build:
 - Enterprise-grade hardware integrations.
 - Complex marketplace or plugin systems.
 
-## 8. Technical Architecture
+## 10. Technical Architecture
 
 Main stack:
 
@@ -245,7 +291,7 @@ Important modules:
 - `pages/dashboard/terminals/index.vue` controls terminal management.
 - `pages/terminal/[id].vue` and `pages/t/[slug].vue` render staff terminals.
 
-## 9. Design Principles
+## 11. Design Principles
 
 - Start from useful presets, then allow customization.
 - Keep business-owner language simple.
