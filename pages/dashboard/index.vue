@@ -120,7 +120,7 @@ function syncTerminalDrafts() {
 }
 
 async function loadTerminals() {
-  if (!isEnterprise.value || !business.value) return;
+  if (!business.value) return;
   terminalLoading.value = true;
 
   try {
@@ -289,15 +289,15 @@ watch(() => business.value?.id, loadTerminals);
         </template>
       </div>
 
-      <section v-if="isEnterprise" class="mt-12 terminal-section">
+      <section v-if="business" class="mt-12 terminal-section">
         <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-6">
           <div>
             <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
-              {{ t('dashboard_terminal_section') }}
+              Terminals
             </p>
-            <h2 class="font-serif text-2xl mt-2" style="color: rgb(var(--shell-sidebar));">{{ t('dashboard_terminal_title') }}</h2>
+            <h2 class="font-serif text-2xl mt-2" style="color: rgb(var(--shell-sidebar));">Your preset terminals</h2>
           </div>
-          <NuxtLink to="/dashboard/terminals" class="terminal-link">
+          <NuxtLink v-if="isEnterprise" to="/dashboard/terminals" class="terminal-link">
             {{ t('dashboard_terminal_manager_link') }} <ArrowRight class="w-3.5 h-3.5" />
           </NuxtLink>
         </div>

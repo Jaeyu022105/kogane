@@ -64,6 +64,13 @@ function handleLogout() {
     },
   });
 }
+
+function handleOnboardingDone() {
+  closeOnboarding();
+  // Force the current page to re-mount so terminals/database lists re-fetch
+  // fresh data from the server after the wizard has replaced them.
+  router.go(0);
+}
 </script>
 
 <template>
@@ -159,7 +166,7 @@ function handleLogout() {
     </div>
 
     <!-- Onboarding modal -->
-    <OnboardingModal v-if="showOnboarding" @done="closeOnboarding" @close="closeOnboarding" />
+    <OnboardingModal v-if="showOnboarding" @done="handleOnboardingDone" @close="closeOnboarding" />
   </div>
 </template>
 

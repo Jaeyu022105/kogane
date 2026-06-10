@@ -185,6 +185,50 @@ Verification:
 
 ---
 
+## Dashboard Terminals Section — June 2026
+
+### What changed
+
+Added a **Terminals category** to the dashboard overview (`pages/dashboard/index.vue`) that is now visible to **all users with a business set up**, not just Enterprise accounts.
+
+Previously the entire terminals section was gated behind `isEnterprise`. This made no sense for standard users who had already gone through onboarding — their preset terminals (Cashier, Kitchen Display, etc.) were created but invisible on the overview.
+
+### What the section shows
+
+Each terminal from the preset gets its own card displaying:
+
+- Terminal name and role label
+- UI layout thumbnail preview
+- Inline name editor
+- PIN toggle (enable / disable public link mode)
+- PIN show/change/copy controls (when PIN mode is on)
+- Copy terminal link button
+- Save settings button
+- Settings icon link → `/dashboard/terminals/[id]`
+
+The "Open full terminal manager" link at the top of the section is still gated to `v-if="isEnterprise"` since `/dashboard/terminals` redirects non-enterprise users back to `/dashboard`.
+
+### Why
+
+The preset terminals are created during onboarding for everyone. Hiding them from daily users on the overview was inconsistent with the product goal of letting any business owner manage their terminals without developer-level access.
+
+### Files touched
+
+- `pages/dashboard/index.vue`
+  - `loadTerminals()`: removed `isEnterprise` guard; now loads whenever `business.value` is set
+  - Terminals `<section>`: changed `v-if="isEnterprise"` → `v-if="business"`
+  - Section header: hardcoded "Terminals / Your preset terminals" (removed locale indirection that wasn't needed for a hardcoded heading)
+  - "Open full terminal manager" link: added `v-if="isEnterprise"` to prevent non-enterprise users from clicking into a page that redirects them away
+
+### Verification
+
+- Section will appear on the dashboard for any user who has completed onboarding and has a business record.
+- Enterprise users see the full section plus the "Open full terminal manager" link.
+- Non-enterprise users see the cards but not the manager link.
+- No new API routes were added; `GET /api/terminals` was already accessible.
+
+---
+
 ## Known Gaps & What Needs Work
 
 ### Critical / Blocking

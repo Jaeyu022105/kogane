@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import {
   UtensilsCrossed,
   Truck,
@@ -688,13 +688,19 @@ async function handleSubmit() {
                 <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_included_workflows') }}</p>
                 <div class="grid grid-cols-2 gap-3">
                   <button
-                    v-for="feature in selectedFeaturesList"
+                    v-for="feature in availableFeaturesForType"
                     :key="feature.id"
-                    class="feature-card active flex items-start gap-3 p-4 text-left cursor-default"
-                    disabled
+                    class="feature-card flex items-start gap-3 p-4 text-left"
+                    :class="{ 'active': selectedFeatures.has(feature.id) }"
+                    @click="toggleFeature(feature.id)"
                   >
-                    <div class="mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all border bg-[rgb(var(--shell-sidebar))] border-[rgb(var(--shell-sidebar))]">
-                      <Check class="w-3 h-3 text-white" />
+                    <div
+                      class="mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all border"
+                      :class="selectedFeatures.has(feature.id)
+                        ? 'bg-[rgb(var(--shell-sidebar))] border-[rgb(var(--shell-sidebar))]'
+                        : 'border-[rgba(104,41,58,0.2)] bg-transparent'"
+                    >
+                      <Check v-if="selectedFeatures.has(feature.id)" class="w-3 h-3 text-white" />
                     </div>
                     <div>
                       <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ feature.label }}</p>
@@ -1031,6 +1037,7 @@ async function handleSubmit() {
 .modal-card {
   width: 100%;
   max-width: 900px;
+  height: 90dvh;
   max-height: 90dvh;
   background: #FFFFFF;
   border-radius: 0.75rem;
