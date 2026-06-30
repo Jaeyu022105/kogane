@@ -6,6 +6,7 @@ const { session }  = useAuth();
 const { openOnboarding } = useOnboarding();
 const { isEnterprise } = useEnterpriseAccess();
 const { t } = useLocale();
+const { buildShareUrl } = useShareOrigin();
 
 import { Database, Palette, Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Link2, KeyRound, Save, Eye, EyeOff } from 'lucide-vue-next';
 import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
@@ -105,7 +106,7 @@ function terminalSlug(terminal: DashboardTerminal) {
 function terminalUrl(terminal: DashboardTerminal, pinRequired = !terminal.is_public) {
   if (!import.meta.client) return '';
   const path = pinRequired ? `/terminal/${terminal.id}` : `/t/${terminalSlug(terminal)}`;
-  return new URL(path, window.location.origin).toString();
+  return buildShareUrl(path);
 }
 
 function syncTerminalDrafts() {

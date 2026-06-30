@@ -5,10 +5,11 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:lan": "nuxt dev --host 0.0.0.0 --port 3000",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "seed:presets": "bun run scripts/seed-presets.ts"
+    "preview:lan": "nuxt preview --host 0.0.0.0 --port 3000",
+    "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.3.0",
