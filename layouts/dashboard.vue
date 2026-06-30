@@ -5,20 +5,21 @@
  * Shows onboarding modal on first login when no business exists.
  */
 
-const router  = useRouter();
-const { session, isLoggedIn, logout }         = useAuth();
-const { business, fetchBusiness }             = useBusiness();
-const { showOnboarding, openOnboarding, closeOnboarding } = useOnboarding();
-const { isEnterprise }                        = useEnterpriseAccess();
-const { t }                                   = useLocale();
+import { LayoutDashboard, Terminal, Settings, Power, Shield, BarChart3, House } from 'lucide-vue-next';
+
+const router = useRouter();
+const route  = useRoute();
+const { session, isLoggedIn, logout }                      = useAuth();
+const { business, fetchBusiness }                          = useBusiness();
+const { showOnboarding, openOnboarding, closeOnboarding }  = useOnboarding();
+const { isEnterprise }                                     = useEnterpriseAccess();
+const { t }                                                = useLocale();
 
 onMounted(async () => {
   if (!isLoggedIn.value) {
     router.push({
       path: '/login',
-      query: {
-        redirect: route.fullPath,
-      },
+      query: { redirect: route.fullPath },
     });
     return;
   }
@@ -27,8 +28,6 @@ onMounted(async () => {
 
   if (!business.value) openOnboarding();
 });
-
-import { LayoutDashboard, Database, Terminal, Settings, Power, Shield, BarChart3, House } from 'lucide-vue-next';
 
 const navItems = computed(() => {
   const items = [
@@ -39,36 +38,26 @@ const navItems = computed(() => {
   ];
 
   if (isEnterprise.value) {
-    items.splice(
-      1,
-      0,
-      { label: t('nav_database'),  icon: Database,  to: '/dashboard/database' },
-      { label: t('nav_terminals'), icon: Terminal,  to: '/dashboard/terminals' },
+    items.splice(1, 0,
+      { label: t('nav_terminals'), icon: Terminal, to: '/dashboard/terminals' },
     );
   }
 
   return items;
 });
 
-const route = useRoute();
 function isActive(to: string) {
   return route.path === to || (to !== '/dashboard' && route.path.startsWith(to));
 }
 
 function handleLogout() {
   logout();
-  router.push({
-    path: '/login',
-    query: {
-      redirect: route.fullPath,
-    },
-  });
+  router.push({ path: '/login', query: { redirect: route.fullPath } });
 }
 
 function handleOnboardingDone() {
   closeOnboarding();
-  // Force the current page to re-mount so terminals/database lists re-fetch
-  // fresh data from the server after the wizard has replaced them.
+  // Force the current page to re-mount so fresh data is loaded after onboarding.
   router.go(0);
 }
 </script>

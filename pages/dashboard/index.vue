@@ -7,7 +7,7 @@ const { openOnboarding } = useOnboarding();
 const { isEnterprise } = useEnterpriseAccess();
 const { t } = useLocale();
 
-import { Database, Palette, Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Link2, KeyRound, Save, Eye, EyeOff } from 'lucide-vue-next';
+import { Palette, Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Link2, KeyRound, Save, Eye, EyeOff } from 'lucide-vue-next';
 import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
 
 const now = new Date();
@@ -74,7 +74,6 @@ const quickActions = computed<QuickAction[]>(() => {
     actions.splice(
       1,
       0,
-      { label: t('dashboard_action_database_label'), body: t('dashboard_action_database_body'), icon: Database, to: '/dashboard/database' },
       { label: t('dashboard_action_builder_label'), body: t('dashboard_action_builder_body'), icon: Palette, to: '/dashboard/builder' },
       { label: t('dashboard_action_terminals_label'), body: t('dashboard_action_terminals_body'), icon: Terminal, to: '/dashboard/terminals' },
     );
