@@ -181,6 +181,34 @@ Files touched:
 
 Verification:
 - No app code was changed in this pass.
+
+## Final Documentation And CBA Pass
+
+This pass created the Week 12 final submission deliverables from the assignment screenshots:
+
+- `Kogane Final Documentation.docx`
+- `Kogane Cost-Benefit Analysis.xlsx`
+
+Why:
+
+- The assignment required a simplified final project documentation document with executive summary, project overview, deliverables summary, lessons learned, and recommendations.
+- The assignment also required a simplified cost-benefit analysis table with BCR and economic feasibility explanation.
+- The deliverables use `Context/1` through `Context/7` as project history, but the current source of truth remains `HANDOFF.md`, `DESIGN-DOCUMENT.md`, `README.md`, and the current codebase.
+
+CBA assumptions:
+
+- First-year estimated cost: PHP 168,119.
+- Estimated annual benefit: PHP 307,000.
+- Benefit-cost ratio: about 1.83.
+- Payback period: about 6.6 months.
+- Development labor is valued for economic comparison even though the academic build keeps direct development cash cost at PHP 0.00.
+- Pilot hardware/deployment cost is treated as optional context, not a required production dependency.
+
+Verification:
+
+- The Excel workbook was exported with formulas, inspected for formula errors, and visually checked through a rendered preview.
+- The Word document was structurally checked with paragraph/table extraction and has about 1,097 words.
+- DOCX visual render QA could not be completed because LibreOffice/`soffice` is not available in the local environment.
 - Documentation was reviewed for consistency with the current codebase.
 
 ---
@@ -229,12 +257,74 @@ The preset terminals are created during onboarding for everyone. Hiding them fro
 
 ---
 
+## Device Demo / LAN Deployment Pass
+
+### What changed
+
+- Added PC/LAN run scripts in `package.json`: `bun run dev:lan` and `bun run preview:lan`.
+- Added `NUXT_PUBLIC_SHARE_ORIGIN` to Nuxt runtime config so copied terminal links can use a laptop LAN address instead of `localhost`.
+- Added `composables/useShareOrigin.ts` and switched dashboard/terminal copy-link builders to use it.
+- Added `.env.example` with safe local-development placeholders.
+- Added concise README instructions for PC and same-Wi-Fi device demos. A standalone `DEVICE-DEMO.md` guide was created first, then removed in a follow-up because the user prefers to guide the teacher directly.
+- Rewrote `README.md` to remove stale seed instructions and visible encoding artifacts.
+- Removed the stale `seed:presets` package script because `scripts/seed-presets.ts` had already been deleted.
+
+### Why
+
+The user wants to show current Kogane progress to a teacher and open terminals from other devices. A normal local dev server is not enough for another phone/tablet/laptop to connect, and copied links that use `localhost` do not work outside the PC that created them.
+
+### Files touched
+
+- `package.json`
+- `nuxt.config.ts`
+- `.env.example`
+- `README.md`
+- `composables/useShareOrigin.ts`
+- `pages/dashboard/index.vue`
+- `pages/dashboard/terminals/index.vue`
+- `pages/dashboard/terminals/[id].vue`
+- `HANDOFF.md`
+
+### What still needs work
+
+- True real-time sync is still polling-based; kitchen/order updates are not yet push-based across devices.
+- Windows Firewall, school Wi-Fi isolation, VPNs, or guest networks can still block another device from reaching the PC.
+- The deleted generated documentation files and temporary context folders are no longer expected in the repo. They were project-management deliverables, not runtime dependencies.
+
+### Verification
+
+- `bun run build` completed successfully after rerunning outside the sandbox. The first sandboxed attempt failed at Nitro file tracing with `EPERM: operation not permitted, readlink 'C:\Users\Jaime'`, which was an environment permission issue rather than an app compile error.
+- Build warnings observed: Node deprecation warning from `@vue/shared` package exports and Nitro treating `bun:sqlite` as an external dependency. These were warnings, not blockers.
+
+---
+
+## README Rebrand Cleanup
+
+### What changed
+
+- Removed the final public-facing Postfolio reference from `README.md`.
+- Reworded the introduction so the README presents the project only as Kogane.
+
+### Why
+
+The README is likely to be shown or shared during teacher review, so it should not confuse readers with the old project name.
+
+### Files touched
+
+- `README.md`
+- `HANDOFF.md`
+
+### Verification
+
+- `rg "Postfolio|postfolio" README.md` returns no matches.
+
+---
+
 ## Known Gaps & What Needs Work
 
 ### Critical / Blocking
 
 - **Kitchen order status controls are missing.** The Kitchen Display preset is currently read-only. There is no way for kitchen staff to move an order from `pending` → `preparing` → `fulfilled`. The data model has the `status` field but the terminal UI and the server-side event handler do not expose a mutation action for it. This needs a new station object (or a configurable button widget) with an `UPDATE orders SET status = ? WHERE id = ?` event bound to it, plus a matching permission preset that allows kitchen terminals to update `orders.status` only.
-- **`seed:presets` script is missing.** `package.json` still has a `seed:presets` npm script but `scripts/seed-presets.ts` has been deleted. Either restore the script or remove the npm script entry to avoid confusion.
 - **Text encoding artifacts.** Some Vue component labels, README sections, and locale strings contain corrupted characters (likely from encoding during copy-paste or PDF extraction). These need a manual cleanup pass.
 
 ### High Priority
@@ -264,7 +354,7 @@ The preset terminals are created during onboarding for everyone. Hiding them fro
 
 At the time the initial handoff was written:
 
-- `scripts/seed-presets.ts` was deleted but `package.json` still references `seed:presets`.
+- `scripts/seed-presets.ts` was deleted by prior work/user cleanup. `package.json` no longer references `seed:presets`.
 - Temporary `context` folders were untracked and intended to be deleted by the user.
 - `.devserver.out.log` was modified.
 

@@ -11,6 +11,7 @@ const { isEnterprise } = useEnterpriseAccess();
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
 const { confirm, alert } = useModal();
+const { buildShareUrl } = useShareOrigin();
 
 const terminals  = ref<Array<{
   id: string;
@@ -77,7 +78,7 @@ function resolveTerminalUrl(terminal: { id: string; is_public: number | boolean 
     ? `/t/${terminal.public_slug}`
     : `/terminal/${terminal.id}`;
 
-  return new URL(path, window.location.origin).toString();
+  return buildShareUrl(path);
 }
 
 async function copyTerminalLink(terminal: { id: string; is_public: number | boolean | null; public_slug: string | null }) {

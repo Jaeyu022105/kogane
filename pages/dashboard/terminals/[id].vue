@@ -10,6 +10,9 @@ const { isEnterprise }  = useEnterpriseAccess();
 const { authHeaders }   = useAuth();
 const { business }      = useBusiness();
 const { confirm, alert } = useModal();
+const { buildShareUrl } = useShareOrigin();
+const businessId = computed(() => business.value?.id);
+const { tables, fetchTables } = useSchema(businessId);
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -120,7 +123,7 @@ function resolvedTerminalLink() {
   const path = isPublic.value && publicSlug.value
     ? `/t/${publicSlug.value}`
     : `/terminal/${terminal.value.id}`;
-  return new URL(path, window.location.origin).toString();
+  return buildShareUrl(path);
 }
 
 async function copyTerminalLink() {

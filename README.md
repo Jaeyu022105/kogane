@@ -1,101 +1,160 @@
-# Kogane — Schema-Driven Internal Tool Builder
+# Kogane
 
-Kogane is a high-performance, modular platform designed to help businesses build, deploy, and manage custom internal tools. It bridges the gap between raw database management and specialized user interfaces, allowing you to create everything from POS terminals and inventory trackers to staff dashboards without writing a single line of frontend code.
+Kogane is a preset-driven terminal system for small and medium businesses. It helps owners set up practical web-based workstations, such as cashier registers, kitchen displays, product catalog desks, inventory boards, and reporting consoles, without writing frontend code.
 
----
-
-## ✦ Core Philosophy
-
-Most internal tools are either too rigid (SaaS) or too ugly (custom-built). **Kogane** is built on the belief that internal tools should feel as premium as the products they support.
-
-- **Schema-First**: Your data defines your capability. Design your database schema directly within the platform.
-- **UI-Driven**: Build interfaces using a Figma-like visual canvas. Drag, drop, and configure.
-- **Terminal Isolation**: Deploy role-based "Terminals" that are isolated, secure, and authenticated via PIN.
-- **Dynamic Theming**: Brand colors and typography propagate instantly across every generated interface.
-- **Integrated Marketing**: Professional landing, features, and pricing pages built-in to handle business conversion from day one.
+Kogane is designed for daily users: choose a business setup, let Kogane create the needed data tables, then customize and share ready-made terminals.
 
 ---
 
-## 🛠 The Engine
+## Core Idea
+
+- Preset-first: start from useful cashier, kitchen, inventory, catalog, and reporting terminals.
+- UI-driven: customize terminal layouts in a visual builder.
+- Browser-based: run terminals on PCs, tablets, phones, or other devices with a modern browser.
+- Local-first development: use SQLite in dev mode through Bun.
+- Production path: use Supabase/PostgreSQL when `DEV_MODE=false`.
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 | :--- | :--- |
-| **Runtime** | [Bun](https://bun.sh) (Ultra-fast JavaScript runtime) |
-| **Framework** | [Nuxt 3](https://nuxt.com) (Vue 3, Composition API) |
-| **Styling** | Vanilla CSS + [Tailwind CSS](https://tailwindcss.com) |
-| **Database (Dev)** | SQLite via `better-sqlite3` (Local persistence) |
-| **Database (Prod)** | Supabase / PostgreSQL (Production scale) |
+| Runtime | Bun |
+| Framework | Nuxt 3 / Vue 3 |
+| Styling | Tailwind CSS and custom CSS |
+| Database in dev | SQLite through Bun |
+| Database in production | Supabase / PostgreSQL |
 
 ---
 
-## 📐 How it Works
+## Main Features
 
-### 0. Smart Onboarding
-Designed specifically for SMEs, Kogane features an **Intelligent Setup Wizard** that bypasses technical complexity.
-- **Industry Presets**: Choose from predefined business types (Restaurant, Logistics, Retail, etc.) to immediately apply optimized schema templates.
-- **Modular Features**: A "Preset + Override" system allows users to pick high-level features (Order Tracking, Inventory, Invoicing) which automatically provision the necessary database tables and relations.
-- **Instant Provisioning**: The onboarding flow uses a unified transactional API to create the business identity and seed the database schema in a single, seamless step.
+### Onboarding
 
-### 1. Database Editor
-Define your domain model. Kogane handles the DDL (Data Definition Language) for you. It features an **Interactive Table Editor** for direct inline data manipulation and a **Relational Schema Visualizer** that draws dynamic connection arrows for foreign keys. It includes a built-in **Normalization Analyzer** that suggests schema improvements (targeting 3.5NF / Boyce-Codd) to ensure your data stays clean as you scale.
+The onboarding flow creates the business workspace, applies branding, provisions starter tables, and generates starter terminal UI layouts.
 
-### 2. UI Builder
-A professional, Figma/Canva-inspired design environment. Design staff-facing screens using modular elements like Table Views, Cart Widgets, and Input Fields. It features:
-- **Event System**: Build complex logic without writing code—like mapping an input field's value to a database insert action triggered by a button click.
-- **Transactional Branching**: Create reliable workflows with conditional execution (`condition` JS expressions) and nested `onSuccess` / `onFailure` event routing.
-- **Hardware Integration**: Built-in support for hardware barcode and QR scanners via burst-mode analysis, seamlessly bridging the gap between physical inputs and web events.
-- **Smart Properties**: A dynamic top bar for quick style adjustments, paired with a collapsible advanced properties sidebar for deep customization.
-- **Canvas Controls**: Infinite panning and scaling, along with standard keybinds (`Ctrl+C`, `Ctrl+V`, `Ctrl+D`) for rapid prototyping.
+### Dashboard
 
-### 3. Terminals
-Deploy specific layouts to physical or web-based terminals. The interface is hydrated dynamically from the JSON layout definition and scaled to fit any screen perfectly.
-- **Staff Access**: Traditional role-based access secured by a staff PIN lock screen.
-- **Public / Kiosk Mode**: Easily spin up anonymous, public-facing terminals (e.g., self-serve kiosks, digital menus) with a unique URL slug (`/t/[slug]`).
-- **Context Injection**: Pass contextual data via URL parameters (e.g., `?table_id=3`) directly into the terminal's event runtime as `$$session.*` variables for powerful dynamic interactions.
+The dashboard is the admin area for business owners. It includes overview actions, terminal cards, database tools, reports, audit logs, settings, and access to the UI builder where available.
 
----
+### Terminals
 
-## 🎨 Aesthetics & Experience
+Terminals are staff-facing screens. They can be opened privately through `/terminal/[id]` or shared through public links like `/t/[slug]`.
 
-Kogane features a "Cream & Maroon" design system:
-- **Typography**: A harmonious blend of *Inter* (sans-serif) for utility and *DM Serif Display* (serif) for elegance.
-- **Interface**: A warm, tactile feel with soft shadows, rounded corners, and micro-animations.
-- **Staff View**: Minimalist and high-contrast, optimized for efficiency and low cognitive load.
-- **Marketing Site**: A premium public-facing presence using a refined "Marketing Shell" layout with blurred sticky headers and rich typography.
+Current terminal presets include:
+
+- Cashier Register
+- Kitchen Display
+- Catalog Registrar
+- Inventory Manager
+- Reports Viewer
+
+### UI Builder
+
+The UI Builder lets admins customize terminal layouts, colors, station objects, widgets, charts, tables, forms, cart behavior, and terminal themes.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started On Your PC
 
 ```bash
 # 1. Install dependencies
 bun install
 
-# 2. Seed built-in presets (Café POS, CRM, Inventory)
-bun run seed:presets
-
-# 3. Start the development server
+# 2. Start the development server on this PC
 bun run dev
 ```
 
-### Environment Config
-Kogane uses a hybrid database strategy. Toggle between local development and production Supabase via `.env`:
+Open `http://localhost:3000` on the PC running the project.
 
-```env
-DEV_MODE=true  # Uses local dev.db (SQLite)
-# If false, requires SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_KEY
+In dev mode, you can log in with any email and password. If the workspace is empty, complete onboarding so Kogane creates the starter tables and terminals.
+
+---
+
+## Run On Another Device
+
+To show Kogane on a phone, tablet, or another laptop connected to the same Wi-Fi:
+
+```bash
+bun run dev:lan
+```
+
+Then run this in PowerShell to find your PC IPv4 address:
+
+```powershell
+ipconfig
+```
+
+Open this on the other device:
+
+```text
+http://<your-pc-ip>:3000
+```
+
+Example:
+
+```text
+http://192.168.1.25:3000
 ```
 
 ---
 
-## 🏗 Modular Architecture
+## Environment Config
 
-Kogane is designed for extension. Adding a new widget (e.g., a "Scanner" or "Chart") is a standardized process:
-1. Define the **Element Schema** in `lib/uiTypes.ts`.
-2. Create the **Vue Component** in `components/elements/`.
-3. Register the component in the **Element Renderer**.
-4. Add the configuration fields to the **Properties Panel**.
+Kogane uses a hybrid database strategy. Keep local demos in SQLite mode:
+
+```env
+DEV_MODE=true
+DATABASE_URL=./dev.db
+```
+
+Optional LAN helper for copied terminal links:
+
+```env
+NUXT_PUBLIC_SHARE_ORIGIN=http://192.168.1.25:3000
+```
+
+Supabase is only required when `DEV_MODE=false`:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-role-key
+```
+
+Do not commit your real `.env`. Use `.env.example` as the safe template.
 
 ---
 
-*Built with passion for clean code and beautiful interfaces.*
+## Build And Preview
+
+For a production-like local preview:
+
+```bash
+bun run build
+bun run preview
+```
+
+For a production-like preview available to other devices on the same Wi-Fi:
+
+```bash
+bun run build
+bun run preview:lan
+```
+
+---
+
+## Modular Architecture
+
+Adding a new widget or station object usually involves:
+
+1. Define the element schema in `lib/uiTypes.ts`.
+2. Create or update the Vue component in `components/elements/`.
+3. Register the renderer where elements are mapped to components.
+4. Add configuration controls in `components/PropertiesPanel.vue`.
+5. Add starter layouts or station objects in `lib/builderPresets.ts`, `lib/stationObjects.ts`, or `lib/starterWorkstations.ts`.
+
+---
+
+Built for clean, practical, browser-based business terminals.

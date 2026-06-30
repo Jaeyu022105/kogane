@@ -21,6 +21,7 @@ export default defineNuxtConfig({
       supabaseUrl:     process.env.SUPABASE_URL || '',
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
       enterpriseTools: process.env.NUXT_PUBLIC_ENTERPRISE_TOOLS || '',
+      shareOrigin:     process.env.NUXT_PUBLIC_SHARE_ORIGIN || '',
     },
   },
 
