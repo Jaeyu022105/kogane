@@ -2,7 +2,7 @@
 
 Kogane is a preset-driven terminal system for small and medium businesses. It helps owners set up practical web-based workstations, such as cashier registers, kitchen displays, product catalog desks, inventory boards, and reporting consoles, without writing frontend code.
 
-The project started as Postfolio, a schema-driven internal tool builder. The current direction is simpler for daily users: choose a business setup, let Kogane create the needed data tables, then customize and share ready-made terminals.
+Kogane is designed for daily users: choose a business setup, let Kogane create the needed data tables, then customize and share ready-made terminals.
 
 ---
 

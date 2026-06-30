@@ -298,6 +298,28 @@ The user wants to show current Kogane progress to a teacher and open terminals f
 
 ---
 
+## README Rebrand Cleanup
+
+### What changed
+
+- Removed the final public-facing Postfolio reference from `README.md`.
+- Reworded the introduction so the README presents the project only as Kogane.
+
+### Why
+
+The README is likely to be shown or shared during teacher review, so it should not confuse readers with the old project name.
+
+### Files touched
+
+- `README.md`
+- `HANDOFF.md`
+
+### Verification
+
+- `rg "Postfolio|postfolio" README.md` returns no matches.
+
+---
+
 ## Known Gaps & What Needs Work
 
 ### Critical / Blocking
