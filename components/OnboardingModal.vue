@@ -25,9 +25,9 @@ const emit = defineEmits<{ done: [], close: [] }>();
 
 const { authHeaders } = useAuth();
 const { business, fetchBusiness } = useBusiness();
-const { t } = useLocale();
+const { t, locale } = useLocale();
 
-// â”€â”€ Step state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Step state ────────────────────────────────────────────────────────────────
 const step = ref<1 | 2 | 3 | 4>(1);
 
 // Step 1: Basics
@@ -65,7 +65,7 @@ async function handleLogoUpload(e: Event) {
   reader.readAsDataURL(file);
 }
 
-// â”€â”€ Business types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Business types ────────────────────────────────────────────────────────────
 const businessTypes = computed(() => [
   { id: 'restaurant',  label: t('ind_restaurant_label'),  icon: UtensilsCrossed, color: '#e8748a' },
   { id: 'logistics',   label: t('ind_logistics_label'),   icon: Truck,           color: '#8b5cf6' },
@@ -115,7 +115,7 @@ const PARTICLE_OPTIONS: Array<{ id: ParticleEffect; label: string; description: 
   { id: 'soft-grid', label: t('ambient_grid_label'), description: t('ambient_grid_desc') },
 ];
 
-// â”€â”€ Feature catalogue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Feature catalogue ──────────────────────────────────────────────────────────
 interface Feature {
   id: string;
   label: string;
@@ -285,7 +285,7 @@ const availableFeaturesForType = computed(() => {
   return FEATURES.filter(f => f.availableFor.includes(selectedType.value!));
 });
 
-// â”€â”€ Presets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Presets ───────────────────────────────────────────────────────────────────
 interface Preset {
   id: string;
   label: string;
@@ -437,7 +437,7 @@ function setTerminalLayoutVariant(presetKey: PermissionPresetKey, layoutVariant:
   };
 }
 
-// â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Navigation ────────────────────────────────────────────────────────────────
 function goToFeatures() {
   if (!businessName.value.trim() || !selectedType.value) return;
   // auto select first preset if nothing is selected yet
@@ -480,7 +480,7 @@ watch(layoutBundle, (nextBundle) => {
   };
 });
 
-// â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Submit ────────────────────────────────────────────────────────────────────
 async function handleSubmit() {
   submitting.value = true;
   submitError.value = null;
@@ -497,6 +497,7 @@ async function handleSubmit() {
         logoUrl:      logoUrl.value,
         colorPalette: {
           ...colorPalette.value,
+          languagePreference: locale.value,
           uiStyle: uiStyle.value,
           onboardingPreset: selectedPreset.value,
           layoutBundle: layoutBundle.value,
@@ -539,7 +540,7 @@ async function handleSubmit() {
           <X class="w-5 h-5" />
         </button>
 
-        <!-- â”€â”€ Step 1: Basics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <!-- ── Step 1: Basics ────────────────────────────────────────── -->
         <Transition name="slide">
           <div v-if="step === 1" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)]">
@@ -643,7 +644,7 @@ async function handleSubmit() {
           </div>
         </Transition>
 
-        <!-- â”€â”€ Step 2: Features â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <!-- ── Step 2: Features ──────────────────────────────────────── -->
         <Transition name="slide">
           <div v-if="step === 2" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
@@ -846,7 +847,7 @@ async function handleSubmit() {
           </div>
         </Transition>
 
-        <!-- â”€â”€ Step 3: Review & Confirm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <!-- ── Step 3: Review & Confirm ────────────────────────────── -->
         <Transition name="slide">
           <div v-if="step === 3" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)] flex justify-between items-start">
@@ -996,7 +997,7 @@ async function handleSubmit() {
           </div>
         </Transition>
 
-        <!-- â”€â”€ Step 4: Done â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <!-- ── Step 4: Done ────────────────────────────────────────── -->
         <Transition name="slide">
           <div v-if="step === 4" class="flex flex-col items-center justify-center px-10 py-20 text-center h-full bg-white">
             <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 bg-[#F6E6D7] border border-[rgba(104,41,58,0.1)]">

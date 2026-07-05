@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { Camera, QrCode } from 'lucide-vue-next';
 
 definePageMeta({ layout: 'default' });
@@ -43,12 +43,15 @@ const localizedEcho = computed(() => {
   return translateFor(detectedLocale.value, primaryTitleKey.value as any);
 });
 
-const languagePickerTitleEcho = computed(() => translateFor('ph', 'lang_picker_title'));
+const languagePickerTitleEcho = computed(() => {
+  if (detectedLocale.value === 'en') return '';
+  return translateFor(detectedLocale.value, 'lang_picker_title');
+});
 const languageOptions = computed(() =>
   availableLocales.map((lang) => ({
     ...lang,
     englishLabel: translateFor('en', `lang_${lang.code}` as any),
-    nativeEcho: lang.code === 'en' ? translateFor('ph', 'lang_en') : translateFor(lang.code, `lang_${lang.code}` as any),
+    nativeEcho: translateFor(lang.code, `lang_${lang.code}` as any),
   })),
 );
 
@@ -482,7 +485,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 </template>
 
 <style scoped>
-/* â”€â”€ Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Shell --------------------------------------------------------------- */
 .login-shell {
   min-height: 100dvh;
   display: flex;
@@ -517,7 +520,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   background: radial-gradient(circle, rgba(104, 41, 58, 0.07) 0%, transparent 70%);
 }
 
-/* â”€â”€ Content wrap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Content wrap -------------------------------------------------------- */
 .login-wrap {
   position: relative;
   z-index: 1;
@@ -535,7 +538,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* â”€â”€ Brand mark â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Brand mark ---------------------------------------------------------- */
 .login-brand {
   display: flex;
   align-items: center;
@@ -580,7 +583,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   letter-spacing: 0.04em;
 }
 
-/* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Card ---------------------------------------------------------------- */
 .login-card {
   background: #FFFFFF;
   border-radius: 0.75rem;
@@ -616,7 +619,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   letter-spacing: 0.03em;
 }
 
-/* â”€â”€ Lang Picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Lang Picker --------------------------------------------------------- */
 .lang-picker-list {
   display: flex;
   flex-direction: column;
@@ -669,268 +672,6 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   font-size: 0.86rem;
   line-height: 1.5;
   color: rgba(104, 41, 58, 0.58);
-}
-
-/* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.login-form { display: flex; flex-direction: column; gap: 1rem; }
-
-/* â”€â”€ Signup Process â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.signup-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.progress-bar {
-  width: 100%;
-  height: 4px;
-  background: rgba(104, 41, 58, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: #68293A;
-  transition: width 0.3s ease;
-}
-.progress-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: rgba(104, 41, 58, 0.4);
-  text-transform: uppercase;
-}
-.progress-labels span.active {
-  color: #68293A;
-}
-
-.step-header {
-  margin-bottom: 0.5rem;
-}
-.step-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #68293A;
-  margin: 0 0 0.25rem 0;
-}
-.step-desc {
-  font-size: 0.85rem;
-  color: rgba(104, 41, 58, 0.6);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.signup-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-.signup-actions button {
-  margin-top: 0;
-}
-
-.signup-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-.birthday-grid {
-  grid-template-columns: 2fr 1fr 1fr;
-}
-
-.field { display: flex; flex-direction: column; gap: 0.4rem; }
-
-.field-label {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: rgba(104, 41, 58, 0.55);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.field-input {
-  background: #FDFAF7;
-  border: 1.5px solid rgba(104, 41, 58, 0.15);
-  border-radius: 0.5rem;
-  color: #68293A;
-  font-size: 0.9rem;
-  padding: 0.6rem 0.85rem;
-  font-family: 'Inter', sans-serif;
-  width: 100%;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.field-input::placeholder { color: rgba(104, 41, 58, 0.3); }
-.field-input:focus {
-  outline: none;
-  border-color: rgba(104, 41, 58, 0.45);
-  box-shadow: 0 0 0 3px rgba(104, 41, 58, 0.07);
-}
-
-/* â”€â”€ Signup specific â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.profile-upload-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.profile-upload {
-  width: 4.5rem;
-  height: 4.5rem;
-  border-radius: 50%;
-  background: rgba(104, 41, 58, 0.05);
-  border: 1.5px dashed rgba(104, 41, 58, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.profile-upload:hover {
-  background: rgba(104, 41, 58, 0.08);
-}
-.profile-upload-text {
-  font-size: 0.76rem;
-  color: rgba(104, 41, 58, 0.5);
-  font-weight: 600;
-}
-
-.toggle-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(104, 41, 58, 0.08);
-}
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
-}
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(104, 41, 58, 0.15);
-  transition: .4s;
-  border-radius: 20px;
-}
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 14px;
-  width: 14px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-input:checked + .toggle-slider {
-  background-color: #68293A;
-}
-input:checked + .toggle-slider:before {
-  transform: translateX(16px);
-}
-.toggle-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #68293A;
-}
-
-/* â”€â”€ 2FA specific â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.qr-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: rgba(104, 41, 58, 0.03);
-  border: 1px dashed rgba(104, 41, 58, 0.15);
-  border-radius: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.qr-text {
-  font-size: 0.85rem;
-  color: rgba(104, 41, 58, 0.6);
-  margin: 0;
-  text-align: center;
-}
-
-/* â”€â”€ Error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.login-error {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.65rem 0.9rem;
-  border-radius: 0.5rem;
-  background: rgba(239, 68, 68, 0.07);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #dc2626;
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-.login-error svg { width: 1rem; height: 1rem; flex-shrink: 0; }
-
-/* â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.login-submit {
-  width: 100%;
-  padding: 0.75rem;
-  background: #68293A;
-  color: #F6E6D7;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-  box-shadow: 0 4px 16px rgba(104, 41, 58, 0.25);
-  margin-top: 0.5rem;
-  flex: 1;
-}
-.login-submit:hover    { opacity: 0.88; }
-.login-submit:active   { transform: scale(0.98); }
-.login-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* â”€â”€ Return button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.login-return {
-  width: 100%;
-  padding: 0.75rem;
-  background: transparent;
-  color: rgba(104, 41, 58, 0.68);
-  border: 1.5px solid rgba(104, 41, 58, 0.12);
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  flex: 1;
-}
-.login-return:hover {
-  border-color: rgba(104, 41, 58, 0.3);
-  background: rgba(104, 41, 58, 0.03);
-}
-
-/* â”€â”€ Dev note & Links â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.login-dev-note {
-  font-size: 0.8rem;
-  text-align: center;
-  color: rgba(104, 41, 58, 0.5);
-  margin: 0;
 }
 .login-legal {
   font-size: 0.75rem;

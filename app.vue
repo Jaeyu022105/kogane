@@ -4,8 +4,10 @@
  */
 
 const { loadDevSession } = useAuth();
+const { loadLocale }     = useLocale();
 
 onMounted(() => {
+  loadLocale();
   // Restore dev session from localStorage on page load
   if (process.env.NODE_ENV !== 'production' || process.env.DEV_MODE === 'true') {
     loadDevSession();

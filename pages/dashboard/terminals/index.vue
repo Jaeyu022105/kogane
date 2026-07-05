@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight, Trash2, Link2, KeyRound, Settings2 } from 'lucide-vue-next';
 import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, layoutVariantsForPreset } from '~/lib/starterWorkstations';
@@ -215,7 +215,7 @@ watch(() => business.value?.id, loadTerminals);
 
 <template>
   <div v-if="isEnterprise" class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
-    <!-- â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── Page header ──────────────────────────────────────────────────────── -->
     <div
       class="px-8 py-5 flex items-center justify-between shrink-0"
       style="background: white; border-bottom: 1px solid rgba(61,24,32,0.08);"
@@ -240,7 +240,7 @@ watch(() => business.value?.id, loadTerminals);
       </button>
     </div>
 
-    <!-- â”€â”€ Content area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── Content area ─────────────────────────────────────────────────────── -->
     <div class="flex-1 overflow-y-auto px-8 py-6">
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center py-20">
@@ -371,7 +371,7 @@ watch(() => business.value?.id, loadTerminals);
       </div>
     </div>
 
-    <!-- â”€â”€ Create form modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── Create form modal ─────────────────────────────────────────────────── -->
     <Transition name="v">
       <div
         v-if="showForm"

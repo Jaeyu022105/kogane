@@ -10,12 +10,18 @@ import { Check, Sparkles, Upload } from 'lucide-vue-next';
 const { business, fetchBusiness, updateTheme } = useBusiness();
 const { openOnboarding }                     = useOnboarding();
 const { isEnterprise }                       = useEnterpriseAccess();
-const { t }                                  = useLocale();
+const { t, availableLocales, setLocale, locale } = useLocale();
 
 const saving        = ref(false);
 const uploadingLogo = ref(false);
 const error         = ref<string | null>(null);
 const success       = ref(false);
+
+const selectedLanguage = ref(locale.value);
+
+watch(locale, (newLoc) => {
+  selectedLanguage.value = newLoc;
+});
 
 const palette = reactive({
   primary:    '#3b82f6',
@@ -32,6 +38,7 @@ onMounted(async () => {
     palette.secondary  = business.value.colorPalette.secondary  ?? palette.secondary;
     palette.accent     = business.value.colorPalette.accent     ?? palette.accent;
     palette.background = business.value.colorPalette.background ?? palette.background;
+    selectedLanguage.value = business.value.colorPalette.languagePreference ?? locale.value;
   }
 });
 
@@ -41,7 +48,13 @@ async function saveTheme() {
   success.value = false;
 
   try {
-    await updateTheme({ ...palette });
+    setLocale(selectedLanguage.value);
+    const updatedPalette = {
+      ...business.value?.colorPalette,
+      ...palette,
+      languagePreference: selectedLanguage.value,
+    };
+    await updateTheme(updatedPalette);
     success.value = true;
     setTimeout(() => (success.value = false), 2500);
   } catch (err) {
@@ -212,6 +225,26 @@ const businessDetailItems = computed(() => {
               />
             </div>
           </div>
+        </div>
+
+        <!-- Language Selection -->
+        <div class="space-y-2">
+          <label class="text-[10px] font-mono uppercase tracking-widest block" style="color: rgba(61,24,32,0.4);">
+            {{ t('onboarding_language') }}
+          </label>
+          <select
+            v-model="selectedLanguage"
+            class="input-warm w-full px-3 py-2 text-xs"
+            style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; border-radius: 0.5rem; height: 2.25rem;"
+          >
+            <option
+              v-for="lang in availableLocales"
+              :key="lang.code"
+              :value="lang.code"
+            >
+              {{ lang.label }} ({{ lang.nativeLabel }})
+            </option>
+          </select>
         </div>
 
         <!-- Feedback -->

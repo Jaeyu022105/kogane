@@ -89,6 +89,10 @@ export function useBusiness() {
       };
 
       applyTheme(palette);
+      if (palette.languagePreference) {
+        const { setLocale } = useLocale();
+        setLocale(palette.languagePreference);
+      }
     } catch (err) {
       business.value = null;
       error.value = (err as Error).message;
