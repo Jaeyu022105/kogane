@@ -533,7 +533,7 @@ async function handleSubmit() {
   <Teleport to="body">
     <div class="modal-overlay" @click.self="close">
       <!-- Panel -->
-      <div class="modal-card">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
         
         <!-- Close Button (Not visible in step 4) -->
         <button v-if="step !== 4" class="modal-close" @click="close" aria-label="Close">
@@ -545,7 +545,7 @@ async function handleSubmit() {
           <div v-if="step === 1" class="flex flex-col h-full">
             <div class="px-10 pt-10 pb-6 shrink-0 border-b border-[rgba(104,41,58,0.06)]">
               <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1.5" style="color: rgba(104,41,58,0.4);">{{ t('onboarding_step_indicator', { step: 1 }) }}</p>
-              <h1 class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_step1_title') }}</h1>
+              <h1 id="onboarding-title" class="font-serif text-3xl text-[rgb(var(--shell-sidebar))]">{{ t('onboarding_step1_title') }}</h1>
               <p class="text-sm mt-1 text-[rgba(104,41,58,0.6)]">{{ t('onboarding_step1_sub') }}</p>
             </div>
 
@@ -553,10 +553,10 @@ async function handleSubmit() {
               <!-- Brand Identity -->
               <div>
                 <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_identity') }}</h2>
-                <div class="flex items-start gap-8">
+                <div class="brand-identity flex items-start gap-8">
                   <!-- Logo Upload -->
                   <label class="block cursor-pointer group shrink-0">
-                    <input type="file" accept="image/*" class="hidden" @change="handleLogoUpload" />
+                    <input type="file" accept="image/*" class="hidden" aria-label="Upload business logo" @change="handleLogoUpload" />
                     <div class="w-24 h-24 border-[1.5px] border-dashed border-[rgba(104,41,58,0.2)] rounded-xl flex flex-col items-center justify-center bg-[rgba(104,41,58,0.02)] transition-all group-hover:border-[rgba(104,41,58,0.4)] group-hover:bg-[#F6E6D7] overflow-hidden">
                       <img v-if="logoUrl" :src="logoUrl" class="w-full h-full object-contain p-2" />
                       <template v-else>
@@ -569,8 +569,9 @@ async function handleSubmit() {
                   <!-- Name & Color -->
                   <div class="flex-1 space-y-4">
                     <div>
-                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_business_name') }}</label>
+                      <label for="onboarding-business-name" class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_business_name') }}</label>
                       <input
+                        id="onboarding-business-name"
                         v-model="businessName"
                         type="text"
                         placeholder="e.g. Sakura Cafe"
@@ -578,15 +579,15 @@ async function handleSubmit() {
                       />
                     </div>
                     <div>
-                      <label class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_primary_color') }}</label>
+                      <label for="onboarding-primary-color" class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">{{ t('onboarding_primary_color') }}</label>
                       <div class="flex items-center gap-3">
-                        <input type="color" v-model="colorPalette.primary" class="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent" />
+                        <input id="onboarding-primary-color" type="color" v-model="colorPalette.primary" class="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent" />
                         <span class="text-xs font-mono text-[rgba(104,41,58,0.6)]">{{ colorPalette.primary.toUpperCase() }}</span>
                         <span v-if="logoUrl" class="text-[10px] px-2 py-1 rounded bg-[rgba(104,41,58,0.06)] text-[#68293A]">
                           {{ t('onboarding_predicted_color') }}
                         </span>
                       </div>
-                      <div class="mt-3 grid grid-cols-4 gap-2 max-w-md">
+                      <div class="color-swatches mt-3 grid grid-cols-4 gap-2 max-w-md">
                         <div class="rounded-xl border border-black/5 p-2 bg-white/70">
                           <div class="h-8 rounded-lg" :style="{ background: colorPalette.primary }" />
                           <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Primary</p>
@@ -612,12 +613,14 @@ async function handleSubmit() {
               <!-- Industry -->
               <div>
                 <h2 class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)] mb-4">{{ t('onboarding_industry') }}</h2>
-                <div class="grid grid-cols-4 gap-3">
+                <div class="industry-grid grid grid-cols-4 gap-3">
                   <button
                     v-for="type in businessTypes"
                     :key="type.id"
                     class="type-card relative flex flex-col items-center gap-2.5 py-5 px-3 text-center cursor-pointer"
                     :class="{ 'active': selectedType === type.id }"
+                    type="button"
+                    :aria-pressed="selectedType === type.id"
                     @click="selectedType = type.id"
                   >
                     <div
@@ -1205,5 +1208,69 @@ async function handleSubmit() {
 }
 .slide-enter-from { opacity: 0; transform: translateX(20px); }
 .slide-leave-to   { opacity: 0; transform: translateX(-20px); }
+
+/* Small instructional labels need to remain readable on the warm white panels. */
+.modal-card [class*="text-[rgba(104,41,58,0."] {
+  color: rgba(104, 41, 58, 0.75) !important;
+}
+
+.modal-card [style*="color: rgba(104,41,58,0."] {
+  color: rgba(104, 41, 58, 0.75) !important;
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 0.5rem;
+  }
+
+  .modal-card {
+    height: calc(100dvh - 1rem);
+    max-height: none;
+    border-radius: 0.9rem;
+  }
+
+  .modal-close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .modal-card .px-10 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .modal-card .pt-10 {
+    padding-top: 2rem;
+  }
+
+  .modal-card .brand-identity {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .modal-card .brand-identity > label {
+    align-self: flex-start;
+  }
+
+  .modal-card .color-swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+
+  .modal-card .industry-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .modal-card .type-card {
+    min-height: 6.25rem;
+    padding: 0.85rem 0.5rem;
+  }
+
+  .modal-card .type-card span {
+    line-height: 1.2;
+  }
+}
 </style>
 

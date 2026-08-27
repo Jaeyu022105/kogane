@@ -90,6 +90,11 @@ const displayColumns = computed(() =>
 const title = computed(() => props.element.title ?? 'Sale Panel');
 const subtitle = computed(() => props.element.subtitle ?? 'Build an order from available items.');
 const submitLabel = computed(() => props.element.submitLabel ?? 'Submit Order');
+const emptyLabel = computed(() => {
+  const configuredLabel = props.element.emptyLabel;
+  if (configuredLabel && !/admin database view/i.test(configuredLabel)) return configuredLabel;
+  return 'No products are ready for sale yet.';
+});
 const receiptTitle = computed(() => props.element.receiptTitle ?? 'Order Receipt');
 const receiptFooter = computed(() => props.element.receiptFooter ?? 'Thank you for your visit.');
 const textColor = computed(() => props.element.textColor ?? '#f5ede4');
@@ -532,12 +537,12 @@ watch(
           class="col-span-2 rounded-2xl p-6 text-center text-sm"
           :style="{ background: 'rgba(255,255,255,0.03)', color: mutedTextColor, border: `1px dashed ${borderColor}` }"
         >
-          <p>{{ element.emptyLabel ?? 'No products loaded yet.' }}</p>
+          <p>{{ emptyLabel }}</p>
           <p
             v-if="!props.builderMode && element.productTable === 'products'"
             class="mt-2 text-[11px]"
           >
-            Add products from a Catalog Registrar or Inventory terminal, or from the admin database view.
+            Add products from the Catalog or Inventory terminal first.
           </p>
         </div>
       </div>
@@ -663,7 +668,7 @@ watch(
           {{ submitting ? 'Submitting...' : submitLabel }}
         </button>
         <p v-if="requiresCardApproval && cardApprovalState !== 'approved'" class="text-[10px] leading-relaxed" :style="{ color: mutedTextColor }">
-          Confirm the card charge first so the order is saved with payment approval metadata.
+          Confirm the card charge first so the order can be completed.
         </p>
       </div>
     </div>

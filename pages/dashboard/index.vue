@@ -6,15 +6,15 @@ const { session }  = useAuth();
 const { openOnboarding } = useOnboarding();
 const { isEnterprise } = useEnterpriseAccess();
 const { t } = useLocale();
-const { buildShareUrl } = useShareOrigin();
 
-import { Palette, Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Link2, KeyRound, Save, Eye, EyeOff } from 'lucide-vue-next';
-import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
+
+import { Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles } from 'lucide-vue-next';
+import TerminalCard from '~/components/TerminalCard.vue';
 
 const now = new Date();
 const hour = now.getHours();
 const greeting = computed(() => (hour < 12 ? t('dashboard_greeting_morning') : hour < 18 ? t('dashboard_greeting_afternoon') : t('dashboard_greeting_evening')));
-const firstName = session?.email?.split('@')[0] ?? t('admin_fallback');
+const firstName = computed(() => session.value?.email?.split('@')[0] ?? t('admin_fallback'));
 
 type DashboardTerminal = {
   id: string;
@@ -28,11 +28,8 @@ type DashboardTerminal = {
 
 const { authHeaders } = useAuth();
 const terminals = ref<DashboardTerminal[]>([]);
-const terminalDrafts = reactive<Record<string, { name: string; pin: string; pinRequired: boolean; showPin: boolean }>>({});
 const terminalLoading = ref(false);
-const savingTerminalId = ref<string | null>(null);
-const copiedTerminalId = ref<string | null>(null);
-const copiedPinId = ref<string | null>(null);
+const terminalError = ref('');
 
 interface QuickAction {
   label: string;
@@ -75,7 +72,6 @@ const quickActions = computed<QuickAction[]>(() => {
     actions.splice(
       1,
       0,
-      { label: t('dashboard_action_builder_label'), body: t('dashboard_action_builder_body'), icon: Palette, to: '/dashboard/builder' },
       { label: t('dashboard_action_terminals_label'), body: t('dashboard_action_terminals_body'), icon: Terminal, to: '/dashboard/terminals' },
     );
   }
@@ -90,113 +86,30 @@ function runQuickAction(action: QuickAction) {
   if (action.action === 'onboarding') openOnboarding();
 }
 
-function normalizeSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-}
-
-function terminalSlug(terminal: DashboardTerminal) {
-  return terminal.public_slug || normalizeSlug(`${terminal.display_name}-${terminal.id.slice(0, 6)}`);
-}
-
-function terminalUrl(terminal: DashboardTerminal, pinRequired = !terminal.is_public) {
-  if (!import.meta.client) return '';
-  const path = pinRequired ? `/terminal/${terminal.id}` : `/t/${terminalSlug(terminal)}`;
-  return buildShareUrl(path);
-}
-
-function syncTerminalDrafts() {
-  for (const terminal of terminals.value) {
-    terminalDrafts[terminal.id] = {
-      name: terminalDrafts[terminal.id]?.name ?? terminal.display_name,
-      pin: terminalDrafts[terminal.id]?.pin ?? terminal.pin_code ?? '',
-      pinRequired: terminalDrafts[terminal.id]?.pinRequired ?? !Boolean(terminal.is_public),
-      showPin: terminalDrafts[terminal.id]?.showPin ?? false,
-    };
-  }
-}
-
 async function loadTerminals() {
-  if (!business.value) return;
+  if (!business.value || !isEnterprise.value) return;
   terminalLoading.value = true;
+  terminalError.value = '';
 
   try {
-    const res = await $fetch<{ terminals: DashboardTerminal[] | null }>('/api/terminals', {
+    const res = await $fetch<{ terminals?: DashboardTerminal[] | null; error?: string | null }>('/api/terminals', {
       headers: authHeaders(),
       query: { businessId: business.value.id },
     });
+    if (res.error) {
+      terminalError.value = 'We could not load your terminals right now. Please try again.';
+      return;
+    }
     terminals.value = res.terminals ?? [];
-    syncTerminalDrafts();
+  } catch {
+    terminalError.value = 'We could not load your terminals right now. Please try again.';
   } finally {
     terminalLoading.value = false;
   }
 }
 
-async function copyTerminalLink(terminal: DashboardTerminal) {
-  const draft = terminalDrafts[terminal.id];
-  const target = terminalUrl(terminal, draft?.pinRequired ?? !terminal.is_public);
-  if (!target) return;
-
-  await navigator.clipboard.writeText(target);
-  copiedTerminalId.value = terminal.id;
-  setTimeout(() => {
-    if (copiedTerminalId.value === terminal.id) copiedTerminalId.value = null;
-  }, 1500);
-}
-
-async function copyTerminalPin(terminal: DashboardTerminal) {
-  const pin = terminalDrafts[terminal.id]?.pin;
-  if (!pin) return;
-
-  await navigator.clipboard.writeText(pin);
-  copiedPinId.value = terminal.id;
-  setTimeout(() => {
-    if (copiedPinId.value === terminal.id) copiedPinId.value = null;
-  }, 1500);
-}
-
-async function saveTerminalSettings(terminal: DashboardTerminal) {
-  const draft = terminalDrafts[terminal.id];
-  if (!business.value || !draft) return;
-  savingTerminalId.value = terminal.id;
-
-  try {
-    const res = await $fetch<{ terminal: DashboardTerminal | null; error: string | null }>(`/api/terminals/${terminal.id}`, {
-      method: 'PATCH',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: {
-        businessId: business.value.id,
-        displayName: draft.name,
-        pin: draft.pin || null,
-      },
-    });
-
-    if (res.terminal) {
-      terminal.display_name = res.terminal.display_name;
-      terminal.pin_code = res.terminal.pin_code;
-      draft.name = res.terminal.display_name;
-      draft.pin = res.terminal.pin_code ?? draft.pin;
-    }
-
-    const publicSlug = terminalSlug({ ...terminal, display_name: draft.name });
-    await $fetch<{ success: boolean; error: string | null }>(`/api/terminals/${terminal.id}/public`, {
-      method: 'PATCH',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: {
-        businessId: business.value.id,
-        isPublic: !draft.pinRequired,
-        publicSlug: draft.pinRequired ? null : publicSlug,
-      },
-    });
-
-    terminal.is_public = !draft.pinRequired;
-    terminal.public_slug = draft.pinRequired ? null : publicSlug;
-  } finally {
-    savingTerminalId.value = null;
-  }
+function onTerminalDeleted(terminalId: string) {
+  terminals.value = terminals.value.filter((t) => t.id !== terminalId);
 }
 
 onMounted(loadTerminals);
@@ -204,10 +117,10 @@ watch(() => business.value?.id, loadTerminals);
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="dashboard-page flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Top greeting bar ───────────────────────────────────────── -->
-    <div class="px-10 pt-12 pb-10" style="border-bottom: 1px solid rgba(61,24,32,0.06);">
+    <div class="dashboard-greeting px-10 pt-12 pb-10" style="border-bottom: 1px solid rgba(61,24,32,0.06);">
       <div class="flex flex-col gap-6 max-w-4xl">
         <div class="flex items-center gap-3">
           <span class="status-badge">
@@ -233,7 +146,7 @@ watch(() => business.value?.id, loadTerminals);
     </div>
 
     <!-- ── Module Grid ────────────────────────────────────────────── -->
-    <div class="px-10 py-10">
+    <div class="dashboard-content px-10 py-10">
       <div class="flex items-center justify-between mb-8">
         <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
           {{ t('dashboard_platform_modules') }}
@@ -289,7 +202,7 @@ watch(() => business.value?.id, loadTerminals);
         </template>
       </div>
 
-      <section v-if="business" class="mt-12 terminal-section">
+      <section v-if="business && isEnterprise" class="mt-12 terminal-section">
         <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-6">
           <div>
             <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
@@ -306,6 +219,13 @@ watch(() => business.value?.id, loadTerminals);
           {{ t('dashboard_terminal_loading') }}
         </div>
 
+        <div v-else-if="terminalError" class="terminal-empty" role="alert">
+          <div>
+            <p>Terminals are unavailable</p>
+            <span>{{ terminalError }}</span>
+          </div>
+        </div>
+
         <div v-else-if="terminals.length === 0" class="terminal-empty">
           <Terminal class="w-10 h-10" />
           <div>
@@ -315,84 +235,12 @@ watch(() => business.value?.id, loadTerminals);
         </div>
 
         <div v-else class="terminal-grid">
-          <article v-for="terminal in terminals" :key="terminal.id" class="terminal-card">
-            <div class="terminal-card-head">
-              <div>
-                <p class="terminal-label">{{ t('dashboard_terminal_name') }}</p>
-                <h3>{{ terminal.display_name }}</h3>
-                <span>{{ terminal.role }}</span>
-              </div>
-              <NuxtLink :to="`/dashboard/terminals/${terminal.id}`" class="terminal-icon-link" :title="t('dashboard_terminal_settings')">
-                <Settings class="w-4 h-4" />
-              </NuxtLink>
-            </div>
-
-            <div>
-              <p class="terminal-label mb-2">{{ t('dashboard_terminal_preview') }}</p>
-              <TerminalThumbnail :layout="terminal.ui_layout" :title="terminal.display_name" />
-            </div>
-
-            <div class="terminal-settings">
-              <div>
-                <label :for="`terminal-name-${terminal.id}`">{{ t('dashboard_terminal_change_name') }}</label>
-                <input
-                  :id="`terminal-name-${terminal.id}`"
-                  v-model="terminalDrafts[terminal.id].name"
-                  class="input-warm w-full px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div class="terminal-toggle-row">
-                <div>
-                  <p>{{ t('dashboard_terminal_pin') }}</p>
-                  <span>{{ terminalDrafts[terminal.id].pinRequired ? t('dashboard_terminal_pin_enabled') : t('dashboard_terminal_pin_disabled') }}</span>
-                </div>
-                <label class="terminal-toggle">
-                  <input v-model="terminalDrafts[terminal.id].pinRequired" type="checkbox" />
-                  <span />
-                </label>
-              </div>
-
-              <div v-if="terminalDrafts[terminal.id].pinRequired">
-                <label :for="`terminal-pin-${terminal.id}`">{{ t('dashboard_terminal_pin_change') }}</label>
-                <div class="terminal-pin-row">
-                  <input
-                    :id="`terminal-pin-${terminal.id}`"
-                    v-model="terminalDrafts[terminal.id].pin"
-                    :type="terminalDrafts[terminal.id].showPin ? 'text' : 'password'"
-                    inputmode="numeric"
-                    maxlength="8"
-                    class="input-warm w-full px-3 py-2 text-sm font-mono"
-                    placeholder="1234"
-                    @input="terminalDrafts[terminal.id].pin = terminalDrafts[terminal.id].pin.replace(/\D/g, '').slice(0, 8)"
-                  />
-                  <button type="button" :title="terminalDrafts[terminal.id].showPin ? t('dashboard_terminal_pin_hide') : t('dashboard_terminal_pin_show')" @click="terminalDrafts[terminal.id].showPin = !terminalDrafts[terminal.id].showPin">
-                    <EyeOff v-if="terminalDrafts[terminal.id].showPin" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
-                  </button>
-                  <button type="button" :disabled="!terminalDrafts[terminal.id].pin" @click="copyTerminalPin(terminal)">
-                    <KeyRound class="w-4 h-4" />
-                    {{ copiedPinId === terminal.id ? t('dashboard_terminal_copied') : t('dashboard_terminal_copy') }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="terminal-actions">
-              <button type="button" @click="copyTerminalLink(terminal)">
-                <Link2 class="w-4 h-4" />
-                {{ copiedTerminalId === terminal.id ? t('dashboard_terminal_copied_link') : t('dashboard_terminal_copy_link') }}
-              </button>
-              <button
-                type="button"
-                :disabled="savingTerminalId === terminal.id || (terminalDrafts[terminal.id].pinRequired && !/^\d{4,8}$/.test(terminalDrafts[terminal.id].pin))"
-                @click="saveTerminalSettings(terminal)"
-              >
-                <Save class="w-4 h-4" />
-                {{ savingTerminalId === terminal.id ? t('dashboard_terminal_saving') : t('dashboard_terminal_save') }}
-              </button>
-            </div>
-          </article>
+          <TerminalCard
+            v-for="terminal in terminals"
+            :key="terminal.id"
+            :terminal="terminal"
+            @deleted="onTerminalDeleted(terminal.id)"
+          />
         </div>
       </section>
     </div>
@@ -543,7 +391,11 @@ watch(() => business.value?.id, loadTerminals);
   background: #fff;
   border-radius: 0.75rem;
   padding: 1.25rem;
-  color: rgba(61,24,32,0.5);
+  color: rgba(61,24,32,0.7);
+}
+
+.dashboard-page [style*="color: rgba(61,24,32,0."] {
+  color: rgba(61,24,32,0.7) !important;
 }
 
 .terminal-empty {
@@ -570,169 +422,39 @@ watch(() => business.value?.id, loadTerminals);
   gap: 1rem;
 }
 
-.terminal-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  border: 1px solid rgba(61,24,32,0.08);
-  border-radius: 0.75rem;
-  background: #fff;
-  padding: 1rem;
-  box-shadow: 0 4px 12px rgba(61,24,32,0.02);
-}
+@media (max-width: 768px) {
+  .dashboard-greeting,
+  .dashboard-content {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 
-.terminal-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
+  .dashboard-greeting {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
 
-.terminal-card h3 {
-  margin: 0.1rem 0 0;
-  color: rgb(var(--shell-sidebar));
-  font-size: 1rem;
-  font-weight: 700;
-}
+  .dashboard-greeting h1 {
+    font-size: 2.25rem !important;
+  }
 
-.terminal-card-head span {
-  display: block;
-  margin-top: 0.2rem;
-  color: rgba(61,24,32,0.42);
-  font-size: 0.75rem;
-}
+  .dashboard-content {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+  }
 
-.terminal-label,
-.terminal-settings label {
-  margin: 0;
-  color: rgba(61,24,32,0.42);
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
+  .dash-card {
+    min-height: 0;
+    padding: 1.25rem;
+  }
 
-.terminal-icon-link {
-  display: inline-flex;
-  width: 2rem;
-  height: 2rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.5rem;
-  color: rgba(61,24,32,0.55);
-  background: rgba(61,24,32,0.05);
-  text-decoration: none;
-}
+  .card-arrow {
+    opacity: 1;
+    transform: none;
+  }
 
-.terminal-settings {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.terminal-settings label {
-  display: block;
-  margin-bottom: 0.35rem;
-}
-
-.terminal-toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border: 1px solid rgba(61,24,32,0.08);
-  border-radius: 0.65rem;
-  padding: 0.75rem;
-}
-
-.terminal-toggle-row p {
-  margin: 0;
-  color: rgb(var(--shell-sidebar));
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.terminal-toggle-row span {
-  display: block;
-  margin-top: 0.12rem;
-  color: rgba(61,24,32,0.45);
-  font-size: 0.72rem;
-}
-
-.terminal-toggle {
-  position: relative;
-  display: inline-flex;
-  width: 2.7rem;
-  height: 1.5rem;
-  cursor: pointer;
-}
-
-.terminal-toggle input {
-  position: absolute;
-  opacity: 0;
-}
-
-.terminal-toggle span {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: rgba(61,24,32,0.12);
-  transition: background 0.18s;
-}
-
-.terminal-toggle span::after {
-  content: '';
-  position: absolute;
-  top: 0.18rem;
-  left: 0.18rem;
-  width: 1.14rem;
-  height: 1.14rem;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(61,24,32,0.18);
-  transition: transform 0.18s;
-}
-
-.terminal-toggle input:checked + span {
-  background: rgb(var(--shell-sidebar));
-}
-
-.terminal-toggle input:checked + span::after {
-  transform: translateX(1.2rem);
-}
-
-.terminal-pin-row,
-.terminal-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.terminal-pin-row button,
-.terminal-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  border-radius: 0.5rem;
-  background: rgba(61,24,32,0.06);
-  color: rgb(var(--shell-sidebar));
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.5rem 0.65rem;
-  transition: opacity 0.15s;
-}
-
-.terminal-pin-row button:disabled,
-.terminal-actions button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.terminal-actions {
-  margin-top: auto;
-}
-
-.terminal-actions button {
-  flex: 1;
+  .terminal-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

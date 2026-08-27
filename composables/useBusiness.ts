@@ -34,7 +34,11 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 
 function hexToRgb(hex: string): string {
-  const clean = hex.replace('#', '');
+  let clean = String(hex ?? '').trim().replace('#', '');
+  if (/^[0-9a-fA-F]{3}$/.test(clean)) {
+    clean = clean.split('').map((value) => `${value}${value}`).join('');
+  }
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return '104 41 58';
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);
   const b = parseInt(clean.slice(4, 6), 16);
@@ -64,7 +68,7 @@ export function useBusiness() {
 
       if (res.error || !res.business) {
         business.value = null;
-        error.value = res.error ?? 'No business found';
+        error.value = res.error ? 'We could not load the business workspace right now.' : 'No business found';
         return;
       }
 
@@ -93,20 +97,24 @@ export function useBusiness() {
         const { setLocale } = useLocale();
         setLocale(palette.languagePreference);
       }
-    } catch (err) {
+    } catch {
       business.value = null;
-      error.value = (err as Error).message;
+      error.value = 'We could not load the business workspace right now.';
     } finally {
       loading.value = false;
     }
   }
 
   async function updateTheme(palette: ColorPalette, logoUrl?: string) {
-    await $fetch('/api/businesses/theme', {
+    const res = await $fetch<{ success?: boolean; error?: string | null }>('/api/businesses/theme', {
       method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: { colorPalette: palette, logoUrl },
     });
+
+    if (res.error || res.success === false) {
+      throw new Error(res.error ?? 'Unable to save workspace settings');
+    }
 
     if (business.value) {
       business.value.colorPalette = palette;

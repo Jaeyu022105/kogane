@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Building2, Terminal as TerminalIcon, Plus, PenSquare, ArrowRight, Trash2, Link2, KeyRound, Settings2 } from 'lucide-vue-next';
+import { Building2, Terminal as TerminalIcon, Plus, ArrowRight } from 'lucide-vue-next';
 import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, layoutVariantsForPreset } from '~/lib/starterWorkstations';
-import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
+import TerminalCard from '~/components/TerminalCard.vue';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -10,8 +10,7 @@ const router = useRouter();
 const { isEnterprise } = useEnterpriseAccess();
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
-const { confirm, alert } = useModal();
-const { buildShareUrl } = useShareOrigin();
+
 
 const terminals  = ref<Array<{
   id: string;
@@ -26,12 +25,9 @@ const terminals  = ref<Array<{
 const loading    = ref(false);
 const showForm   = ref(false);
 const saving     = ref(false);
-const deletingId = ref<string | null>(null);
 const error      = ref<string | null>(null);
 const pinVisible = ref(false);
 const pinCopied  = ref(false);
-const copiedLinkId = ref<string | null>(null);
-const copiedPinId = ref<string | null>(null);
 
 const form = reactive({
   displayName: '',
@@ -64,54 +60,47 @@ function onPinInput(e: Event) {
   el.value = digits;
 }
 
-function copyPin() {
+function friendlyTerminalError(value: unknown) {
+  const message = String(value ?? '').toLowerCase();
+  if (message.includes('pin')) return 'Use a PIN between 4 and 8 digits.';
+  if (message.includes('name')) return 'Enter a name for this terminal.';
+  return 'We could not create this terminal. Check the details and try again.';
+}
+
+async function copyPin() {
   if (!form.pin) return;
-  navigator.clipboard.writeText(form.pin);
-  pinCopied.value = true;
-  setTimeout(() => (pinCopied.value = false), 1500);
+
+  try {
+    if (!navigator.clipboard) throw new Error('clipboard-unavailable');
+    await navigator.clipboard.writeText(form.pin);
+    pinCopied.value = true;
+    setTimeout(() => (pinCopied.value = false), 1500);
+  } catch {
+    error.value = 'Copying is unavailable here. You can select the PIN and copy it manually.';
+  }
 }
 
-function resolveTerminalUrl(terminal: { id: string; is_public: number | boolean | null; public_slug: string | null }) {
-  if (!import.meta.client) return '';
-
-  const path = terminal.is_public && terminal.public_slug
-    ? `/t/${terminal.public_slug}`
-    : `/terminal/${terminal.id}`;
-
-  return buildShareUrl(path);
-}
-
-async function copyTerminalLink(terminal: { id: string; is_public: number | boolean | null; public_slug: string | null }) {
-  const target = resolveTerminalUrl(terminal);
-  if (!target) return;
-
-  await navigator.clipboard.writeText(target);
-  copiedLinkId.value = terminal.id;
-  setTimeout(() => {
-    if (copiedLinkId.value === terminal.id) copiedLinkId.value = null;
-  }, 1500);
-}
-
-async function copyTerminalPin(terminal: { id: string; pin_code: string | null }) {
-  if (!terminal.pin_code) return;
-
-  await navigator.clipboard.writeText(terminal.pin_code);
-  copiedPinId.value = terminal.id;
-  setTimeout(() => {
-    if (copiedPinId.value === terminal.id) copiedPinId.value = null;
-  }, 1500);
+function onTerminalDeleted(terminalId: string) {
+  terminals.value = terminals.value.filter((t) => t.id !== terminalId);
 }
 
 async function loadTerminals() {
   if (!isEnterprise.value || !business.value) return;
   loading.value = true;
+  error.value = null;
 
   try {
-    const res = await $fetch<{ terminals: any[] }>('/api/terminals', {
+    const res = await $fetch<{ terminals?: any[]; error?: string | null }>('/api/terminals', {
       headers: authHeaders(),
       query:   { businessId: business.value.id },
     });
+    if (res.error) {
+      error.value = friendlyTerminalError(res.error);
+      return;
+    }
     terminals.value = res.terminals ?? [];
+  } catch (err: any) {
+    error.value = friendlyTerminalError(err?.data?.message ?? err?.data?.error ?? err?.message);
   } finally {
     loading.value = false;
   }
@@ -119,7 +108,14 @@ async function loadTerminals() {
 
 async function createTerminal() {
   if (!business.value) return;
-  if (!form.displayName.trim() || !form.pin) return;
+  if (!form.displayName.trim()) {
+    error.value = 'Enter a name for this terminal.';
+    return;
+  }
+  if (!form.pin) {
+    error.value = 'Enter a PIN for staff sign-in.';
+    return;
+  }
   if (!/^\d{4,8}$/.test(form.pin)) {
     error.value = 'PIN must be 4-8 digits (numbers only)';
     return;
@@ -143,7 +139,7 @@ async function createTerminal() {
     });
 
     if (res.error) {
-      error.value = res.error;
+      error.value = friendlyTerminalError(res.error);
       return;
     }
 
@@ -157,50 +153,12 @@ async function createTerminal() {
     await loadTerminals();
   } catch (err: any) {
     console.error('[createTerminal]', err);
-    error.value = err?.data?.message ?? err?.data?.error ?? err?.message ?? 'Unknown error';
+    error.value = friendlyTerminalError(err?.data?.message ?? err?.data?.error ?? err?.message);
   } finally {
     saving.value = false;
   }
 }
 
-async function deleteTerminal(terminalId: string, displayName: string) {
-  const approved = await confirm({
-    title: 'Delete terminal?',
-    description: `Remove ${displayName} and its assigned layout from this business.`,
-    confirmLabel: 'Delete Terminal',
-    confirmVariant: 'danger',
-  });
-
-  if (!approved) return;
-
-  deletingId.value = terminalId;
-
-  try {
-    const res = await $fetch<{ success: boolean; error: string | null }>(`/api/terminals/${terminalId}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-
-    if (res.error) {
-      await alert({
-        title: 'Unable to delete terminal',
-        description: res.error,
-        confirmLabel: 'Close',
-      });
-      return;
-    }
-
-    terminals.value = terminals.value.filter((terminal) => terminal.id !== terminalId);
-  } catch (err: any) {
-    await alert({
-      title: 'Unable to delete terminal',
-      description: err?.data?.message ?? err?.data?.error ?? err?.message ?? 'Unknown error',
-      confirmLabel: 'Close',
-    });
-  } finally {
-    deletingId.value = null;
-  }
-}
 
 onMounted(() => {
   if (!isEnterprise.value) {
@@ -228,6 +186,7 @@ watch(() => business.value?.id, loadTerminals);
       </div>
 
       <button
+        type="button"
         class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 btn-primary btn-ribbon"
         :disabled="!business"
         :title="!business ? 'Please create a business in Settings first' : 'Create new terminal'"
@@ -248,6 +207,15 @@ watch(() => business.value?.id, loadTerminals);
           class="w-6 h-6 rounded-full border-2 animate-spin"
           style="border-color: rgba(61,24,32,0.12); border-top-color: rgb(var(--shell-sidebar));"
         />
+      </div>
+
+      <div
+        v-else-if="error && !showForm"
+        class="mb-5 rounded-xl px-4 py-3 text-sm"
+        style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #b42318;"
+        role="alert"
+      >
+        {{ error }}
       </div>
 
       <!-- Empty state / No business -->
@@ -281,93 +249,12 @@ watch(() => business.value?.id, loadTerminals);
 
       <!-- Terminal grid -->
       <div v-else class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
-        <div
+        <TerminalCard
           v-for="ip in terminals"
           :key="ip.id"
-          class="group rounded-xl p-5 flex flex-col gap-4 transition-all"
-          style="background: white; border: 1px solid rgba(61,24,32,0.08);"
-          @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.18)'"
-          @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(61,24,32,0.08)'"
-        >
-          <TerminalThumbnail :layout="ip.ui_layout" :title="ip.display_name" />
-
-          <!-- Avatar + name -->
-          <div class="flex items-center gap-3">
-            <div
-              class="w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold shrink-0"
-              style="background: rgba(61,24,32,0.07); color: rgb(var(--shell-sidebar));"
-            >
-              {{ ip.display_name?.[0]?.toUpperCase() ?? '?' }}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-semibold text-sm truncate" style="color: rgb(var(--shell-sidebar));">
-                {{ ip.display_name }}
-              </p>
-              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.35);">{{ ip.role }}</p>
-            </div>
-            <button
-              class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-all"
-              style="background: rgba(239,68,68,0.06); color: #b42318;"
-              :disabled="deletingId === ip.id"
-              :title="deletingId === ip.id ? 'Deleting...' : 'Delete terminal'"
-              @click="deleteTerminal(ip.id, ip.display_name)"
-            >
-              <div v-if="deletingId === ip.id" class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-              <Trash2 v-else class="w-4 h-4" />
-            </button>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              class="text-xs font-medium px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5"
-              style="color: rgba(61,24,32,0.65); background: rgba(61,24,32,0.06);"
-              @click="copyTerminalLink(ip)"
-            >
-              <Link2 class="w-3.5 h-3.5" />
-              {{ copiedLinkId === ip.id ? 'Copied Link' : 'Copy Link' }}
-            </button>
-            <button
-              class="text-xs font-medium px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
-              style="color: rgba(61,24,32,0.65); background: rgba(61,24,32,0.06);"
-              :disabled="!ip.pin_code"
-              @click="copyTerminalPin(ip)"
-            >
-              <KeyRound class="w-3.5 h-3.5" />
-              {{ copiedPinId === ip.id ? 'Copied PIN' : 'Copy PIN' }}
-            </button>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex items-center gap-2 mt-auto">
-            <NuxtLink
-              :to="`/dashboard/builder?terminal=${ip.id}`"
-              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-md transition-all"
-              style="color: rgba(61,24,32,0.5); background: rgba(61,24,32,0.06); text-decoration: none;"
-            >
-              <div class="flex items-center justify-center gap-1.5">
-                <PenSquare class="w-3.5 h-3.5" /> Edit Layout
-              </div>
-            </NuxtLink>
-            <NuxtLink
-              :to="`/dashboard/terminals/${ip.id}`"
-              class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-md transition-all"
-              style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06); text-decoration: none;"
-            >
-              <div class="flex items-center justify-center gap-1.5">
-                <Settings2 class="w-3.5 h-3.5" /> Options
-              </div>
-            </NuxtLink>
-            <NuxtLink
-              :to="ip.is_public && ip.public_slug ? `/t/${ip.public_slug}` : `/terminal/${ip.id}`"
-              class="text-center text-xs font-semibold px-3 py-1.5 rounded-md transition-all"
-              style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.1); text-decoration: none;"
-            >
-              <div class="flex items-center justify-center gap-1.5">
-                Open <ArrowRight class="w-3.5 h-3.5" />
-              </div>
-            </NuxtLink>
-          </div>
-        </div>
+          :terminal="ip"
+          @deleted="onTerminalDeleted(ip.id)"
+        />
       </div>
     </div>
 
@@ -379,16 +266,17 @@ watch(() => business.value?.id, loadTerminals);
         style="background: rgba(15,5,7,0.4); backdrop-filter: blur(8px);"
         @click.self="showForm = false"
       >
-        <div class="w-full max-w-sm bg-white rounded-xl p-7 space-y-5 shadow-2xl">
+        <div class="w-full max-w-sm bg-white rounded-xl p-7 space-y-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="new-terminal-title">
           <div>
-            <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Terminal</h2>
+            <h2 id="new-terminal-title" class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Terminal</h2>
             <p class="text-xs mt-1" style="color: rgba(61,24,32,0.45);">Give it a name, set a PIN, and Kogane will create the starter layout automatically.</p>
           </div>
 
           <div class="space-y-4">
             <div>
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Display Name</label>
+              <label for="new-terminal-name" class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.7);">Terminal name</label>
               <input
+                id="new-terminal-name"
                 v-model="form.displayName"
                 class="input-warm w-full px-4 py-2.5 text-sm"
                 placeholder="Cash Register 1"
@@ -396,11 +284,12 @@ watch(() => business.value?.id, loadTerminals);
             </div>
 
             <div>
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">PIN (4-8 digits)</label>
+              <label for="new-terminal-pin" class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">PIN (4-8 digits)</label>
               <div class="relative">
                 <input
+                  id="new-terminal-pin"
                   :value="form.pin"
-                  type="text"
+                  :type="pinVisible ? 'text' : 'password'"
                   inputmode="numeric"
                   maxlength="8"
                   autocomplete="off"
@@ -415,6 +304,7 @@ watch(() => business.value?.id, loadTerminals);
                     class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
                     style="color: rgba(61,24,32,0.4);"
                     :title="pinCopied ? 'Copied!' : 'Copy PIN'"
+                    :aria-label="pinCopied ? 'PIN copied' : 'Copy PIN'"
                     @click="copyPin"
                   >
                     <svg v-if="!pinCopied" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -430,6 +320,7 @@ watch(() => business.value?.id, loadTerminals);
                     class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
                     style="color: rgba(61,24,32,0.4);"
                     :title="pinVisible ? 'Hide PIN' : 'Show PIN'"
+                    :aria-label="pinVisible ? 'Hide PIN' : 'Show PIN'"
                     @click="pinVisible = !pinVisible"
                   >
                     <svg v-if="!pinVisible" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -446,8 +337,8 @@ watch(() => business.value?.id, loadTerminals);
             </div>
 
             <div>
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Initial Layout Size</label>
-              <select v-model="form.resolution" class="input-warm w-full px-4 py-2.5 text-sm">
+              <label for="new-terminal-resolution" class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.7);">Screen size</label>
+              <select id="new-terminal-resolution" v-model="form.resolution" class="input-warm w-full px-4 py-2.5 text-sm">
                 <option value="1280x720">Landscape (1280x720)</option>
                 <option value="1920x1080">Landscape 1080p (1920x1080)</option>
                 <option value="1024x768">Tablet (1024x768)</option>
@@ -457,8 +348,8 @@ watch(() => business.value?.id, loadTerminals);
             </div>
 
             <div>
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Permission Preset</label>
-              <select v-model="form.presetKey" class="input-warm w-full px-4 py-2.5 text-sm">
+              <label for="new-terminal-permission" class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.7);">Staff access</label>
+              <select id="new-terminal-permission" v-model="form.presetKey" class="input-warm w-full px-4 py-2.5 text-sm">
                 <option v-for="preset in TERMINAL_PERMISSION_PRESETS" :key="preset.key" :value="preset.key">
                   {{ preset.label }}
                 </option>
@@ -466,8 +357,8 @@ watch(() => business.value?.id, loadTerminals);
             </div>
 
             <div v-if="currentLayoutVariants.length > 0">
-              <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.55);">Layout Flavor</label>
-              <select v-model="form.layoutVariant" class="input-warm w-full px-4 py-2.5 text-sm">
+              <label for="new-terminal-layout" class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.7);">Workspace style</label>
+              <select id="new-terminal-layout" v-model="form.layoutVariant" class="input-warm w-full px-4 py-2.5 text-sm">
                 <option v-for="variant in currentLayoutVariants" :key="variant.id" :value="variant.id">
                   {{ variant.label }}
                 </option>
@@ -488,6 +379,7 @@ watch(() => business.value?.id, loadTerminals);
 
           <div class="flex gap-3 pt-1">
             <button
+              type="button"
               class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all"
               style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65);"
               @click="showForm = false"
@@ -495,6 +387,7 @@ watch(() => business.value?.id, loadTerminals);
               Cancel
             </button>
             <button
+              type="button"
               class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="!form.displayName || !form.pin || saving"
               @click="createTerminal"

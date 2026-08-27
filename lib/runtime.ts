@@ -28,6 +28,16 @@ export function shouldQueueAction(action: RuntimeActionDefinition): boolean {
   return isMutationAction(action);
 }
 
+/** Resolve the small set of human-friendly placeholders allowed in upload paths. */
+export function resolveRuntimePathTemplate(value: string, date = new Date()): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const today = `${yyyy}-${mm}-${dd}`;
+
+  return value.replaceAll('{{date}}', today).replaceAll('{date}', today);
+}
+
 export function resolveRuntimePayload(
   value: RuntimePayloadValue | undefined,
   context: RuntimeResolverContext,

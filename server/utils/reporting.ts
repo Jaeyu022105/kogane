@@ -1,14 +1,26 @@
 export type ReportGrouping = 'day' | 'week' | 'month';
 
+function parseDateInput(value: string | undefined, endOfDay = false): Date | null {
+  if (!value) return null;
+
+  const raw = value.trim();
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
+  const normalized = isDateOnly
+    ? `${raw}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}Z`
+    : raw;
+  const date = new Date(normalized);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function normalizeDateRange(from?: string, to?: string) {
-  const toDate = to ? new Date(to) : new Date();
-  const fromDate = from
-    ? new Date(from)
-    : new Date(toDate.getTime() - 1000 * 60 * 60 * 24 * 30);
+  const toDate = parseDateInput(to, true) ?? new Date();
+  const fromDate = parseDateInput(from)
+    ?? new Date(toDate.getTime() - 1000 * 60 * 60 * 24 * 30);
 
   return {
-    from: Number.isNaN(fromDate.getTime()) ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) : fromDate,
-    to: Number.isNaN(toDate.getTime()) ? new Date() : toDate,
+    from: fromDate,
+    to: toDate,
   };
 }
 

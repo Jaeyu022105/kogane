@@ -12,6 +12,10 @@ const { t, locale, detectedLocale, setLocale, loadLocale, availableLocales, tran
 const mode = ref<'login' | 'signup' | '2fa-setup'>((route.query.mode as any) || 'login');
 const signupStep = ref(0); // 0: Lang, 1: Profile, 2: Birthday, 3: Wizard handoff
 
+useHead(() => ({
+  title: `${mode.value === 'login' ? t('login_title') : t('signup_title')} - Kogane`,
+}));
+
 // Form state
 const email    = ref('admin@kogane.dev');
 const password = ref('');
@@ -200,7 +204,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 </script>
 
 <template>
-  <div class="login-shell">
+  <div class="login-shell" role="main">
     <!-- background blobs -->
     <div class="login-blob login-blob--top" />
     <div class="login-blob login-blob--bottom" />
@@ -239,6 +243,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                :key="lang.code"
                type="button"
                class="lang-option"
+               :aria-pressed="locale === lang.code"
                @click="selectLanguage(lang.code)"
              >
                <span class="lang-option-native">{{ lang.englishLabel }}</span>
@@ -617,6 +622,315 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   color: rgba(104, 41, 58, 0.34);
   margin: 0;
   letter-spacing: 0.03em;
+}
+
+/* -- Forms & Wizard ──────────────────────────────────────────────────────── */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.signup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.birthday-grid {
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(104, 41, 58, 0.7);
+}
+
+.field-input {
+  background: #FDFAF7;
+  border: 1.5px solid rgba(104, 41, 58, 0.15);
+  border-radius: 0.5rem;
+  color: #68293A;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field-input::placeholder {
+  color: rgba(104, 41, 58, 0.35);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: rgba(104, 41, 58, 0.45);
+  box-shadow: 0 0 0 3px rgba(104, 41, 58, 0.07);
+}
+
+/* Progress Indicator */
+.signup-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.progress-bar {
+  height: 4px;
+  background: rgba(104, 41, 58, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #68293A;
+  transition: width 0.3s ease;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: rgba(104, 41, 58, 0.4);
+  font-weight: 500;
+}
+
+.progress-labels span.active {
+  color: #68293A;
+  font-weight: 600;
+}
+
+/* Step Header */
+.step-header {
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.step-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #68293A;
+  margin: 0 0 0.25rem;
+}
+
+.step-desc {
+  font-size: 0.85rem;
+  color: rgba(104, 41, 58, 0.55);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Profile Upload */
+.profile-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile-upload {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  border: 2px dashed rgba(104, 41, 58, 0.25);
+  background: #FDFAF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-upload:hover {
+  border-color: rgba(104, 41, 58, 0.45);
+  background: rgba(104, 41, 58, 0.02);
+}
+
+.profile-upload-text {
+  font-size: 0.78rem;
+  color: rgba(104, 41, 58, 0.6);
+  font-weight: 500;
+}
+
+/* Buttons */
+.signup-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.login-submit {
+  padding: 0.75rem 1.5rem;
+  background: #68293A;
+  color: #F6E6D7;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.login-submit:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.login-submit:active {
+  transform: translateY(0);
+}
+
+.login-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.login-return {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: rgba(104, 41, 58, 0.68);
+  border: 1.5px solid rgba(104, 41, 58, 0.12);
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.login-return:hover {
+  border-color: rgba(104, 41, 58, 0.3);
+  background: rgba(104, 41, 58, 0.03);
+}
+
+.login-dev-note {
+  font-size: 0.82rem;
+  color: rgba(104, 41, 58, 0.6);
+  text-align: center;
+  margin: 0.5rem 0 0;
+}
+
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #FFF0F2;
+  border: 1px solid rgba(255, 87, 118, 0.2);
+  border-radius: 0.5rem;
+  color: #D32F2F;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.login-error svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+/* 2FA & QR Code */
+.qr-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(104, 41, 58, 0.1);
+  border-radius: 0.5rem;
+  background: #FDFAF7;
+  margin-bottom: 0.5rem;
+}
+
+.qr-text {
+  font-size: 0.8rem;
+  color: rgba(104, 41, 58, 0.6);
+  text-align: center;
+  margin: 0;
+}
+
+/* Toggles (2FA) */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(104, 41, 58, 0.1);
+  border-radius: 0.5rem;
+  background: #FDFAF7;
+  margin-top: 0.5rem;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 2.5rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: rgba(104, 41, 58, 0.15);
+  transition: .3s;
+  border-radius: 1rem;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 1.05rem;
+  width: 1.05rem;
+  left: 0.15rem;
+  bottom: 0.15rem;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #68293A;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(1.15rem);
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #68293A;
 }
 
 /* -- Lang Picker --------------------------------------------------------- */

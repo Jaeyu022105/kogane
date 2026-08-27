@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Circle, Delete, Power } from 'lucide-vue-next';
+import { ArrowLeft, ArrowRight, Circle, Delete, Power } from 'lucide-vue-next';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
@@ -36,6 +36,7 @@ const logoutLoading = ref(false);
 
 const viewW = ref(1280);
 const viewH = ref(720);
+const terminalViewport = ref<HTMLElement | null>(null);
 const runtime = useCanvasRuntime();
 const { alert } = useModal();
 
@@ -48,13 +49,28 @@ function updateViewport() {
   viewH.value = window.innerHeight;
 }
 
+function scrollWorkspace(direction: 'left' | 'right') {
+  terminalViewport.value?.scrollBy({
+    left: direction === 'right' ? Math.max(viewW.value * 0.8, 280) : -Math.max(viewW.value * 0.8, 280),
+    behavior: 'smooth',
+  });
+}
+
 const canvasScale = computed(() => {
   const layout = session.value?.uiLayout;
   if (!layout) return 1;
   const scaleX = viewW.value / (layout.resolution?.width ?? 1280);
   const scaleY = (viewH.value - 40) / (layout.resolution?.height ?? 720);
+
+  // Keep controls usable on phones; the viewport below can scroll sideways.
+  if (viewW.value < 720) return Math.min(1, scaleY);
+
   return Math.min(scaleX, scaleY);
 });
+
+useHead(() => ({
+  title: `${serverDisplayName.value || 'Terminal'} - Kogane`,
+}));
 
 const activeModal = computed(() =>
   session.value?.uiLayout?.modals?.find((modal) => modal.id === runtime.state.value.activeModalId) ?? null,
@@ -82,6 +98,14 @@ function adminEntryLocation() {
       returnTo: terminalReturnLocation(),
     },
   };
+}
+
+function friendlyTerminalMessage(value: unknown, fallback: string) {
+  const message = String(value ?? '').toLowerCase();
+  if (message.includes('invalid credential')) return 'That PIN is not correct. Try again.';
+  if (message.includes('missing credential') || message.includes('pin is required')) return 'Enter the terminal PIN to continue.';
+  if (message.includes('not found')) return 'This terminal is no longer available.';
+  return fallback;
 }
 
 async function bootstrap() {
@@ -133,7 +157,7 @@ async function login() {
     });
 
     if (res.error || !res.session) {
-      loginError.value = res.error ?? 'Invalid credentials';
+      loginError.value = friendlyTerminalMessage(res.error, 'We could not sign you in. Check the PIN and try again.');
       return;
     }
 
@@ -145,7 +169,7 @@ async function login() {
     scheduleExpiryWarning(session.value.expiresAt);
     pin.value = '';
   } catch (err) {
-    loginError.value = (err as Error).message;
+    loginError.value = friendlyTerminalMessage((err as Error).message, 'We could not sign you in right now. Try again.');
   } finally {
     loading.value = false;
   }
@@ -212,7 +236,7 @@ async function logout() {
     });
 
     if (res.error || !res.success) {
-      logoutError.value = res.error ?? 'Invalid PIN';
+      logoutError.value = friendlyTerminalMessage(res.error, 'That PIN is not correct. Try again.');
       return;
     }
 
@@ -222,7 +246,7 @@ async function logout() {
     closeLogoutPrompt();
     await navigateTo(adminEntryLocation());
   } catch (err) {
-    logoutError.value = (err as Error).message;
+    logoutError.value = friendlyTerminalMessage((err as Error).message, 'We could not exit terminal mode right now. Try again.');
   } finally {
     logoutLoading.value = false;
   }
@@ -255,15 +279,31 @@ onUnmounted(() => {
         <span class="text-xs font-semibold" :style="{ color: activeTheme.topBarText }">{{ session.displayName }}</span>
         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" :style="{ color: activeTheme.panelMutedText, background: activeTheme.panelHeaderBackground, border: `1px solid ${activeTheme.panelBorder}` }">{{ session.role }}</span>
       </div>
-      <button class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" :style="{ color: activeTheme.topBarText }" @click="openLogoutPrompt">
+      <button type="button" aria-label="Log out of terminal" class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" :style="{ color: activeTheme.topBarText }" @click="openLogoutPrompt">
         <Power class="w-3.5 h-3.5" /> Logout
       </button>
     </div>
 
     <div
-      class="absolute"
+      v-if="viewW < 720"
+      class="absolute bottom-3 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full px-2 py-1.5 text-[11px] font-medium shadow-lg"
+      :style="{ color: activeTheme.topBarText, background: activeTheme.topBarBackground, border: `1px solid ${activeTheme.panelBorder}` }"
+      aria-live="polite"
+    >
+      <button type="button" class="rounded-full p-1" aria-label="Show the previous workspace area" @click.stop="scrollWorkspace('left')">
+        <ArrowLeft class="h-3.5 w-3.5" />
+      </button>
+      <span>Swipe sideways to view the full workspace</span>
+      <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
+        <ArrowRight class="h-3.5 w-3.5" />
+      </button>
+    </div>
+
+    <div ref="terminalViewport" class="terminal-canvas-viewport absolute top-10 inset-x-0 bottom-0">
+      <div
+      class="terminal-canvas absolute"
       :style="{
-        top: '40px',
+        top: '0',
         left: '0',
         width: `${session.uiLayout?.resolution?.width ?? 1280}px`,
         height: `${session.uiLayout?.resolution?.height ?? 720}px`,
@@ -273,7 +313,7 @@ onUnmounted(() => {
         borderRadius: surfaceRadius,
         overflow: 'hidden',
       }"
-    >
+      >
       <div class="absolute inset-0 pointer-events-none overflow-hidden">
         <div
           v-if="activeTheme.particleEffect === 'floating-orbs'"
@@ -319,6 +359,7 @@ onUnmounted(() => {
           />
         </div>
       </div>
+      </div>
     </div>
 
     <Transition name="v">
@@ -349,12 +390,14 @@ onUnmounted(() => {
             <button
               v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','delete']"
               :key="`logout-digit-${digit}`"
+              type="button"
               :class="[
                 'h-14 rounded-2xl text-xl font-semibold transition-all active:scale-95 flex items-center justify-center',
                 digit === '' ? 'invisible' : '',
                 digit === 'delete' ? 'opacity-60 hover:opacity-100 hover:bg-black/5' : 'hover:bg-black/5',
               ]"
               :style="digit !== '' ? 'color: rgb(var(--shell-sidebar));' : ''"
+              :aria-label="digit === 'delete' ? 'Clear PIN' : digit || undefined"
               @click="digit === 'delete' ? clearPin() : appendPin(digit)"
             >
               <Delete v-if="digit === 'delete'" class="w-6 h-6" />
@@ -366,6 +409,7 @@ onUnmounted(() => {
 
           <div class="flex gap-3 mt-5">
             <button
+              type="button"
               class="flex-1 py-3 rounded-xl text-sm font-medium transition-all"
               style="border: 1px solid rgba(61,24,32,0.14); color: rgba(61,24,32,0.7);"
               @click="closeLogoutPrompt"
@@ -373,6 +417,7 @@ onUnmounted(() => {
               Cancel
             </button>
             <button
+              type="button"
               :disabled="logoutPin.length < serverPinLength || logoutLoading"
               class="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40"
               style="background: rgb(var(--shell-sidebar));"
@@ -421,12 +466,14 @@ onUnmounted(() => {
           <button
             v-for="digit in ['1','2','3','4','5','6','7','8','9','','0','delete']"
             :key="digit"
+            type="button"
             :class="[
               'h-14 rounded-2xl text-xl font-semibold transition-all active:scale-95 flex items-center justify-center',
               digit === '' ? 'invisible' : '',
               digit === 'delete' ? 'opacity-60 hover:opacity-100 hover:bg-black/5' : 'hover:bg-black/5',
             ]"
             :style="digit !== '' ? `color: ${activeTheme.panelText};` : ''"
+            :aria-label="digit === 'delete' ? 'Clear PIN' : digit || undefined"
             @click="digit === 'delete' ? clearPin() : appendPin(digit)"
           >
             <Delete v-if="digit === 'delete'" class="w-6 h-6" />
@@ -437,6 +484,7 @@ onUnmounted(() => {
         <div v-if="loginError" class="text-xs text-center font-medium mt-1" style="color: #dc2626;">{{ loginError }}</div>
 
         <button
+          type="button"
           :disabled="pin.length < serverPinLength || loading"
           class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
           :style="{ background: activeTheme.accentColor, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
@@ -446,6 +494,7 @@ onUnmounted(() => {
         </button>
 
         <button
+          type="button"
           class="w-full py-3 rounded-xl text-sm font-medium transition-all"
           :style="{ border: `1px solid ${activeTheme.panelBorder}`, color: activeTheme.panelText }"
           @click="leaveLoginPage"
@@ -456,3 +505,17 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.terminal-canvas-viewport {
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 720px) {
+  .terminal-canvas-viewport {
+    padding-bottom: 1rem;
+  }
+}
+</style>

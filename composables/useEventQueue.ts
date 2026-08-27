@@ -17,6 +17,20 @@ const flushing = ref(false);
 const lastFailure = ref<string | null>(null);
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
+function friendlySaveMessage(raw?: unknown) {
+  const message = String(raw ?? '').toLowerCase();
+
+  if (message.includes('duplicate') || message.includes('unique')) {
+    return 'That item already exists. Try a different name or code.';
+  }
+
+  if (message.includes('required') || message.includes('not-null') || message.includes('null')) {
+    return 'Some required information is missing. Check the form and try again.';
+  }
+
+  return 'We could not save that change. Check the information and try again.';
+}
+
 export function useEventQueue() {
   const { alert } = useModal();
 
@@ -64,8 +78,9 @@ export function useEventQueue() {
         }
 
         item.rollback?.();
-        item.reject(new Error(result?.error ?? 'Sync failed'));
-        lastFailure.value = result?.error ?? 'Sync failed';
+        const message = friendlySaveMessage(result?.error);
+        item.reject(new Error(message));
+        lastFailure.value = message;
       });
 
       if (retryLater.length > 0) {
@@ -77,13 +92,13 @@ export function useEventQueue() {
 
       if (lastFailure.value && retryLater.length === 0) {
         await alert({
-          title: 'Sync failure warning',
+          title: 'We could not save that change',
           description: lastFailure.value,
           confirmLabel: 'Dismiss',
         });
       }
     } catch (err) {
-      const message = (err as Error).message;
+      const message = friendlySaveMessage((err as Error).message);
       const retryLater: QueuedRuntimeEvent[] = [];
 
       for (const item of batch) {
@@ -95,7 +110,7 @@ export function useEventQueue() {
           });
         } else {
           item.rollback?.();
-          item.reject(err);
+          item.reject(new Error(message));
           lastFailure.value = message;
         }
       }
@@ -105,7 +120,7 @@ export function useEventQueue() {
         scheduleFlush(2 ** retryLater[0].retries * FLUSH_INTERVAL_MS);
       } else if (lastFailure.value) {
         await alert({
-          title: 'Sync failure warning',
+          title: 'We could not save that change',
           description: lastFailure.value,
           confirmLabel: 'Dismiss',
         });

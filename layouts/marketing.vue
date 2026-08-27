@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const { t } = useLocale();
+import { Menu, X } from 'lucide-vue-next';
+
+const { t, loadLocale } = useLocale();
 const route = useRoute();
 const { isLoggedIn, loadDevSession } = useAuth();
 
@@ -9,8 +11,14 @@ const navLinks = computed(() => [
 ]);
 
 const scrolled = ref(false);
+const mobileMenuOpen = ref(false);
+
+function closeMobileMenu() {
+  mobileMenuOpen.value = false;
+}
 
 onMounted(() => {
+  loadLocale();
   loadDevSession();
   const handler = () => { scrolled.value = window.scrollY > 24; };
   window.addEventListener('scroll', handler, { passive: true });
@@ -20,21 +28,22 @@ onMounted(() => {
 
 <template>
   <div class="marketing-shell">
-    <!-- ── Navbar ─────────────────────────────────────────── -->
+    <!-- â”€â”€ Navbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <header class="marketing-nav" :class="{ scrolled }">
       <div class="nav-inner">
-        <NuxtLink to="/" class="nav-logo">
+        <NuxtLink to="/" class="nav-logo" @click="closeMobileMenu">
           <span class="logo-wordmark">Kogane</span>
           <span class="logo-dot" />
         </NuxtLink>
 
-        <nav class="nav-links">
+        <nav id="marketing-menu" class="nav-links" :class="{ 'mobile-open': mobileMenuOpen }" aria-label="Main navigation">
           <NuxtLink
             v-for="link in navLinks"
             :key="link.to"
             :to="link.to"
             class="nav-link"
             :class="{ active: route.path === link.to }"
+            @click="closeMobileMenu"
           >
             {{ link.label }}
           </NuxtLink>
@@ -47,15 +56,27 @@ onMounted(() => {
             <NuxtLink to="/login?mode=signup" class="btn-maroon-sm">{{ t('nav_getstarted') }}</NuxtLink>
           </template>
         </div>
+
+        <button
+          type="button"
+          class="mobile-menu-toggle"
+          :aria-expanded="mobileMenuOpen"
+          aria-controls="marketing-menu"
+          :aria-label="mobileMenuOpen ? 'Close menu' : 'Open menu'"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+        >
+          <X v-if="mobileMenuOpen" class="w-5 h-5" />
+          <Menu v-else class="w-5 h-5" />
+        </button>
       </div>
     </header>
 
-    <!-- ── Page content ───────────────────────────────────── -->
+    <!-- â”€â”€ Page content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <main>
       <slot />
     </main>
 
-    <!-- ── Footer ─────────────────────────────────────────── -->
+    <!-- â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <footer class="marketing-footer">
       <div class="footer-inner">
         <div class="footer-brand">
@@ -71,9 +92,9 @@ onMounted(() => {
 
         <div class="footer-links-group">
           <p class="footer-col-title">{{ t('footer_company') }}</p>
-          <a href="#" class="footer-link">{{ t('footer_about') }}</a>
-          <a href="#" class="footer-link">{{ t('footer_blog') }}</a>
-          <a href="#" class="footer-link">{{ t('footer_contact') }}</a>
+          <span class="footer-link footer-link-disabled">{{ t('footer_about') }}</span>
+          <span class="footer-link footer-link-disabled">{{ t('footer_blog') }}</span>
+          <span class="footer-link footer-link-disabled">{{ t('footer_contact') }}</span>
         </div>
 
         <div class="footer-links-group">
@@ -84,14 +105,14 @@ onMounted(() => {
       </div>
 
       <div class="footer-bottom">
-        <span>� {{ new Date().getFullYear() }} Kogane. {{ t('footer_rights') }}</span>
+        <span>&copy; {{ new Date().getFullYear() }} Kogane. {{ t('footer_rights') }}</span>
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
-/* ── Shell ──────────────────────────────────────────── */
+/* â”€â”€ Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .marketing-shell {
   min-height: 100dvh;
   background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);
@@ -99,7 +120,7 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* ── Navbar ─────────────────────────────────────────── */
+/* â”€â”€ Navbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .marketing-nav {
   position: sticky;
   top: 0;
@@ -156,6 +177,19 @@ onMounted(() => {
   flex: 1;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(104, 41, 58, 0.18);
+  border-radius: 0.5rem;
+  color: #68293A;
+  background: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
 .nav-link {
   padding: 0.4rem 0.85rem;
   border-radius: 0.5rem;
@@ -200,7 +234,7 @@ onMounted(() => {
 .btn-maroon-sm:hover  { opacity: 0.88; }
 .btn-maroon-sm:active { transform: scale(0.97); }
 
-/* ── Footer ─────────────────────────────────────────── */
+/* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .marketing-footer {
   margin-top: auto;
   border-top: 1px solid rgba(104, 41, 58, 0.1);
@@ -242,6 +276,7 @@ onMounted(() => {
   transition: color 0.15s;
 }
 .footer-link:hover { color: #68293A; }
+.footer-link-disabled { cursor: default; }
 
 .footer-bottom {
   border-top: 1px solid rgba(104, 41, 58, 0.07);
@@ -254,7 +289,27 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .footer-inner { grid-template-columns: 1fr 1fr; }
-  .nav-links { display: none; }
+  .nav-inner { position: relative; }
+  .mobile-menu-toggle { display: inline-flex; }
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem 1rem;
+    background: rgba(255,255,255,0.98);
+    border-bottom: 1px solid rgba(104, 41, 58, 0.1);
+    box-shadow: 0 10px 20px rgba(104, 41, 58, 0.08);
+  }
+  .nav-links.mobile-open { display: flex; }
+  .nav-link { padding: 0.7rem 0.85rem; }
+  .nav-actions { gap: 0.35rem; }
+  .btn-ghost-sm,
+  .btn-maroon-sm { padding: 0.38rem 0.62rem; font-size: 0.75rem; }
 }
 </style>
 

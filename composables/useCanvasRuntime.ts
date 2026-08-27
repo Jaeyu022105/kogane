@@ -2,6 +2,7 @@ import type { TerminalPermissions } from '~/lib/permissions';
 import { isActionAllowed, normalizePermissions } from '~/lib/permissions';
 import {
   CANVAS_RUNTIME_KEY,
+  resolveRuntimePathTemplate,
   resolveRuntimePayload,
   shouldQueueAction,
   type RuntimeEventEnvelope,
@@ -192,13 +193,13 @@ export function useCanvasRuntime() {
     if (!file) return null;
 
     const form = new FormData();
-    const path = String(resolveRuntimePayload(action.path ?? `${element.id}/${file.name}`, {
+    const path = resolveRuntimePathTemplate(String(resolveRuntimePayload(action.path ?? `${element.id}/${file.name}`, {
       cart: runtimeState.value.cart,
       inputs: runtimeState.value.inputs,
       uploads: runtimeState.value.uploads,
       session: runtimeState.value.sessionVars,
       elementId: element.id,
-    }) ?? `${element.id}/${file.name}`);
+    }) ?? `${element.id}/${file.name}`));
 
     form.append('file', file);
     form.append('bucket', action.bucket ?? 'assets');
@@ -276,6 +277,23 @@ export function useCanvasRuntime() {
     } catch {
       return false;
     }
+  }
+
+  function validateInsert(action: RuntimeActionDefinition, payload: unknown) {
+    if (action.type !== 'insert' || action.table !== 'products') return null;
+
+    const values = payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? payload as Record<string, unknown>
+      : {};
+    const name = String(values.name ?? '').trim();
+    const price = String(values.price ?? '').trim();
+
+    if (!name) return 'Add a product name before saving.';
+    if (!price || !Number.isFinite(Number(price)) || Number(price) < 0) {
+      return 'Enter a valid price before saving.';
+    }
+
+    return null;
   }
 
   async function dispatch(action: RuntimeActionDefinition, options: {
@@ -356,6 +374,16 @@ export function useCanvasRuntime() {
     const resolvedWhere = action.where
       ? resolveRuntimePayload(action.where, ctx) as Record<string, unknown>
       : undefined;
+
+    const validationMessage = validateInsert(action, resolvedPayload);
+    if (validationMessage) {
+      await alert({
+        title: 'Check the product details',
+        description: validationMessage,
+        confirmLabel: 'Close',
+      });
+      return null;
+    }
 
     const runtimeAction: RuntimeActionDefinition = {
       ...action,

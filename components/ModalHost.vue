@@ -22,23 +22,27 @@ const panelClass = computed(() => {
           class="w-full max-w-md rounded-[28px] border shadow-2xl"
           :class="panelClass"
           style="border-color: rgba(61,24,32,0.12);"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-host-title"
         >
           <div class="px-6 py-5 space-y-2">
-            <h2 class="font-serif text-xl leading-tight">{{ state.title ?? state.name }}</h2>
+            <h2 id="modal-host-title" class="font-serif text-xl leading-tight">{{ state.title ?? state.name }}</h2>
             <p v-if="state.description" class="text-sm opacity-75 leading-relaxed">
               {{ state.description }}
             </p>
             <div
               v-if="state.kind === 'custom' && state.props"
-              class="mt-4 rounded-2xl bg-black/5 px-4 py-3 text-xs font-mono overflow-auto"
+              class="mt-4 rounded-2xl bg-black/5 px-4 py-3 text-xs leading-relaxed"
             >
-              {{ JSON.stringify(state.props, null, 2) }}
+              This workspace message is ready for your next step.
             </div>
           </div>
 
           <div class="flex gap-3 px-6 pb-6 pt-2">
             <button
               v-if="state.kind === 'confirm'"
+              type="button"
               class="flex-1 rounded-full border px-4 py-2.5 text-sm font-medium"
               style="border-color: rgba(61,24,32,0.15);"
               @click="close(false)"
@@ -46,6 +50,7 @@ const panelClass = computed(() => {
               {{ state.cancelLabel ?? 'Cancel' }}
             </button>
             <button
+              type="button"
               class="flex-1 rounded-full px-4 py-2.5 text-sm font-semibold"
               :style="state.confirmVariant === 'danger'
                 ? 'background: #fda4af; color: #4b1419;'

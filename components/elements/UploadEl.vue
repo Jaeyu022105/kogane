@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ImageUp, LockKeyhole } from 'lucide-vue-next';
 import type { UploadElementDef } from '~/lib/uiTypes';
+import { resolveRuntimePathTemplate } from '~/lib/runtime';
 
 const props = defineProps<{ element: UploadElementDef; runtime?: any; builderMode?: boolean }>();
 
 const disabled = computed(() => Boolean(props.runtime?.isElementDisabled?.(props.element)));
 const uploadedUrl = computed(() => props.runtime?.state?.value?.uploads?.[props.element.id] ?? null);
+const pathPreview = computed(() => resolveRuntimePathTemplate(props.element.pathTemplate ?? 'No file selected yet'));
 
 async function handleClick() {
   if (props.builderMode || disabled.value) return;
@@ -41,7 +43,7 @@ async function handleClick() {
       <div class="min-w-0">
         <p class="text-sm font-semibold">{{ element.buttonLabel ?? 'Upload file' }}</p>
         <p class="truncate text-xs text-white/45">
-          {{ uploadedUrl ?? element.pathTemplate ?? 'No file selected yet' }}
+          {{ uploadedUrl ?? pathPreview }}
         </p>
       </div>
     </div>

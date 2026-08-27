@@ -9,7 +9,6 @@ import { Check, Sparkles, Upload } from 'lucide-vue-next';
 
 const { business, fetchBusiness, updateTheme } = useBusiness();
 const { openOnboarding }                     = useOnboarding();
-const { isEnterprise }                       = useEnterpriseAccess();
 const { t, availableLocales, setLocale, locale } = useLocale();
 
 const saving        = ref(false);
@@ -18,6 +17,17 @@ const error         = ref<string | null>(null);
 const success       = ref(false);
 
 const selectedLanguage = ref(locale.value);
+
+function friendlySettingsError(value: unknown, fallback: string) {
+  const message = String(value ?? '').toLowerCase();
+  if (message.includes('unsupported file') || message.includes('file type')) {
+    return 'Choose a PNG, JPEG, WebP, SVG, or GIF image.';
+  }
+  if (message.includes('size') || message.includes('large')) {
+    return 'Choose an image smaller than 5 MB.';
+  }
+  return fallback;
+}
 
 watch(locale, (newLoc) => {
   selectedLanguage.value = newLoc;
@@ -47,6 +57,13 @@ async function saveTheme() {
   error.value   = null;
   success.value = false;
 
+  const invalidColor = Object.values(palette).some((value) => !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim()));
+  if (invalidColor) {
+    error.value = 'Use a valid hex colour such as #68293A for each colour.';
+    saving.value = false;
+    return;
+  }
+
   try {
     setLocale(selectedLanguage.value);
     const updatedPalette = {
@@ -58,9 +75,24 @@ async function saveTheme() {
     success.value = true;
     setTimeout(() => (success.value = false), 2500);
   } catch (err) {
-    error.value = (err as Error).message;
+    error.value = friendlySettingsError(err, 'We could not save the workspace settings. Please try again.');
   } finally {
     saving.value = false;
+  }
+}
+
+async function changeLanguage() {
+  setLocale(selectedLanguage.value);
+  if (business.value) {
+    const updatedPalette = {
+      ...business.value.colorPalette,
+      languagePreference: selectedLanguage.value,
+    };
+    try {
+      await updateTheme(updatedPalette);
+    } catch (err) {
+      error.value = friendlySettingsError(err, 'We could not save the language preference. Please try again.');
+    }
   }
 }
 
@@ -92,14 +124,14 @@ async function uploadLogo() {
       });
 
       if (res.error) {
-        error.value = res.error;
+        error.value = friendlySettingsError(res.error, 'We could not upload the logo. Please try again.');
         return;
       }
 
-      await updateTheme({ ...palette }, res.url);
+      await updateTheme({ ...business.value?.colorPalette, ...palette }, res.url);
       if (business.value) business.value.logoUrl = res.url;
     } catch (err) {
-      error.value = (err as Error).message;
+      error.value = friendlySettingsError(err, 'We could not upload the logo. Please try again.');
     } finally {
       uploadingLogo.value = false;
     }
@@ -116,16 +148,10 @@ const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
 const businessDetailItems = computed(() => {
   if (!business.value) return [];
 
-  const items = [
-    { label: 'ID',      value: business.value.id },
-    { label: 'Created', value: new Date(business.value.createdAt).toLocaleDateString() },
+  return [
+    { label: 'Business name', value: business.value.name },
+    { label: 'Started', value: new Date(business.value.createdAt).toLocaleDateString() },
   ];
-
-  if (isEnterprise.value) {
-    items.splice(1, 0, { label: 'Schema', value: business.value.schemaName });
-  }
-
-  return items;
 });
 </script>
 
@@ -208,43 +234,27 @@ const businessDetailItems = computed(() => {
         <!-- Color fields -->
         <div class="grid grid-cols-2 gap-4">
           <div v-for="field in COLOR_FIELDS" :key="field.key" class="space-y-2">
-            <label class="text-[10px] font-mono uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">
+            <label :for="`settings-color-${field.key}`" class="text-[10px] font-mono uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">
               {{ field.label }}
             </label>
             <div class="flex items-center gap-2">
               <input
                 type="color"
+                :id="`settings-color-${field.key}`"
+                :aria-label="`${field.label} color`"
                 v-model="palette[field.key]"
                 class="w-8 h-8 rounded cursor-pointer shrink-0"
                 style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; padding: 1px;"
               />
               <input
+                :id="`settings-color-value-${field.key}`"
+                :aria-label="`${field.label} hex value`"
                 v-model="palette[field.key]"
                 class="input-warm flex-1 px-3 py-2 text-xs font-mono"
                 placeholder="#000000"
               />
             </div>
           </div>
-        </div>
-
-        <!-- Language Selection -->
-        <div class="space-y-2">
-          <label class="text-[10px] font-mono uppercase tracking-widest block" style="color: rgba(61,24,32,0.4);">
-            {{ t('onboarding_language') }}
-          </label>
-          <select
-            v-model="selectedLanguage"
-            class="input-warm w-full px-3 py-2 text-xs"
-            style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; border-radius: 0.5rem; height: 2.25rem;"
-          >
-            <option
-              v-for="lang in availableLocales"
-              :key="lang.code"
-              :value="lang.code"
-            >
-              {{ lang.label }} ({{ lang.nativeLabel }})
-            </option>
-          </select>
         </div>
 
         <!-- Feedback -->
@@ -296,7 +306,7 @@ const businessDetailItems = computed(() => {
       </section>
 
       <!-- ── Workspace Setup ────────────────────────────────────── -->
-      <section class="space-y-3">
+      <section v-if="business" class="space-y-3">
         <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
           <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">{{ t('settings_onboarding_overline') }}</p>
           <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">{{ t('settings_workspace_setup') }}</h2>
@@ -310,6 +320,32 @@ const businessDetailItems = computed(() => {
           <Sparkles class="w-4 h-4" style="color: rgb(232,116,138);" />
           {{ t('settings_open_setup_wizard') }}
         </button>
+      </section>
+
+      <!-- ── System Language ────────────────────────────────────── -->
+      <section class="space-y-3">
+        <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
+          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">{{ t('settings_system_overline') }}</p>
+          <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">{{ t('settings_language') }}</h2>
+          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">{{ t('settings_language_desc') }}</p>
+        </div>
+
+        <label for="settings-language" class="sr-only">{{ t('settings_language') }}</label>
+        <select
+          id="settings-language"
+          v-model="selectedLanguage"
+          class="input-warm w-full px-3 py-2 text-xs"
+          style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; border-radius: 0.5rem; height: 2.25rem;"
+          @change="changeLanguage"
+        >
+          <option
+            v-for="lang in availableLocales"
+            :key="lang.code"
+            :value="lang.code"
+          >
+            {{ lang.label }} ({{ lang.nativeLabel }})
+          </option>
+        </select>
       </section>
 
     </div>

@@ -104,9 +104,9 @@ const PALETTE_ITEMS: BuilderPaletteItem[] = [
   { id: 'button', type: 'button', label: 'Button', description: 'Generic action button.', icon: Hexagon, defaults: { text: 'Button', variant: 'primary', radius: 16 } as any, defaultWidth: 220, defaultHeight: 64 },
   { id: 'text', type: 'text', label: 'Text', description: 'Headings, labels, and helper text.', icon: Type, defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any, defaultWidth: 260, defaultHeight: 80 },
   { id: 'image', type: 'image', label: 'Image', description: 'Images, branding, or signage.', icon: ImageIcon, defaults: { src: '', fit: 'cover' } as any, defaultWidth: 240, defaultHeight: 180 },
-  { id: 'table-view', type: 'table-view', label: 'Table View', description: 'Flexible database table view.', icon: Database, defaults: { source: 'business-table', title: 'Data Table', tableName: '', columns: [], pageSize: 20, striped: true } as any, defaultWidth: 520, defaultHeight: 320 },
+  { id: 'table-view', type: 'table-view', label: 'List View', description: 'Flexible list of business information.', icon: Database, defaults: { source: 'business-table', title: 'List', tableName: '', columns: [], pageSize: 20, striped: true } as any, defaultWidth: 520, defaultHeight: 320 },
   { id: 'input-field', type: 'input-field', label: 'Input', description: 'Single form field.', icon: RectangleHorizontal, defaults: { fieldName: 'field', inputType: 'text', radius: 16 } as any, defaultWidth: 260, defaultHeight: 56 },
-  { id: 'chart', type: 'chart', label: 'Chart', description: 'Business table or audit-log chart.', icon: BarChart2, defaults: { source: 'business-table', title: 'Data Chart', chartType: 'bar', aggregation: 'sum', tableName: '', labelColumn: '', valueColumn: '' } as any, defaultWidth: 460, defaultHeight: 300 },
+  { id: 'chart', type: 'chart', label: 'Chart', description: 'A simple chart for business activity.', icon: BarChart2, defaults: { source: 'business-table', title: 'Activity', chartType: 'bar', aggregation: 'sum', tableName: '', labelColumn: '', valueColumn: '' } as any, defaultWidth: 460, defaultHeight: 300 },
   { id: 'upload', type: 'upload', label: 'Upload', description: 'File or asset uploader.', icon: Upload, defaults: { bucket: 'assets', buttonLabel: 'Upload file', radius: 18 } as any, defaultWidth: 260, defaultHeight: 88 },
 ];
 
@@ -593,6 +593,7 @@ onUnmounted(() => {
 
         <select
           :value="selectedTerminal ?? ''"
+          aria-label="Select terminal"
           class="appearance-none bg-white/60 border px-3 py-1.5 rounded-xl text-sm font-medium transition-all focus:outline-none hover:bg-white"
           style="border-color: rgba(61,24,32,0.15); color: rgb(var(--shell-sidebar));"
           @change="selectTerminal(($event.target as HTMLSelectElement).value)"
@@ -606,6 +607,7 @@ onUnmounted(() => {
         <select
           v-if="selectedTerminal"
           :value="activeLayerId"
+          aria-label="Select workspace screen"
           class="appearance-none bg-white/60 border px-3 py-1.5 rounded-xl text-sm font-medium transition-all focus:outline-none hover:bg-white"
           style="border-color: rgba(61,24,32,0.15); color: rgb(var(--shell-sidebar));"
           @change="setActiveLayer(($event.target as HTMLSelectElement).value)"

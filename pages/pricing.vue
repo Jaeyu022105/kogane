@@ -160,7 +160,12 @@ const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; 
           :key="i"
           class="faq-item"
           :class="{ open: openFaq === i }"
+          role="button"
+          tabindex="0"
+          :aria-expanded="openFaq === i"
           @click="toggle(i)"
+          @keydown.enter.prevent="toggle(i)"
+          @keydown.space.prevent="toggle(i)"
         >
           <div class="faq-question">
             <span>{{ faq.q }}</span>

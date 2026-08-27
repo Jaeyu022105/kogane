@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "dev:lan": "nuxt dev --host 0.0.0.0 --port 3000",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "preview:lan": "nuxt preview --host 0.0.0.0 --port 3000",
+    "build": "bun --bun nuxt build",
+    "dev": "bun --bun nuxt dev",
+    "dev:lan": "bun --bun nuxt dev --host 0.0.0.0 --port 3000",
+    "generate": "bun --bun nuxt generate",
+    "preview": "bun --bun nuxt preview",
+    "preview:lan": "bun --bun nuxt preview --host 0.0.0.0 --port 3000",
+    "test": "bun test",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

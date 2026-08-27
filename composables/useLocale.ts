@@ -76,6 +76,10 @@ function interpolate(template: string, params?: Record<string, string | number>)
 const locale = ref<LocaleCode>('en');
 const detectedLocale = ref<LocaleCode>('en');
 
+function htmlLanguageCode(code: LocaleCode) {
+  return code === 'ph' ? 'fil' : code;
+}
+
 export function useLocale() {
   function loadLocale() {
     if (!import.meta.client) return;
@@ -83,6 +87,7 @@ export function useLocale() {
     detectedLocale.value = detectBrowserLocale();
     const saved = localStorage.getItem(STORAGE_KEY);
     locale.value = saved ? resolveCode(saved) : detectedLocale.value;
+    document.documentElement.lang = htmlLanguageCode(locale.value);
   }
 
   function setLocale(code: string) {
@@ -90,6 +95,7 @@ export function useLocale() {
 
     if (import.meta.client) {
       localStorage.setItem(STORAGE_KEY, locale.value);
+      document.documentElement.lang = htmlLanguageCode(locale.value);
     }
   }
 

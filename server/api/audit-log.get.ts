@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { getBusinessForAdminUser, replacePlaceholdersForDialect, sqlPlaceholder } from '~/server/utils/business';
+import { normalizeDateRange } from '~/server/utils/reporting';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -26,6 +27,9 @@ export default defineEventHandler(async (event) => {
 
   const clauses = [`business_id = ${sqlPlaceholder(1)}`];
   const params: unknown[] = [businessResult.data.id];
+  const dateRange = query.from || query.to
+    ? normalizeDateRange(query.from, query.to)
+    : null;
 
   if (query.actor_type && query.actor_type !== 'all') {
     params.push(query.actor_type);
@@ -42,13 +46,13 @@ export default defineEventHandler(async (event) => {
     clauses.push(`target_table = ${sqlPlaceholder(params.length)}`);
   }
 
-  if (query.from) {
-    params.push(query.from);
+  if (query.from && dateRange) {
+    params.push(dateRange.from.toISOString());
     clauses.push(`created_at >= ${sqlPlaceholder(params.length)}`);
   }
 
-  if (query.to) {
-    params.push(query.to);
+  if (query.to && dateRange) {
+    params.push(dateRange.to.toISOString());
     clauses.push(`created_at <= ${sqlPlaceholder(params.length)}`);
   }
 

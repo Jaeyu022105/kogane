@@ -40,6 +40,9 @@ useSeoMeta({
       
       <h2>{{ t('privacy_security_title') }}</h2>
       <p>{{ t('privacy_security_body') }}</p>
+
+      <h2>{{ t('privacy_retention_title') }}</h2>
+      <p>{{ t('privacy_retention_body') }}</p>
       
       <h2>{{ t('privacy_rights_title') }}</h2>
       <p>{{ t('privacy_rights_body') }}</p>

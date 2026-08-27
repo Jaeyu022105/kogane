@@ -155,7 +155,7 @@ html, body {
     color: rgb(var(--shell-sidebar));
     transition: border-color 0.15s;
   }
-  .input-warm::placeholder { color: rgba(61,24,32,0.35); }
+  .input-warm::placeholder { color: rgba(61,24,32,0.7); }
   .input-warm:focus {
     outline: none;
     border-color: rgba(61,24,32,0.45);
@@ -176,3 +176,16 @@ html, body {
 /* ── Transition helpers ──────────────────────────────────────── */
 .v-enter-active, .v-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
 .v-enter-from,  .v-leave-to      { opacity: 0; transform: translateY(4px); }
+
+@media (max-width: 768px) {
+  /* Dashboard pages share the same mobile header supplied by the layout. */
+  .dashboard-mobile-header + .flex-1 > .px-10,
+  .dashboard-mobile-header + .flex-1 > .px-8 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .dashboard-mobile-header + .flex-1 > .pt-10 {
+    padding-top: 2rem;
+  }
+}

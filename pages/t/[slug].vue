@@ -1,4 +1,5 @@
 ﻿<script setup lang="ts">
+import { ArrowLeft, ArrowRight } from 'lucide-vue-next';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
@@ -35,10 +36,18 @@ const loading = ref(true);
 
 const viewW = ref(1280);
 const viewH = ref(720);
+const terminalViewport = ref<HTMLElement | null>(null);
 
 function updateViewport() {
   viewW.value = window.innerWidth;
   viewH.value = window.innerHeight;
+}
+
+function scrollWorkspace(direction: 'left' | 'right') {
+  terminalViewport.value?.scrollBy({
+    left: direction === 'right' ? Math.max(viewW.value * 0.8, 280) : -Math.max(viewW.value * 0.8, 280),
+    behavior: 'smooth',
+  });
 }
 
 const canvasScale = computed(() => {
@@ -46,8 +55,13 @@ const canvasScale = computed(() => {
   if (!layout) return 1;
   const scaleX = viewW.value / (layout.resolution?.width ?? 1280);
   const scaleY = viewH.value / (layout.resolution?.height ?? 720);
+  if (viewW.value < 720) return Math.min(1, scaleY);
   return Math.min(scaleX, scaleY);
 });
+
+useHead(() => ({
+  title: `${session.value?.displayName || 'Terminal'} - Kogane`,
+}));
 
 const activeTheme = computed(() => session.value?.uiLayout?.theme ?? DEFAULT_LAYOUT_THEME);
 const activeModal = computed(() =>
@@ -124,9 +138,24 @@ onUnmounted(() => {
       <p class="text-sm" style="color: rgba(245,237,228,0.5);">{{ loadError }}</p>
     </div>
 
+    <div v-else-if="session" ref="terminalViewport" class="terminal-canvas-viewport absolute inset-0">
     <div
-      v-else-if="session"
-      class="absolute top-0 left-0"
+      v-if="viewW < 720"
+      class="absolute bottom-3 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full px-2 py-1.5 text-[11px] font-medium shadow-lg"
+      :style="{ color: activeTheme.topBarText, background: activeTheme.topBarBackground, border: `1px solid ${activeTheme.panelBorder}` }"
+      aria-live="polite"
+    >
+      <button type="button" class="rounded-full p-1" aria-label="Show the previous workspace area" @click.stop="scrollWorkspace('left')">
+        <ArrowLeft class="h-3.5 w-3.5" />
+      </button>
+      <span>Swipe sideways to view the full workspace</span>
+      <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
+        <ArrowRight class="h-3.5 w-3.5" />
+      </button>
+    </div>
+
+    <div
+      class="terminal-canvas absolute top-0 left-0"
       :style="{
         width: `${session.uiLayout?.resolution?.width ?? 1280}px`,
         height: `${session.uiLayout?.resolution?.height ?? 720}px`,
@@ -183,6 +212,15 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.terminal-canvas-viewport {
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+</style>
 

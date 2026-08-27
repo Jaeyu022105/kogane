@@ -12,7 +12,6 @@ const { business }      = useBusiness();
 const { confirm, alert } = useModal();
 const { buildShareUrl } = useShareOrigin();
 const businessId = computed(() => business.value?.id);
-const { tables, fetchTables } = useSchema(businessId);
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -38,17 +37,21 @@ const optionDisplayName = ref('');
 const optionPin         = ref('');
 const copiedLink        = ref(false);
 const copiedPin         = ref(false);
+const publicSaved       = ref(false);
 
 // Public access
 const isPublic   = ref(false);
 const publicSlug = ref('');
-const publicUrl  = computed(() => publicSlug.value ? `/t/${publicSlug.value}` : null);
+const publicUrl  = computed(() => {
+  if (!isPublic.value || !publicSlug.value) return null;
+  return buildShareUrl(`/t/${publicSlug.value}`) || `/t/${publicSlug.value}`;
+});
 
 // Style settings
 const selectedBundle  = ref<LayoutBundleKey>('aurora-service');
 const accentColor     = ref('#ff8ca6');
 
-// Station-specific config (stored in ui_layout.stationConfig)
+// Terminal content preferences.
 const stationConfig = reactive<{
   welcomeMessage: string;
   menuItems: string;
@@ -88,7 +91,7 @@ async function loadTerminal() {
     );
 
     if (res.error || !res.terminal) {
-      error.value = res.error ?? 'Terminal not found';
+      error.value = friendlySaveError(res.error, 'This terminal is no longer available.');
       return;
     }
 
@@ -110,7 +113,7 @@ async function loadTerminal() {
       Object.assign(stationConfig, layout.stationConfig);
     }
   } catch (err) {
-    error.value = (err as Error).message;
+    error.value = friendlySaveError((err as Error).message, 'We could not load this terminal right now.');
   } finally {
     loading.value = false;
   }
@@ -126,19 +129,36 @@ function resolvedTerminalLink() {
   return buildShareUrl(path);
 }
 
+function friendlySaveError(message: string | null | undefined, fallback: string) {
+  if (!message) return fallback;
+  if (/pin/i.test(message)) return 'Use a PIN with 4 to 8 digits.';
+  if (/slug/i.test(message)) return 'Use lowercase letters, numbers, and hyphens only.';
+  if (/not found/i.test(message)) return 'This terminal is no longer available.';
+  if (/forbidden|unauthor/i.test(message)) return 'You do not have permission to change this terminal.';
+  return fallback;
+}
+
 async function copyTerminalLink() {
   const url = resolvedTerminalLink();
   if (!url) return;
-  await navigator.clipboard.writeText(url);
-  copiedLink.value = true;
-  setTimeout(() => (copiedLink.value = false), 1500);
+  try {
+    await navigator.clipboard.writeText(url);
+    copiedLink.value = true;
+    setTimeout(() => (copiedLink.value = false), 1500);
+  } catch {
+    error.value = 'We could not copy the terminal link. Please copy it from the address bar.';
+  }
 }
 
 async function copyTerminalPin() {
   if (!optionPin.value) return;
-  await navigator.clipboard.writeText(optionPin.value);
-  copiedPin.value = true;
-  setTimeout(() => (copiedPin.value = false), 1500);
+  try {
+    await navigator.clipboard.writeText(optionPin.value);
+    copiedPin.value = true;
+    setTimeout(() => (copiedPin.value = false), 1500);
+  } catch {
+    error.value = 'We could not copy the PIN. Please select it and copy it manually.';
+  }
 }
 
 async function saveBasic() {
@@ -161,7 +181,7 @@ async function saveBasic() {
     );
 
     if (res.error || !res.terminal) {
-      error.value = res.error ?? 'Unable to save';
+      error.value = friendlySaveError(res.error, 'We could not save the terminal details. Please try again.');
       return;
     }
 
@@ -169,7 +189,7 @@ async function saveBasic() {
     optionDisplayName.value = res.terminal.display_name;
     optionPin.value         = res.terminal.pin_code ?? optionPin.value;
   } catch (err) {
-    error.value = (err as Error).message;
+    error.value = friendlySaveError((err as Error).message, 'We could not save the terminal details. Please try again.');
   } finally {
     savingBasic.value = false;
   }
@@ -195,12 +215,12 @@ async function saveStyle() {
     );
 
     if (res.error) {
-      error.value = res.error;
+      error.value = friendlySaveError(res.error, 'We could not save the terminal appearance. Please try again.');
     } else if (res.terminal) {
       terminal.value = { ...terminal.value, ...res.terminal };
     }
   } catch (err) {
-    error.value = (err as Error).message;
+    error.value = friendlySaveError((err as Error).message, 'We could not save the terminal appearance. Please try again.');
   } finally {
     savingStyle.value = false;
   }
@@ -210,9 +230,10 @@ async function savePublicSettings() {
   if (!terminal.value || !business.value) return;
   savingPublic.value = true;
   error.value        = null;
+  publicSaved.value  = false;
 
   try {
-    await $fetch<{ success: boolean; error: string | null }>(
+    const res = await $fetch<{ success: boolean; error: string | null }>(
       `/api/terminals/${terminal.value.id}/public`,
       {
         method:  'PATCH',
@@ -224,8 +245,14 @@ async function savePublicSettings() {
         },
       },
     );
+    if (res.error || !res.success) {
+      error.value = friendlySaveError(res.error, 'We could not save public access settings. Please try again.');
+      return;
+    }
+    publicSaved.value = true;
+    setTimeout(() => (publicSaved.value = false), 2500);
   } catch (err) {
-    error.value = (err as Error).message;
+    error.value = friendlySaveError((err as Error).message, 'We could not save public access settings. Please try again.');
   } finally {
     savingPublic.value = false;
   }
@@ -251,13 +278,13 @@ async function deleteTerminal() {
     );
 
     if (res.error) {
-      await alert({ title: 'Unable to delete terminal', description: res.error, confirmLabel: 'Close' });
+      await alert({ title: 'Unable to delete terminal', description: friendlySaveError(res.error, 'We could not delete this terminal. Please try again.'), confirmLabel: 'Close' });
       return;
     }
 
     router.push('/dashboard/terminals');
   } catch (err) {
-    await alert({ title: 'Unable to delete terminal', description: (err as Error).message, confirmLabel: 'Close' });
+    await alert({ title: 'Unable to delete terminal', description: friendlySaveError((err as Error).message, 'We could not delete this terminal. Please try again.'), confirmLabel: 'Close' });
   } finally {
     deleting.value = false;
   }
@@ -273,12 +300,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="isEnterprise" class="flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div v-if="isEnterprise" class="terminal-settings-page flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <header class="px-8 py-5 flex items-center justify-between sticky top-0 z-50 bg-[#fdf7f2]/80 backdrop-blur-xl border-b border-black/[0.03]">
       <div class="flex items-center gap-5">
         <button
+          type="button"
+          aria-label="Back to terminal manager"
           class="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5"
           style="color: rgba(61,24,32,0.5);"
           @click="router.push('/dashboard/terminals')"
@@ -287,7 +316,7 @@ onMounted(async () => {
         </button>
         <div>
           <p class="text-[10px] font-bold uppercase tracking-[0.18em] mb-0.5" style="color: rgba(61,24,32,0.4);">
-            Station Settings
+            Terminal settings
           </p>
           <h1 class="font-serif text-xl font-normal leading-none" style="color: rgb(var(--shell-sidebar));">
             {{ terminal?.display_name ?? 'Loading…' }}
@@ -296,6 +325,8 @@ onMounted(async () => {
       </div>
 
       <button
+        type="button"
+        aria-label="Delete terminal"
         class="text-sm font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-40"
         style="background: rgba(239,68,68,0.07); color: #b42318; border: 1px solid rgba(239,68,68,0.14);"
         :disabled="deleting || !terminal"
@@ -332,31 +363,34 @@ onMounted(async () => {
           <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-5">
             <div>
               <h2 class="font-serif text-lg font-normal mb-1" style="color: rgb(var(--shell-sidebar));">General</h2>
-              <p class="text-xs leading-relaxed" style="color: rgba(61,24,32,0.4);">Name this station and set the staff sign-in PIN.</p>
+            <p class="text-xs leading-relaxed" style="color: rgba(61,24,32,0.4);">Name this terminal and set the staff sign-in PIN.</p>
             </div>
 
             <div class="space-y-4">
               <div>
-                <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Station Name</label>
-                <input v-model="optionDisplayName" class="input-warm w-full px-3 py-2.5 text-sm" placeholder="Front Counter" />
+                <label for="terminal-display-name" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Terminal name</label>
+                <input id="terminal-display-name" v-model="optionDisplayName" class="input-warm w-full px-3 py-2.5 text-sm" placeholder="Front Counter" />
               </div>
 
               <div>
-                <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Staff PIN</label>
+                <label for="terminal-pin" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Staff PIN</label>
                 <input
+                  id="terminal-pin"
                   v-model="optionPin"
                   class="input-warm w-full px-3 py-2.5 text-sm font-mono"
                   inputmode="numeric"
                   maxlength="8"
                   placeholder="4–8 digits"
                 />
-                <p class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Takes effect immediately on next sign-in.</p>
+                <p id="terminal-pin-help" class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Takes effect on the next sign-in.</p>
               </div>
 
               <div class="grid grid-cols-2 gap-2">
                 <button
+                  type="button"
                   class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border"
                   style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
+                  aria-label="Copy terminal link"
                   @click="copyTerminalLink"
                 >
                   <div class="flex items-center justify-center gap-1.5">
@@ -366,9 +400,11 @@ onMounted(async () => {
                   </div>
                 </button>
                 <button
+                  type="button"
                   class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border disabled:opacity-40"
                   style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
                   :disabled="!optionPin"
+                  aria-label="Copy terminal PIN"
                   @click="copyTerminalPin"
                 >
                   <div class="flex items-center justify-center gap-1.5">
@@ -380,7 +416,7 @@ onMounted(async () => {
               </div>
             </div>
 
-            <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
+            <p v-if="error" class="text-xs text-red-600" role="alert">{{ error }}</p>
 
             <button
               class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
@@ -411,17 +447,17 @@ onMounted(async () => {
                 <p class="text-[10px] font-medium" style="color: rgba(61,24,32,0.4);">No PIN required for guests</p>
               </div>
               <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" class="sr-only peer" :checked="isPublic" @change="isPublic = ($event.target as HTMLInputElement).checked" />
+                <input type="checkbox" class="sr-only peer" aria-label="Enable public access" :checked="isPublic" @change="isPublic = ($event.target as HTMLInputElement).checked" />
                 <div class="w-11 h-6 bg-black/[0.08] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3d1820]" />
               </label>
             </div>
 
             <div v-if="isPublic" class="space-y-3">
               <div>
-                <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Custom URL Slug</label>
+                <label for="terminal-public-slug" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Custom URL slug</label>
                 <div class="flex gap-0">
                   <span class="flex items-center px-3 text-xs rounded-l-xl border border-r-0" style="background: rgba(61,24,32,0.03); border-color: rgba(61,24,32,0.1); color: rgba(61,24,32,0.4);">/t/</span>
-                  <input v-model="publicSlug" class="input-warm flex-1 px-3 py-2 text-sm rounded-l-none" placeholder="kiosk-lobby" pattern="[a-z0-9-]+" />
+                  <input id="terminal-public-slug" v-model="publicSlug" class="input-warm flex-1 px-3 py-2 text-sm rounded-l-none" placeholder="kiosk-lobby" pattern="[a-z0-9-]+" />
                 </div>
                 <p class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Lowercase letters, numbers, hyphens only.</p>
               </div>
@@ -445,6 +481,7 @@ onMounted(async () => {
                 {{ savingPublic ? 'Saving…' : 'Save Access' }}
               </div>
             </button>
+            <p v-if="publicSaved" class="text-xs text-center" style="color: #15803d;" role="status">Public access settings saved.</p>
           </div>
         </div>
 
@@ -456,17 +493,19 @@ onMounted(async () => {
             </div>
             <div>
               <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Appearance</h2>
-              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Choose a visual theme and accent colour for this station.</p>
+              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Choose a visual theme and accent colour for this terminal.</p>
             </div>
           </div>
 
           <!-- Theme bundles -->
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider mb-3" style="color: rgba(61,24,32,0.45);">Theme Bundle</p>
+            <p class="text-[10px] font-bold uppercase tracking-wider mb-3" style="color: rgba(61,24,32,0.45);">Theme</p>
             <div class="grid grid-cols-3 gap-3">
               <button
                 v-for="bundle in UI_LAYOUT_BUNDLES"
                 :key="bundle.key"
+                type="button"
+                :aria-pressed="selectedBundle === bundle.key"
                 class="relative p-4 rounded-2xl text-left transition-all border-2"
                 :style="selectedBundle === bundle.key
                   ? 'border-color: rgb(var(--shell-sidebar)); background: rgba(61,24,32,0.03);'
@@ -498,12 +537,14 @@ onMounted(async () => {
           <!-- Accent colour -->
           <div class="flex items-center gap-4">
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color: rgba(61,24,32,0.45);">Accent Colour</p>
-              <p class="text-xs" style="color: rgba(61,24,32,0.4);">Buttons, highlights, and active states on this station.</p>
+              <label for="terminal-accent-color" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Accent colour</label>
+              <p class="text-xs" style="color: rgba(61,24,32,0.4);">Buttons, highlights, and active states on this terminal.</p>
             </div>
             <div class="ml-auto flex items-center gap-3">
               <input
                 type="color"
+                id="terminal-accent-color"
+                aria-label="Terminal accent colour"
                 v-model="accentColor"
                 class="w-12 h-10 rounded-xl border cursor-pointer"
                 style="border-color: rgba(61,24,32,0.12); padding: 2px;"
@@ -525,23 +566,24 @@ onMounted(async () => {
           </button>
         </div>
 
-        <!-- ── Row 3: Station-specific config ─────────────────────────────── -->
+        <!-- ── Row 3: Terminal content ────────────────────────────────────── -->
         <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-6">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.6);">
               <Sliders class="w-4 h-4" />
             </div>
             <div>
-              <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Station Config</h2>
-              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Behaviour and content settings unique to this station.</p>
+              <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Terminal content</h2>
+              <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Optional content and behavior for this terminal.</p>
             </div>
           </div>
 
           <div class="grid gap-5 md:grid-cols-2">
             <!-- Welcome message -->
             <div class="md:col-span-2">
-              <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Welcome Message</label>
+              <label for="terminal-welcome-message" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Welcome message</label>
               <input
+                id="terminal-welcome-message"
                 v-model="stationConfig.welcomeMessage"
                 class="input-warm w-full px-3 py-2.5 text-sm"
                 placeholder="Welcome! Tap below to start your order."
@@ -551,28 +593,30 @@ onMounted(async () => {
 
             <!-- Menu / items list -->
             <div class="md:col-span-2">
-              <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Menu Items (one per line)</label>
+              <label for="terminal-menu-items" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Optional items (one per line)</label>
               <textarea
+                id="terminal-menu-items"
                 v-model="stationConfig.menuItems"
                 rows="4"
                 class="input-warm w-full px-3 py-2.5 text-sm resize-none"
                 placeholder="Burger – $9.90&#10;Fries – $3.50&#10;Soft Drink – $2.00"
               />
-              <p class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Optional — overrides the items pulled from your data table.</p>
+              <p class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Optional — use these items instead of the connected catalog.</p>
             </div>
 
             <!-- Language -->
             <div>
-              <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Display Language</label>
-              <select v-model="stationConfig.language" class="input-warm w-full px-3 py-2.5 text-sm">
+              <label for="terminal-display-language" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Display language</label>
+              <select id="terminal-display-language" v-model="stationConfig.language" class="input-warm w-full px-3 py-2.5 text-sm">
                 <option v-for="lang in LANGUAGES" :key="lang.value" :value="lang.value">{{ lang.label }}</option>
               </select>
             </div>
 
             <!-- Currency -->
             <div>
-              <label class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Currency Symbol</label>
+              <label for="terminal-currency" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Currency symbol</label>
               <input
+                id="terminal-currency"
                 v-model="stationConfig.currencySymbol"
                 class="input-warm w-full px-3 py-2.5 text-sm font-mono"
                 placeholder="$"
@@ -591,7 +635,7 @@ onMounted(async () => {
                   <p class="text-[10px] font-medium mt-0.5" style="color: rgba(61,24,32,0.4);">Show a receipt prompt after each completed order.</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                  <input type="checkbox" class="sr-only peer" :checked="stationConfig.showReceipt" @change="stationConfig.showReceipt = ($event.target as HTMLInputElement).checked" />
+                  <input type="checkbox" class="sr-only peer" aria-label="Show a receipt after each order" :checked="stationConfig.showReceipt" @change="stationConfig.showReceipt = ($event.target as HTMLInputElement).checked" />
                   <div class="w-11 h-6 bg-black/[0.08] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3d1820]" />
                 </label>
               </div>
@@ -606,24 +650,18 @@ onMounted(async () => {
             <div class="flex items-center justify-center gap-2">
               <div v-if="savingStyle" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               <Sparkles v-else class="w-4 h-4" />
-              {{ savingStyle ? 'Saving…' : 'Save Station Config' }}
+              {{ savingStyle ? 'Saving…' : 'Save Terminal Content' }}
             </div>
           </button>
-        </div>
-
-        <!-- ── Info strip ──────────────────────────────────────────────────── -->
-        <div class="rounded-2xl px-5 py-4 border border-black/[0.06] bg-[#fdfaf8] flex items-center gap-8">
-          <div>
-            <p class="text-[10px] uppercase tracking-widest font-bold" style="color: rgba(61,24,32,0.35);">Terminal ID</p>
-            <p class="font-mono text-xs mt-0.5 font-bold" style="color: rgb(var(--shell-sidebar));">{{ terminal.id }}</p>
-          </div>
-          <div>
-            <p class="text-[10px] uppercase tracking-widest font-bold" style="color: rgba(61,24,32,0.35);">Role</p>
-            <p class="text-xs mt-0.5 font-semibold" style="color: rgb(var(--shell-sidebar));">{{ terminal.role }}</p>
-          </div>
         </div>
 
       </template>
     </div>
   </div>
 </template>
+
+<style scoped>
+.terminal-settings-page [style*="color: rgba(61,24,32,0."] {
+  color: rgba(61,24,32,0.7) !important;
+}
+</style>

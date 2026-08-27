@@ -53,7 +53,7 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
           priceColumn: 'price',
           orderTable: 'orders',
           submitLabel: 'Submit Order',
-          emptyLabel: 'No products are ready for sale yet. Add them from a Catalog Registrar or Inventory terminal first.',
+          emptyLabel: 'No products are ready for sale yet. Add them from the Catalog or Inventory terminal first.',
           paymentMethods: ['cash', 'card', 'gcash'],
           defaultPaymentMethod: 'cash',
           enableCardReader: true,

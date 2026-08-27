@@ -244,7 +244,7 @@ export const STATION_OBJECTS: StationObjectDefinition[] = [
         type: 'text',
         label: 'product intake note',
         position: { x: 0, y: 228, width: 416, height: 34 },
-        defaults: { content: 'New products are active by default. You can refine visibility or details later from the database view.', fontSize: 12, fontWeight: 'normal', align: 'left' } as any,
+        defaults: { content: 'New products are active by default. You can refine visibility or details later from the Catalog terminal.', fontSize: 12, fontWeight: 'normal', align: 'left' } as any,
       },
       {
         key: 'product-intake-submit',

@@ -17,6 +17,37 @@ const displayColumns = computed(() =>
     : ['name', 'status', 'amount'],
 );
 
+const columnLabels: Record<string, string> = {
+  id: 'Reference',
+  table_number: 'Table number',
+  total: 'Total',
+  status: 'Status',
+  created_at: 'Created',
+  updated_at: 'Updated',
+  items: 'Items',
+  item_name: 'Item',
+  quantity: 'Quantity',
+  unit: 'Unit',
+  reorder_at: 'Reorder level',
+  name: 'Name',
+  category: 'Category',
+  price: 'Price',
+  customer_name: 'Customer',
+  phone: 'Phone',
+  email: 'Email',
+  description: 'Details',
+  notes: 'Notes',
+};
+
+function columnLabel(column: string) {
+  if (columnLabels[column]) return columnLabels[column];
+
+  return column
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 const rows = computed<Record<string, unknown>[]>(() => {
   if (props.builderMode) {
     return [
@@ -118,7 +149,12 @@ onUnmounted(() => {
         <p class="text-sm font-semibold truncate">{{ element.title || sourceLabel }}</p>
         <p v-if="element.subtitle" class="text-[11px] truncate" :style="{ color: mutedTextColor }">{{ element.subtitle }}</p>
       </div>
-      <button class="text-xs shrink-0 transition-colors" :style="{ color: mutedTextColor }" @click="fetchRows">
+      <button
+        class="text-xs shrink-0 transition-colors"
+        :style="{ color: mutedTextColor }"
+        aria-label="Refresh list"
+        @click="fetchRows"
+      >
         <RefreshCw class="w-3.5 h-3.5" />
       </button>
     </div>
@@ -137,7 +173,7 @@ onUnmounted(() => {
               class="px-4 py-2 text-left font-medium whitespace-nowrap"
               :style="{ color: mutedTextColor }"
             >
-              {{ column }}
+              {{ columnLabel(column) }}
             </th>
           </tr>
         </thead>
