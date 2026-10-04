@@ -28,8 +28,33 @@ function pad(value: number): string {
   return String(value).padStart(2, '0');
 }
 
+export function normalizeDateValue(value: string | number | Date | null | undefined): Date | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value === 'number') {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    // SQLite datetime('now') format: YYYY-MM-DD HH:MM:SS (which is UTC in SQLite)
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(trimmed)) {
+      const hasTz = trimmed.includes('Z') || /[+-]\d{2}(:\d{2})?$/.test(trimmed);
+      const iso = trimmed.replace(' ', 'T') + (hasTz ? '' : 'Z');
+      const d = new Date(iso);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    const d = new Date(trimmed);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
 export function toDateBucket(dateValue: string | number | Date, group: ReportGrouping): string {
-  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  const date = normalizeDateValue(dateValue) ?? (dateValue instanceof Date ? dateValue : new Date(dateValue));
   const utc = new Date(Date.UTC(
     date.getUTCFullYear(),
     date.getUTCMonth(),
@@ -53,7 +78,7 @@ export function toDateBucket(dateValue: string | number | Date, group: ReportGro
 
 export function inDateRange(value: string | number | Date | null | undefined, from: Date, to: Date): boolean {
   if (!value) return false;
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
+  const date = normalizeDateValue(value);
+  if (!date || Number.isNaN(date.getTime())) return false;
   return date >= from && date <= to;
 }

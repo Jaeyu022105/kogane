@@ -8,6 +8,7 @@ import { deleteBusinessRow, fetchRowById, insertBusinessRow, queryBusinessRows, 
 import { getTerminalContext, replacePlaceholdersForDialect, sqlPlaceholder } from '~/server/utils/business';
 import { ensureStarterBusinessTable } from '~/server/utils/starterTables';
 import { db } from '~/lib/db';
+import { realtimeHub } from '~/server/utils/realtimeHub';
 
 type RuntimeBatchBody =
   | RuntimeEventEnvelope
@@ -213,6 +214,13 @@ export default defineEventHandler(async (event) => {
           },
         });
 
+        realtimeHub.publish(session.businessId, {
+          table: item.action.table,
+          action: 'insert',
+          recordId: (inserted.data as any)?.id ?? null,
+          data: inserted.data as Record<string, unknown>,
+        });
+
         results.push({ ok: true, data: inserted.data, error: null });
         continue;
       }
@@ -251,6 +259,13 @@ export default defineEventHandler(async (event) => {
           },
         });
 
+        realtimeHub.publish(session.businessId, {
+          table: item.action.table,
+          action: 'update',
+          recordId: String(item.action.rowId),
+          data: updated.data as Record<string, unknown>,
+        });
+
         results.push({ ok: true, data: updated.data, error: null });
         continue;
       }
@@ -277,6 +292,13 @@ export default defineEventHandler(async (event) => {
             trigger: item.trigger,
             element_id: item.element_id,
           },
+        });
+
+        realtimeHub.publish(session.businessId, {
+          table: item.action.table,
+          action: 'delete',
+          recordId: String(item.action.rowId),
+          data: before.data ?? deleted.data ?? null,
         });
 
         results.push({ ok: true, data: deleted.data, error: null });

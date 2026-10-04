@@ -9,6 +9,7 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { writeAuditLog } from '~/server/utils/audit';
+import { realtimeHub } from '~/server/utils/realtimeHub';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -57,6 +58,13 @@ export default defineEventHandler(async (event) => {
       metadata: {
         source: 'admin:data:insert',
       },
+    });
+
+    realtimeHub.publish(body.businessId, {
+      table: body.tableName,
+      action: 'insert',
+      recordId: (data as any)?.id ?? null,
+      data: data as Record<string, unknown>,
     });
   }
 

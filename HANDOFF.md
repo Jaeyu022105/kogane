@@ -320,6 +320,76 @@ The README is likely to be shown or shared during teacher review, so it should n
 
 ---
 
+## Production Deployment, Real-Time Synchronization & E-Commerce Removal Pass — October 2026
+
+### What changed
+
+1. **Eliminated all E-Commerce elements**:
+   - Removed the `ecommerce` ("Online orders and fulfilment") preset from `components/OnboardingModal.vue`, leaving retail strictly focused on in-person counter workstations (`shop` and `boutique`).
+   - Removed `'retail'` from the `deliveries` feature so deliveries is strictly a logistics route feature, not customer e-commerce parcel shipping.
+   - Removed legacy `pos-screen` (with unconfigured `Checkout` button) and outdated empty placeholders (`inventory-list`, `login-screen`, `dashboard-charts`) from `lib/builderPresets.ts`.
+   - Updated retail station default naming in `lib/starterWorkstations.ts` to `Cashier Register` (business workstation).
+   - Renamed `checkout-summary` station object label and title to `Manual Order Intake` in `lib/stationObjects.ts`.
+
+2. **Continuous Real-Time Synchronization Across Terminals**:
+   - Created `server/utils/realtimeHub.ts`: an in-memory pub/sub broker for instant mutation distribution per business workspace.
+   - Created `server/api/realtime/stream.get.ts`: a zero-configuration Server-Sent Events (SSE) streaming endpoint with heartbeat monitoring and clean client teardown.
+   - Hooked `realtimeHub.publish` into all mutation routes (`server/api/runtime/event.post.ts`, `server/api/data/insert.post.ts`, `server/api/schema/tables/updateRow.post.ts`, `server/api/terminals/insert.post.ts`).
+   - Created `composables/useRealtimeSync.ts` supporting dual SSE and Supabase Realtime subscriptions with automated reconnect.
+   - Connected `useCanvasRuntime` to real-time streams: loaded query elements (orders, inventory, catalog, charts) now update live without manual page refreshes.
+   - Updated `components/elements/TableViewEl.vue` and `components/elements/CartWidgetEl.vue` to listen for live table updates.
+
+3. **Kitchen Display Order Status Mutation (Resolved Critical Gap)**:
+   - Updated `kitchen-display` permissions in `lib/permissions.ts` to grant `update: true` on the `orders` table.
+   - Added interactive status pills in `components/elements/TableViewEl.vue`: clicking an order status badge advances its state (`PENDING` → `PREPARING` → `FULFILLED`) using optimistic updates and live real-time broadcasts to cashier queues.
+
+4. **Production Deployability & Containerization**:
+   - Added `Dockerfile`: multi-stage production container build using `oven/bun:1-alpine` with healthcheck.
+   - Added `.dockerignore` to keep image minimal.
+   - Added `docker-compose.yml` for 1-command deployment with persistent volume mounting for SQLite.
+   - Added `supabase/schema.sql`: complete PostgreSQL production schema for Supabase, including platform tables (`businesses`, `terminals`, `presets`, `audit_log`), RPC functions (`execute_query`, `execute_ddl`), indexes, and realtime publication rules.
+   - Added `DEPLOYMENT.md`: comprehensive step-by-step production deployment guide covering Docker, Supabase, LAN multi-device demos, and environment variables.
+   - Updated `.env.example` with complete configuration options.
+
+### Why
+
+The project is moving to official production readiness. Customer-facing e-commerce concepts (online carts, online deliveries) conflict with Kogane's charter as a specialized business workstation and terminal platform for staff. Stations required push-based live updates so kitchen displays, cashiers, and stock desks sync instantaneously across network devices.
+
+### Files touched
+
+- `components/OnboardingModal.vue`
+- `components/elements/CartWidgetEl.vue`
+- `components/elements/TableViewEl.vue`
+- `composables/useCanvasRuntime.ts`
+- `composables/useRealtimeSync.ts` (new)
+- `lib/builderPresets.ts`
+- `lib/permissions.ts`
+- `lib/starterWorkstations.ts`
+- `lib/stationObjects.ts`
+- `server/api/data/insert.post.ts`
+- `server/api/realtime/stream.get.ts` (new)
+- `server/api/runtime/event.post.ts`
+- `server/api/schema/tables/updateRow.post.ts`
+- `server/api/terminals/insert.post.ts`
+- `server/utils/realtimeHub.ts` (new)
+- `.dockerignore` (new)
+- `Dockerfile` (new)
+- `docker-compose.yml` (new)
+- `supabase/schema.sql` (new)
+- `.env.example`
+- `DEPLOYMENT.md` (new)
+- `tests/presets-ecommerce-removal.test.ts` (new)
+- `tests/realtime.test.ts` (new)
+- `HANDOFF.md`
+
+### Verification
+
+- Ran `bun test`: all 11 unit & integration tests pass cleanly across 3 test files.
+- Ran `bun run build`: full Nuxt 3 / Nitro production build succeeded with exit code 0 (`✨ Build complete!`).
+- Validated server entry `.output/server/index.mjs` executes properly.
+
+---
+
 ## Known Gaps & What Needs Work
 
 ### Critical / Blocking

@@ -19,13 +19,25 @@ export default defineEventHandler(async (event) => {
   const grouping = (query.group ?? 'day') as ReportGrouping;
   const range = normalizeDateRange(query.from, query.to);
 
-  const columnsResult = await getBusinessTableColumns(businessResult.data.schema_name, 'transactions');
-  const columns = columnsResult.data ?? [];
+  const candidateTables = ['transactions', 'orders', 'invoices'];
+  let chosenTable: string | null = null;
+  let revenueColumn: string | undefined;
+  let dateColumn: string | undefined;
 
-  const revenueColumn = REVENUE_COLUMNS.find((name) => columns.some((column) => column.name === name));
-  const dateColumn = DATE_COLUMNS.find((name) => columns.some((column) => column.name === name));
+  for (const t of candidateTables) {
+    const columnsResult = await getBusinessTableColumns(businessResult.data.schema_name, t);
+    const columns = columnsResult.data ?? [];
+    const revMatch = REVENUE_COLUMNS.find((name) => columns.some((column) => column.name === name));
+    const dateMatch = DATE_COLUMNS.find((name) => columns.some((column) => column.name === name));
+    if (revMatch && dateMatch) {
+      chosenTable = t;
+      revenueColumn = revMatch;
+      dateColumn = dateMatch;
+      break;
+    }
+  }
 
-  if (!revenueColumn || !dateColumn) {
+  if (!chosenTable || !revenueColumn || !dateColumn) {
     return {
       rows: [],
       error: null,
@@ -38,7 +50,7 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const table = qualifyBusinessTable(businessResult.data.schema_name, 'transactions');
+  const table = qualifyBusinessTable(businessResult.data.schema_name, chosenTable);
   const params: unknown[] = [range.from.toISOString(), range.to.toISOString()];
   const sql = replacePlaceholdersForDialect(
     `SELECT "${dateColumn}" as report_date, "${revenueColumn}" as revenue FROM ${table} WHERE "${dateColumn}" >= ${sqlPlaceholder(1)} AND "${dateColumn}" <= ${sqlPlaceholder(2)} ORDER BY "${dateColumn}" ASC`,

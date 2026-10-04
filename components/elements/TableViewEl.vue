@@ -105,6 +105,40 @@ function startAutoRefresh() {
   }, intervalMs);
 }
 
+let unsubscribeRealtime: (() => void) | null = null;
+
+function statusBadgeClasses(status: string) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'fulfilled' || s === 'completed' || s === 'served') {
+    return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+  }
+  if (s === 'preparing' || s === 'in_progress') {
+    return 'bg-sky-500/20 text-sky-300 border-sky-500/30';
+  }
+  return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+}
+
+async function cycleOrderStatus(row: Record<string, unknown>, e: Event) {
+  e.stopPropagation();
+  if (props.builderMode || !props.runtime || props.element.tableName !== 'orders' || !row.id) return;
+  const current = String(row.status || 'pending').toLowerCase();
+  const nextStatus = current === 'pending' ? 'preparing' : current === 'preparing' ? 'fulfilled' : 'pending';
+
+  try {
+    await props.runtime.dispatch({
+      type: 'update',
+      table: 'orders',
+      rowId: row.id,
+      payload: { status: nextStatus },
+    }, {
+      element: props.element,
+      trigger: 'click',
+    });
+  } catch (err) {
+    console.error('Failed to bump order status:', err);
+  }
+}
+
 watch(
   () => [
     props.element.source,
@@ -125,10 +159,23 @@ watch(
 onMounted(() => {
   fetchRows();
   startAutoRefresh();
+
+  if (props.runtime?.on) {
+    unsubscribeRealtime = props.runtime.on('realtime:table-update', (payload: any) => {
+      if (!payload?.table) return;
+      if (
+        payload.table === props.element.tableName ||
+        (props.element.source === 'audit-log' && payload.table === 'audit_log')
+      ) {
+        fetchRows();
+      }
+    });
+  }
 });
 
 onUnmounted(() => {
   stopAutoRefresh();
+  unsubscribeRealtime?.();
 });
 </script>
 
@@ -192,7 +239,30 @@ onUnmounted(() => {
               :key="column"
               class="px-4 py-2 whitespace-nowrap max-w-[220px] truncate"
             >
-              {{ row[column] ?? '-' }}
+              <template v-if="column === 'status'">
+                <button
+                  v-if="element.tableName === 'orders' && !builderMode"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer hover:brightness-125 shadow-sm"
+                  :class="statusBadgeClasses(String(row[column] ?? 'pending'))"
+                  title="Click to advance status (pending → preparing → fulfilled)"
+                  @click="cycleOrderStatus(row, $event)"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                  {{ String(row[column] ?? 'pending').toUpperCase() }}
+                </button>
+                <span
+                  v-else
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
+                  :class="statusBadgeClasses(String(row[column] ?? 'pending'))"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-current" />
+                  {{ String(row[column] ?? 'pending').toUpperCase() }}
+                </span>
+              </template>
+              <template v-else>
+                {{ row[column] ?? '-' }}
+              </template>
             </td>
           </tr>
           <tr v-if="rows.length === 0">

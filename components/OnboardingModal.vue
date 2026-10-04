@@ -262,8 +262,8 @@ const FEATURES: Feature[] = [
   {
     id: 'deliveries',
     label: 'Deliveries',
-    description: 'Track delivery routes and statuses',
-    availableFor: ['logistics', 'retail', 'other'],
+    description: 'Track delivery routes and dispatch statuses',
+    availableFor: ['logistics', 'other'],
     tables: [
       {
         name: 'deliveries',
@@ -308,8 +308,8 @@ const PRESETS_BY_TYPE: Record<string, Preset[]> = {
     { id: 'payroll',    label: 'Payroll',     description: 'Staff and expense management',features: ['staff', 'expenses'] },
   ],
   retail: [
-    { id: 'shop',       label: 'Retail Shop', description: 'Walk-in sales and inventory', features: ['inventory', 'orders', 'customers'] },
-    { id: 'ecommerce',  label: 'E-Commerce',  description: 'Online orders and fulfilment',features: ['orders', 'inventory', 'customers', 'deliveries'] },
+    { id: 'shop',     label: 'Retail Shop',     description: 'Counter register and inventory', features: ['inventory', 'orders', 'customers'] },
+    { id: 'boutique', label: 'Boutique Station', description: 'Store desk and staff register',  features: ['inventory', 'orders', 'staff'] },
   ],
   clinic: [
     { id: 'general',    label: 'General Practice', description: 'Appointments and patient records', features: ['appointments', 'customers', 'staff'] },

@@ -359,7 +359,7 @@ export const STATION_OBJECTS: StationObjectDefinition[] = [
   },
   {
     id: 'checkout-summary',
-    label: 'Checkout Summary',
+    label: 'Manual Order Intake',
     description: 'Manual order intake block for registrars who need to create tickets without the product grid.',
     icon: 'layers',
     type: 'table-view',
@@ -370,9 +370,9 @@ export const STATION_OBJECTS: StationObjectDefinition[] = [
       {
         key: 'checkout-title',
         type: 'text',
-        label: 'checkout title',
+        label: 'order intake title',
         position: { x: 0, y: 0, width: 340, height: 38 },
-        defaults: { content: 'Manual Checkout Intake', fontSize: 24, fontWeight: 'bold', align: 'left' } as any,
+        defaults: { content: 'Manual Order Intake', fontSize: 24, fontWeight: 'bold', align: 'left' } as any,
       },
       {
         key: 'checkout-items',

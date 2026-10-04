@@ -62,8 +62,10 @@ export function useCanvasRuntime() {
   }));
   const { enqueue } = useEventQueue();
   const { alert } = useModal();
+  const realtimeSync = useRealtimeSync();
 
   function reset() {
+    realtimeSync.disconnect();
     runtimeState.value = {
       inputs: {},
       queryResults: {},
@@ -95,6 +97,28 @@ export function useCanvasRuntime() {
     runtimeState.value.sessionVars = options.sessionVars ?? {};
     runtimeState.value.activeModalId = null;
     loadedElements.clear();
+
+    if (options.businessId) {
+      realtimeSync.connect({
+        businessId: options.businessId,
+        terminalId: options.terminalId,
+        onMutation: async (mutation) => {
+          emitLocal('realtime:table-update', mutation);
+
+          if (context.value.layout?.elements) {
+            for (const el of context.value.layout.elements) {
+              if (el.type === 'table-view' && (el as any).tableName === mutation.table) {
+                await reloadElement(el);
+              } else if (el.type === 'chart' && (el as any).tableName === mutation.table) {
+                await reloadElement(el);
+              } else if (el.type === 'cart-widget' && ((el as any).productTable ?? 'products') === mutation.table) {
+                await reloadElement(el);
+              }
+            }
+          }
+        },
+      });
+    }
   }
 
   function setInputValue(elementId: string, value: unknown) {
@@ -513,6 +537,7 @@ export function useCanvasRuntime() {
     loadElement,
     reloadElement,
     isElementDisabled,
+    realtime: realtimeSync,
   };
 }
 

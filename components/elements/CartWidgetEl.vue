@@ -262,6 +262,24 @@ async function loadProducts() {
   await props.runtime?.loadElement?.(props.element);
 }
 
+let unsubscribeRealtime: (() => void) | null = null;
+
+onMounted(() => {
+  loadProducts();
+  if (props.runtime?.on) {
+    unsubscribeRealtime = props.runtime.on('realtime:table-update', (mutation: any) => {
+      const targetTable = props.element.productTable ?? 'products';
+      if (mutation?.table === targetTable) {
+        loadProducts();
+      }
+    });
+  }
+});
+
+onUnmounted(() => {
+  unsubscribeRealtime?.();
+});
+
 function addToCart(product: Record<string, unknown>) {
   const id = String(product.id ?? product.name);
   const name = String(product[displayColumns.value[0]] ?? id);

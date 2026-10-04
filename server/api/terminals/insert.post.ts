@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, getCookie } from 'h3';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { realtimeHub } from '~/server/utils/realtimeHub';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -53,6 +54,13 @@ export default defineEventHandler(async (event) => {
     const finalSql = isDevMode ? sql.replace(/\$[0-9]+/g, '?') : sql;
 
     await db.query(finalSql, values);
+
+    realtimeHub.publish(terminal.business_id, {
+      table: tableName,
+      action: 'insert',
+      data: record as Record<string, unknown>,
+    });
+
     return { success: true, error: null };
   } catch (err) {
     return { success: false, error: (err as Error).message };

@@ -90,12 +90,13 @@ export const TERMINAL_PERMISSION_PRESETS: PermissionPreset[] = [
   {
     key: 'kitchen-display',
     label: 'Kitchen Display',
-    description: 'Read-only production queue for the back-of-house to watch incoming orders live.',
-    recommendedElements: ['text', 'table-view'],
-    optionalElements: ['button', 'chart', 'image'],
+    description: 'Order queue and preparation tracking station for kitchen staff.',
+    recommendedElements: ['text', 'table-view', 'button'],
+    optionalElements: ['chart', 'image'],
     permissions: {
       tables: {
         '*': { read: true, insert: false, update: false, delete: false },
+        orders: { read: true, insert: false, update: true, delete: false },
       },
       audit_log: { visible: false },
       reports: { visible: false },

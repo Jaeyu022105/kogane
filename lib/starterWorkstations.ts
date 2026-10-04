@@ -92,7 +92,7 @@ export function getStationName(businessType: string | null | undefined, presetKe
     'restaurant:catalog-registrar': 'Menu Catalog',
     'restaurant:inventory-manager': 'Stock Room',
     'restaurant:kitchen-display': 'Kitchen Queue',
-    'retail:cashier-register': 'Checkout Register',
+    'retail:cashier-register': 'Cashier Register',
     'retail:catalog-registrar': 'Catalog Desk',
     'retail:inventory-manager': 'Stock Room',
     'logistics:inventory-manager': 'Dispatch Inventory',

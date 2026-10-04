@@ -1,0 +1,12 @@
+node_modules
+.output
+.nuxt
+.git
+.github
+.env
+dev.db*
+*.log
+_risk_doc_review
+.system_generated
+.agents
+scratch

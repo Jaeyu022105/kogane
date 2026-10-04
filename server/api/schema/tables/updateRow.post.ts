@@ -4,6 +4,7 @@ import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { fetchRowById, updateBusinessRow } from '~/server/utils/businessTable';
 import { writeAuditLog } from '~/server/utils/audit';
+import { realtimeHub } from '~/server/utils/realtimeHub';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -50,6 +51,13 @@ export default defineEventHandler(async (event) => {
       metadata: {
         source: 'admin:schema:update-row',
       },
+    });
+
+    realtimeHub.publish(businessId, {
+      table: tableName,
+      action: 'update',
+      recordId: String(rowId),
+      data: updated.data as Record<string, unknown>,
     });
 
     return { success: true, error: null };
