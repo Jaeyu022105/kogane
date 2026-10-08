@@ -6,16 +6,31 @@
 
 import { Database } from 'bun:sqlite';
 import { join } from 'path';
+import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { DbAdapter, QueryResult, SingleResult } from './db';
+import { hashPasswordSync } from './authUtils';
 
-const DB_PATH = join(process.cwd(), 'dev.db');
+export function resolveSqliteDbPath(): string {
+  if (process.env.SQLITE_DB_PATH) {
+    return process.env.SQLITE_DB_PATH;
+  }
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL.replace(/^sqlite:\/\//, '');
+  }
+  const koganeDb = join(process.cwd(), 'kogane.db');
+  if (existsSync(koganeDb)) {
+    return koganeDb;
+  }
+  return join(process.cwd(), 'dev.db');
+}
+const DB_PATH = resolveSqliteDbPath();
 
 export class SqliteAdapter implements DbAdapter {
   private db: Database;
 
-  constructor() {
-    this.db = new Database(DB_PATH, { create: true });
+  constructor(dbPath?: string) {
+    this.db = new Database(dbPath || DB_PATH, { create: true });
 
     this.db.run("PRAGMA journal_mode = WAL");
     this.db.run("PRAGMA foreign_keys = ON");
@@ -25,6 +40,19 @@ export class SqliteAdapter implements DbAdapter {
 
   /** Create platform tables on first run if they don't exist. */
   private _bootstrap() {
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id                  TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        email               TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        password_hash       TEXT NOT NULL,
+        full_name           TEXT,
+        username            TEXT,
+        profile_photo_url   TEXT,
+        language_preference TEXT DEFAULT 'en',
+        created_at          TEXT DEFAULT (datetime('now')),
+        updated_at          TEXT DEFAULT (datetime('now'))
+      )
+    `);
     this.db.run(`
       CREATE TABLE IF NOT EXISTS businesses (
         id            TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
@@ -118,6 +146,63 @@ export class SqliteAdapter implements DbAdapter {
       this.db.run("ALTER TABLE businesses ADD COLUMN currency_symbol TEXT DEFAULT '$'");
     } catch (e) { }
     try {
+      const existingUser = this.db.query("SELECT id FROM users WHERE email = 'admin@kogane.dev'").get();
+      if (!existingUser) {
+        const adminHash = hashPasswordSync('admin123');
+        this.db.run(`
+          INSERT INTO users (id, email, password_hash, full_name, username, language_preference)
+          VALUES ('dev-admin', 'admin@kogane.dev', '${adminHash}', 'Restaurant Manager', 'admin', 'en')
+        `);
+      }
+    } catch (e) { }
+
+    try {
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS biz_devadmin_products (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          name TEXT NOT NULL,
+          description TEXT,
+          price REAL NOT NULL,
+          category TEXT,
+          available INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT DEFAULT (datetime('now'))
+        )
+      `);
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS biz_devadmin_orders (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          items TEXT NOT NULL,
+          line_items TEXT,
+          subtotal REAL,
+          discount_type TEXT,
+          discount_amount REAL,
+          discount_label TEXT,
+          discount_reference TEXT,
+          total REAL NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          table_number TEXT,
+          staff_name TEXT,
+          payment_method TEXT,
+          payment_status TEXT,
+          payment_reference TEXT,
+          receipt_number TEXT,
+          metadata TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        )
+      `);
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS biz_devadmin_inventory (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          item_name TEXT NOT NULL,
+          quantity INTEGER NOT NULL DEFAULT 0,
+          unit TEXT,
+          reorder_at INTEGER,
+          created_at TEXT DEFAULT (datetime('now'))
+        )
+      `);
+    } catch (e) { }
+
+    try {
       const existingTerm = this.db.query("SELECT id FROM terminals WHERE id = 'd047d7294f03036a4f3fe94fa3be66d0'").get();
       if (!existingTerm) {
         let biz = this.db.query("SELECT id FROM businesses WHERE schema_name = 'biz_devadmin'").get() as { id: string } | null;
@@ -129,7 +214,7 @@ export class SqliteAdapter implements DbAdapter {
           `);
           biz = { id: bizId };
         }
-        const defaultPinHash = createHash('sha256').update('kogane-pin-salt:1234').digest('hex');
+        const defaultPinHash = createHash('sha256').update('1234').digest('hex');
         const defaultLayout = JSON.stringify({ version: 2, resolution: { width: 1280, height: 720 }, elements: [] });
         const defaultPerms = JSON.stringify({
           tables: {

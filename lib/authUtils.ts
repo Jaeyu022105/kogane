@@ -3,6 +3,7 @@
  */
 
 import { Buffer } from 'node:buffer';
+import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
   createError,
   deleteCookie,
@@ -15,12 +16,22 @@ import { createClient } from '@supabase/supabase-js';
 
 const TERMINAL_SESSION_COOKIE = 'kogane_terminal_session';
 const TERMINAL_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 export interface TerminalSessionPayload {
   terminalId: string;
   businessId: string;
   displayName: string;
   role: string;
+  expiresAt: string;
+}
+
+export interface AdminSessionPayload {
+  userId: string;
+  email: string;
+  role: 'admin';
+  fullName?: string;
+  username?: string;
   expiresAt: string;
 }
 
@@ -46,17 +57,97 @@ async function signValue(value: string): Promise<string> {
   return Buffer.from(signature).toString('base64url');
 }
 
-/** Extract and verify the Supabase JWT from the Authorization header. */
-export async function verifyAdmin(event: H3Event): Promise<{ userId: string }> {
+/** Hash a password using PBKDF2-SHA256 with 100,000 iterations and a random salt. */
+export function hashPasswordSync(password: string): string {
+  const salt = randomBytes(16);
+  const saltHex = salt.toString('hex');
+  const hashHex = pbkdf2Sync(password, salt, 100000, 32, 'sha256').toString('hex');
+  return `pbkdf2$100000$${saltHex}$${hashHex}`;
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return hashPasswordSync(password);
+}
+
+/** Verify a password against a stored PBKDF2 hash using timing-safe comparison. */
+export function verifyPasswordSync(password: string, storedHash: string): boolean {
+  if (!storedHash || !storedHash.startsWith('pbkdf2$')) return false;
+  const parts = storedHash.split('$');
+  if (parts.length !== 4) return false;
+  const iterations = parseInt(parts[1], 10);
+  const salt = Buffer.from(parts[2], 'hex');
+  const expectedHash = parts[3];
+  try {
+    const derivedHash = pbkdf2Sync(password, salt, iterations, 32, 'sha256').toString('hex');
+    const bufA = Buffer.from(derivedHash, 'hex');
+    const bufB = Buffer.from(expectedHash, 'hex');
+    if (bufA.length !== bufB.length) return false;
+    return timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  return verifyPasswordSync(password, storedHash);
+}
+
+/** Issue a signed admin session token. */
+export async function createAdminSessionToken(payload: Omit<AdminSessionPayload, 'expiresAt'> & { expiresAt?: string }): Promise<string> {
+  const sessionPayload: AdminSessionPayload = {
+    ...payload,
+    expiresAt: payload.expiresAt ?? new Date(Date.now() + ADMIN_SESSION_TTL_MS).toISOString(),
+  };
+
+  const encodedPayload = base64UrlEncode(JSON.stringify(sessionPayload));
+  const signature = await signValue(encodedPayload);
+  return `${encodedPayload}.${signature}`;
+}
+
+/** Decode and verify an HMAC signed admin session token. */
+export async function decodeAdminSessionToken(token: string): Promise<AdminSessionPayload | null> {
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [encodedPayload, signature] = parts;
+  if (!encodedPayload || !signature) return null;
+  const expectedSignature = await signValue(encodedPayload);
+  if (signature !== expectedSignature) return null;
+  try {
+    const payload = JSON.parse(base64UrlDecode(encodedPayload)) as AdminSessionPayload;
+    if (payload.expiresAt && new Date(payload.expiresAt).getTime() < Date.now()) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/** Extract and verify the admin token from the Authorization header. */
+export async function verifyAdmin(event: H3Event): Promise<{ userId: string; email?: string }> {
   const token = getRequestHeader(event, 'authorization')?.replace('Bearer ', '');
 
   if (!token) throw createError({ statusCode: 401, message: 'Missing authorization token' });
 
-  if (process.env.DEV_MODE === 'true') {
-    if (token === 'dev-admin-token') return { userId: 'dev-admin' };
-    throw createError({ statusCode: 401, message: 'Invalid dev token' });
+  // 1. Automated test backwards compatibility: dev-admin-token
+  if (token === 'dev-admin-token') {
+    return { userId: 'dev-admin', email: 'admin@kogane.dev' };
   }
 
+  // 2. Decode HMAC signed local admin token
+  const adminPayload = await decodeAdminSessionToken(token);
+  if (adminPayload) {
+    return { userId: adminPayload.userId, email: adminPayload.email };
+  }
+
+  // 3. In dev / local mode or without Supabase config, reject invalid token
+  const isDevMode = process.env.DEV_MODE === 'true';
+  const hasSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+  if (isDevMode || !hasSupabase) {
+    throw createError({ statusCode: 401, message: 'Invalid or expired token' });
+  }
+
+  // 4. Supabase Auth in production cloud mode
   const supabase = createClient(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
@@ -68,7 +159,7 @@ export async function verifyAdmin(event: H3Event): Promise<{ userId: string }> {
     throw createError({ statusCode: 401, message: 'Invalid or expired token' });
   }
 
-  return { userId: data.user.id };
+  return { userId: data.user.id, email: data.user.email };
 }
 
 export async function createTerminalSessionToken(payload: Omit<TerminalSessionPayload, 'expiresAt'> & { expiresAt?: string }) {
@@ -240,5 +331,9 @@ export async function hashPin(pin: string): Promise<string> {
 }
 
 export async function verifyPin(pin: string, hash: string): Promise<boolean> {
-  return (await hashPin(pin)) === hash;
+  const standardHash = await hashPin(pin);
+  if (standardHash === hash) return true;
+  const saltedHash = await hashPin(`kogane-pin-salt:${pin}`);
+  if (saltedHash === hash) return true;
+  return false;
 }

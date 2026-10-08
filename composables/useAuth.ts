@@ -1,7 +1,6 @@
 /**
  * useAuth — manages admin authentication state.
- * In dev mode, uses a mock session backed by localStorage.
- * In production, delegates to Supabase Auth.
+ * Manages admin session, local storage persistence, and API authorization headers.
  */
 
 import { ref, computed } from 'vue';
@@ -23,44 +22,62 @@ const session = ref<AdminSession | null>(null);
 export function useAuth() {
   const isLoggedIn = computed(() => session.value !== null);
 
+  function setSession(newSession: AdminSession) {
+    session.value = newSession;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('kogane-session', JSON.stringify(newSession));
+        localStorage.setItem('dev-session', JSON.stringify(newSession));
+      } catch { /* ignore storage errors */ }
+    }
+  }
+
   function devLogin(email: string, extra?: Partial<AdminSession>) {
     const existing = session.value;
-    session.value = { 
-      userId: 'dev-admin', 
+    const newSession: AdminSession = { 
+      userId: extra?.userId ?? existing?.userId ?? 'dev-admin', 
       email, 
-      token: 'dev-admin-token',
-      fullName: existing?.fullName,
-      username: existing?.username,
-      profilePicture: existing?.profilePicture,
-      languagePreference: existing?.languagePreference,
+      token: extra?.token ?? existing?.token ?? 'dev-admin-token',
+      fullName: extra?.fullName ?? existing?.fullName,
+      username: extra?.username ?? existing?.username,
+      profilePicture: extra?.profilePicture ?? existing?.profilePicture,
+      languagePreference: extra?.languagePreference ?? existing?.languagePreference,
       ...extra 
     };
-    localStorage.setItem('dev-session', JSON.stringify(session.value));
+    setSession(newSession);
   }
 
   function loadDevSession() {
+    if (typeof localStorage === 'undefined') return;
     try {
-      const raw = localStorage.getItem('dev-session');
+      const raw = localStorage.getItem('kogane-session') || localStorage.getItem('dev-session');
       if (raw) session.value = JSON.parse(raw);
     } catch { /* ignore parse errors */ }
   }
 
   function logout() {
     session.value = null;
-    localStorage.removeItem('dev-session');
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem('kogane-session');
+        localStorage.removeItem('dev-session');
+      } catch { /* ignore storage errors */ }
+    }
   }
 
   // ── Auth header helper used by all API calls ──────────────────────────────
   function authHeaders(): Record<string, string> {
-    if (!session.value) return {};
+    if (!session.value?.token) return {};
     return { Authorization: `Bearer ${session.value.token}` };
   }
 
   return {
     session: computed(() => session.value),
     isLoggedIn,
+    setSession,
     devLogin,
     loadDevSession,
+    loadSession: loadDevSession,
     logout,
     authHeaders,
   };

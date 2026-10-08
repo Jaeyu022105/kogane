@@ -5,9 +5,10 @@
 
 definePageMeta({ layout: 'dashboard' });
 
-import { Check, Globe, Sparkles, Upload } from 'lucide-vue-next';
+import { Check, Globe, Sparkles, Upload, Lock, ShieldCheck, Eye, EyeOff } from 'lucide-vue-next';
 import { COUNTRIES, findCountry } from '~/lib/currency';
 
+const { session, authHeaders } = useAuth();
 const { business, fetchBusiness, updateTheme, updateCountry } = useBusiness();
 const { openOnboarding }                     = useOnboarding();
 const { t, availableLocales, setLocale, locale } = useLocale();
@@ -18,6 +19,63 @@ const uploadingLogo = ref(false);
 const error         = ref<string | null>(null);
 const success       = ref(false);
 const countrySuccess = ref(false);
+
+// Password management state
+const currentPassword = ref('');
+const newPassword = ref('');
+const confirmNewPassword = ref('');
+const currentPasswordVisible = ref(false);
+const newPasswordVisible = ref(false);
+const confirmPasswordVisible = ref(false);
+const changingPassword = ref(false);
+const passwordError = ref<string | null>(null);
+const passwordSuccess = ref(false);
+
+async function handlePasswordChange() {
+  passwordError.value = null;
+  passwordSuccess.value = false;
+
+  if (!currentPassword.value || !newPassword.value) {
+    passwordError.value = 'Please provide both current and new password.';
+    return;
+  }
+  if (newPassword.value.length < 6) {
+    passwordError.value = 'New password must be at least 6 characters.';
+    return;
+  }
+  if (newPassword.value !== confirmNewPassword.value) {
+    passwordError.value = 'New passwords do not match.';
+    return;
+  }
+
+  changingPassword.value = true;
+  try {
+    const res = await $fetch<{ success?: boolean; error?: string | null; message?: string }>('/api/auth/change-password', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        currentPassword: currentPassword.value,
+        newPassword: newPassword.value,
+        confirmPassword: confirmNewPassword.value,
+      },
+    });
+
+    if (res.error || !res.success) {
+      passwordError.value = res.error || 'Failed to update password.';
+      return;
+    }
+
+    passwordSuccess.value = true;
+    currentPassword.value = '';
+    newPassword.value = '';
+    confirmNewPassword.value = '';
+    setTimeout(() => { passwordSuccess.value = false; }, 3500);
+  } catch (err: any) {
+    passwordError.value = err?.data?.error || err?.message || 'Failed to update password.';
+  } finally {
+    changingPassword.value = false;
+  }
+}
 
 const selectedLanguage = ref(locale.value);
 const selectedCountry  = ref(business.value?.country ?? 'US');
@@ -456,6 +514,116 @@ const businessDetailItems = computed(() => {
             {{ lang.label }} ({{ lang.nativeLabel }})
           </option>
         </select>
+      </section>
+
+      <!-- ── Account & Password Security ────────────────────────── -->
+      <section class="space-y-4">
+        <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
+          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">Security</p>
+          <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Account & Password</h2>
+          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">
+            Manage your admin credentials. Authenticated as <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ session?.email || 'admin@kogane.dev' }}</span>.
+          </p>
+        </div>
+
+        <div
+          v-if="passwordError"
+          class="text-xs px-3 py-2 rounded"
+          style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #dc2626;"
+        >
+          {{ passwordError }}
+        </div>
+
+        <div
+          v-if="passwordSuccess"
+          class="text-xs px-3 py-2 rounded flex items-center gap-1.5"
+          style="background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); color: #15803d;"
+        >
+          <ShieldCheck class="w-4 h-4" /> Password updated successfully.
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label for="settings-current-password" class="text-[10px] font-mono uppercase tracking-widest block mb-1" style="color: rgba(61,24,32,0.4);">
+              Current Password
+            </label>
+            <div class="relative flex items-center">
+              <input
+                id="settings-current-password"
+                v-model="currentPassword"
+                :type="currentPasswordVisible ? 'text' : 'password'"
+                class="input-warm w-full px-3 py-2 pr-9 text-xs"
+                style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; border-radius: 0.5rem; height: 2.25rem;"
+                placeholder="Enter current password"
+              />
+              <button
+                type="button"
+                class="absolute right-2.5 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] bg-transparent border-0 cursor-pointer"
+                @click="currentPasswordVisible = !currentPasswordVisible"
+              >
+                <EyeOff v-if="currentPasswordVisible" class="w-3.5 h-3.5" />
+                <Eye v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label for="settings-new-password" class="text-[10px] font-mono uppercase tracking-widest block mb-1" style="color: rgba(61,24,32,0.4);">
+              New Password (min. 6 characters)
+            </label>
+            <div class="relative flex items-center">
+              <input
+                id="settings-new-password"
+                v-model="newPassword"
+                :type="newPasswordVisible ? 'text' : 'password'"
+                class="input-warm w-full px-3 py-2 pr-9 text-xs"
+                style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; border-radius: 0.5rem; height: 2.25rem;"
+                placeholder="Enter new password"
+              />
+              <button
+                type="button"
+                class="absolute right-2.5 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] bg-transparent border-0 cursor-pointer"
+                @click="newPasswordVisible = !newPasswordVisible"
+              >
+                <EyeOff v-if="newPasswordVisible" class="w-3.5 h-3.5" />
+                <Eye v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label for="settings-confirm-password" class="text-[10px] font-mono uppercase tracking-widest block mb-1" style="color: rgba(61,24,32,0.4);">
+              Confirm New Password
+            </label>
+            <div class="relative flex items-center">
+              <input
+                id="settings-confirm-password"
+                v-model="confirmNewPassword"
+                :type="confirmPasswordVisible ? 'text' : 'password'"
+                class="input-warm w-full px-3 py-2 pr-9 text-xs"
+                style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; border-radius: 0.5rem; height: 2.25rem;"
+                placeholder="Re-enter new password"
+              />
+              <button
+                type="button"
+                class="absolute right-2.5 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] bg-transparent border-0 cursor-pointer"
+                @click="confirmPasswordVisible = !confirmPasswordVisible"
+              >
+                <EyeOff v-if="confirmPasswordVisible" class="w-3.5 h-3.5" />
+                <Eye v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon flex items-center justify-center gap-2"
+          :disabled="changingPassword || !currentPassword || !newPassword"
+          @click="handlePasswordChange"
+        >
+          <Lock class="w-4 h-4" />
+          {{ changingPassword ? 'Updating Password…' : 'Update Password' }}
+        </button>
       </section>
 
     </div>

@@ -40,7 +40,7 @@ let _adapter: DbAdapter | null = null;
 async function getAdapter(): Promise<DbAdapter> {
   if (_adapter) return _adapter;
 
-  const isDevMode = process.env.DEV_MODE === 'true';
+  const isDevMode = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
 
   if (isDevMode) {
     const { SqliteAdapter } = await import('./db-sqlite');

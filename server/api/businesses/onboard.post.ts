@@ -76,7 +76,8 @@ export default defineEventHandler(async (event) => {
     const { data: b } = await db.queryOne('SELECT * FROM businesses WHERE id = ?', [existing.id]);
     business = b;
   } else {
-    schemaName = `biz_${userId.replace(/-/g, '').slice(0, 20)}`;
+    const cleanId = userId.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    schemaName = `biz_${cleanId.slice(0, 20)}`;
 
     try {
       validateIdentifier(schemaName);
@@ -99,7 +100,7 @@ export default defineEventHandler(async (event) => {
     business = newBiz;
   }
 
-  const isDevMode = process.env.DEV_MODE === 'true';
+  const isDevMode = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
   const dialect   = isDevMode ? 'sqlite' : 'postgres';
 
   if (!isDevMode) {

@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
   if (error || !business) return { error: error ?? 'Insert failed', business: null };
 
   // Provision the schema namespace (no-op in SQLite — prefixing handles it)
-  const isDevMode = process.env.DEV_MODE === 'true';
+  const isDevMode = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
   if (!isDevMode) {
     await db.execute(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`);
   }

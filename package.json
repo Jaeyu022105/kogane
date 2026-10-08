@@ -11,7 +11,14 @@
     "preview:lan": "bun run .output/server/index.mjs",
     "tunnel": "bunx untun tunnel http://localhost:3000 --qr",
     "allow-firewall": "cmd /c scripts\\allow-lan-port-3000.bat",
+    "start": "bun run .output/server/index.mjs",
+    "db:reset": "bun run scripts/db-reset.ts",
+    "db:seed": "bun run scripts/db-seed.ts",
+    "db:backup": "bun run scripts/backup-db.ts",
+    "db:restore": "bun run scripts/restore-db.ts",
     "test": "bun test",
+    "launch": "bun run scripts/launcher.ts",
+    "compile": "bun build --compile scripts/launcher.ts --outfile kogane.exe",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

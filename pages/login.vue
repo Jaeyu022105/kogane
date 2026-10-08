@@ -5,7 +5,7 @@ definePageMeta({ layout: 'default' });
 
 const router = useRouter();
 const route  = useRoute();
-const { isLoggedIn, devLogin, loadDevSession } = useAuth();
+const { isLoggedIn, setSession, loadDevSession } = useAuth();
 const { openOnboarding }                        = useOnboarding();
 const { t, locale, detectedLocale, setLocale, loadLocale, availableLocales, translateFor } = useLocale();
 
@@ -17,10 +17,24 @@ useHead(() => ({
 }));
 
 // Form state
-const email    = ref('admin@kogane.dev');
-const password = ref('');
-const fullName = ref('');
-const username = ref('');
+const email           = ref(mode.value === 'signup' ? '' : 'admin@kogane.dev');
+const password        = ref('');
+const confirmPassword = ref('');
+const fullName        = ref('');
+const username        = ref('');
+
+watch(mode, (newMode) => {
+  if (newMode === 'signup' && email.value === 'admin@kogane.dev') {
+    email.value = '';
+    password.value = '';
+    confirmPassword.value = '';
+  }
+});
+
+function fillDemoAdmin() {
+  email.value = 'admin@kogane.dev';
+  password.value = 'admin123';
+}
 
 // Photo upload state
 const photoInput = ref<HTMLInputElement | null>(null);
@@ -29,6 +43,7 @@ const uploadingPhoto = ref(false);
 
 // Password visibility state
 const signupPasswordVisible = ref(false);
+const signupConfirmPasswordVisible = ref(false);
 const loginPasswordVisible = ref(false);
 
 function triggerPhotoSelect() {
@@ -149,16 +164,24 @@ onMounted(() => {
   if (isLoggedIn.value) router.push(redirectTarget.value);
 });
 
-function nextStep() {
+async function nextStep() {
   error.value = null;
   if (signupStep.value === 1) {
-    if (!email.value || !password.value || !fullName.value || !username.value) {
-      error.value = t('error_fill_all');
+    if (!email.value || !password.value || !confirmPassword.value || !fullName.value || !username.value) {
+      error.value = t('error_fill_all') || 'Please fill in all fields.';
+      return;
+    }
+    if (password.value !== confirmPassword.value) {
+      error.value = 'Passwords do not match.';
+      return;
+    }
+    if (password.value.length < 6) {
+      error.value = 'Password must be at least 6 characters.';
       return;
     }
   } else if (signupStep.value === 2) {
     if (!birthMonth.value || !birthDay.value || !birthYear.value) {
-      error.value = t('error_fill_all');
+      error.value = t('error_fill_all') || 'Please fill in all fields.';
       return;
     }
   }
@@ -166,7 +189,7 @@ function nextStep() {
   if (signupStep.value < 3) {
     signupStep.value++;
   } else {
-    handleSignupSubmit();
+    await handleSignupSubmit();
   }
 }
 
@@ -179,84 +202,92 @@ function prevStep() {
   }
 }
 
-function selectLanguage(code: string) {
+async function selectLanguage(code: string) {
   setLocale(code);
-  nextStep();
+  await nextStep();
 }
 
 async function handleAction() {
   error.value = null;
 
-  if (mode.value === 'login')
-  {
-    if (!email.value) return;
+  if (mode.value === 'login') {
+    if (!email.value || !email.value.trim()) {
+      error.value = 'Please enter your email.';
+      return;
+    }
+    if (!password.value) {
+      error.value = 'Please enter your password.';
+      return;
+    }
     loading.value = true;
     try {
       const res = await $fetch<{ session: any; error: string | null }>('/api/auth/login', {
         method: 'POST',
-        body: { email: email.value, password: password.value },
+        body: { email: email.value.trim(), password: password.value },
       });
 
-      if (res.error || !res.session)
-      {
+      if (res.error || !res.session) {
         error.value = res.error ?? t('error_login_failed');
         return;
       }
 
-      devLogin(email.value);
+      setSession(res.session);
       router.push(redirectTarget.value);
-    } catch (err) {
-      error.value = (err as Error).message;
+    } catch (err: any) {
+      error.value = err?.data?.error || err?.message || 'Login failed';
     } finally {
       loading.value = false;
     }
-  }
-  else if (mode.value === 'signup')
-  {
-     if (signupStep.value < 3) {
-        nextStep();
-     } else {
-        handleSignupSubmit();
-     }
-  }
-  else if (mode.value === '2fa-setup')
-  {
-    if (verificationCode.value.length < 6)
-    {
+  } else if (mode.value === 'signup') {
+    if (signupStep.value < 3) {
+      await nextStep();
+    } else {
+      await handleSignupSubmit();
+    }
+  } else if (mode.value === '2fa-setup') {
+    if (verificationCode.value.length < 6) {
       error.value = t('error_invalid_code');
       return;
     }
-    
-    devLogin(email.value, {
-      fullName: fullName.value,
-      username: username.value,
-      profilePicture: profilePhotoUrl.value || undefined,
-      languagePreference: locale.value,
-      has2fa: true,
-    });
-    
-    openOnboarding();
-    router.push(redirectTarget.value);
+    await handleSignupSubmit();
   }
 }
 
-function handleSignupSubmit() {
-  if (enable2FA.value)
-  {
+async function handleSignupSubmit() {
+  if (enable2FA.value && mode.value !== '2fa-setup') {
     mode.value = '2fa-setup';
+    return;
   }
-  else
-  {
-    devLogin(email.value, {
-      fullName: fullName.value,
-      username: username.value,
-      profilePicture: profilePhotoUrl.value || undefined,
-      languagePreference: locale.value,
-      has2fa: false,
+
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const res = await $fetch<{ session: any; error: string | null }>('/api/auth/signup', {
+      method: 'POST',
+      body: {
+        email: email.value.trim(),
+        password: password.value,
+        fullName: fullName.value.trim(),
+        username: username.value.trim(),
+        profilePhotoUrl: profilePhotoUrl.value || undefined,
+        languagePreference: locale.value,
+        has2fa: enable2FA.value,
+      },
     });
-    
+
+    if (res.error || !res.session) {
+      error.value = res.error ?? 'Registration failed';
+      return;
+    }
+
+    setSession(res.session);
     openOnboarding();
     router.push(redirectTarget.value);
+  } catch (err: any) {
+    error.value = err?.data?.error || err?.message || 'Registration failed';
+  } finally {
+    loading.value = false;
   }
 }
 
@@ -458,6 +489,29 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                       </button>
                     </div>
                   </div>
+                  <div class="field" style="grid-column: span 2;">
+                    <label for="signup-confirm-password" class="field-label">Confirm Password</label>
+                    <div class="relative flex items-center">
+                      <input
+                        id="signup-confirm-password"
+                        v-model="confirmPassword"
+                        :type="signupConfirmPasswordVisible ? 'text' : 'password'"
+                        required
+                        class="field-input pr-10"
+                        placeholder="Re-enter password to confirm"
+                      />
+                      <button
+                        type="button"
+                        class="absolute right-3 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center"
+                        :title="signupConfirmPasswordVisible ? 'Hide password' : 'Show password'"
+                        :aria-label="signupConfirmPasswordVisible ? 'Hide password' : 'Show password'"
+                        @click="signupConfirmPasswordVisible = !signupConfirmPasswordVisible"
+                      >
+                        <EyeOff v-if="signupConfirmPasswordVisible" class="w-4 h-4" />
+                        <Eye v-else class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </template>
               
@@ -539,6 +593,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     autocomplete="current-password"
                     class="field-input pr-10"
                     placeholder="Enter password"
+                    required
                   />
                   <button
                     type="button"
@@ -560,6 +615,13 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 class="login-submit"
               >
                 {{ loading ? t('btn_signing_in') : t('btn_signin') }}
+              </button>
+              <button
+                type="button"
+                class="w-full text-center text-xs py-1.5 text-[rgba(104,41,58,0.65)] hover:text-[#68293A] bg-transparent border-0 cursor-pointer underline transition-colors"
+                @click="fillDemoAdmin"
+              >
+                Auto-fill default admin (admin@kogane.dev / admin123)
               </button>
             </template>
 

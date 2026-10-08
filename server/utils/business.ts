@@ -23,7 +23,7 @@ export interface TerminalContext {
   businessName: string;
 }
 
-export const isDevDb = process.env.DEV_MODE === 'true';
+export const isDevDb = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
 
 export async function getBusinessById(businessId: string) {
   return db.queryOne<BusinessRecord>(
