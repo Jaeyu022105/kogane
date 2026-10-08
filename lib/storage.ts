@@ -177,7 +177,9 @@ let adapter: StorageAdapter | null = null;
 
 export function useStorage(): StorageAdapter {
   if (adapter) return adapter;
-  adapter = process.env.DEV_MODE === 'true'
+  const isDevMode = process.env.DEV_MODE === 'true';
+  const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+  adapter = isDevMode || !hasSupabase
     ? new DevStorageAdapter()
     : new SupabaseStorageAdapter();
   return adapter;

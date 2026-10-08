@@ -19,6 +19,11 @@ export const STARTER_BUSINESS_TABLES: Record<string, TableDef> = {
     columns: [
       { name: 'items', type: 'text', nullable: false },
       { name: 'line_items', type: 'text', nullable: true },
+      { name: 'subtotal', type: 'numeric', nullable: true },
+      { name: 'discount_type', type: 'text', nullable: true },
+      { name: 'discount_amount', type: 'numeric', nullable: true },
+      { name: 'discount_label', type: 'text', nullable: true },
+      { name: 'discount_reference', type: 'text', nullable: true },
       { name: 'total', type: 'numeric', nullable: false },
       { name: 'status', type: 'text', nullable: false, default: "'pending'" },
       { name: 'table_number', type: 'text', nullable: true },
@@ -27,6 +32,7 @@ export const STARTER_BUSINESS_TABLES: Record<string, TableDef> = {
       { name: 'payment_status', type: 'text', nullable: true },
       { name: 'payment_reference', type: 'text', nullable: true },
       { name: 'receipt_number', type: 'text', nullable: true },
+      { name: 'metadata', type: 'text', nullable: true },
     ],
   },
   inventory: {

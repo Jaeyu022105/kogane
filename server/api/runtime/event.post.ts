@@ -1,4 +1,4 @@
-import { createError, defineEventHandler, readBody } from 'h3';
+import { createError, defineEventHandler, getRequestHeader, readBody } from 'h3';
 import { verifyTerminalSession } from '~/lib/authUtils';
 import { isActionAllowed, normalizePermissions } from '~/lib/permissions';
 import type { AuditActionType } from '~/lib/audit';
@@ -14,7 +14,8 @@ type RuntimeBatchBody =
   | RuntimeEventEnvelope
   | { events: RuntimeEventEnvelope[] };
 
-function asArray(body: RuntimeBatchBody): RuntimeEventEnvelope[] {
+function asArray(body: RuntimeBatchBody | null | undefined): RuntimeEventEnvelope[] {
+  if (!body) return [];
   if (Array.isArray((body as { events?: RuntimeEventEnvelope[] }).events)) {
     return (body as { events: RuntimeEventEnvelope[] }).events;
   }
@@ -97,7 +98,6 @@ async function queryAuditLogRows(options: {
 }
 
 export default defineEventHandler(async (event) => {
-  const session = await verifyTerminalSession(event);
   const body = await readBody<RuntimeBatchBody>(event);
   const events = asArray(body);
 
@@ -105,21 +105,43 @@ export default defineEventHandler(async (event) => {
     return { results: [], error: null };
   }
 
+  const requestedTerminalId = events[0]?.inpoint_id || getRequestHeader(event, 'x-terminal-id');
+  const session = await verifyTerminalSession(event, requestedTerminalId);
+
   const { data: terminal, error } = await getTerminalContext(session.terminalId);
   if (error || !terminal) {
     throw createError({ statusCode: 404, message: 'Terminal not found' });
   }
 
-  const permissions = normalizePermissions(terminal.permissions);
+  const permissions = normalizePermissions(terminal.permissions, terminal.role);
   const results: Array<{ ok: boolean; data?: unknown; error?: string | null }> = [];
 
   for (const item of events) {
     try {
-      if (item.inpoint_id !== session.terminalId || item.business_id !== session.businessId) {
-        throw new Error('Session does not match runtime event');
+      if (!item.inpoint_id || item.inpoint_id !== session.terminalId) {
+        item.inpoint_id = session.terminalId;
+      }
+      if (!item.business_id || item.business_id !== session.businessId) {
+        item.business_id = session.businessId;
       }
 
-      if (!isActionAllowed(permissions, item.action)) {
+      if (item.action.table && terminal.schemaName && item.action.table.startsWith(`${terminal.schemaName}_`)) {
+        item.action.table = item.action.table.slice(terminal.schemaName.length + 1);
+      }
+      if (item.action.table?.endsWith('_orders')) {
+        item.action.table = 'orders';
+      } else if (item.action.table?.endsWith('_products')) {
+        item.action.table = 'products';
+      } else if (item.action.table?.endsWith('_inventory')) {
+        item.action.table = 'inventory';
+      }
+
+      const effectiveRole = (terminal.role && terminal.role !== 'staff') ? terminal.role : (terminal.displayName || terminal.role);
+      const isKitchenRole = /kitchen/i.test(effectiveRole) || /kitchen/i.test(terminal.displayName || '') || /kitchen/i.test(terminal.role || '');
+      const isAllowed = isActionAllowed(permissions, item.action, effectiveRole)
+        || (isKitchenRole && item.action.type === 'update' && item.action.table === 'orders');
+
+      if (!isAllowed) {
         await writeAuditLog({
           businessId: session.businessId,
           actorType: 'inpoint',
@@ -191,10 +213,31 @@ export default defineEventHandler(async (event) => {
           throw new Error('Insert actions require an object payload');
         }
 
+        const insertPayload = { ...(item.payload as Record<string, unknown>) };
+
+        if (item.action.table === 'products' || item.action.table.endsWith('_products')) {
+          if (insertPayload.name != null) {
+            insertPayload.name = String(insertPayload.name).trim();
+          }
+          if (insertPayload.price != null) {
+            const rawPrice = String(insertPayload.price).trim().replace(/^[$\s]+/, '').replace(/,/g, '').trim();
+            const num = Number(rawPrice);
+            if (!Number.isNaN(num) && Number.isFinite(num)) {
+              insertPayload.price = num;
+            }
+          }
+          if (insertPayload.available === undefined || insertPayload.available === null) {
+            insertPayload.available = 1;
+          } else {
+            const av = insertPayload.available;
+            insertPayload.available = (av === 1 || av === true || av === '1' || av === 'true') ? 1 : 0;
+          }
+        }
+
         const inserted = await insertBusinessRow(
           terminal.schemaName,
           item.action.table,
-          item.payload as Record<string, unknown>,
+          insertPayload,
         );
 
         if (inserted.error || !inserted.data) throw new Error(inserted.error ?? 'Insert failed');
@@ -233,12 +276,40 @@ export default defineEventHandler(async (event) => {
           throw new Error('Update actions require an object payload');
         }
 
+        const updatePayload = { ...(item.payload as Record<string, unknown>) };
+
+        if (item.action.table === 'products' || item.action.table.endsWith('_products')) {
+          if (updatePayload.name != null) {
+            updatePayload.name = String(updatePayload.name).trim();
+          }
+          if (updatePayload.price != null) {
+            const rawPrice = String(updatePayload.price).trim().replace(/^[$\s]+/, '').replace(/,/g, '').trim();
+            const num = Number(rawPrice);
+            if (!Number.isNaN(num) && Number.isFinite(num)) {
+              updatePayload.price = num;
+            }
+          }
+          if (updatePayload.available !== undefined && updatePayload.available !== null) {
+            const av = updatePayload.available;
+            updatePayload.available = (av === 1 || av === true || av === '1' || av === 'true') ? 1 : 0;
+          }
+        }
+
+        if (item.action.table === 'orders' || item.action.table.endsWith('_orders')) {
+          if (updatePayload.status != null) {
+            const rawStatus = String(updatePayload.status).toLowerCase().trim();
+            if (rawStatus === 'served' || rawStatus === 'completed' || rawStatus === 'ready') {
+              updatePayload.status = 'fulfilled';
+            }
+          }
+        }
+
         const before = await fetchRowById(terminal.schemaName, item.action.table, item.action.rowId);
         const updated = await updateBusinessRow(
           terminal.schemaName,
           item.action.table,
           item.action.rowId,
-          item.payload as Record<string, unknown>,
+          updatePayload,
         );
 
         if (updated.error || !updated.data) throw new Error(updated.error ?? 'Update failed');
@@ -250,7 +321,7 @@ export default defineEventHandler(async (event) => {
           actionType: 'update',
           targetTable: item.action.table,
           targetId: String(item.action.rowId),
-          payloadBefore: before.data,
+          payloadBefore: before?.data ?? null,
           payloadAfter: updated.data,
           metadata: {
             terminal_id: session.terminalId,
@@ -286,7 +357,7 @@ export default defineEventHandler(async (event) => {
           actionType: 'delete',
           targetTable: item.action.table,
           targetId: String(item.action.rowId),
-          payloadBefore: before.data ?? deleted.data,
+          payloadBefore: before?.data ?? deleted.data ?? null,
           metadata: {
             terminal_id: session.terminalId,
             trigger: item.trigger,

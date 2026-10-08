@@ -10,6 +10,8 @@ import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { writeAuditLog } from '~/server/utils/audit';
 import { realtimeHub } from '~/server/utils/realtimeHub';
+import { ensureStarterBusinessTable } from '~/server/utils/starterTables';
+import { insertBusinessRow } from '~/server/utils/businessTable';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -38,12 +40,29 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { data: null, error: 'Business not found' };
   if (business.admin_user_id !== userId) return { data: null, error: 'Forbidden' };
 
-  const isDevMode = process.env.DEV_MODE === 'true';
+  await ensureStarterBusinessTable(business.schema_name, body.tableName);
 
-  // In dev mode, pass the full prefixed table name via the schema parameter
-  const { data, error } = isDevMode
-    ? await db.insert(body.tableName, body.values, business.schema_name)
-    : await db.insert(body.tableName, body.values, business.schema_name);
+  const values = { ...body.values };
+  if (body.tableName === 'products') {
+    if (values.name != null) {
+      values.name = String(values.name).trim();
+    }
+    if (values.price != null) {
+      const rawPrice = String(values.price).trim().replace(/^[$\s]+/, '').replace(/,/g, '').trim();
+      const num = Number(rawPrice);
+      if (!Number.isNaN(num) && Number.isFinite(num)) {
+        values.price = num;
+      }
+    }
+    if (values.available === undefined || values.available === null) {
+      values.available = 1;
+    } else {
+      const av = values.available;
+      values.available = (av === 1 || av === true || av === '1' || av === 'true') ? 1 : 0;
+    }
+  }
+
+  const { data, error } = await insertBusinessRow(business.schema_name, body.tableName, values);
 
   if (!error && data) {
     await writeAuditLog({

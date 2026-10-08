@@ -86,7 +86,7 @@ export function useRealtimeSync() {
           if (payload?.type === 'connected') {
             isConnected.value = true;
             status.value = 'connected';
-          } else if (payload?.type === 'table-mutation') {
+          } else if (payload?.type === 'table-mutation' || payload?.table) {
             notify(payload as RealtimeTableMutation);
           }
         } catch {

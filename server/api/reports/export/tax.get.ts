@@ -60,7 +60,10 @@ export default defineEventHandler(async (event) => {
     { taxRate, taxInclusive },
   );
 
-  const workbook = buildTaxFilingWorkbook(taxReport, businessResult.data.name, range);
+  const workbook = buildTaxFilingWorkbook(taxReport, businessResult.data.name, range, {
+    currencySymbol: businessResult.data.currency_symbol || '$',
+    currencyCode: businessResult.data.currency || 'USD',
+  });
 
   const fromStr = range.from.toISOString().slice(0, 10);
   const toStr = range.to.toISOString().slice(0, 10);

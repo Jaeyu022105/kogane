@@ -24,10 +24,15 @@ export function useAuth() {
   const isLoggedIn = computed(() => session.value !== null);
 
   function devLogin(email: string, extra?: Partial<AdminSession>) {
+    const existing = session.value;
     session.value = { 
       userId: 'dev-admin', 
       email, 
       token: 'dev-admin-token',
+      fullName: existing?.fullName,
+      username: existing?.username,
+      profilePicture: existing?.profilePicture,
+      languagePreference: existing?.languagePreference,
       ...extra 
     };
     localStorage.setItem('dev-session', JSON.stringify(session.value));

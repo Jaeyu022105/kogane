@@ -76,10 +76,8 @@ const AREA_LABELS: Record<string, string> = {
   audit_log: 'Activity',
 };
 
-function formatCurrency(val: unknown): string {
-  const num = Number(val) || 0;
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
-}
+const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
+
 
 function formatPercent(val: unknown): string {
   const num = Number(val) || 0;
@@ -110,20 +108,13 @@ function reportCellValue(value: unknown, column: string) {
   return String(value);
 }
 
-const TABS = computed(() => {
-  const tabs = [
-    { key: 'transactions', label: 'Sales Transactions' },
-    { key: 'performance', label: 'Performance & Forecasts' },
-    { key: 'tax', label: 'Tax Filing Schedule' },
-    { key: 'table-activity', label: 'Workspace Activity' },
-  ];
-
-  if (isEnterprise.value) {
-    tabs.push({ key: 'inpoint-activity', label: 'Staff Activity' });
-  }
-
-  return tabs;
-});
+const TABS = computed(() => [
+  { key: 'transactions', label: 'Sales Transactions' },
+  { key: 'performance', label: 'Performance & Forecasts' },
+  { key: 'tax', label: 'Tax Filing Schedule' },
+  { key: 'table-activity', label: 'Workspace Activity' },
+  { key: 'inpoint-activity', label: 'Staff Activity' },
+]);
 
 const activeTabLabel = computed(() =>
   TABS.value.find((tab) => tab.key === activeTab.value)?.label ?? 'Report',
@@ -444,7 +435,7 @@ watch([activeTab, group, taxInclusive], loadReport);
                 </span>
               </div>
               <p class="text-xs text-stone-500 mt-2 font-mono">
-                {{ performanceData.forecasts.dailyTrendSlope > 0 ? '+' : '' }}{{ performanceData.forecasts.dailyTrendSlope }} $/day drift
+                {{ performanceData.forecasts.dailyTrendSlope > 0 ? '+' : '' }}{{ performanceData.forecasts.dailyTrendSlope }} {{ currencySymbol }}/day drift
               </p>
             </div>
           </div>

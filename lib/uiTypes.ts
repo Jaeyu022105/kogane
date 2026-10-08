@@ -147,6 +147,9 @@ export interface TableViewElementDef extends BaseElementDef {
   headerBackgroundColor?: string;
   textColor?: string;
   striped?: boolean;
+  currencySymbol?: string;
+  currency?: string;
+  country?: string;
 }
 
 export interface InputFieldElementDef extends BaseElementDef {
@@ -219,6 +222,9 @@ export interface CartWidgetElementDef extends BaseElementDef {
   accentColor?: string;
   borderColor?: string;
   radius?: number;
+  currencySymbol?: string;
+  currency?: string;
+  country?: string;
 }
 
 export interface ScanFieldElementDef extends BaseElementDef {

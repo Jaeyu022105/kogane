@@ -13,6 +13,7 @@ function validateColumns(columns: string[]) {
 }
 
 function serializeBusinessValue(value: unknown): unknown {
+  if (value === undefined) return null;
   if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return JSON.stringify(value);
   if (value && typeof value === 'object') return JSON.stringify(value);
@@ -80,7 +81,9 @@ export async function queryBusinessRows<T = Record<string, unknown>>(
   },
 ) {
   validateIdentifier(tableName);
-  const selectedColumns = columns.length > 0 ? columns : ['*'];
+  const selectedColumns = columns.length > 0
+    ? (columns.includes('*') || columns.includes('id') ? [...columns] : ['id', ...columns])
+    : ['*'];
   if (!(selectedColumns.length === 1 && selectedColumns[0] === '*')) {
     validateColumns(selectedColumns);
   }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Trash2, Link2, KeyRound, Palette, Sliders, Globe, Sparkles, Check, RefreshCw } from 'lucide-vue-next';
+import { ArrowLeft, Trash2, Link2, KeyRound, Palette, Sliders, Globe, Sparkles, Check, RefreshCw, Eye, EyeOff } from 'lucide-vue-next';
 import { UI_LAYOUT_BUNDLES, type LayoutBundleKey } from '~/lib/workspaceBranding';
 
 definePageMeta({ layout: 'dashboard' });
@@ -10,7 +10,7 @@ const { isEnterprise }  = useEnterpriseAccess();
 const { authHeaders }   = useAuth();
 const { business }      = useBusiness();
 const { confirm, alert } = useModal();
-const { buildShareUrl } = useShareOrigin();
+const { buildShareUrl, copyToClipboard } = useShareOrigin();
 const businessId = computed(() => business.value?.id);
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -35,6 +35,7 @@ const terminal = ref<{
 // Basic options
 const optionDisplayName = ref('');
 const optionPin         = ref('');
+const pinVisible        = ref(false);
 const copiedLink        = ref(false);
 const copiedPin         = ref(false);
 const publicSaved       = ref(false);
@@ -63,7 +64,7 @@ const stationConfig = reactive<{
   menuItems: '',
   language: 'en',
   showReceipt: true,
-  currencySymbol: '$',
+  currencySymbol: business.value?.currencySymbol || '$',
 });
 
 const LANGUAGES = [
@@ -102,7 +103,10 @@ async function loadTerminal() {
     optionPin.value         = res.terminal.pin_code ?? '';
 
     // Restore style from ui_layout
-    const layout = res.terminal.ui_layout;
+    let layout = res.terminal.ui_layout;
+    if (typeof layout === 'string') {
+      try { layout = JSON.parse(layout); } catch { layout = null; }
+    }
     if (layout?.brandConfig) {
       selectedBundle.value = layout.brandConfig.layoutBundle ?? 'aurora-service';
       accentColor.value    = layout.brandConfig.accent ?? '#ff8ca6';
@@ -112,6 +116,9 @@ async function loadTerminal() {
     if (layout?.stationConfig) {
       Object.assign(stationConfig, layout.stationConfig);
     }
+    if (!stationConfig.currencySymbol) {
+      stationConfig.currencySymbol = business.value?.currencySymbol || '$';
+    }
   } catch (err) {
     error.value = friendlySaveError((err as Error).message, 'We could not load this terminal right now.');
   } finally {
@@ -120,6 +127,14 @@ async function loadTerminal() {
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────
+
+function selectBundle(bundleKey: LayoutBundleKey) {
+  selectedBundle.value = bundleKey;
+  const bundle = UI_LAYOUT_BUNDLES.find((item) => item.key === bundleKey);
+  if (bundle?.swatches?.[2]) {
+    accentColor.value = bundle.swatches[2];
+  }
+}
 
 function resolvedTerminalLink() {
   if (!import.meta.client || !terminal.value) return '';
@@ -141,22 +156,22 @@ function friendlySaveError(message: string | null | undefined, fallback: string)
 async function copyTerminalLink() {
   const url = resolvedTerminalLink();
   if (!url) return;
-  try {
-    await navigator.clipboard.writeText(url);
+  const success = await copyToClipboard(url);
+  if (success) {
     copiedLink.value = true;
     setTimeout(() => (copiedLink.value = false), 1500);
-  } catch {
+  } else {
     error.value = 'We could not copy the terminal link. Please copy it from the address bar.';
   }
 }
 
 async function copyTerminalPin() {
   if (!optionPin.value) return;
-  try {
-    await navigator.clipboard.writeText(optionPin.value);
+  const success = await copyToClipboard(optionPin.value);
+  if (success) {
     copiedPin.value = true;
     setTimeout(() => (copiedPin.value = false), 1500);
-  } catch {
+  } else {
     error.value = 'We could not copy the PIN. Please select it and copy it manually.';
   }
 }
@@ -291,16 +306,12 @@ async function deleteTerminal() {
 }
 
 onMounted(async () => {
-  if (!isEnterprise.value) {
-    router.replace('/dashboard');
-    return;
-  }
   await loadTerminal();
 });
 </script>
 
 <template>
-  <div v-if="isEnterprise" class="terminal-settings-page flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="terminal-settings-page flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <header class="px-8 py-5 flex items-center justify-between sticky top-0 z-50 bg-[#fdf7f2]/80 backdrop-blur-xl border-b border-black/[0.03]">
@@ -374,14 +385,27 @@ onMounted(async () => {
 
               <div>
                 <label for="terminal-pin" class="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style="color: rgba(61,24,32,0.45);">Staff PIN</label>
-                <input
-                  id="terminal-pin"
-                  v-model="optionPin"
-                  class="input-warm w-full px-3 py-2.5 text-sm font-mono"
-                  inputmode="numeric"
-                  maxlength="8"
-                  placeholder="4–8 digits"
-                />
+                <div class="relative flex items-center">
+                  <input
+                    id="terminal-pin"
+                    v-model="optionPin"
+                    :type="pinVisible ? 'text' : 'password'"
+                    class="input-warm w-full px-3 py-2.5 text-sm font-mono pr-10"
+                    inputmode="numeric"
+                    maxlength="8"
+                    placeholder="4–8 digits"
+                  />
+                  <button
+                    type="button"
+                    class="absolute right-2.5 p-1 text-[rgba(61,24,32,0.45)] hover:text-[rgb(var(--shell-sidebar))] transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center"
+                    :title="pinVisible ? 'Hide PIN' : 'Show PIN'"
+                    :aria-label="pinVisible ? 'Hide PIN' : 'Show PIN'"
+                    @click="pinVisible = !pinVisible"
+                  >
+                    <EyeOff v-if="pinVisible" class="w-4 h-4" />
+                    <Eye v-else class="w-4 h-4" />
+                  </button>
+                </div>
                 <p id="terminal-pin-help" class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Takes effect on the next sign-in.</p>
               </div>
 
@@ -510,7 +534,7 @@ onMounted(async () => {
                 :style="selectedBundle === bundle.key
                   ? 'border-color: rgb(var(--shell-sidebar)); background: rgba(61,24,32,0.03);'
                   : 'border-color: rgba(61,24,32,0.08); background: white;'"
-                @click="selectedBundle = bundle.key"
+                @click="selectBundle(bundle.key)"
               >
                 <div class="flex gap-1.5 mb-3">
                   <span

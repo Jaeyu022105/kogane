@@ -1,22 +1,28 @@
 <script setup lang="ts">
 /**
- * Settings page — business branding, theme colors, and business creation.
+ * Settings page — business branding, theme colors, country & currency, and workspace creation.
  */
 
 definePageMeta({ layout: 'dashboard' });
 
-import { Check, Sparkles, Upload } from 'lucide-vue-next';
+import { Check, Globe, Sparkles, Upload } from 'lucide-vue-next';
+import { COUNTRIES, findCountry } from '~/lib/currency';
 
-const { business, fetchBusiness, updateTheme } = useBusiness();
+const { business, fetchBusiness, updateTheme, updateCountry } = useBusiness();
 const { openOnboarding }                     = useOnboarding();
 const { t, availableLocales, setLocale, locale } = useLocale();
 
 const saving        = ref(false);
+const savingCountry = ref(false);
 const uploadingLogo = ref(false);
 const error         = ref<string | null>(null);
 const success       = ref(false);
+const countrySuccess = ref(false);
 
 const selectedLanguage = ref(locale.value);
+const selectedCountry  = ref(business.value?.country ?? 'US');
+
+const currentCountryRecord = computed(() => findCountry(selectedCountry.value));
 
 function friendlySettingsError(value: unknown, fallback: string) {
   const message = String(value ?? '').toLowerCase();
@@ -49,6 +55,13 @@ onMounted(async () => {
     palette.accent     = business.value.colorPalette.accent     ?? palette.accent;
     palette.background = business.value.colorPalette.background ?? palette.background;
     selectedLanguage.value = business.value.colorPalette.languagePreference ?? locale.value;
+    selectedCountry.value = business.value.country ?? 'US';
+  }
+});
+
+watch(() => business.value?.country, (newCountry) => {
+  if (newCountry) {
+    selectedCountry.value = newCountry;
   }
 });
 
@@ -70,14 +83,38 @@ async function saveTheme() {
       ...business.value?.colorPalette,
       ...palette,
       languagePreference: selectedLanguage.value,
+      country: currentCountryRecord.value.code,
+      currency: currentCountryRecord.value.currency,
+      currencySymbol: currentCountryRecord.value.symbol,
     };
-    await updateTheme(updatedPalette);
+    await updateTheme(updatedPalette, undefined, {
+      country: currentCountryRecord.value.code,
+      currency: currentCountryRecord.value.currency,
+      currencySymbol: currentCountryRecord.value.symbol,
+    });
     success.value = true;
     setTimeout(() => (success.value = false), 2500);
   } catch (err) {
     error.value = friendlySettingsError(err, 'We could not save the workspace settings. Please try again.');
   } finally {
     saving.value = false;
+  }
+}
+
+async function saveCountrySettings() {
+  savingCountry.value = true;
+  error.value = null;
+  countrySuccess.value = false;
+
+  try {
+    const c = findCountry(selectedCountry.value);
+    await updateCountry(c.code);
+    countrySuccess.value = true;
+    setTimeout(() => (countrySuccess.value = false), 2500);
+  } catch (err) {
+    error.value = friendlySettingsError(err, 'We could not save the country settings. Please try again.');
+  } finally {
+    savingCountry.value = false;
   }
 }
 
@@ -150,6 +187,8 @@ const businessDetailItems = computed(() => {
 
   return [
     { label: 'Business name', value: business.value.name },
+    { label: 'Country', value: currentCountryRecord.value.name },
+    { label: 'Currency', value: `${currentCountryRecord.value.symbol} ${currentCountryRecord.value.currency}` },
     { label: 'Started', value: new Date(business.value.createdAt).toLocaleDateString() },
   ];
 });
@@ -187,6 +226,77 @@ const businessDetailItems = computed(() => {
           @click="openOnboarding"
         >
           {{ t('settings_open_setup_wizard') }}
+        </button>
+      </section>
+
+      <!-- ── Country & Currency ─────────────────────────────────── -->
+      <section v-if="business" class="space-y-4">
+        <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
+          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">Regional Settings</p>
+          <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Country & Currency</h2>
+          <p class="text-sm mt-1" style="color: rgba(61,24,32,0.4);">
+            Select your country to set the platform-wide currency across all cashier registers, product tiles, receipts, reports, and exports.
+          </p>
+        </div>
+
+        <div>
+          <label for="settings-country" class="text-[10px] font-mono uppercase tracking-widest block mb-1.5" style="color: rgba(61,24,32,0.4);">
+            Country
+          </label>
+          <select
+            id="settings-country"
+            v-model="selectedCountry"
+            class="input-warm w-full px-3 py-2 text-xs cursor-pointer"
+            style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; border-radius: 0.5rem; height: 2.5rem;"
+            @change="saveCountrySettings"
+          >
+            <option
+              v-for="c in COUNTRIES"
+              :key="c.code"
+              :value="c.code"
+            >
+              {{ c.name }} ({{ c.symbol }} {{ c.currency }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Currency summary box -->
+        <div
+          class="flex items-center justify-between p-3.5 rounded-xl transition-all"
+          style="background: rgba(61,24,32,0.025); border: 1px solid rgba(61,24,32,0.08);"
+        >
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm" style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar));">
+              {{ currentCountryRecord.symbol }}
+            </div>
+            <div>
+              <p class="text-xs font-semibold" style="color: rgb(var(--shell-sidebar));">
+                {{ currentCountryRecord.currency }} · {{ currentCountryRecord.name }}
+              </p>
+              <p class="text-[10px]" style="color: rgba(61,24,32,0.45);">
+                Symbol: {{ currentCountryRecord.symbol }} · Standard precision: {{ currentCountryRecord.decimals }} decimal places
+              </p>
+            </div>
+          </div>
+          <span class="text-[11px] font-mono font-medium px-2 py-0.5 rounded" style="background: rgba(16,185,129,0.1); color: #059669;">
+            Active
+          </span>
+        </div>
+
+        <div
+          v-if="countrySuccess"
+          class="text-xs px-3 py-2 rounded flex items-center gap-1.5"
+          style="background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); color: #15803d;"
+        >
+          <Check class="w-3.5 h-3.5" /> Country and currency updated platform-wide.
+        </div>
+
+        <button
+          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
+          :disabled="savingCountry"
+          @click="saveCountrySettings"
+        >
+          {{ savingCountry ? 'Saving…' : 'Save Country & Currency' }}
         </button>
       </section>
 

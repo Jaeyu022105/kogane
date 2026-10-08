@@ -9,9 +9,72 @@ const { isEnterprise } = useEnterpriseAccess();
 const { business } = useBusiness();
 const businessId   = computed(() => business.value?.id);
 
-const { tables, tableDefs, loading, error, fetchTables, createTable, dropTable, analyzeTable, fetchTableRows, updateRow } = useSchema(businessId);
+const { tables, tableDefs, loading, error, fetchTables, createTable, dropTable, analyzeTable, fetchTableRows, updateRow, insertRow } = useSchema(businessId);
 
 const viewMode = ref<'data' | 'schema'>('data');
+
+// ── Add Row Modal ──────────────────────────────────────────────────────────
+const showAddRow   = ref(false);
+const newRowValues = ref<Record<string, string>>({});
+const addingRow    = ref(false);
+const addRowError  = ref<string | null>(null);
+
+function openAddRowModal() {
+  newRowValues.value = {};
+  addRowError.value = null;
+  showAddRow.value = true;
+}
+
+async function handleAddRow() {
+  if (!selectedTable.value) return;
+  addingRow.value = true;
+  addRowError.value = null;
+
+  try {
+    const payload: Record<string, unknown> = {};
+    for (const col of tableColumns.value) {
+      if (col.name === 'id' || col.name === 'created_at') continue;
+      const rawVal = newRowValues.value[col.name];
+      if (rawVal !== undefined && rawVal !== '') {
+        if (col.name === 'available') {
+          payload[col.name] = (rawVal === 'true' || rawVal === '1' || rawVal === 1 || rawVal === true) ? 1 : 0;
+        } else if (col.type === 'integer' || col.type === 'numeric') {
+          const rawStr = String(rawVal).trim();
+          if (/\d/.test(rawStr)) {
+            const isNeg = rawStr.startsWith('-') || /-\s*[^\d]/.test(rawStr) || /^\(.*\)$/.test(rawStr);
+            const digits = rawStr.replace(/[^\d.]/g, '');
+            const parsed = parseFloat(digits) * (isNeg ? -1 : 1);
+            payload[col.name] = Number.isFinite(parsed) ? parsed : rawVal;
+          } else {
+            payload[col.name] = rawVal;
+          }
+        } else if (col.type === 'boolean') {
+          payload[col.name] = rawVal === 'true' || rawVal === '1';
+        } else {
+          payload[col.name] = rawVal;
+        }
+      }
+    }
+
+    if (selectedTable.value === 'products') {
+      if (payload.available === undefined || payload.available === null || payload.available === '') {
+        payload.available = 1;
+      }
+    }
+
+    const res = await insertRow(selectedTable.value, payload);
+    if (res.error) {
+      addRowError.value = res.error;
+    } else {
+      showAddRow.value = false;
+      await loadRows();
+    }
+  } catch (err) {
+    addRowError.value = (err as Error).message;
+  } finally {
+    addingRow.value = false;
+  }
+}
 
 // ── Selected table & rows ──────────────────────────────────────────────────
 
@@ -189,17 +252,12 @@ async function applyPreset(presetId: string) {
 }
 
 onMounted(async () => {
-  if (!isEnterprise.value) {
-    router.replace('/dashboard');
-    return;
-  }
-
   await fetchTables();
   await loadPresets();
 });
 
 watch(businessId, () => {
-  if (isEnterprise.value) fetchTables();
+  fetchTables();
 });
 
 // ── Column type badge color ────────────────────────────────────────────────
@@ -362,7 +420,7 @@ function getTablePositionSafe(name: string) {
 </script>
 
 <template>
-  <div v-if="isEnterprise" class="flex-1 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="flex-1 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Left sidebar: schema / table tree ──────────────────────────────── -->
     <aside class="w-56 shrink-0 flex flex-col overflow-hidden" style="background: #1a0e11; border-right: 1px solid rgba(255,255,255,0.05);">
       <!-- Header -->
@@ -472,6 +530,16 @@ function getTablePositionSafe(name: string) {
             @click="autoArrangeTables"
           >
             Auto Arrange
+          </button>
+
+          <button
+            class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+            style="border: 1.5px solid rgba(61,24,32,0.15); color: rgb(var(--shell-sidebar)); background: white;"
+            @click="openAddRowModal"
+          >
+            <div class="flex items-center gap-1.5">
+              <Plus class="w-3.5 h-3.5" /> Add Row
+            </div>
           </button>
 
           <button
@@ -874,6 +942,84 @@ function getTablePositionSafe(name: string) {
                 @click="handleCreate"
               >
                 {{ saving ? 'Creating…' : 'Create Table' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ── Add Row slide-over ──────────────────────────────────────────────── -->
+    <Transition name="v">
+      <div
+        v-if="showAddRow"
+        class="fixed inset-0 z-50 flex items-stretch justify-end"
+        @click.self="showAddRow = false"
+      >
+        <div
+          class="w-[480px] h-full bg-white flex flex-col shadow-2xl overflow-y-auto"
+          style="border-left: 1px solid rgba(61,24,32,0.1);"
+        >
+          <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
+            <div>
+              <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">Add Row</h2>
+              <p class="text-xs font-mono mt-0.5" style="color: rgba(61,24,32,0.4);">{{ selectedTable }}</p>
+            </div>
+            <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showAddRow = false">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="flex-1 px-6 py-5 space-y-4">
+            <template v-for="col in tableColumns" :key="col.name">
+              <div v-if="col.name !== 'id' && col.name !== 'created_at'">
+                <label class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.65);">
+                  {{ col.name }}
+                  <span class="text-[0.65rem] font-mono ml-1 px-1.5 py-0.5 rounded" :style="`background: ${typeColor(col.type)}18; color: ${typeColor(col.type)};`">{{ col.type }}</span>
+                </label>
+                <select
+                  v-if="col.type === 'boolean'"
+                  v-model="newRowValues[col.name]"
+                  class="input-warm w-full px-3 py-2 text-sm"
+                >
+                  <option value="">Default (true)</option>
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+                <input
+                  v-else
+                  v-model="newRowValues[col.name]"
+                  :type="col.type === 'integer' || col.type === 'numeric' ? 'number' : 'text'"
+                  :step="col.type === 'numeric' ? '0.01' : undefined"
+                  class="input-warm w-full px-3 py-2 text-sm"
+                  :placeholder="`Enter ${col.name}`"
+                />
+              </div>
+            </template>
+          </div>
+
+          <div class="px-6 py-4 space-y-2 shrink-0" style="border-top: 1px solid rgba(61,24,32,0.1);">
+            <div
+              v-if="addRowError"
+              class="text-xs px-3 py-2 rounded-xl"
+              style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+            >
+              {{ addRowError }}
+            </div>
+            <div class="flex gap-3">
+              <button
+                class="flex-1 py-2.5 text-sm font-medium rounded-full transition-all"
+                style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65);"
+                @click="showAddRow = false"
+              >
+                Cancel
+              </button>
+              <button
+                class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40 btn-primary btn-ribbon"
+                :disabled="addingRow"
+                @click="handleAddRow"
+              >
+                {{ addingRow ? 'Saving…' : 'Save Row' }}
               </button>
             </div>
           </div>

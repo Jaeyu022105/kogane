@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { LockKeyhole } from 'lucide-vue-next';
 import type { ButtonElementDef } from '~/lib/uiTypes';
+import { isLightColor } from '~/lib/workspaceBranding';
 
 const props = defineProps<{ element: ButtonElementDef; runtime?: any; builderMode?: boolean }>();
 const emit = defineEmits<{ (e: 'action', el: ButtonElementDef): void }>();
 
 const disabled = computed(() => Boolean(props.runtime?.isElementDisabled?.(props.element)));
+const isLight = computed(() => isLightColor(props.element.backgroundColor ?? '#ffffff'));
 
 async function handleClick() {
   if (props.builderMode || disabled.value) return;
@@ -23,14 +25,14 @@ async function handleClick() {
       'w-full h-full font-medium text-sm transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
       !element.backgroundColor && element.variant === 'primary' && 'bg-brand-primary text-white hover:brightness-110',
       !element.backgroundColor && element.variant === 'secondary' && 'bg-brand-secondary text-white hover:brightness-110',
-      !element.backgroundColor && element.variant === 'ghost' && 'border border-white/20 text-white/80 hover:bg-white/10',
+      !element.backgroundColor && element.variant === 'ghost' && (isLight ? 'border border-neutral-300 text-neutral-800 hover:bg-neutral-100' : 'border border-white/20 text-white/80 hover:bg-white/10'),
       !element.backgroundColor && element.variant === 'danger' && 'bg-red-600 text-white hover:bg-red-500',
     ]"
     :style="{
       background: element.backgroundColor,
       color: element.textColor,
       borderRadius: `${element.radius ?? 12}px`,
-      border: element.variant === 'ghost' && !element.backgroundColor ? undefined : '1px solid rgba(255,255,255,0.08)',
+      border: element.variant === 'ghost' && !element.backgroundColor ? undefined : (isLight ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.08)'),
     }"
     :disabled="disabled"
     @click="handleClick"

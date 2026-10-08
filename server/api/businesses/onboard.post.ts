@@ -11,6 +11,7 @@ import { validateIdentifier, buildCreateTableSql } from '~/lib/schemaUtils';
 import type { PermissionPresetKey } from '~/lib/permissions';
 import type { SchemaDef } from '~/lib/schemaUtils';
 import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/managedTerminals';
+import { findCountry } from '~/lib/currency';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -20,6 +21,9 @@ export default defineEventHandler(async (event) => {
     businessType: string;
     features: string[];
     schemaDef: SchemaDef;
+    country?: string;
+    currency?: string;
+    currencySymbol?: string;
     logoUrl?: string;
     colorPalette?: any;
     terminalConfigs?: Array<{
@@ -39,6 +43,18 @@ export default defineEventHandler(async (event) => {
     [userId],
   );
 
+  const resolvedCountry = findCountry(body.country || body.colorPalette?.country);
+  const countryCode = body.country || resolvedCountry.code;
+  const currencyCode = body.currency || resolvedCountry.currency;
+  const currencySymbol = body.currencySymbol || resolvedCountry.symbol;
+
+  const mergedPalette = {
+    ...(body.colorPalette || {}),
+    country: countryCode,
+    currency: currencyCode,
+    currencySymbol: currencySymbol,
+  };
+
   let schemaName = '';
   let business = null;
 
@@ -49,7 +65,10 @@ export default defineEventHandler(async (event) => {
     const { error: updateErr } = await db.update('businesses', {
       name: body.businessName.trim(),
       logo_url: body.logoUrl || null,
-      color_palette: JSON.stringify(body.colorPalette || {}),
+      color_palette: JSON.stringify(mergedPalette),
+      country: countryCode,
+      currency: currencyCode,
+      currency_symbol: currencySymbol,
     }, { id: existing.id });
 
     if (updateErr) return { error: updateErr, business: null };
@@ -69,7 +88,10 @@ export default defineEventHandler(async (event) => {
       admin_user_id: userId,
       name: body.businessName.trim(),
       logo_url: body.logoUrl || null,
-      color_palette: JSON.stringify(body.colorPalette || {}),
+      color_palette: JSON.stringify(mergedPalette),
+      country: countryCode,
+      currency: currencyCode,
+      currency_symbol: currencySymbol,
       schema_name: schemaName,
     });
 
@@ -110,7 +132,7 @@ export default defineEventHandler(async (event) => {
         pin: terminal.pin,
         resolution: terminal.resolution,
         layoutVariant: terminal.layoutVariant,
-        brandConfig: body.colorPalette ?? {},
+        brandConfig: mergedPalette,
       });
 
       if (created.error) {

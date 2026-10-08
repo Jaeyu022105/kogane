@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Camera, QrCode } from 'lucide-vue-next';
+import { Camera, QrCode, Eye, EyeOff } from 'lucide-vue-next';
 
 definePageMeta({ layout: 'default' });
 
@@ -21,6 +21,67 @@ const email    = ref('admin@kogane.dev');
 const password = ref('');
 const fullName = ref('');
 const username = ref('');
+
+// Photo upload state
+const photoInput = ref<HTMLInputElement | null>(null);
+const profilePhotoUrl = ref('');
+const uploadingPhoto = ref(false);
+
+// Password visibility state
+const signupPasswordVisible = ref(false);
+const loginPasswordVisible = ref(false);
+
+function triggerPhotoSelect() {
+  photoInput.value?.click();
+}
+
+async function handlePhotoSelect(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    error.value = 'Please select an image file (PNG, JPG, WebP).';
+    return;
+  }
+
+  // Instant local preview
+  const reader = new FileReader();
+  reader.onload = () => {
+    profilePhotoUrl.value = reader.result as string;
+  };
+  reader.readAsDataURL(file);
+
+  uploadingPhoto.value = true;
+  error.value = null;
+
+  try {
+    const ext = file.name.includes('.') ? file.name.split('.').pop() : 'png';
+    const form = new FormData();
+    form.append('file', file);
+    form.append('bucket', 'avatars');
+    form.append('path', `avatar-${Date.now()}.${ext}`);
+
+    const res = await $fetch<{ url: string | null; error: string | null }>('/api/storage/upload', {
+      method: 'POST',
+      body: form,
+    });
+
+    if (res.error) {
+      error.value = res.error;
+    } else if (res.url) {
+      profilePhotoUrl.value = res.url;
+    }
+  } catch (err: any) {
+    error.value = err?.data?.error || err?.message || 'Failed to upload photo';
+  } finally {
+    uploadingPhoto.value = false;
+  }
+}
+
+function removePhoto() {
+  profilePhotoUrl.value = '';
+  if (photoInput.value) photoInput.value.value = '';
+}
 
 // Birthday state
 const birthMonth = ref('');
@@ -169,6 +230,7 @@ async function handleAction() {
     devLogin(email.value, {
       fullName: fullName.value,
       username: username.value,
+      profilePicture: profilePhotoUrl.value || undefined,
       languagePreference: locale.value,
       has2fa: true,
     });
@@ -188,6 +250,7 @@ function handleSignupSubmit() {
     devLogin(email.value, {
       fullName: fullName.value,
       username: username.value,
+      profilePicture: profilePhotoUrl.value || undefined,
       languagePreference: locale.value,
       has2fa: false,
     });
@@ -305,10 +368,58 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               <!-- Step 1: Profile -->
               <template v-if="signupStep === 1">
                 <div class="profile-upload-wrapper">
-                  <div class="profile-upload">
-                    <Camera class="w-6 h-6" style="color: rgba(104,41,58,0.4);" />
+                  <input
+                    ref="photoInput"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    class="hidden"
+                    aria-label="Upload profile picture"
+                    @change="handlePhotoSelect"
+                  />
+                  <div
+                    class="profile-upload group relative overflow-hidden"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Select profile photo"
+                    @click="triggerPhotoSelect"
+                    @keydown.enter="triggerPhotoSelect"
+                    @keydown.space.prevent="triggerPhotoSelect"
+                  >
+                    <img
+                      v-if="profilePhotoUrl"
+                      :src="profilePhotoUrl"
+                      alt="Profile preview"
+                      class="w-full h-full object-cover rounded-full"
+                    />
+                    <Camera
+                      v-else
+                      class="w-6 h-6 transition-transform group-hover:scale-110"
+                      style="color: rgba(104,41,58,0.4);"
+                    />
+                    <div
+                      v-if="profilePhotoUrl"
+                      class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full text-white text-[11px] font-medium"
+                    >
+                      Change
+                    </div>
                   </div>
-                  <span class="profile-upload-text">{{ t('upload_photo') }}</span>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      class="profile-upload-text hover:underline cursor-pointer bg-transparent border-0 p-0"
+                      @click="triggerPhotoSelect"
+                    >
+                      {{ profilePhotoUrl ? 'Change photo' : t('upload_photo') }}
+                    </button>
+                    <button
+                      v-if="profilePhotoUrl"
+                      type="button"
+                      class="text-[11px] text-red-500 hover:underline cursor-pointer bg-transparent border-0 p-0"
+                      @click="removePhoto"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
 
                 <div class="signup-grid">
@@ -326,7 +437,26 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                   </div>
                   <div class="field">
                     <label for="signup-password" class="field-label">{{ t('field_password') }}</label>
-                    <input id="signup-password" v-model="password" type="password" required class="field-input" :placeholder="t('field_password_placeholder')" />
+                    <div class="relative flex items-center">
+                      <input
+                        id="signup-password"
+                        v-model="password"
+                        :type="signupPasswordVisible ? 'text' : 'password'"
+                        required
+                        class="field-input pr-10"
+                        :placeholder="t('field_password_placeholder')"
+                      />
+                      <button
+                        type="button"
+                        class="absolute right-3 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center"
+                        :title="signupPasswordVisible ? 'Hide password' : 'Show password'"
+                        :aria-label="signupPasswordVisible ? 'Hide password' : 'Show password'"
+                        @click="signupPasswordVisible = !signupPasswordVisible"
+                      >
+                        <EyeOff v-if="signupPasswordVisible" class="w-4 h-4" />
+                        <Eye v-else class="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </template>
@@ -380,8 +510,8 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                  <button type="button" class="login-return" @click="prevStep">
                     {{ t('btn_back') }}
                  </button>
-                 <button type="submit" :disabled="loading" class="login-submit">
-                    {{ signupStep < 3 ? t('btn_continue') : t('btn_finish') }}
+                 <button type="submit" :disabled="loading || uploadingPhoto" class="login-submit">
+                    {{ uploadingPhoto ? 'Uploading photo...' : (signupStep < 3 ? t('btn_continue') : t('btn_finish')) }}
                  </button>
               </div>
             </template>
@@ -401,14 +531,26 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               </div>
               <div class="field">
                 <label for="login-password" class="field-label">{{ t('field_login_password') }}</label>
-                <input
-                  id="login-password"
-                  v-model="password"
-                  type="password"
-                  autocomplete="current-password"
-                  class="field-input"
-                  placeholder="Enter password"
-                />
+                <div class="relative flex items-center">
+                  <input
+                    id="login-password"
+                    v-model="password"
+                    :type="loginPasswordVisible ? 'text' : 'password'"
+                    autocomplete="current-password"
+                    class="field-input pr-10"
+                    placeholder="Enter password"
+                  />
+                  <button
+                    type="button"
+                    class="absolute right-3 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center"
+                    :title="loginPasswordVisible ? 'Hide password' : 'Show password'"
+                    :aria-label="loginPasswordVisible ? 'Hide password' : 'Show password'"
+                    @click="loginPasswordVisible = !loginPasswordVisible"
+                  >
+                    <EyeOff v-if="loginPasswordVisible" class="w-4 h-4" />
+                    <Eye v-else class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               
               <button

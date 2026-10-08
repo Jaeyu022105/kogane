@@ -1,21 +1,8 @@
 import { computed } from 'vue';
 
 export function useEnterpriseAccess() {
-  const config = useRuntimeConfig();
-  const { session } = useAuth();
-
-  const isEnterprise = computed(() => {
-    const publicConfig = config.public as Record<string, unknown>;
-    const enabledByEnv = String(publicConfig.enterpriseTools ?? '').toLowerCase() === 'true';
-    const enabledBySession = Boolean(session.value?.isEnterprise);
-    const enabledByEmail = Boolean(
-      session.value?.email?.includes('+enterprise') ||
-      session.value?.email?.endsWith('@kogane.dev') ||
-      session.value?.email?.endsWith('@kogane.io'),
-    );
-
-    return enabledByEnv || enabledBySession || enabledByEmail;
-  });
+  // All workstations and builder features are unlocked for local business operations.
+  const isEnterprise = computed(() => true);
 
   return { isEnterprise };
 }

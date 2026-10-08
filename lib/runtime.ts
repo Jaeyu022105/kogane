@@ -51,6 +51,10 @@ export function resolveRuntimePayload(
       return context.inputs[value.replace('$$input.', '')] ?? null;
     }
 
+    if (value.startsWith('$$inputs.')) {
+      return context.inputs[value.replace('$$inputs.', '')] ?? null;
+    }
+
     if (value.startsWith('$$upload.')) {
       return context.uploads[value.replace('$$upload.', '')] ?? null;
     }

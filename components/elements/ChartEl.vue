@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ChartElementDef } from '~/lib/uiTypes';
+import { isLightColor } from '~/lib/workspaceBranding';
 
 const props = defineProps<{
   element: ChartElementDef;
@@ -17,9 +18,12 @@ const palette = computed(() =>
     : ['#e8748a', '#6366f1', '#f59e0b', '#10b981', '#0ea5e9', '#a78bfa', '#fb923c'],
 );
 
-const textColor = computed(() => props.element.textColor ?? '#f5ede4');
-const mutedTextColor = computed(() => 'rgba(245,237,228,0.7)');
 const surfaceColor = computed(() => props.element.backgroundColor ?? '#161116');
+const isLight = computed(() => isLightColor(surfaceColor.value));
+const textColor = computed(() => props.element.textColor ?? (isLight.value ? '#1c1917' : '#f5ede4'));
+const mutedTextColor = computed(() => (isLight.value ? 'rgba(28,25,23,0.65)' : 'rgba(245,237,228,0.7)'));
+const borderColor = computed(() => (isLight.value ? 'rgba(28,25,23,0.1)' : 'rgba(255,255,255,0.08)'));
+const badgeBg = computed(() => (isLight.value ? 'rgba(28,25,23,0.06)' : 'rgba(255,255,255,0.08)'));
 const lineGradientId = computed(() => `chart-line-fill-${props.element.id}`);
 const chartTitle = computed(() =>
   props.element.title
@@ -155,11 +159,11 @@ function linePoints(width: number, height: number): string {
     class="w-full h-full flex flex-col overflow-hidden rounded-[22px]"
     :style="{
       background: surfaceColor,
-      border: '1px solid rgba(255,255,255,0.08)',
+      border: `1px solid ${borderColor}`,
       color: textColor,
     }"
   >
-    <div class="px-4 py-3 flex items-start justify-between shrink-0" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+    <div class="px-4 py-3 flex items-start justify-between shrink-0" :style="{ borderBottom: `1px solid ${borderColor}` }">
       <div class="min-w-0">
         <p class="text-sm font-semibold truncate">{{ chartTitle }}</p>
         <p v-if="element.subtitle" class="text-[11px] truncate" :style="{ color: mutedTextColor }">{{ element.subtitle }}</p>
@@ -167,7 +171,7 @@ function linePoints(width: number, height: number): string {
       <div class="flex items-center gap-2 shrink-0">
         <span
           class="text-[10px] font-mono px-2 py-1 rounded-full uppercase"
-          style="background: rgba(255,255,255,0.08);"
+          :style="{ background: badgeBg }"
         >
           {{ element.source === 'audit-log' ? 'audit' : (element.tableName || 'table') }}
         </span>
@@ -181,7 +185,7 @@ function linePoints(width: number, height: number): string {
     </div>
 
     <div v-if="loading" class="flex-1 flex items-center justify-center">
-      <div class="w-5 h-5 rounded-full border-2 animate-spin" style="border-color: rgba(255,255,255,0.16); border-top-color: #e8748a;" />
+      <div class="w-5 h-5 rounded-full border-2 animate-spin" :style="{ borderColor, borderTopColor: '#e8748a' }" />
     </div>
 
     <div v-else-if="chartData.length === 0" class="flex-1 flex items-center justify-center px-4 text-center text-sm" :style="{ color: mutedTextColor }">
@@ -195,7 +199,7 @@ function linePoints(width: number, height: number): string {
           :key="index"
           :d="slice.path"
           :fill="slice.color"
-          stroke="rgba(255,255,255,0.9)"
+          :stroke="isLight ? '#ffffff' : 'rgba(255,255,255,0.9)'"
           stroke-width="1.5"
         />
       </svg>

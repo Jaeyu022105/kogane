@@ -200,7 +200,7 @@ const tableRows = computed(() => [
       <div class="m-cta-btns">
         <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
         <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
-        <NuxtLink to="/pricing" class="m-btn-ghost">{{ t('index_cta_btn2') }}</NuxtLink>
+        <NuxtLink to="/features" class="m-btn-ghost">{{ t('nav_features') }} →</NuxtLink>
       </div>
     </div>
   </section>

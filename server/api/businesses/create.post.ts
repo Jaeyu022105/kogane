@@ -7,10 +7,17 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { findCountry } from '~/lib/currency';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
-  const body = await readBody<{ name: string; colorPalette?: Record<string, string> }>(event);
+  const body = await readBody<{
+    name: string;
+    country?: string;
+    currency?: string;
+    currencySymbol?: string;
+    colorPalette?: Record<string, any>;
+  }>(event);
 
   if (!body.name?.trim()) return { error: 'Business name is required', business: null };
 
@@ -30,10 +37,25 @@ export default defineEventHandler(async (event) => {
     return { error: 'Could not generate a valid schema name', business: null };
   }
 
+  const resolved = findCountry(body.country || body.colorPalette?.country);
+  const countryCode = body.country || resolved.code;
+  const currencyCode = body.currency || resolved.currency;
+  const currencySymbol = body.currencySymbol || resolved.symbol;
+
+  const mergedPalette = {
+    ...(body.colorPalette || {}),
+    country: countryCode,
+    currency: currencyCode,
+    currencySymbol,
+  };
+
   const { data: business, error } = await db.insert('businesses', {
     admin_user_id: userId,
     name: body.name.trim(),
-    color_palette: JSON.stringify(body.colorPalette ?? {}),
+    color_palette: JSON.stringify(mergedPalette),
+    country: countryCode,
+    currency: currencyCode,
+    currency_symbol: currencySymbol,
     schema_name: schemaName,
   });
 

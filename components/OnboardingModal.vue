@@ -20,10 +20,11 @@ import type { SchemaDef, TableDef } from '~/lib/schemaUtils';
 import { TERMINAL_PERMISSION_PRESETS, type PermissionPresetKey } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, inferStarterTerminals, layoutVariantsForPreset } from '~/lib/starterWorkstations';
 import { UI_LAYOUT_BUNDLES, buildBusinessPalette, extractPaletteFromLogoDataUrl, type LayoutBundleKey, type ParticleEffect, type SurfaceStyle } from '~/lib/workspaceBranding';
+import { COUNTRIES, findCountry, type CountryOption } from '~/lib/currency';
 
 const emit = defineEmits<{ done: [], close: [] }>();
 
-const { authHeaders } = useAuth();
+const { session, authHeaders } = useAuth();
 const { business, fetchBusiness } = useBusiness();
 const { t, locale } = useLocale();
 
@@ -32,7 +33,9 @@ const step = ref<1 | 2 | 3 | 4>(1);
 
 // Step 1: Basics
 const businessName = ref('');
-const logoUrl = ref<string | null>(null);
+const selectedCountry = ref(business.value?.country ?? 'US');
+const selectedCountryRecord = computed<CountryOption>(() => findCountry(selectedCountry.value));
+const logoUrl = ref<string | null>(session.value?.profilePicture ?? null);
 const colorPalette = ref(buildBusinessPalette('#68293A'));
 const selectedType = ref<string | null>(null);
 const uiStyle = ref('warm-minimal');
@@ -54,15 +57,36 @@ async function handleLogoUpload(e: Event) {
 
   const reader = new FileReader();
   reader.onload = async () => {
-    logoUrl.value = reader.result as string;
+    const dataUrl = reader.result as string;
+    logoUrl.value = dataUrl;
 
     try {
-      colorPalette.value = await extractPaletteFromLogoDataUrl(logoUrl.value, layoutBundle.value);
+      colorPalette.value = await extractPaletteFromLogoDataUrl(dataUrl, layoutBundle.value);
     } catch {
       colorPalette.value = buildBusinessPalette(colorPalette.value.primary, layoutBundle.value);
     }
   };
   reader.readAsDataURL(file);
+
+  try {
+    const ext = file.name.includes('.') ? file.name.split('.').pop() : 'png';
+    const form = new FormData();
+    form.append('file', file);
+    form.append('bucket', 'assets');
+    form.append('path', `logo-${Date.now()}.${ext}`);
+
+    const res = await $fetch<{ url: string | null; error: string | null }>('/api/storage/upload', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: form,
+    });
+
+    if (res.url) {
+      logoUrl.value = res.url;
+    }
+  } catch (err) {
+    console.warn('[OnboardingModal] logo upload warning:', err);
+  }
 }
 
 // ── Business types ────────────────────────────────────────────────────────────
@@ -469,9 +493,6 @@ const schemaDef = computed<SchemaDef>(() => {
   return { tables };
 });
 
-const monthlyTotal = computed(() => {
-  return 15 + (selectedFeatures.value.size * 5);
-});
 
 watch(layoutBundle, (nextBundle) => {
   colorPalette.value = {
@@ -492,11 +513,17 @@ async function handleSubmit() {
       body: {
         businessName: businessName.value.trim(),
         businessType: selectedType.value,
+        country:      selectedCountryRecord.value.code,
+        currency:     selectedCountryRecord.value.currency,
+        currencySymbol: selectedCountryRecord.value.symbol,
         features:     [...selectedFeatures.value],
         schemaDef:    schemaDef.value,
         logoUrl:      logoUrl.value,
         colorPalette: {
           ...colorPalette.value,
+          country: selectedCountryRecord.value.code,
+          currency: selectedCountryRecord.value.currency,
+          currencySymbol: selectedCountryRecord.value.symbol,
           languagePreference: locale.value,
           uiStyle: uiStyle.value,
           onboardingPreset: selectedPreset.value,
@@ -605,6 +632,25 @@ async function handleSubmit() {
                           <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Frame</p>
                         </div>
                       </div>
+                    </div>
+                    <div>
+                      <label for="onboarding-country" class="text-sm font-semibold text-[rgba(104,41,58,0.7)] block mb-1.5">Country & Currency</label>
+                      <select
+                        id="onboarding-country"
+                        v-model="selectedCountry"
+                        class="field-input max-w-sm"
+                      >
+                        <option
+                          v-for="c in COUNTRIES"
+                          :key="c.code"
+                          :value="c.code"
+                        >
+                          {{ c.name }} ({{ c.symbol }} {{ c.currency }})
+                        </option>
+                      </select>
+                      <p class="text-[11px] mt-1 text-[rgba(104,41,58,0.55)]">
+                        Platform currency: <strong class="text-[rgb(var(--shell-sidebar))] font-semibold">{{ selectedCountryRecord.symbol }} {{ selectedCountryRecord.currency }}</strong>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -916,6 +962,10 @@ async function handleSubmit() {
                   <div class="flex justify-between items-center text-sm">
                     <span class="text-[rgba(104,41,58,0.7)]">{{ t('onboarding_presets') }}</span>
                     <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedPresetRecord?.label ?? t('none') }}</span>
+                  </div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-[rgba(104,41,58,0.7)]">Country & Currency</span>
+                    <span class="font-semibold text-[rgb(var(--shell-sidebar))]">{{ selectedCountryRecord.symbol }} {{ selectedCountryRecord.currency }} ({{ selectedCountryRecord.code }})</span>
                   </div>
                   <div class="flex justify-between items-center text-sm">
                     <span class="text-[rgba(104,41,58,0.7)]">Layout Bundle</span>

@@ -17,7 +17,8 @@ function extension(path: string): string {
 }
 
 export default defineEventHandler(async (event) => {
-  const pathParts = event.context.params?.path?.split('/') ?? [];
+  const rawPath = event.context.params?.path;
+  const pathParts = Array.isArray(rawPath) ? rawPath : (typeof rawPath === 'string' ? rawPath.split('/') : []);
   if (pathParts.length < 2) {
     return new Response('Not found', { status: 404 });
   }
@@ -25,9 +26,13 @@ export default defineEventHandler(async (event) => {
   const [bucket, ...rest] = pathParts;
   const filePath = rest.join('/');
   const storage = useStorage();
-  const file = await storage.read(bucket, filePath);
-  const type = MIME_TYPES[extension(filePath)] ?? getHeader(event, 'content-type') ?? 'application/octet-stream';
-  setHeader(event, 'Content-Type', type);
-  setHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable');
-  return file;
+  try {
+    const file = await storage.read(bucket, filePath);
+    const type = MIME_TYPES[extension(filePath)] ?? getHeader(event, 'content-type') ?? 'application/octet-stream';
+    setHeader(event, 'Content-Type', type);
+    setHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable');
+    return file;
+  } catch {
+    return new Response('Not found', { status: 404 });
+  }
 });

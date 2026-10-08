@@ -6,6 +6,7 @@
 
 import { Database } from 'bun:sqlite';
 import { join } from 'path';
+import { createHash } from 'node:crypto';
 import type { DbAdapter, QueryResult, SingleResult } from './db';
 
 const DB_PATH = join(process.cwd(), 'dev.db');
@@ -31,6 +32,9 @@ export class SqliteAdapter implements DbAdapter {
         name          TEXT NOT NULL,
         logo_url      TEXT,
         color_palette TEXT DEFAULT '{}',
+        country       TEXT DEFAULT 'US',
+        currency      TEXT DEFAULT 'USD',
+        currency_symbol TEXT DEFAULT '$',
         schema_name   TEXT NOT NULL UNIQUE,
         created_at    TEXT DEFAULT (datetime('now'))
       )
@@ -100,6 +104,56 @@ export class SqliteAdapter implements DbAdapter {
 
     try {
       this.db.run("ALTER TABLE terminals ADD COLUMN public_slug TEXT");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE businesses ADD COLUMN country TEXT DEFAULT 'US'");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE businesses ADD COLUMN currency TEXT DEFAULT 'USD'");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE businesses ADD COLUMN currency_symbol TEXT DEFAULT '$'");
+    } catch (e) { }
+    try {
+      const existingTerm = this.db.query("SELECT id FROM terminals WHERE id = 'd047d7294f03036a4f3fe94fa3be66d0'").get();
+      if (!existingTerm) {
+        let biz = this.db.query("SELECT id FROM businesses WHERE schema_name = 'biz_devadmin'").get() as { id: string } | null;
+        if (!biz) {
+          const bizId = 'biz_devadmin_id';
+          this.db.run(`
+            INSERT INTO businesses (id, admin_user_id, name, schema_name, country, currency, currency_symbol)
+            VALUES ('${bizId}', 'dev-admin', 'Dev Store', 'biz_devadmin', 'US', 'USD', '$')
+          `);
+          biz = { id: bizId };
+        }
+        const defaultPinHash = createHash('sha256').update('kogane-pin-salt:1234').digest('hex');
+        const defaultLayout = JSON.stringify({ version: 2, resolution: { width: 1280, height: 720 }, elements: [] });
+        const defaultPerms = JSON.stringify({
+          tables: {
+            '*': { read: true, insert: true, update: true, delete: false },
+            products: { read: true, insert: true, update: true, delete: true },
+          },
+          audit_log: { visible: false },
+          reports: { visible: false },
+        });
+        this.db.run(`
+          INSERT INTO terminals (id, business_id, display_name, role, pin_hash, pin_code, pin_length, permissions, ui_layout)
+          VALUES (
+            'd047d7294f03036a4f3fe94fa3be66d0',
+            '${biz.id}',
+            'Catalog Desk',
+            'catalog-registrar',
+            '${defaultPinHash}',
+            '1234',
+            4,
+            '${defaultPerms}',
+            '${defaultLayout}'
+          )
+        `);
+      }
     } catch (e) { }
   }
 

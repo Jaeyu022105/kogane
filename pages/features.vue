@@ -164,7 +164,7 @@ const extras = computed(() => [
       <p class="m-cta-sub">{{ t('feat_cta_sub') }}</p>
       <div class="m-cta-btns">
         <NuxtLink to="/login" class="m-btn-primary ribbon">{{ t('feat_cta_btn1') }}</NuxtLink>
-        <NuxtLink to="/pricing" class="m-btn-ghost">{{ t('feat_cta_btn2') }}</NuxtLink>
+        <NuxtLink to="/login?mode=signup" class="m-btn-ghost">{{ t('nav_getstarted') }} →</NuxtLink>
       </div>
     </div>
   </section>

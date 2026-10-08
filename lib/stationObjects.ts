@@ -36,7 +36,7 @@ export const STATION_OBJECTS: StationObjectDefinition[] = [
     type: 'cart-widget',
     recommendedFor: ['cashier-register'],
     optionalFor: ['inventory-manager'],
-    defaultSize: { width: 760, height: 420 },
+    defaultSize: { width: 800, height: 572 },
     defaults: {
       label: 'sale panel',
       title: 'Cashier Register',

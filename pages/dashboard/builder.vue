@@ -171,7 +171,7 @@ const extraPaletteItems = computed(() => {
 });
 
 async function loadTerminals() {
-  if (!isEnterprise.value || !business.value) return;
+  if (!business.value) return;
   const res = await $fetch<{ terminals: any[]; error: string | null }>('/api/terminals', {
     headers: authHeaders(),
     query: { businessId: business.value.id },
@@ -562,11 +562,6 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 }
 
 onMounted(() => {
-  if (!isEnterprise.value) {
-    router.replace('/dashboard');
-    return;
-  }
-
   loadTerminals();
   window.addEventListener('keydown', handleKeydown);
   window.addEventListener('beforeunload', handleBeforeUnload);
@@ -581,7 +576,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="isEnterprise" class="flex-1 flex flex-col overflow-hidden bg-[#f6efe8]">
+  <div class="flex-1 flex flex-col overflow-hidden bg-[#f6efe8]">
     <header class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-6 py-3 shrink-0 bg-[#fdf7f2]" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
       <div class="flex items-center gap-4 min-w-0">
         <div class="flex items-center gap-2 text-lg font-semibold" style="color: rgb(var(--shell-sidebar));">

@@ -446,9 +446,12 @@ export function buildSalesMetricsWorkbook(
   report: SalesMetricsReport,
   businessName: string,
   range: { from: Date; to: Date },
+  options?: { currencySymbol?: string; currencyCode?: string },
 ): SpreadsheetWorkbook {
   const fromStr = range.from.toISOString().slice(0, 10);
   const toStr = range.to.toISOString().slice(0, 10);
+  const currencySymbol = options?.currencySymbol || '$';
+  const currencyCode = options?.currencyCode || 'USD';
 
   // ── Sheet 1: Executive Performance ───────────────────────────────────────────
   const execRows: SpreadsheetWorkbook['sheets'][0]['rows'] = [
@@ -463,7 +466,7 @@ export function buildSalesMetricsWorkbook(
     [{ value: 'Current Daily Run-Rate', bold: true }, { value: report.forecasts.dailyRunRate, format: 'currency' }],
     [{ value: '7-Day Moving Average', bold: true }, { value: report.forecasts.movingAverage7d, format: 'currency' }],
     [{ value: '3-Day Moving Average', bold: true }, { value: report.forecasts.movingAverage3d, format: 'currency' }],
-    [{ value: 'Sales Trend Trajectory', bold: true }, { value: `${report.forecasts.trendStatus.toUpperCase()} (${report.forecasts.dailyTrendSlope > 0 ? '+' : ''}${report.forecasts.dailyTrendSlope} $/day)` }],
+    [{ value: 'Sales Trend Trajectory', bold: true }, { value: `${report.forecasts.trendStatus.toUpperCase()} (${report.forecasts.dailyTrendSlope > 0 ? '+' : ''}${report.forecasts.dailyTrendSlope} ${currencySymbol}/day)` }],
     [{ value: null }, { value: null }],
     [{ value: 'PREDICTIVE FORECASTS', format: 'header' }, { value: 'PROJECTED REVENUE', format: 'header' }],
     [{ value: 'Next 7 Days Projected Demand', bold: true }, { value: report.forecasts.projectedNext7Days, format: 'currency' }],
@@ -511,13 +514,13 @@ export function buildSalesMetricsWorkbook(
     [
       { value: 'Product Name', format: 'header' },
       { value: 'Units Sold', format: 'header' },
-      { value: 'Total Sales ($)', format: 'header' },
+      { value: `Total Sales (${currencySymbol})`, format: 'header' },
       { value: 'Avg Unit Price', format: 'header' },
       { value: 'Sales Share (%)', format: 'header' },
       { value: 'Velocity (Units/Day)', format: 'header' },
       { value: 'Next 7d Demand', format: 'header' },
       { value: 'Next 30d Demand', format: 'header' },
-      { value: 'Next 30d Forecast ($)', format: 'header' },
+      { value: `Next 30d Forecast (${currencySymbol})`, format: 'header' },
     ],
   ];
 
@@ -541,7 +544,7 @@ export function buildSalesMetricsWorkbook(
       { value: 'Timestamp', format: 'header' },
       { value: 'Receipt / Order ID', format: 'header' },
       { value: 'Items Summary', format: 'header' },
-      { value: 'Total ($)', format: 'header' },
+      { value: `Total (${currencySymbol})`, format: 'header' },
       { value: 'Payment Method', format: 'header' },
       { value: 'Payment Status', format: 'header' },
       { value: 'Staff', format: 'header' },
@@ -566,6 +569,8 @@ export function buildSalesMetricsWorkbook(
     title: `${businessName} Sales & Metrics`,
     author: 'Kogane',
     createdAt: new Date(),
+    currencySymbol,
+    currencyCode,
     sheets: [
       {
         name: 'Executive Performance',

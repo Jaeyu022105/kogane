@@ -3,18 +3,21 @@ import { hashPin, verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { getBusinessForAdmin } from '~/server/utils/business';
 import { applyBrandingToLayout, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
+import { normalizeLayout } from '~/lib/uiTypes';
+import { normalizePermissions } from '~/lib/permissions';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const terminalId = event.context.params?.id;
 
-  const body = (await readBody<{
+  const parsed = await readBody<{
     businessId?:   string;
     displayName?:  string;
     pin?:          string | null;
     brandConfig?:  Partial<WorkspaceBrandConfig> | null;
     stationConfig?: Record<string, unknown> | null;
-  }>(event)) ?? {};
+  }>(event).catch(() => null);
+  const body = (parsed && Object.keys(parsed).length > 0) ? parsed : (event.context?.body ?? (event as any)._body ?? {});
 
   if (!terminalId || !body.businessId) {
     return { success: false, error: 'Missing required fields', terminal: null };
@@ -107,14 +110,38 @@ export default defineEventHandler(async (event) => {
     return { success: false, error, terminal: null };
   }
 
-  const refreshed = await db.queryOne(
+  const refreshed = await db.queryOne<{
+    id: string;
+    business_id: string;
+    display_name: string;
+    role: string;
+    pin_code: string | null;
+    permissions: string | null;
+    ui_layout: string | null;
+    is_public: number | boolean | null;
+    public_slug: string | null;
+    created_at: string;
+  }>(
     'SELECT id, business_id, display_name, role, pin_code, permissions, ui_layout, is_public, public_slug, created_at FROM terminals WHERE id = ?',
     [terminalId],
   );
 
+  let parsedLayout = null;
+  try {
+    parsedLayout = refreshed.data?.ui_layout
+      ? (typeof refreshed.data.ui_layout === 'string' ? JSON.parse(refreshed.data.ui_layout) : refreshed.data.ui_layout)
+      : null;
+  } catch {
+    parsedLayout = null;
+  }
+
   return {
     success:  true,
     error:    null,
-    terminal: refreshed.data ?? null,
+    terminal: refreshed.data ? {
+      ...refreshed.data,
+      permissions: normalizePermissions(refreshed.data.permissions, refreshed.data.role),
+      ui_layout: normalizeLayout(parsedLayout),
+    } : null,
   };
 });

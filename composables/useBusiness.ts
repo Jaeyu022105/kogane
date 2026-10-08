@@ -1,10 +1,12 @@
 /**
  * useBusiness — fetches and caches the admin's business profile.
- * Provides theme injection into CSS variables so every page reflects the brand.
+ * Provides theme injection into CSS variables so every page reflects the brand,
+ * and maintains reactive country and currency settings platform-wide.
  */
 
 import { ref, watch } from 'vue';
 import { useAuth } from './useAuth';
+import { findCountry, type CountryOption } from '~/lib/currency';
 
 export interface ColorPalette {
   primary: string;
@@ -12,6 +14,9 @@ export interface ColorPalette {
   accent?: string;
   background?: string;
   languagePreference?: string;
+  country?: string;
+  currency?: string;
+  currencySymbol?: string;
   uiStyle?: string;
   onboardingPreset?: string | null;
   layoutBundle?: 'aurora-service' | 'ink-studio' | 'paper-ledger';
@@ -25,6 +30,9 @@ export interface Business {
   name: string;
   logoUrl: string | null;
   colorPalette: ColorPalette;
+  country: string;
+  currency: string;
+  currencySymbol: string;
   schemaName: string;
   createdAt: string;
 }
@@ -47,6 +55,7 @@ function hexToRgb(hex: string): string {
 
 /** Inject CSS variables from the business color palette into :root. */
 function applyTheme(palette: ColorPalette) {
+  if (typeof document === 'undefined') return;
   const root = document.documentElement;
   if (palette.primary) root.style.setProperty('--color-primary', hexToRgb(palette.primary));
   if (palette.secondary) root.style.setProperty('--color-secondary', hexToRgb(palette.secondary));
@@ -83,11 +92,19 @@ export function useBusiness() {
         palette = {} as ColorPalette;
       }
 
+      const resolvedCountry = findCountry(raw.country || palette.country || 'US');
+      const country = raw.country || palette.country || resolvedCountry.code;
+      const currency = raw.currency || palette.currency || resolvedCountry.currency;
+      const currencySymbol = raw.currency_symbol || palette.currencySymbol || resolvedCountry.symbol;
+
       business.value = {
         id: raw.id,
         name: raw.name,
         logoUrl: raw.logo_url ?? null,
         colorPalette: palette,
+        country,
+        currency,
+        currencySymbol,
         schemaName: raw.schema_name,
         createdAt: raw.created_at,
       };
@@ -105,11 +122,20 @@ export function useBusiness() {
     }
   }
 
-  async function updateTheme(palette: ColorPalette, logoUrl?: string) {
+  async function updateTheme(
+    palette: ColorPalette,
+    logoUrl?: string,
+    countryData?: { country?: string; currency?: string; currencySymbol?: string },
+  ) {
+    const body: Record<string, any> = { colorPalette: palette, logoUrl };
+    if (countryData?.country) body.country = countryData.country;
+    if (countryData?.currency) body.currency = countryData.currency;
+    if (countryData?.currencySymbol) body.currencySymbol = countryData.currencySymbol;
+
     const res = await $fetch<{ success?: boolean; error?: string | null }>('/api/businesses/theme', {
       method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: { colorPalette: palette, logoUrl },
+      body,
     });
 
     if (res.error || res.success === false) {
@@ -118,9 +144,44 @@ export function useBusiness() {
 
     if (business.value) {
       business.value.colorPalette = palette;
+      if (countryData?.country) business.value.country = countryData.country;
+      if (countryData?.currency) business.value.currency = countryData.currency;
+      if (countryData?.currencySymbol) business.value.currencySymbol = countryData.currencySymbol;
       applyTheme(palette);
     }
   }
 
-  return { business, loading, error, fetchBusiness, updateTheme };
+  async function updateCountry(countryCode: string) {
+    const resolved = findCountry(countryCode);
+    const updatedPalette: ColorPalette = {
+      ...(business.value?.colorPalette ?? { primary: '#3b82f6' }),
+      country: resolved.code,
+      currency: resolved.currency,
+      currencySymbol: resolved.symbol,
+    };
+
+    const res = await $fetch<{ success?: boolean; error?: string | null }>('/api/businesses/theme', {
+      method: 'PATCH',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: {
+        country: resolved.code,
+        currency: resolved.currency,
+        currencySymbol: resolved.symbol,
+        colorPalette: updatedPalette,
+      },
+    });
+
+    if (res.error || res.success === false) {
+      throw new Error(res.error ?? 'Unable to update business country');
+    }
+
+    if (business.value) {
+      business.value.country = resolved.code;
+      business.value.currency = resolved.currency;
+      business.value.currencySymbol = resolved.symbol;
+      business.value.colorPalette = updatedPalette;
+    }
+  }
+
+  return { business, loading, error, fetchBusiness, updateTheme, updateCountry };
 }

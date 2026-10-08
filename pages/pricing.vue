@@ -1,431 +1,363 @@
 <script setup lang="ts">
-const { t } = useLocale();
+import { Monitor, ShieldCheck, WifiOff, Users, ArrowRight, CheckCircle2 } from 'lucide-vue-next';
+
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
-  title:       `${t('pricing_hero_overline')} - Kogane`,
-  description: t('pricing_hero_sub'),
+  title: 'Direct Station Access - Kogane',
+  description: 'Direct local access for on-premise workstation terminals. No recurring SaaS subscriptions or cloud billing lockouts.',
 });
 
-const plans = computed(() => [
-  {
-    name:     t('plan_starter_name'),
-    price:    t('plan_starter_price'),
-    period:   t('plan_starter_period'),
-    tagline:  t('plan_starter_tagline'),
-    cta:      t('plan_starter_cta'),
-    ctaStyle: 'ghost',
-    popular:  false,
-    features: [
-      t('plan_starter_feat1'),
-      t('plan_starter_feat2'),
-      t('plan_starter_feat3'),
-      t('plan_starter_feat4'),
-    ],
-  },
-  {
-    name:     t('plan_flexible_name'),
-    price:    t('plan_flexible_price'),
-    period:   t('plan_flexible_period'),
-    tagline:  t('plan_flexible_tagline'),
-    cta:      t('plan_flexible_cta'),
-    ctaStyle: 'primary',
-    popular:  true,
-    features: [
-      t('plan_flexible_feat1'),
-      t('plan_flexible_feat2'),
-      t('plan_flexible_feat3'),
-      t('plan_flexible_feat4'),
-      t('plan_flexible_feat5'),
-    ],
-  },
-]);
+const { isLoggedIn } = useAuth();
 
-const faqs = computed(() => [
+const workstationModels = [
   {
-    q: t('faq_q1'),
-    a: t('faq_a1'),
+    name: 'Cashier Register',
+    badge: 'Front Counter',
+    description: 'Fast counter sales, order entry, custom ticket totals, receipt generation, and payment processing.',
+    details: ['Table & queue management', 'Payment method logging', 'Instant receipt printing'],
   },
   {
-    q: t('faq_q2'),
-    a: t('faq_a2'),
+    name: 'Inventory Manager',
+    badge: 'Stock Operations',
+    description: 'Stock level tracking, catalog synchronisation, inbound supply shipments, and receiving records.',
+    details: ['Inbound stock logs', 'Reorder threshold alerts', 'Direct inventory ledger'],
   },
   {
-    q: t('faq_q3'),
-    a: t('faq_a3'),
+    name: 'Kitchen Display',
+    badge: 'Prep Line',
+    description: 'Live order board and ticket queues for kitchen and prep staff to coordinate food & drink preparation.',
+    details: ['Real-time status updates', 'Order fulfill actions', 'Dedicated pass-through display'],
   },
   {
-    q: t('faq_q4'),
-    a: t('faq_a4'),
+    name: 'Catalog Registrar',
+    badge: 'Product Desk',
+    description: 'Dedicated catalog maintenance terminal for item descriptions, pricing, and category setup.',
+    details: ['Item catalog registry', 'Price configuration', 'Category categorization'],
   },
   {
-    q: t('faq_q5'),
-    a: t('faq_a5'),
+    name: 'Reports & Analytics',
+    badge: 'Back Office',
+    description: 'Full business sales ledgers, compliance records, tax audit views, and operational performance trends.',
+    details: ['Audit logs & daily ledger', 'Sales forecast schedules', 'Tax compliance exports'],
   },
-  {
-    q: t('faq_q6'),
-    a: t('faq_a6'),
-  },
-]);
-
-const openFaq = ref<number | null>(null);
-const toggle = (i: number) => { openFaq.value = openFaq.value === i ? null : i; };
+];
 </script>
 
 <template>
-  <!-- —— Hero ——————————————————————————————————————————————— -->
-  <section class="pricing-hero">
-    <div class="m-inner pricing-hero-inner">
-      <p class="m-overline">{{ t('pricing_hero_overline') }}</p>
-      <h1 class="m-heading-lg" v-html="t('pricing_hero_heading')"></h1>
-      <p class="m-sub" style="margin: 0 auto;">
-        {{ t('pricing_hero_sub') }}
-      </p>
-    </div>
-  </section>
+  <div class="pricing-page">
+    <!-- Hero Section -->
+    <section class="pricing-hero">
+      <div class="m-inner pricing-hero-inner">
+        <p class="m-overline">Offline Operations & Direct Access</p>
+        <h1 class="m-heading-lg">
+          No SaaS Subscriptions.<br>
+          <em>Direct Local Station Access.</em>
+        </h1>
+        <p class="m-sub" style="margin: 0 auto; max-width: 680px;">
+          Kogane is built for physical, on-site venues. Pay directly offline for your location setup and access your local workstations without recurring cloud paywalls or billing lockouts.
+        </p>
 
-  <!-- —— Plans ——————————————————————————————————————————————— -->
-  <section class="section-plans">
-    <div class="m-inner plans-inner">
-      <div class="plans-grid">
-        <div
-          v-for="plan in plans"
-          :key="plan.name"
-          class="plan-card"
-          :class="{ 'plan-card--popular': plan.popular }"
-        >
-          <div v-if="plan.popular" class="popular-badge">{{ t('plan_popular') }}</div>
-
-          <p class="plan-name">{{ plan.name }}</p>
-          <div class="plan-price-row">
-            <span class="plan-price">{{ plan.price }}</span>
-            <span class="plan-period">{{ plan.period }}</span>
-          </div>
-          <p class="plan-tagline">{{ plan.tagline }}</p>
-
-          <NuxtLink
-            to="/login"
-            class="plan-cta"
-            :class="`plan-cta--${plan.ctaStyle}`"
-          >
-            {{ plan.cta }}
+        <div class="hero-cta-wrap">
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">
+            Open Dashboard <ArrowRight class="w-4 h-4 ml-1" />
           </NuxtLink>
-
-          <div class="plan-divider" />
-
-          <ul class="plan-features">
-            <li v-for="feat in plan.features" :key="feat">
-              <!-- check icon -->
-              <span class="feat-check">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </span>
-              {{ feat }}
-            </li>
-          </ul>
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">
+            Set Up Your Workspace <ArrowRight class="w-4 h-4 ml-1" />
+          </NuxtLink>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- —— Note banner —————————————————————————————————————————— -->
-  <section class="section-note">
-    <div class="m-inner">
-      <div class="note-inner">
-        <!-- info icon -->
-        <span class="note-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" x2="12.01" y1="16" y2="16" />
-          </svg>
-        </span>
-        <p>{{ t('pricing_note') }}</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- —— FAQ ————————————————————————————————————————————————— -->
-  <section class="section-faq">
-    <div class="faq-inner">
-      <div class="m-label-block">
-        <p class="m-overline">{{ t('pricing_faq_overline') }}</p>
-        <h2 class="m-heading">{{ t('pricing_faq_heading') }}</h2>
-      </div>
-
-      <div class="faq-list">
-        <div
-          v-for="(faq, i) in faqs"
-          :key="i"
-          class="faq-item"
-          :class="{ open: openFaq === i }"
-          role="button"
-          tabindex="0"
-          :aria-expanded="openFaq === i"
-          @click="toggle(i)"
-          @keydown.enter.prevent="toggle(i)"
-          @keydown.space.prevent="toggle(i)"
-        >
-          <div class="faq-question">
-            <span>{{ faq.q }}</span>
-            <!-- plus / minus icon -->
-            <span class="faq-arrow">
-              <svg v-if="openFaq !== i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </span>
+    <!-- Core Pillars -->
+    <section class="section-pillars">
+      <div class="m-inner">
+        <div class="pillars-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap">
+              <ShieldCheck class="w-6 h-6 text-[#FF5776]" />
+            </div>
+            <h3 class="pillar-title">In-Person Offline Payment</h3>
+            <p class="pillar-text">
+              Direct offline payment handles your venue setup. No credit card recurring subscriptions, SaaS tiers, or unexpected surprise billing.
+            </p>
           </div>
-          <div v-if="openFaq === i" class="faq-answer">{{ faq.a }}</div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap">
+              <WifiOff class="w-6 h-6 text-[#FF5776]" />
+            </div>
+            <h3 class="pillar-title">100% Local LAN Availability</h3>
+            <p class="pillar-text">
+              All terminals communicate seamlessly across your local premises network. If external internet drops, your business operations and cash registers never stop.
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap">
+              <Users class="w-6 h-6 text-[#FF5776]" />
+            </div>
+            <h3 class="pillar-title">Unlimited Workstations</h3>
+            <p class="pillar-text">
+              Equip your front counters, kitchen passes, back stockrooms, and audit desks. No artificial per-terminal license caps or seat paywalls.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- —— CTA ————————————————————————————————————————————————— -->
-  <section class="m-cta-strip">
-    <div class="m-cta-inner">
-      <h2 class="m-cta-heading" v-html="t('pricing_cta_heading')"></h2>
-      <p class="m-cta-sub">{{ t('pricing_cta_sub') }}</p>
-      <div class="m-cta-btns">
-        <NuxtLink to="/login" class="m-btn-primary ribbon">{{ t('pricing_cta_btn1') }}</NuxtLink>
-        <NuxtLink to="/features" class="m-btn-ghost">{{ t('pricing_cta_btn2') }}</NuxtLink>
+    <!-- Workstations Section -->
+    <section class="section-workstations">
+      <div class="m-inner">
+        <div class="section-header text-center">
+          <p class="m-overline">Included Workstations</p>
+          <h2 class="m-heading-md">Equip Your Entire Floor</h2>
+          <p class="m-sub" style="margin: 0 auto; max-width: 580px;">
+            Every standard on-site installation includes full configuration for all 5 official workstation roles.
+          </p>
+        </div>
+
+        <div class="workstations-grid">
+          <div
+            v-for="station in workstationModels"
+            :key="station.name"
+            class="station-card"
+          >
+            <div class="station-header">
+              <div class="station-icon">
+                <Monitor class="w-5 h-5 text-[#68293A]" />
+              </div>
+              <span class="station-badge">{{ station.badge }}</span>
+            </div>
+            <h3 class="station-name">{{ station.name }}</h3>
+            <p class="station-desc">{{ station.description }}</p>
+            <ul class="station-details">
+              <li v-for="d in station.details" :key="d" class="station-detail-item">
+                <CheckCircle2 class="w-4 h-4 text-[#FF5776] shrink-0" />
+                <span>{{ d }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="m-cta-strip">
+      <div class="m-cta-inner">
+        <h2 class="m-cta-heading">Ready to configure your venue?</h2>
+        <p class="m-cta-sub">
+          Launch your local workspace, configure terminals, and share LAN links with staff instantly.
+        </p>
+        <div class="m-cta-btns">
+          <NuxtLink v-if="isLoggedIn" to="/dashboard/terminals" class="m-btn-primary ribbon">
+            Manage Workstations
+          </NuxtLink>
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">
+            Get Started Now
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+  </div>
 </template>
 
 <style scoped>
-/* —— Hero ——————————————————————————————————————————————— */
+.pricing-page {
+  padding-bottom: 4rem;
+}
+
 .pricing-hero {
-  padding: 5.5rem 0 4rem;
+  padding: 6rem 0 4rem;
   text-align: center;
-  background: radial-gradient(ellipse 65% 55% at 50% 0%, rgba(255, 87, 118, 0.08) 0%, transparent 70%);
+  background: radial-gradient(ellipse at 50% 20%, rgba(255, 87, 118, 0.08) 0%, transparent 70%);
 }
 
-.pricing-hero-inner { max-width: 640px; }
-
-/* —— Plans —————————————————————————————————————————————— */
-.section-plans { padding: 3rem 0 5rem; }
-.plans-inner { max-width: 1060px; }
-
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.5rem;
-  align-items: start;
-}
-
-.plan-card {
-  position: relative;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  background: #FFFFFF;
-  border: 1px solid rgba(104, 41, 58, 0.1);
-  box-shadow: 0 2px 12px rgba(104, 41, 58, 0.06);
+.hero-cta-wrap {
+  margin-top: 2.5rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  justify-content: center;
 }
-.plan-card:hover {
+
+.section-pillars {
+  padding: 3rem 0 4rem;
+}
+
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.pillar-card {
+  padding: 2rem;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(61, 24, 32, 0.08);
+  box-shadow: 0 4px 16px rgba(61, 24, 32, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pillar-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(104, 41, 58, 0.1);
+  box-shadow: 0 8px 24px rgba(61, 24, 32, 0.06);
 }
 
-.plan-card--popular {
-  border-color: #68293A;
-  box-shadow: 0 8px 32px rgba(104, 41, 58, 0.14);
+.pillar-icon-wrap {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 87, 118, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
 }
 
-.popular-badge {
-  position: absolute;
-  top: -13px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.3rem 1rem;
-  background: #68293A;
-  color: #F6E6D7;
-  border-radius: 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
+.pillar-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem;
+  color: #68293A;
+  margin-bottom: 0.5rem;
 }
 
-.plan-name {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(104, 41, 58, 0.45);
+.pillar-text {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: rgba(61, 24, 32, 0.65);
   margin: 0;
 }
 
-.plan-price-row { display: flex; align-items: baseline; gap: 0.4rem; }
-.plan-price {
-  font-family: 'DM Serif Display', serif;
-  font-size: 2.75rem;
-  color: #68293A;
-  line-height: 1;
+.section-workstations {
+  padding: 4rem 0;
 }
-.plan-period { font-size: 0.85rem; color: rgba(104, 41, 58, 0.45); }
 
-.plan-tagline { font-size: 0.875rem; color: rgba(104, 41, 58, 0.6); line-height: 1.55; margin: 0; }
+.section-header {
+  margin-bottom: 3rem;
+}
 
-.plan-cta {
-  display: block;
-  text-align: center;
-  padding: 0.7rem 1.25rem;
-  border-radius: 0.5rem;
+.workstations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.station-card {
+  padding: 1.75rem;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(61, 24, 32, 0.08);
+  box-shadow: 0 4px 12px rgba(61, 24, 32, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.station-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.station-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  background: rgba(104, 41, 58, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.station-badge {
+  font-size: 0.72rem;
   font-weight: 700;
-  font-size: 0.9rem;
-  text-decoration: none;
-  transition: opacity 0.15s, transform 0.1s, border-color 0.15s, background 0.15s;
-  margin-top: 0.25rem;
-}
-
-.plan-cta--primary {
-  background: #68293A;
-  color: #F6E6D7;
-  box-shadow: 0 4px 14px rgba(104, 41, 58, 0.22);
-}
-.plan-cta--primary:hover  { opacity: 0.88; }
-.plan-cta--primary:active { transform: scale(0.97); }
-
-.plan-cta--ghost {
-  border: 1.5px solid rgba(104, 41, 58, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 99px;
+  background: rgba(104, 41, 58, 0.06);
   color: #68293A;
 }
-.plan-cta--ghost:hover {
-  border-color: rgba(104, 41, 58, 0.45);
-  background: rgba(104, 41, 58, 0.03);
+
+.station-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem;
+  color: #68293A;
+  margin: 0 0 0.5rem;
 }
 
-.plan-divider {
-  height: 1px;
-  background: rgba(104, 41, 58, 0.07);
-  margin: 0.5rem 0;
+.station-desc {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgba(61, 24, 32, 0.6);
+  margin: 0 0 1.25rem;
+  flex-grow: 1;
 }
 
-.plan-features {
+.station-details {
   list-style: none;
   padding: 0;
   margin: 0;
+  border-top: 1px solid rgba(61, 24, 32, 0.06);
+  padding-top: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-}
-
-.plan-features li {
-  display: flex;
-  align-items: flex-start;
   gap: 0.5rem;
-  font-size: 0.875rem;
-  color: rgba(104, 41, 58, 0.72);
-  line-height: 1.45;
 }
 
-.feat-check {
+.station-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.84rem;
+  color: rgba(61, 24, 32, 0.75);
+}
+
+.m-cta-strip {
+  background: linear-gradient(135deg, #68293A 0%, #4A1A27 100%);
+  border-radius: 1.5rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #ffffff;
+  margin-top: 4rem;
+}
+
+.m-cta-heading {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.m-cta-sub {
+  font-size: 1.05rem;
+  opacity: 0.85;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+.m-cta-btns {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.m-btn-primary {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: rgba(104, 41, 58, 0.08);
-  color: #68293A;
-  margin-top: 0.15rem;
-}
-.feat-check svg { width: 9px; height: 9px; }
-
-/* —— Note banner ———————————————————————————————————————— */
-.section-note { padding: 0 0 4rem; }
-
-.note-inner {
-  max-width: 760px;
-  margin: 0 auto;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  padding: 1.25rem 1.5rem;
-  background: rgba(255, 87, 118, 0.06);
-  border: 1px solid rgba(255, 87, 118, 0.18);
+  padding: 0.85rem 1.75rem;
   border-radius: 0.75rem;
-  font-size: 0.9rem;
-  color: rgba(104, 41, 58, 0.7);
-  line-height: 1.6;
-}
-
-.note-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.4rem;
-  height: 1.4rem;
-  color: #FF5776;
-  margin-top: 0.1rem;
-}
-.note-icon svg { width: 1.1rem; height: 1.1rem; }
-
-.note-inner p { margin: 0; }
-
-/* —— FAQ ———————————————————————————————————————————————— */
-.section-faq { padding: 5rem 2rem; background: #FFFFFF; }
-.faq-inner { max-width: 760px; margin: 0 auto; }
-
-.faq-list { display: flex; flex-direction: column; gap: 0; }
-
-.faq-item {
-  border-bottom: 1px solid rgba(104, 41, 58, 0.08);
-  cursor: pointer;
-  transition: background 0.15s;
-  border-radius: 0.5rem;
-  padding: 0 0.5rem;
-}
-.faq-item:first-child { border-top: 1px solid rgba(104, 41, 58, 0.08); }
-.faq-item:hover { background: rgba(104, 41, 58, 0.02); }
-
-.faq-question {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.1rem 0;
   font-weight: 600;
   font-size: 0.95rem;
-  color: #68293A;
-  gap: 1rem;
-  user-select: none;
+  text-decoration: none;
+  background: #FF5776;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(255, 87, 118, 0.35);
+  transition: all 0.2s ease;
 }
 
-.faq-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.2rem;
-  height: 1.2rem;
-  color: #FF5776;
-  transition: transform 0.15s;
-}
-.faq-arrow svg { width: 1rem; height: 1rem; }
-
-.faq-answer {
-  padding: 0 0 1.1rem;
-  font-size: 0.9rem;
-  color: rgba(104, 41, 58, 0.65);
-  line-height: 1.7;
-}
-
-/* —— Responsive ———————————————————————————————————————— */
-@media (max-width: 860px) {
-  .plans-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+.m-btn-primary:hover {
+  background: #fa4264;
+  transform: translateY(-1px);
 }
 </style>

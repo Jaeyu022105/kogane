@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ScanFieldElementDef } from '~/lib/uiTypes';
+import { isLightColor } from '~/lib/workspaceBranding';
 
 /**
  * ScanFieldEl — hardware barcode/QR scanner input.
@@ -18,6 +19,11 @@ const displayValue = ref('');
 let lastKeyTime = 0;
 let burstBuffer = '';
 let burstTimer: ReturnType<typeof setTimeout> | null = null;
+
+const isLight = computed(() => isLightColor(props.element.backgroundColor ?? 'rgba(255,255,255,0.05)'));
+const effectiveBg = computed(() => props.element.backgroundColor ?? (isLight.value ? '#ffffff' : 'rgba(255,255,255,0.05)'));
+const effectiveText = computed(() => props.element.textColor ?? (isLight.value ? '#1c1917' : '#ffffff'));
+const effectiveBorder = computed(() => props.element.borderColor ?? (isLight.value ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'));
 
 function commitValue(value: string) {
   const trimmed = value.trim();
@@ -84,11 +90,14 @@ onUnmounted(() => {
       :placeholder="element.placeholder ?? 'Scan barcode or QR code…'"
       type="text"
       autocomplete="off"
-      class="w-full h-full px-3 text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-primary"
+      :class="[
+        'w-full h-full px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary',
+        isLight ? 'placeholder-neutral-400' : 'placeholder-white/30',
+      ]"
       :style="{
-        background: element.backgroundColor ?? 'rgba(255,255,255,0.05)',
-        color: element.textColor ?? '#ffffff',
-        border: `1px solid ${element.borderColor ?? 'rgba(255,255,255,0.15)'}`,
+        background: effectiveBg,
+        color: effectiveText,
+        border: `1px solid ${effectiveBorder}`,
         borderRadius: `${element.radius ?? 12}px`,
       }"
       :disabled="builderMode"
@@ -98,7 +107,7 @@ onUnmounted(() => {
     />
     <div
       class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-      :style="{ color: element.textColor ? `${element.textColor}60` : 'rgba(255,255,255,0.25)' }"
+      :style="{ color: isLight ? 'rgba(0,0,0,0.3)' : (element.textColor ? `${element.textColor}60` : 'rgba(255,255,255,0.25)') }"
     >
       <!-- barcode icon -->
       <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

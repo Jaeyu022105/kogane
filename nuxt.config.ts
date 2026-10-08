@@ -2,9 +2,21 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: process.env.NODE_ENV !== 'production' },
+  devServer: {
+    host: process.env.HOST || '0.0.0.0',
+    port: Number(process.env.PORT) || 3000,
+  },
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover' },
+        { name: 'theme-color', content: '#161116' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+      ],
     },
   },
   experimental: {

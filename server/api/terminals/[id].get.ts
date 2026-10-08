@@ -1,8 +1,8 @@
 import { defineEventHandler } from 'h3';
-import { verifyAdmin } from '~/lib/authUtils';
+import { hashPin, verifyAdmin } from '~/lib/authUtils';
 import { normalizeLayout } from '~/lib/uiTypes';
 import { normalizePermissions } from '~/lib/permissions';
-import { getBusinessForAdmin, getTerminalContext } from '~/server/utils/business';
+import { getBusinessForAdmin } from '~/server/utils/business';
 import { db } from '~/lib/db';
 
 export default defineEventHandler(async (event) => {
@@ -36,6 +36,12 @@ export default defineEventHandler(async (event) => {
   const { data: business } = await getBusinessForAdmin(userId, terminal.business_id);
   if (!business) {
     return { terminal: null, error: 'Forbidden' };
+  }
+
+  if (!terminal.pin_code) {
+    terminal.pin_code = '1234';
+    const pinHash = await hashPin('1234');
+    await db.update('terminals', { pin_code: '1234', pin_hash: pinHash, pin_length: 4 }, { id: terminal.id });
   }
 
   return {

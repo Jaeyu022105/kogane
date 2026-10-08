@@ -4,11 +4,13 @@
   "type": "module",
   "scripts": {
     "build": "bun --bun nuxt build",
-    "dev": "bun --bun nuxt dev",
+    "dev": "bun --bun nuxt dev --host 0.0.0.0 --port 3000",
     "dev:lan": "bun --bun nuxt dev --host 0.0.0.0 --port 3000",
     "generate": "bun --bun nuxt generate",
-    "preview": "bun --bun nuxt preview",
-    "preview:lan": "bun --bun nuxt preview --host 0.0.0.0 --port 3000",
+    "preview": "bun --bun nuxt preview --host 0.0.0.0 --port 3000",
+    "preview:lan": "bun run .output/server/index.mjs",
+    "tunnel": "bunx untun tunnel http://localhost:3000 --qr",
+    "allow-firewall": "cmd /c scripts\\allow-lan-port-3000.bat",
     "test": "bun test",
     "postinstall": "nuxt prepare"
   },

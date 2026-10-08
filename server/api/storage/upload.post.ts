@@ -44,26 +44,34 @@ export default defineEventHandler(async (event) => {
   const safeLogicalBucket = sanitizeStoragePath(logicalBucket);
   const safePath = sanitizeStoragePath(rawPath);
 
-  let actorType: 'admin' | 'inpoint' = 'admin';
+  let actorType: 'admin' | 'inpoint' | 'signup' = 'admin';
   let actorName = 'Admin';
-  let businessId: string;
+  let businessId: string | null = null;
 
   try {
     const { userId } = await verifyAdmin(event);
     const business = await getBusinessForAdminUser(userId);
-    if (!business.data) {
-      return { url: null, error: 'Business not found' };
+    if (business.data) {
+      businessId = business.data.id;
     }
-    businessId = business.data.id;
   } catch {
-    const session = await verifyTerminalSession(event);
-    actorType = 'inpoint';
-    actorName = session.displayName;
-    businessId = session.businessId;
+    try {
+      const session = await verifyTerminalSession(event);
+      actorType = 'inpoint';
+      actorName = session.displayName;
+      businessId = session.businessId;
+    } catch {
+      // Unauthenticated uploads are only allowed for images (e.g. signup avatars)
+      if (!IMAGE_TYPES.has(contentType)) {
+        return { url: null, error: 'Authentication required for this file type' };
+      }
+      actorType = 'signup';
+      actorName = 'Guest';
+    }
   }
 
   const storage = useStorage();
-  const physicalBucket = `biz-${businessId}`;
+  const physicalBucket = businessId ? `biz-${businessId}` : 'public';
   const finalPath = `${safeLogicalBucket}/${safePath}`;
   const url = await storage.upload(physicalBucket, finalPath, {
     data: filePart.data,
@@ -71,20 +79,26 @@ export default defineEventHandler(async (event) => {
     upsert: true,
   });
 
-  await writeAuditLog({
-    businessId,
-    actorType,
-    actorName,
-    actionType: 'upload',
-    metadata: {
-      bucket: safeLogicalBucket,
-      filename: filePart.filename,
-      path: finalPath,
-      url,
-      size: filePart.data.length,
-      contentType,
-    },
-  });
+  if (businessId) {
+    try {
+      await writeAuditLog({
+        businessId,
+        actorType,
+        actorName,
+        actionType: 'upload',
+        metadata: {
+          bucket: safeLogicalBucket,
+          filename: filePart.filename,
+          path: finalPath,
+          url,
+          size: filePart.data.length,
+          contentType,
+        },
+      });
+    } catch {
+      // Non-fatal if audit logging fails
+    }
+  }
 
   return { url, error: null };
 });

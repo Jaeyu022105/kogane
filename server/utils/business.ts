@@ -7,6 +7,10 @@ export interface BusinessRecord {
   name: string;
   schema_name: string;
   logo_url?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  currency_symbol?: string | null;
+  color_palette?: string | null;
 }
 
 export interface TerminalContext {
@@ -23,7 +27,7 @@ export const isDevDb = process.env.DEV_MODE === 'true';
 
 export async function getBusinessById(businessId: string) {
   return db.queryOne<BusinessRecord>(
-    'SELECT id, admin_user_id, name, schema_name, logo_url FROM businesses WHERE id = ?',
+    'SELECT id, admin_user_id, name, schema_name, logo_url, country, currency, currency_symbol, color_palette FROM businesses WHERE id = ?',
     [businessId],
   );
 }
@@ -39,7 +43,7 @@ export async function getBusinessForAdmin(userId: string, businessId: string) {
 
 export async function getBusinessForAdminUser(userId: string) {
   return db.queryOne<BusinessRecord>(
-    'SELECT id, admin_user_id, name, schema_name, logo_url FROM businesses WHERE admin_user_id = ?',
+    'SELECT id, admin_user_id, name, schema_name, logo_url, country, currency, currency_symbol, color_palette FROM businesses WHERE admin_user_id = ?',
     [userId],
   );
 }
@@ -87,10 +91,13 @@ export async function listBusinessTables(schemaName: string) {
 
 export function qualifyBusinessTable(schemaName: string, tableName: string): string {
   validateIdentifier(schemaName);
-  validateIdentifier(tableName);
+  const cleanTableName = isDevDb && tableName.startsWith(`${schemaName}_`)
+    ? tableName.slice(schemaName.length + 1)
+    : tableName;
+  validateIdentifier(cleanTableName);
   return isDevDb
-    ? `${schemaName}_${tableName}`
-    : `"${schemaName}"."${tableName}"`;
+    ? `${schemaName}_${cleanTableName}`
+    : `"${schemaName}"."${cleanTableName}"`;
 }
 
 export function sqlPlaceholder(index: number): string {

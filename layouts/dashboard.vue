@@ -43,22 +43,13 @@ onMounted(async () => {
   if (!business.value) openOnboarding();
 });
 
-const navItems = computed(() => {
-  const items = [
-    { label: t('nav_overview'),  icon: LayoutDashboard, to: '/dashboard' },
-    { label: t('nav_audit_log'), icon: Shield,          to: '/dashboard/audit' },
-    { label: t('nav_reports'),   icon: BarChart3,       to: '/dashboard/reports' },
-    { label: t('nav_settings'),  icon: Settings,        to: '/dashboard/settings' },
-  ];
-
-  if (isEnterprise.value) {
-    items.splice(1, 0,
-      { label: t('nav_terminals'), icon: Terminal, to: '/dashboard/terminals' },
-    );
-  }
-
-  return items;
-});
+const navItems = computed(() => [
+  { label: t('nav_overview'),  icon: LayoutDashboard, to: '/dashboard' },
+  { label: t('nav_terminals'), icon: Terminal,        to: '/dashboard/terminals' },
+  { label: t('nav_audit_log'), icon: Shield,          to: '/dashboard/audit' },
+  { label: t('nav_reports'),   icon: BarChart3,       to: '/dashboard/reports' },
+  { label: t('nav_settings'),  icon: Settings,        to: '/dashboard/settings' },
+]);
 
 function isActive(to: string) {
   return route.path === to || (to !== '/dashboard' && route.path.startsWith(to));
@@ -141,7 +132,14 @@ function handleOnboardingDone() {
       <!-- User footer -->
       <div class="px-4 py-4" style="border-top: 1px solid rgba(245,237,228,0.08);">
         <div class="flex items-center gap-2.5">
+          <img
+            v-if="session?.profilePicture"
+            :src="session.profilePicture"
+            class="w-6 h-6 rounded-full object-cover shrink-0 border border-[rgba(255,87,118,0.3)]"
+            alt="Profile photo"
+          />
           <div
+            v-else
             class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
             style="background: rgba(255,87,118,0.2); color: rgb(var(--shell-pink));"
           >

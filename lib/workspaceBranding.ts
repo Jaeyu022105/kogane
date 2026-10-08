@@ -19,6 +19,9 @@ export interface WorkspaceBrandConfig {
   accent?: string;
   background?: string;
   languagePreference?: string;
+  country?: string;
+  currency?: string;
+  currencySymbol?: string;
   uiStyle?: string;
   onboardingPreset?: string | null;
   layoutBundle?: LayoutBundleKey;
@@ -55,6 +58,37 @@ export const UI_LAYOUT_BUNDLES: WorkspaceUiBundle[] = [
 ];
 
 const DEFAULT_BRAND_PRIMARY = '#68293A';
+
+export function isLightColor(color?: string | null): boolean {
+  if (!color) return false;
+  const str = color.trim().toLowerCase();
+  if (str === 'white' || str === '#fff' || str === '#ffffff') return true;
+  if (str === 'transparent') return false;
+
+  const rgbMatch = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1], 10);
+    const g = parseInt(rgbMatch[2], 10);
+    const b = parseInt(rgbMatch[3], 10);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 135;
+  }
+
+  const hex = str.replace('#', '');
+  if (hex.length >= 6) {
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 135;
+  }
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 135;
+  }
+
+  return false;
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -118,7 +152,7 @@ export function normalizeWorkspaceBrandConfig(raw?: Partial<WorkspaceBrandConfig
   return {
     primary,
     secondary: normalizeHex(raw?.secondary, mixHex(primary, '#f5efe8', 0.68)),
-    accent: normalizeHex(raw?.accent, mixHex(primary, '#ff8ca6', 0.4)),
+    accent: normalizeHex(raw?.accent, bundle.swatches[2] ?? '#ff8ca6'),
     background: normalizeHex(raw?.background, bundle.backgroundBias),
     languagePreference: raw?.languagePreference ?? 'en',
     uiStyle: raw?.uiStyle ?? 'warm-minimal',
@@ -145,41 +179,57 @@ export function buildBusinessPalette(primary: string, bundleKey?: LayoutBundleKe
 export function buildLayoutTheme(config?: Partial<WorkspaceBrandConfig> | null): UiLayoutTheme {
   const resolved = normalizeWorkspaceBrandConfig(config);
   const bundle = pickBundle(resolved.layoutBundle);
-  const palette = buildBusinessPalette(resolved.primary, resolved.layoutBundle);
-  const frameBase = mixHex(palette.background, resolved.primary, 0.18);
-  const canvasBase = bundle.key === 'paper-ledger'
-    ? mixHex('#fff9f1', resolved.primary, 0.06)
-    : mixHex(frameBase, '#0b0d12', 0.24);
-  const panelBase = bundle.key === 'paper-ledger'
-    ? mixHex('#fffdf9', resolved.primary, 0.08)
-    : mixHex(frameBase, '#11131a', 0.12);
-  const panelText = bundle.key === 'paper-ledger' ? mixHex('#2d1d17', resolved.primary, 0.2) : '#f5ede4';
-  const mutedText = bundle.key === 'paper-ledger'
-    ? alphaHex(mixHex('#59392d', resolved.primary, 0.26), 0.74)
-    : alphaHex('#f5ede4', 0.68);
-  const border = bundle.key === 'paper-ledger'
-    ? alphaHex(mixHex('#b68a72', resolved.primary, 0.2), 0.34)
-    : alphaHex(resolved.secondary, 0.16);
+  const userAccent = config?.accent ? normalizeHex(config.accent, bundle.swatches[2]) : bundle.swatches[2];
 
+  if (bundle.key === 'paper-ledger') {
+    return {
+      frameBackground: '#ede4d8',
+      topBarBackground: 'rgba(255, 255, 255, 0.94)',
+      topBarText: '#261a14',
+      canvasBackground: '#faf6f0',
+      gridColor: 'rgba(81, 49, 31, 0.12)',
+      accentColor: userAccent || '#d97706',
+      panelBackground: '#ffffff',
+      panelHeaderBackground: '#f5ede2',
+      panelText: '#261a14',
+      panelMutedText: 'rgba(38, 26, 20, 0.68)',
+      panelBorder: 'rgba(81, 49, 31, 0.16)',
+      surfaceStyle: resolved.surfaceStyle,
+      particleEffect: resolved.particleEffect,
+    };
+  }
+
+  if (bundle.key === 'ink-studio') {
+    return {
+      frameBackground: '#0b111c',
+      topBarBackground: 'rgba(17, 28, 46, 0.92)',
+      topBarText: '#eef2ff',
+      canvasBackground: '#0d1524',
+      gridColor: 'rgba(238, 242, 255, 0.08)',
+      accentColor: userAccent || '#38bdf8',
+      panelBackground: '#111c2e',
+      panelHeaderBackground: 'rgba(238, 242, 255, 0.08)',
+      panelText: '#eef2ff',
+      panelMutedText: 'rgba(238, 242, 255, 0.65)',
+      panelBorder: 'rgba(238, 242, 255, 0.14)',
+      surfaceStyle: resolved.surfaceStyle,
+      particleEffect: resolved.particleEffect,
+    };
+  }
+
+  // Default: aurora-service
   return {
-    ...DEFAULT_LAYOUT_THEME,
-    frameBackground: frameBase,
-    topBarBackground: bundle.key === 'paper-ledger'
-      ? alphaHex(mixHex('#ffffff', resolved.primary, 0.05), 0.88)
-      : alphaHex(resolved.secondary, 0.08),
-    topBarText: panelText,
-    canvasBackground: canvasBase,
-    gridColor: bundle.key === 'paper-ledger'
-      ? alphaHex(mixHex('#a0674f', resolved.primary, 0.25), 0.22)
-      : alphaHex(resolved.secondary, 0.22),
-    accentColor: resolved.accent,
-    panelBackground: panelBase,
-    panelHeaderBackground: bundle.key === 'paper-ledger'
-      ? alphaHex(mixHex('#ffffff', resolved.primary, 0.06), 0.96)
-      : alphaHex(resolved.secondary, 0.08),
-    panelText,
-    panelMutedText: mutedText,
-    panelBorder: border,
+    frameBackground: '#130d11',
+    topBarBackground: 'rgba(255, 255, 255, 0.04)',
+    topBarText: '#f5ede4',
+    canvasBackground: '#111118',
+    gridColor: 'rgba(255, 255, 255, 0.08)',
+    accentColor: userAccent || '#ff8ca6',
+    panelBackground: '#161116',
+    panelHeaderBackground: 'rgba(255, 255, 255, 0.06)',
+    panelText: '#f5ede4',
+    panelMutedText: 'rgba(245, 237, 228, 0.68)',
+    panelBorder: 'rgba(255, 255, 255, 0.08)',
     surfaceStyle: resolved.surfaceStyle,
     particleEffect: resolved.particleEffect,
   };
@@ -195,14 +245,14 @@ function applyElementDefaults(element: ElementDef, theme: UiLayoutTheme, style: 
     case 'button':
       return {
         ...element,
-        backgroundColor: element.backgroundColor ?? theme.accentColor,
-        textColor: element.textColor ?? '#ffffff',
+        backgroundColor: theme.accentColor,
+        textColor: '#ffffff',
         radius: themedRadius(style, true),
       };
     case 'text':
       return {
         ...element,
-        color: element.fontSize >= 24 ? theme.panelText : element.color ?? theme.panelMutedText,
+        color: element.fontSize >= 22 ? theme.panelText : theme.panelMutedText,
       };
     case 'image':
       return {
@@ -212,51 +262,53 @@ function applyElementDefaults(element: ElementDef, theme: UiLayoutTheme, style: 
     case 'table-view':
       return {
         ...element,
-        backgroundColor: element.backgroundColor ?? theme.panelBackground,
-        headerBackgroundColor: element.headerBackgroundColor ?? theme.panelHeaderBackground,
-        textColor: element.textColor ?? theme.panelText,
+        backgroundColor: theme.panelBackground,
+        headerBackgroundColor: theme.panelHeaderBackground,
+        textColor: theme.panelText,
       };
     case 'input-field':
       return {
         ...element,
-        backgroundColor: element.backgroundColor ?? theme.panelHeaderBackground,
-        textColor: element.textColor ?? theme.panelText,
-        borderColor: element.borderColor ?? theme.panelBorder,
+        backgroundColor: theme.panelHeaderBackground,
+        textColor: theme.panelText,
+        borderColor: theme.panelBorder,
         radius: themedRadius(style, true),
       };
     case 'chart':
       return {
         ...element,
-        backgroundColor: element.backgroundColor ?? theme.panelBackground,
-        textColor: element.textColor ?? theme.panelText,
-        colorPalette: element.colorPalette?.length
-          ? element.colorPalette
-          : [theme.accentColor, mixHex(theme.accentColor, '#38bdf8', 0.42), mixHex(theme.accentColor, '#22c55e', 0.52), mixHex(theme.accentColor, '#f59e0b', 0.62)],
+        backgroundColor: theme.panelBackground,
+        textColor: theme.panelText,
+        colorPalette: theme.panelText === '#261a14'
+          ? ['#d97706', '#0284c7', '#16a34a', '#dc2626']
+          : theme.accentColor === '#38bdf8'
+            ? ['#38bdf8', '#818cf8', '#34d399', '#f472b6']
+            : [theme.accentColor, '#38bdf8', '#22c55e', '#f59e0b'],
       };
     case 'upload':
       return {
         ...element,
-        backgroundColor: element.backgroundColor ?? theme.panelHeaderBackground,
-        textColor: element.textColor ?? theme.panelText,
-        borderColor: element.borderColor ?? theme.panelBorder,
+        backgroundColor: theme.panelHeaderBackground,
+        textColor: theme.panelText,
+        borderColor: theme.panelBorder,
         radius: themedRadius(style),
       };
     case 'cart-widget':
       return {
         ...element,
-        backgroundColor: element.backgroundColor ?? theme.panelBackground,
-        panelColor: element.panelColor ?? theme.panelHeaderBackground,
-        textColor: element.textColor ?? theme.panelText,
-        accentColor: element.accentColor ?? theme.accentColor,
-        borderColor: element.borderColor ?? theme.panelBorder,
+        backgroundColor: theme.panelBackground,
+        panelColor: theme.panelHeaderBackground,
+        textColor: theme.panelText,
+        accentColor: theme.accentColor,
+        borderColor: theme.panelBorder,
         radius: themedRadius(style),
       };
     case 'scan-field':
       return {
         ...element,
-        backgroundColor: element.backgroundColor ?? theme.panelHeaderBackground,
-        textColor: element.textColor ?? theme.panelText,
-        borderColor: element.borderColor ?? theme.panelBorder,
+        backgroundColor: theme.panelHeaderBackground,
+        textColor: theme.panelText,
+        borderColor: theme.panelBorder,
         radius: themedRadius(style, true),
       };
     default:
@@ -267,7 +319,7 @@ function applyElementDefaults(element: ElementDef, theme: UiLayoutTheme, style: 
 export function applyBrandingToLayout(incoming: UiLayout, config?: Partial<WorkspaceBrandConfig> | null) {
   const layout = normalizeLayout(cloneLayout(incoming));
   const resolved = normalizeWorkspaceBrandConfig(config);
-  const theme = buildLayoutTheme(resolved);
+  const theme = buildLayoutTheme(config);
 
   layout.theme = theme;
   layout.elements = layout.elements.map((element) => applyElementDefaults(element, theme, resolved.surfaceStyle));

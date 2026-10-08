@@ -6,6 +6,7 @@
  */
 
 import { deflateRawSync } from 'node:zlib';
+import { findCountry } from '~/lib/currency';
 
 export type CellValue = string | number | boolean | Date | null | undefined;
 
@@ -42,6 +43,9 @@ export interface SpreadsheetWorkbook {
   title?: string;
   author?: string;
   createdAt?: Date;
+  currencySymbol?: string;
+  currencyCode?: string;
+  decimals?: number;
   sheets: SpreadsheetSheet[];
 }
 
@@ -257,12 +261,33 @@ function columnIndexToLetter(colIndex: number): string {
   return letter;
 }
 
+export function resolveCurrencyFormatCode(
+  currencySymbol?: string,
+  currencyCode?: string,
+  explicitDecimals?: number,
+): string {
+  const sym = currencySymbol || '$';
+  let decimals = explicitDecimals;
+  if (decimals === undefined) {
+    if (currencyCode) {
+      decimals = findCountry(currencyCode).decimals;
+    } else if (currencySymbol) {
+      decimals = findCountry(currencySymbol).decimals;
+    } else {
+      decimals = 2;
+    }
+  }
+
+  const formatPattern = decimals === 0 ? '#,##0' : `#,##0.${'0'.repeat(decimals)}`;
+  return sym === '$' ? `$${formatPattern}` : `"${sym}"${formatPattern}`;
+}
+
 /**
  * Builds standard styles.xml for OpenXML.
  * Indices:
  * 0: Normal
  * 1: Header (Bold, Brand Background #3D1820, White Text)
- * 2: Currency ($#,##0.00)
+ * 2: Currency ($#,##0.00 or custom symbol & decimals)
  * 3: Currency Bold Total ($#,##0.00, Bold, Top Border)
  * 4: Integer (#,##0)
  * 5: Percent (0.0%)
@@ -271,11 +296,16 @@ function columnIndexToLetter(colIndex: number): string {
  * 8: Subtitle (10pt Italic, Gray)
  * 9: Bold Text
  */
-function buildStylesXml(): string {
+function buildStylesXml(
+  currencySymbol: string = '$',
+  currencyCode?: string,
+  decimals?: number,
+): string {
+  const formatCode = resolveCurrencyFormatCode(currencySymbol, currencyCode, decimals);
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <numFmts count="3">
-    <numFmt numFmtId="164" formatCode="$#,##0.00"/>
+    <numFmt numFmtId="164" formatCode="${escapeXml(formatCode)}"/>
     <numFmt numFmtId="165" formatCode="0.0%"/>
     <numFmt numFmtId="166" formatCode="yyyy-mm-dd hh:mm"/>
   </numFmts>
@@ -445,7 +475,13 @@ export function generateXlsx(workbook: SpreadsheetWorkbook): Uint8Array {
   files.push({ name: 'xl/workbook.xml', data: Buffer.from(wbXml, 'utf-8') });
 
   // 5. xl/styles.xml
-  files.push({ name: 'xl/styles.xml', data: Buffer.from(buildStylesXml(), 'utf-8') });
+  files.push({
+    name: 'xl/styles.xml',
+    data: Buffer.from(
+      buildStylesXml(workbook.currencySymbol, workbook.currencyCode, workbook.decimals),
+      'utf-8',
+    ),
+  });
 
   // 6. xl/worksheets/sheetN.xml
   workbook.sheets.forEach((sheet, idx) => {
@@ -461,6 +497,11 @@ export function generateXlsx(workbook: SpreadsheetWorkbook): Uint8Array {
 export function generateSpreadsheetXml(workbook: SpreadsheetWorkbook): string {
   const author = escapeXml(workbook.author ?? 'Kogane');
   const created = (workbook.createdAt ?? new Date()).toISOString();
+  const xlsFormatCode = resolveCurrencyFormatCode(
+    workbook.currencySymbol,
+    workbook.currencyCode,
+    workbook.decimals,
+  );
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
@@ -495,11 +536,11 @@ export function generateSpreadsheetXml(workbook: SpreadsheetWorkbook): string {
       <Font ss:FontName="Calibri" ss:Size="10" ss:Italic="1" ss:Color="#666666"/>
     </Style>
     <Style ss:ID="Currency">
-      <NumberFormat ss:Format="$#,##0.00"/>
+      <NumberFormat ss:Format="${escapeXml(xlsFormatCode)}"/>
     </Style>
     <Style ss:ID="CurrencyBold">
       <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
-      <NumberFormat ss:Format="$#,##0.00"/>
+      <NumberFormat ss:Format="${escapeXml(xlsFormatCode)}"/>
       <Borders>
         <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#888888"/>
         <Border ss:Position="Bottom" ss:LineStyle="Double" ss:Weight="3" ss:Color="#3D1820"/>

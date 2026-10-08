@@ -36,7 +36,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const report = calculateSalesMetrics(orders, range.from, range.to);
-  const workbook = buildSalesMetricsWorkbook(report, businessResult.data.name, range);
+  const workbook = buildSalesMetricsWorkbook(report, businessResult.data.name, range, {
+    currencySymbol: businessResult.data.currency_symbol || '$',
+    currencyCode: businessResult.data.currency || 'USD',
+  });
 
   const fromStr = range.from.toISOString().slice(0, 10);
   const toStr = range.to.toISOString().slice(0, 10);

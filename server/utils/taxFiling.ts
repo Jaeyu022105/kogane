@@ -283,16 +283,19 @@ export function buildTaxFilingWorkbook(
   report: TaxFilingReport,
   businessName: string,
   range: { from: Date; to: Date },
+  options?: { currencySymbol?: string; currencyCode?: string },
 ): SpreadsheetWorkbook {
   const fromStr = range.from.toISOString().slice(0, 10);
   const toStr = range.to.toISOString().slice(0, 10);
+  const currencySymbol = options?.currencySymbol || '$';
+  const currencyCode = options?.currencyCode || 'USD';
 
   // ── Sheet 1: Tax Filing Summary ───────────────────────────────────────────────
   const summaryRows: SpreadsheetWorkbook['sheets'][0]['rows'] = [
     [{ value: `${businessName} — Business Tax Filing Report`, format: 'title' }, { value: null }],
     [{ value: `Tax Reporting Period: ${fromStr} to ${toStr}`, format: 'subtitle' }, { value: null }],
     [{ value: null }, { value: null }],
-    [{ value: 'TAX RETURN SCHEDULE', format: 'header' }, { value: 'AMOUNT ($)', format: 'header' }],
+    [{ value: 'TAX RETURN SCHEDULE', format: 'header' }, { value: `AMOUNT (${currencySymbol})`, format: 'header' }],
     [{ value: '1. Gross Sales / Total Receipts', bold: true }, { value: report.summary.grossSales, format: 'currency' }],
     [{ value: '2. Non-Taxable / Exempt Sales', bold: true }, { value: report.summary.exemptSales, format: 'currency' }],
     [{ value: '3. Net Taxable Sales Base', bold: true }, { value: report.summary.taxableSales, format: 'currency' }],
@@ -316,13 +319,13 @@ export function buildTaxFilingWorkbook(
     [
       { value: 'Date', format: 'header' },
       { value: 'Transactions', format: 'header' },
-      { value: 'Gross Sales ($)', format: 'header' },
-      { value: 'Exempt Sales ($)', format: 'header' },
-      { value: 'Taxable Sales ($)', format: 'header' },
-      { value: 'Tax Collected ($)', format: 'header' },
-      { value: 'Cash Gross ($)', format: 'header' },
-      { value: 'Card Gross ($)', format: 'header' },
-      { value: 'Other Gross ($)', format: 'header' },
+      { value: `Gross Sales (${currencySymbol})`, format: 'header' },
+      { value: `Exempt Sales (${currencySymbol})`, format: 'header' },
+      { value: `Taxable Sales (${currencySymbol})`, format: 'header' },
+      { value: `Tax Collected (${currencySymbol})`, format: 'header' },
+      { value: `Cash Gross (${currencySymbol})`, format: 'header' },
+      { value: `Card Gross (${currencySymbol})`, format: 'header' },
+      { value: `Other Gross (${currencySymbol})`, format: 'header' },
     ],
   ];
 
@@ -364,10 +367,10 @@ export function buildTaxFilingWorkbook(
     [
       { value: 'Payment Method', format: 'header' },
       { value: 'Transactions', format: 'header' },
-      { value: 'Gross Sales ($)', format: 'header' },
-      { value: 'Exempt Sales ($)', format: 'header' },
-      { value: 'Taxable Sales ($)', format: 'header' },
-      { value: 'Tax Collected ($)', format: 'header' },
+      { value: `Gross Sales (${currencySymbol})`, format: 'header' },
+      { value: `Exempt Sales (${currencySymbol})`, format: 'header' },
+      { value: `Taxable Sales (${currencySymbol})`, format: 'header' },
+      { value: `Tax Collected (${currencySymbol})`, format: 'header' },
       { value: 'Share of Sales (%)', format: 'header' },
     ],
   ];
@@ -391,11 +394,11 @@ export function buildTaxFilingWorkbook(
       { value: 'Receipt / Order ID', format: 'header' },
       { value: 'Item Description', format: 'header' },
       { value: 'Quantity', format: 'header' },
-      { value: 'Unit Price ($)', format: 'header' },
-      { value: 'Gross Total ($)', format: 'header' },
-      { value: 'Taxable Amount ($)', format: 'header' },
+      { value: `Unit Price (${currencySymbol})`, format: 'header' },
+      { value: `Gross Total (${currencySymbol})`, format: 'header' },
+      { value: `Taxable Amount (${currencySymbol})`, format: 'header' },
       { value: 'Tax Rate (%)', format: 'header' },
-      { value: 'Tax Amount ($)', format: 'header' },
+      { value: `Tax Amount (${currencySymbol})`, format: 'header' },
       { value: 'Payment Method', format: 'header' },
       { value: 'Payment Reference', format: 'header' },
     ],
@@ -421,6 +424,8 @@ export function buildTaxFilingWorkbook(
     title: `${businessName} Tax Filing Report`,
     author: 'Kogane',
     createdAt: new Date(),
+    currencySymbol,
+    currencyCode,
     sheets: [
       {
         name: 'Tax Filing Summary',

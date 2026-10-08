@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const { authHeaders } = useAuth();
 const { confirm, alert } = useModal();
-const { buildShareUrl } = useShareOrigin();
+const { buildShareUrl, copyToClipboard } = useShareOrigin();
 
 const showPin = ref(false);
 const deleting = ref(false);
@@ -54,12 +54,11 @@ async function copyLink() {
   const target = resolveTerminalUrl();
   if (!target) return;
 
-  try {
-    if (!navigator.clipboard) throw new Error('clipboard-unavailable');
-    await navigator.clipboard.writeText(target);
+  const success = await copyToClipboard(target);
+  if (success) {
     copiedLink.value = true;
     setTimeout(() => (copiedLink.value = false), 1500);
-  } catch {
+  } else {
     await alert({
       title: 'Unable to copy link',
       description: 'Copying is unavailable here. Please open the terminal and copy its address manually.',
@@ -71,12 +70,11 @@ async function copyLink() {
 async function copyPin() {
   if (!props.terminal.pin_code) return;
 
-  try {
-    if (!navigator.clipboard) throw new Error('clipboard-unavailable');
-    await navigator.clipboard.writeText(props.terminal.pin_code);
+  const success = await copyToClipboard(props.terminal.pin_code);
+  if (success) {
     copiedPin.value = true;
     setTimeout(() => (copiedPin.value = false), 1500);
-  } catch {
+  } else {
     await alert({
       title: 'Unable to copy PIN',
       description: 'Copying is unavailable here. Please select the PIN and copy it manually.',
@@ -126,6 +124,16 @@ async function deleteTerminal() {
 
 <template>
   <article class="terminal-card">
+    <!-- Status badge -->
+    <div class="flex items-center justify-between">
+      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LAN Ready
+      </span>
+      <span class="text-[10px] font-mono text-[rgba(61,24,32,0.4)]">
+        {{ terminal.is_public ? 'Public Link' : 'PIN Protected' }}
+      </span>
+    </div>
+
     <!-- Thumbnail preview -->
     <div class="thumbnail-wrapper">
       <TerminalThumbnail :layout="terminal.ui_layout" :title="terminal.display_name" />
@@ -161,16 +169,18 @@ async function deleteTerminal() {
 
     <!-- Info/Sharing buttons grid -->
     <div class="grid grid-cols-2 gap-2">
-      <!-- Copy Link Button -->
+      <!-- Copy LAN Link Button -->
       <button
         type="button"
         class="text-xs font-medium px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 border-none cursor-pointer"
         style="color: rgba(61, 24, 32, 0.65); background: rgba(61, 24, 32, 0.06);"
-        :aria-label="copiedLink ? 'Terminal link copied' : 'Copy terminal link'"
+        :title="copiedLink ? 'LAN terminal link copied!' : 'Copy LAN terminal link'"
+        :aria-label="copiedLink ? 'Terminal link copied' : 'Copy LAN terminal link'"
         @click="copyLink"
       >
-        <Link2 class="w-3.5 h-3.5" />
-        {{ copiedLink ? 'Copied Link' : 'Copy Link' }}
+        <Check v-if="copiedLink" class="w-3.5 h-3.5 text-emerald-600" />
+        <Link2 v-else class="w-3.5 h-3.5" />
+        {{ copiedLink ? 'Copied Link' : 'Copy LAN Link' }}
       </button>
 
       <!-- PIN Code display / copy -->

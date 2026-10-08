@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS public.businesses (
   name          TEXT NOT NULL,
   logo_url      TEXT,
   color_palette TEXT DEFAULT '{}',
+  country       TEXT DEFAULT 'US',
+  currency      TEXT DEFAULT 'USD',
+  currency_symbol TEXT DEFAULT '$',
   schema_name   TEXT NOT NULL UNIQUE,
   created_at    TIMESTAMPTZ DEFAULT now()
 );

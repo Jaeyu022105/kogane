@@ -39,6 +39,7 @@ html, body {
   color: rgb(var(--shell-sidebar));
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
   min-height: 100dvh;
 }
 

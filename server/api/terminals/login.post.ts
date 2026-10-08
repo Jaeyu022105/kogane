@@ -10,6 +10,7 @@ import { normalizeLayout } from '~/lib/uiTypes';
 import { normalizePermissions } from '~/lib/permissions';
 import { db } from '~/lib/db';
 import { writeAuditLog } from '~/server/utils/audit';
+import { findCountry } from '~/lib/currency';
 
 export default defineEventHandler(async (event) => {
   const body = (await readBody<{
@@ -20,7 +21,7 @@ export default defineEventHandler(async (event) => {
   }>(event)) ?? {};
 
   if (!body.pin || (!body.terminalId && (!body.businessId || !body.displayName))) {
-    return { error: 'Missing credentials', session: null };
+    return { error: 'Missing credentials', session: null, token: null };
   }
 
   const query = body.terminalId
@@ -33,7 +34,11 @@ export default defineEventHandler(async (event) => {
           t.permissions,
           t.ui_layout,
           t.display_name,
-          b.name as business_name
+          b.name as business_name,
+          b.country as business_country,
+          b.currency as business_currency,
+          b.currency_symbol as business_currency_symbol,
+          b.color_palette as business_color_palette
         FROM terminals t
         JOIN businesses b ON b.id = t.business_id
         WHERE t.id = ?
@@ -47,7 +52,11 @@ export default defineEventHandler(async (event) => {
           t.permissions,
           t.ui_layout,
           t.display_name,
-          b.name as business_name
+          b.name as business_name,
+          b.country as business_country,
+          b.currency as business_currency,
+          b.currency_symbol as business_currency_symbol,
+          b.color_palette as business_color_palette
         FROM terminals t
         JOIN businesses b ON b.id = t.business_id
         WHERE t.business_id = ? AND t.display_name = ?
@@ -65,12 +74,16 @@ export default defineEventHandler(async (event) => {
     ui_layout: string;
     display_name: string;
     business_name: string;
+    business_country?: string | null;
+    business_currency?: string | null;
+    business_currency_symbol?: string | null;
+    business_color_palette?: string | null;
   }>(query, params);
 
-  if (!terminal) return { error: 'Invalid credentials', session: null };
+  if (!terminal) return { error: 'Invalid credentials', session: null, token: null };
 
   const valid = await verifyPin(body.pin, terminal.pin_hash);
-  if (!valid) return { error: 'Invalid credentials', session: null };
+  if (!valid) return { error: 'Invalid credentials', session: null, token: null };
 
   // Parse UI layout from stored JSON
   let uiLayout;
@@ -84,9 +97,9 @@ export default defineEventHandler(async (event) => {
     uiLayout = normalizeLayout();
   }
 
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 8).toISOString();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
 
-  await issueTerminalSession(event, {
+  const token = await issueTerminalSession(event, {
     terminalId: terminal.id,
     businessId: terminal.business_id,
     displayName: terminal.display_name,
@@ -105,13 +118,35 @@ export default defineEventHandler(async (event) => {
     },
   });
 
+  let paletteCountry: string | undefined;
+  let paletteCurrency: string | undefined;
+  let paletteSymbol: string | undefined;
+  try {
+    const pal = JSON.parse(terminal.business_color_palette || '{}');
+    paletteCountry = pal.country;
+    paletteCurrency = pal.currency;
+    paletteSymbol = pal.currencySymbol;
+  } catch {
+    // Ignore invalid JSON
+  }
+
+  const resolvedCountry = findCountry(terminal.business_country || paletteCountry || 'US');
+  const country = terminal.business_country || paletteCountry || resolvedCountry.code;
+  const currency = terminal.business_currency || paletteCurrency || resolvedCountry.currency;
+  const currencySymbol = terminal.business_currency_symbol || paletteSymbol || resolvedCountry.symbol;
+
   return {
+    token,
     session: {
       terminalId: terminal.id,
+      businessId: terminal.business_id,
       displayName: terminal.display_name,
       businessName: terminal.business_name,
+      country,
+      currency,
+      currencySymbol,
       role: terminal.role,
-      permissions: normalizePermissions(terminal.permissions),
+      permissions: normalizePermissions(terminal.permissions, terminal.role),
       uiLayout,
       expiresAt,
     },

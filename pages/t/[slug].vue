@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ArrowLeft, ArrowRight } from 'lucide-vue-next';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
@@ -19,6 +19,9 @@ interface GuestSession {
   businessName?: string;
   businessId: string;
   role: string;
+  country?: string;
+  currency?: string;
+  currencySymbol?: string;
   permissions: any;
   uiLayout: UiLayout;
   expiresAt: string;
@@ -50,13 +53,27 @@ function scrollWorkspace(direction: 'left' | 'right') {
   });
 }
 
+const fitToWidth = ref(false);
+
 const canvasScale = computed(() => {
   const layout = session.value?.uiLayout;
   if (!layout) return 1;
-  const scaleX = viewW.value / (layout.resolution?.width ?? 1280);
-  const scaleY = viewH.value / (layout.resolution?.height ?? 720);
-  if (viewW.value < 720) return Math.min(1, scaleY);
-  return Math.min(scaleX, scaleY);
+  const resW = layout.resolution?.width ?? 1280;
+  const resH = layout.resolution?.height ?? 720;
+  const scaleX = viewW.value / resW;
+  const scaleY = viewH.value / resH;
+
+  // On tablets (720px - 1200px): fit both axes cleanly
+  if (viewW.value >= 720) {
+    return Math.min(scaleX, scaleY);
+  }
+
+  // On phones (<720px): fit to width if toggled, otherwise balanced readable scale
+  if (fitToWidth.value) {
+    return Math.max(0.28, Math.min(scaleX, 1));
+  }
+
+  return Math.min(1, Math.max(scaleY, 0.75));
 });
 
 useHead(() => ({
@@ -74,13 +91,17 @@ async function bootstrap() {
   loadError.value = null;
 
   try {
-    const res = await $fetch<{ session: GuestSession | null; error: string | null }>(
+    const res = await $fetch<{ session: GuestSession | null; token?: string; error: string | null }>(
       `/api/terminals/public/${slug.value}`,
     );
 
     if (res.error || !res.session) {
       loadError.value = res.error ?? 'Terminal not found';
       return;
+    }
+
+    if (import.meta.client && res.token && res.session?.terminalId) {
+      sessionStorage.setItem(`kogane_term_token_${res.session.terminalId}`, res.token);
     }
 
     session.value = {
@@ -105,6 +126,9 @@ async function bootstrap() {
         businessName: res.session.businessName ?? '',
         terminalName: res.session.displayName,
         terminalRole: res.session.role,
+        country: res.session.country ?? 'US',
+        currency: res.session.currency ?? 'USD',
+        currencySymbol: res.session.currencySymbol ?? '$',
       },
     });
   } catch (err) {
@@ -138,34 +162,53 @@ onUnmounted(() => {
       <p class="text-sm" style="color: rgba(245,237,228,0.5);">{{ loadError }}</p>
     </div>
 
-    <div v-else-if="session" ref="terminalViewport" class="terminal-canvas-viewport absolute inset-0">
     <div
-      v-if="viewW < 720"
-      class="absolute bottom-3 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full px-2 py-1.5 text-[11px] font-medium shadow-lg"
-      :style="{ color: activeTheme.topBarText, background: activeTheme.topBarBackground, border: `1px solid ${activeTheme.panelBorder}` }"
-      aria-live="polite"
+      v-else-if="session"
+      ref="terminalViewport"
+      class="terminal-canvas-viewport absolute inset-0 flex items-start justify-center p-1 sm:p-3"
     >
-      <button type="button" class="rounded-full p-1" aria-label="Show the previous workspace area" @click.stop="scrollWorkspace('left')">
-        <ArrowLeft class="h-3.5 w-3.5" />
-      </button>
-      <span>Swipe sideways to view the full workspace</span>
-      <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
-        <ArrowRight class="h-3.5 w-3.5" />
-      </button>
-    </div>
+      <div
+        v-if="viewW < 720"
+        class="fixed bottom-3 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full px-2.5 py-1.5 text-[11px] font-medium shadow-lg backdrop-blur-md"
+        :style="{ color: activeTheme.topBarText, background: activeTheme.topBarBackground, border: `1px solid ${activeTheme.panelBorder}` }"
+        aria-live="polite"
+      >
+        <button type="button" class="rounded-full p-1" aria-label="Show the previous workspace area" @click.stop="scrollWorkspace('left')">
+          <ArrowLeft class="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          class="px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer transition-all active:scale-95"
+          :style="{ borderColor: activeTheme.panelBorder, background: fitToWidth ? activeTheme.accentColor : 'transparent', color: fitToWidth ? '#ffffff' : activeTheme.topBarText }"
+          @click="fitToWidth = !fitToWidth"
+        >
+          {{ fitToWidth ? 'Fit Screen' : 'Scroll 100%' }}
+        </button>
+        <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
+          <ArrowRight class="h-3.5 w-3.5" />
+        </button>
+      </div>
 
-    <div
-      class="terminal-canvas absolute top-0 left-0"
-      :style="{
-        width: `${session.uiLayout?.resolution?.width ?? 1280}px`,
-        height: `${session.uiLayout?.resolution?.height ?? 720}px`,
-        transform: `scale(${canvasScale})`,
-        transformOrigin: 'top left',
-        background: activeTheme.canvasBackground,
-        borderRadius: surfaceRadius,
-        overflow: 'hidden',
-      }"
-    >
+      <div
+        class="terminal-canvas-wrapper relative shrink-0"
+        :style="{
+          width: `${Math.round((session.uiLayout?.resolution?.width ?? 1280) * canvasScale)}px`,
+          height: `${Math.round((session.uiLayout?.resolution?.height ?? 720) * canvasScale)}px`,
+        }"
+      >
+        <div
+          class="terminal-canvas absolute top-0 left-0"
+          :style="{
+            width: `${session.uiLayout?.resolution?.width ?? 1280}px`,
+            height: `${session.uiLayout?.resolution?.height ?? 720}px`,
+            transform: `scale(${canvasScale})`,
+            transformOrigin: 'top left',
+            background: activeTheme.canvasBackground,
+            color: activeTheme.panelText,
+            borderRadius: surfaceRadius,
+            overflow: 'hidden',
+          }"
+        >
       <div class="absolute inset-0 pointer-events-none overflow-hidden">
         <div
           v-if="activeTheme.particleEffect === 'floating-orbs'"
@@ -213,6 +256,7 @@ onUnmounted(() => {
       </div>
     </div>
     </div>
+  </div>
   </div>
 </template>
 

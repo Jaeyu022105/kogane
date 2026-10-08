@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Building2, Terminal as TerminalIcon, Plus, ArrowRight } from 'lucide-vue-next';
+import { Building2, Terminal as TerminalIcon, Plus, ArrowRight, Eye, EyeOff, Check, Copy, Sparkles } from 'lucide-vue-next';
 import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, layoutVariantsForPreset } from '~/lib/starterWorkstations';
 import TerminalCard from '~/components/TerminalCard.vue';
@@ -7,9 +7,10 @@ import TerminalCard from '~/components/TerminalCard.vue';
 definePageMeta({ layout: 'dashboard' });
 
 const router = useRouter();
-const { isEnterprise } = useEnterpriseAccess();
+const route  = useRoute();
 const { authHeaders } = useAuth();
 const { business }    = useBusiness();
+const { copyToClipboard } = useShareOrigin();
 
 
 const terminals  = ref<Array<{
@@ -39,17 +40,35 @@ const form = reactive({
 
 const currentLayoutVariants = computed(() => layoutVariantsForPreset(form.presetKey));
 
+function openCreateModal(presetKey?: string) {
+  if (presetKey) {
+    form.presetKey = presetKey;
+  }
+  const preset = TERMINAL_PERMISSION_PRESETS.find(p => p.key === form.presetKey) ?? TERMINAL_PERMISSION_PRESETS[0];
+  const count = terminals.value.filter(t => t.role === preset.label).length + 1;
+  form.displayName = `${preset.label} ${count}`;
+  form.pin = String(1000 + Math.floor(Math.random() * 9000));
+  form.layoutVariant = defaultLayoutVariantForPreset(form.presetKey as any);
+  pinVisible.value = true;
+  pinCopied.value = false;
+  error.value = null;
+  showForm.value = true;
+}
+
 watch(() => form.presetKey, (nextPresetKey) => {
   const preferred = business.value?.colorPalette?.terminalLayouts?.[nextPresetKey];
   const allowed = layoutVariantsForPreset(nextPresetKey).map((variant) => variant.id);
 
   if (preferred && allowed.includes(preferred)) {
     form.layoutVariant = preferred;
-    return;
+  } else if (!allowed.includes(form.layoutVariant)) {
+    form.layoutVariant = defaultLayoutVariantForPreset(nextPresetKey);
   }
 
-  if (!allowed.includes(form.layoutVariant)) {
-    form.layoutVariant = defaultLayoutVariantForPreset(nextPresetKey);
+  const preset = TERMINAL_PERMISSION_PRESETS.find(p => p.key === nextPresetKey);
+  if (preset && (!form.displayName || TERMINAL_PERMISSION_PRESETS.some(p => form.displayName.startsWith(p.label)))) {
+    const count = terminals.value.filter(t => t.role === preset.label).length + 1;
+    form.displayName = `${preset.label} ${count}`;
   }
 }, { immediate: true });
 
@@ -70,12 +89,11 @@ function friendlyTerminalError(value: unknown) {
 async function copyPin() {
   if (!form.pin) return;
 
-  try {
-    if (!navigator.clipboard) throw new Error('clipboard-unavailable');
-    await navigator.clipboard.writeText(form.pin);
+  const success = await copyToClipboard(form.pin);
+  if (success) {
     pinCopied.value = true;
     setTimeout(() => (pinCopied.value = false), 1500);
-  } catch {
+  } else {
     error.value = 'Copying is unavailable here. You can select the PIN and copy it manually.';
   }
 }
@@ -85,7 +103,7 @@ function onTerminalDeleted(terminalId: string) {
 }
 
 async function loadTerminals() {
-  if (!isEnterprise.value || !business.value) return;
+  if (!business.value) return;
   loading.value = true;
   error.value = null;
 
@@ -161,18 +179,22 @@ async function createTerminal() {
 
 
 onMounted(() => {
-  if (!isEnterprise.value) {
-    router.replace('/dashboard');
-    return;
-  }
-
   loadTerminals();
+  const createPreset = route.query.create as string;
+  if (createPreset) {
+    openCreateModal(createPreset === 'true' || createPreset === '1' ? undefined : createPreset);
+  }
 });
 watch(() => business.value?.id, loadTerminals);
+watch(() => route.query.create, (nextPreset) => {
+  if (nextPreset) {
+    openCreateModal(nextPreset === 'true' || nextPreset === '1' ? undefined : (nextPreset as string));
+  }
+});
 </script>
 
 <template>
-  <div v-if="isEnterprise" class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Page header ──────────────────────────────────────────────────────── -->
     <div
       class="px-8 py-5 flex items-center justify-between shrink-0"
@@ -181,7 +203,7 @@ watch(() => business.value?.id, loadTerminals);
       <div>
         <h1 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">Terminals</h1>
         <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">
-          Staff terminals - {{ terminals.length }} registered
+          Staff & workstation terminals - {{ terminals.length }} configured
         </p>
       </div>
 
@@ -189,13 +211,11 @@ watch(() => business.value?.id, loadTerminals);
         type="button"
         class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 btn-primary btn-ribbon"
         :disabled="!business"
-        :title="!business ? 'Please create a business in Settings first' : 'Create new terminal'"
-        @click="showForm = true"
-        @mouseenter="(e: MouseEvent) => !(!business) && ((e.currentTarget as HTMLElement).style.opacity = '0.85')"
-        @mouseleave="(e: MouseEvent) => !(!business) && ((e.currentTarget as HTMLElement).style.opacity = '1')"
+        :title="!business ? 'Please create a business in Settings first' : 'Create new workstation'"
+        @click="openCreateModal()"
       >
         <Plus class="w-4 h-4" />
-        New Terminal
+        New Workstation
       </button>
     </div>
 
@@ -240,11 +260,31 @@ watch(() => business.value?.id, loadTerminals);
       <!-- Empty state / No terminals -->
       <div
         v-else-if="terminals.length === 0"
-        class="flex flex-col items-center justify-center py-24 text-center"
+        class="flex flex-col items-center justify-center py-16 text-center max-w-2xl mx-auto"
       >
-        <TerminalIcon class="w-12 h-12 mb-4" style="color: rgba(61,24,32,0.1);" />
-        <p class="text-base font-semibold" style="color: rgba(61,24,32,0.35);">No terminals yet</p>
-        <p class="text-sm mt-1" style="color: rgba(61,24,32,0.25);">Create one and share the PIN with your staff.</p>
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background: rgba(255, 87, 118, 0.1); color: rgb(var(--shell-pink));">
+          <TerminalIcon class="w-7 h-7" />
+        </div>
+        <h2 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">No workstations yet</h2>
+        <p class="text-sm mt-1 mb-6" style="color: rgba(61,24,32,0.5);">Choose a workstation preset below to provision it with starter layout and tables immediately:</p>
+
+        <!-- Starter Presets Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full text-left mb-6">
+          <button
+            v-for="preset in TERMINAL_PERMISSION_PRESETS"
+            :key="preset.key"
+            type="button"
+            class="p-4 rounded-xl border transition-all text-left group bg-white cursor-pointer hover:border-[#FF5776] hover:shadow-md"
+            style="border-color: rgba(61,24,32,0.08);"
+            @click="openCreateModal(preset.key)"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-[#68293A]">{{ preset.label }}</span>
+              <Plus class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <p class="text-[11px] leading-relaxed m-0 text-[rgba(61,24,32,0.6)]">{{ preset.description }}</p>
+          </button>
+        </div>
       </div>
 
       <!-- Terminal grid -->
@@ -323,14 +363,8 @@ watch(() => business.value?.id, loadTerminals);
                     :aria-label="pinVisible ? 'Hide PIN' : 'Show PIN'"
                     @click="pinVisible = !pinVisible"
                   >
-                    <svg v-if="!pinVisible" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                      <line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
+                    <EyeOff v-if="pinVisible" class="w-4 h-4" />
+                    <Eye v-else class="w-4 h-4" />
                   </button>
                 </div>
               </div>

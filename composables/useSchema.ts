@@ -131,6 +131,19 @@ export function useSchema(businessId: Ref<string | undefined>) {
     return res.error;
   }
 
+  async function insertRow(tableName: string, values: Record<string, unknown>) {
+    const id = businessId.value;
+    if (!id) return { data: null, error: 'No business selected' };
+
+    const res = await $fetch<{ data: Record<string, unknown> | null; error: string | null }>('/api/data/insert', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: { businessId: id, tableName, values },
+    });
+
+    return res;
+  }
+
   return {
     tables,
     tableDefs,
@@ -143,5 +156,6 @@ export function useSchema(businessId: Ref<string | undefined>) {
     addColumns,
     fetchTableRows,
     updateRow,
+    insertRow,
   };
 }

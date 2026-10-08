@@ -39,7 +39,9 @@ export default defineEventHandler(async (event) => {
   if (business.admin_user_id !== userId) return { data: null, error: 'Forbidden' };
 
   const isDevMode = process.env.DEV_MODE === 'true';
-  const cols = body.columns?.length ? body.columns.join(', ') : '*';
+  const cols = body.columns?.length
+    ? (body.columns.includes('*') || body.columns.includes('id') ? body.columns.join(', ') : `id, ${body.columns.join(', ')}`)
+    : '*';
   const limit = Math.min(body.limit ?? 50, 200);
   const offset = body.offset ?? 0;
 

@@ -8,8 +8,11 @@ const { isEnterprise } = useEnterpriseAccess();
 const { t } = useLocale();
 
 
-import { Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles } from 'lucide-vue-next';
+import { Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Plus } from 'lucide-vue-next';
 import TerminalCard from '~/components/TerminalCard.vue';
+import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+
+const workstationPresets = computed(() => TERMINAL_PERMISSION_PRESETS);
 
 const now = new Date();
 const hour = now.getHours();
@@ -49,6 +52,12 @@ const quickActions = computed<QuickAction[]>(() => {
       action: 'onboarding',
     },
     {
+      label: t('dashboard_action_terminals_label'),
+      body: t('dashboard_action_terminals_body'),
+      icon: Terminal,
+      to: '/dashboard/terminals',
+    },
+    {
       label: t('dashboard_action_reports_label'),
       body: t('dashboard_action_reports_body'),
       icon: BarChart3,
@@ -68,14 +77,6 @@ const quickActions = computed<QuickAction[]>(() => {
     },
   ];
 
-  if (isEnterprise.value) {
-    actions.splice(
-      1,
-      0,
-      { label: t('dashboard_action_terminals_label'), body: t('dashboard_action_terminals_body'), icon: Terminal, to: '/dashboard/terminals' },
-    );
-  }
-
   return actions.map((action, index) => ({
     ...action,
     index: String(index + 1).padStart(2, '0'),
@@ -87,7 +88,7 @@ function runQuickAction(action: QuickAction) {
 }
 
 async function loadTerminals() {
-  if (!business.value || !isEnterprise.value) return;
+  if (!business.value) return;
   terminalLoading.value = true;
   terminalError.value = '';
 
@@ -126,8 +127,8 @@ watch(() => business.value?.id, loadTerminals);
           <span class="status-badge">
             <span class="badge-dot" /> {{ t('dashboard_preset_mode') }}
           </span>
-          <span v-if="isEnterprise" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.5);">
-            {{ t('dashboard_enterprise_enabled') }}
+          <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md flex items-center gap-1.5" style="background: rgba(16,185,129,0.1); color: #059669;">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />LAN Ready
           </span>
         </div>
 
@@ -202,17 +203,31 @@ watch(() => business.value?.id, loadTerminals);
         </template>
       </div>
 
-      <section v-if="business && isEnterprise" class="mt-12 terminal-section">
+      <section v-if="business" class="mt-12 terminal-section">
         <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-6">
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
-              Terminals
-            </p>
-            <h2 class="font-serif text-2xl mt-2" style="color: rgb(var(--shell-sidebar));">Your preset terminals</h2>
+            <div class="flex items-center gap-2">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
+                Workstations & Terminals
+              </p>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LAN Active
+              </span>
+            </div>
+            <h2 class="font-serif text-2xl mt-1" style="color: rgb(var(--shell-sidebar));">Your Workstations</h2>
           </div>
-          <NuxtLink v-if="isEnterprise" to="/dashboard/terminals" class="terminal-link">
-            {{ t('dashboard_terminal_manager_link') }} <ArrowRight class="w-3.5 h-3.5" />
-          </NuxtLink>
+          <div class="flex items-center gap-3">
+            <NuxtLink
+              to="/dashboard/terminals"
+              class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-white hover:opacity-90 transition-opacity flex items-center gap-1.5 no-underline shadow-sm"
+              style="background: rgb(var(--shell-sidebar));"
+            >
+              <Plus class="w-3.5 h-3.5" /> New Workstation
+            </NuxtLink>
+            <NuxtLink to="/dashboard/terminals" class="terminal-link">
+              {{ t('dashboard_terminal_manager_link') }} <ArrowRight class="w-3.5 h-3.5" />
+            </NuxtLink>
+          </div>
         </div>
 
         <div v-if="terminalLoading" class="terminal-loading">
@@ -226,21 +241,75 @@ watch(() => business.value?.id, loadTerminals);
           </div>
         </div>
 
-        <div v-else-if="terminals.length === 0" class="terminal-empty">
-          <Terminal class="w-10 h-10" />
-          <div>
-            <p>{{ t('dashboard_terminal_empty_title') }}</p>
-            <span>{{ t('dashboard_terminal_empty_body') }}</span>
+        <div v-else-if="terminals.length === 0" class="space-y-6">
+          <div class="terminal-empty">
+            <Terminal class="w-10 h-10" />
+            <div>
+              <p>{{ t('dashboard_terminal_empty_title') }}</p>
+              <span>{{ t('dashboard_terminal_empty_body') }}</span>
+            </div>
+            <NuxtLink
+              to="/dashboard/terminals"
+              class="mt-3 px-4 py-2 text-xs font-semibold rounded-lg text-white hover:opacity-90 transition-opacity inline-flex items-center gap-1.5 no-underline"
+              style="background: rgb(var(--shell-pink));"
+            >
+              <Plus class="w-3.5 h-3.5" /> New Workstation
+            </NuxtLink>
+          </div>
+
+          <div class="rounded-2xl p-6 bg-white/60 border border-black/5">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-serif text-lg text-[rgb(var(--shell-sidebar))]">Starter Workstations</h3>
+                <p class="text-xs text-[rgba(61,24,32,0.5)]">One-click creation for all 5 official operating workstations:</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              <NuxtLink
+                v-for="preset in workstationPresets"
+                :key="preset.key"
+                :to="`/dashboard/terminals?create=${preset.key}`"
+                class="p-4 rounded-xl border transition-all text-left group bg-white hover:border-[#FF5776] hover:shadow-md no-underline flex flex-col justify-between"
+                style="border-color: rgba(61,24,32,0.08);"
+              >
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-[#68293A]">{{ preset.label }}</span>
+                    <Plus class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p class="text-[11px] leading-relaxed m-0 text-[rgba(61,24,32,0.6)]">{{ preset.description }}</p>
+                </div>
+                <div class="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-[11px] font-semibold text-[#FF5776]">
+                  <span>Create station</span>
+                  <ArrowRight class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </NuxtLink>
+            </div>
           </div>
         </div>
 
-        <div v-else class="terminal-grid">
-          <TerminalCard
-            v-for="terminal in terminals"
-            :key="terminal.id"
-            :terminal="terminal"
-            @deleted="onTerminalDeleted(terminal.id)"
-          />
+        <div v-else class="space-y-4">
+          <!-- Quick add strip -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-[rgba(61,24,32,0.4)] shrink-0">Quick Add:</span>
+            <NuxtLink
+              v-for="preset in workstationPresets"
+              :key="preset.key"
+              :to="`/dashboard/terminals?create=${preset.key}`"
+              class="px-2.5 py-1 rounded-md bg-white border border-[rgba(61,24,32,0.08)] hover:border-[#FF5776] hover:text-[#FF5776] text-[rgba(61,24,32,0.7)] text-[11px] font-medium no-underline shrink-0 transition-colors flex items-center gap-1"
+            >
+              <Plus class="w-3 h-3" /> {{ preset.label }}
+            </NuxtLink>
+          </div>
+
+          <div class="terminal-grid">
+            <TerminalCard
+              v-for="terminal in terminals"
+              :key="terminal.id"
+              :terminal="terminal"
+              @deleted="onTerminalDeleted(terminal.id)"
+            />
+          </div>
         </div>
       </section>
     </div>

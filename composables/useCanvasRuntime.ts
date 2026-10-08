@@ -1,5 +1,6 @@
 import type { TerminalPermissions } from '~/lib/permissions';
 import { isActionAllowed, normalizePermissions } from '~/lib/permissions';
+import { findCountry, formatCurrencyAmount } from '~/lib/currency';
 import {
   CANVAS_RUNTIME_KEY,
   resolveRuntimePathTemplate,
@@ -62,6 +63,7 @@ export function useCanvasRuntime() {
   }));
   const { enqueue } = useEventQueue();
   const { alert } = useModal();
+  const { authHeaders } = useAuth();
   const realtimeSync = useRealtimeSync();
 
   function reset() {
@@ -93,7 +95,10 @@ export function useCanvasRuntime() {
       layout: options.layout,
       sessionVars: options.sessionVars ?? {},
     };
-    runtimeState.value.permissions = normalizePermissions(options.permissions);
+    const effectiveRole = (options.sessionVars?.terminalRole as string)
+      || (options.sessionVars?.role as string)
+      || undefined;
+    runtimeState.value.permissions = normalizePermissions(options.permissions, effectiveRole);
     runtimeState.value.sessionVars = options.sessionVars ?? {};
     runtimeState.value.activeModalId = null;
     loadedElements.clear();
@@ -106,12 +111,17 @@ export function useCanvasRuntime() {
           emitLocal('realtime:table-update', mutation);
 
           if (context.value.layout?.elements) {
+            const matchesTable = (tName: string | undefined, mutTable: string) => {
+              if (!tName || !mutTable) return false;
+              return tName === mutTable || tName.endsWith(`_${mutTable}`) || mutTable.endsWith(`_${tName}`);
+            };
+
             for (const el of context.value.layout.elements) {
-              if (el.type === 'table-view' && (el as any).tableName === mutation.table) {
+              if (el.type === 'table-view' && matchesTable((el as any).tableName, mutation.table)) {
                 await reloadElement(el);
-              } else if (el.type === 'chart' && (el as any).tableName === mutation.table) {
+              } else if (el.type === 'chart' && matchesTable((el as any).tableName, mutation.table)) {
                 await reloadElement(el);
-              } else if (el.type === 'cart-widget' && ((el as any).productTable ?? 'products') === mutation.table) {
+              } else if (el.type === 'cart-widget' && matchesTable((el as any).productTable ?? 'products', mutation.table)) {
                 await reloadElement(el);
               }
             }
@@ -121,12 +131,68 @@ export function useCanvasRuntime() {
     }
   }
 
-  function setInputValue(elementId: string, value: unknown) {
+  function setInputValue(elementId: string, value: unknown, fieldName?: string) {
     runtimeState.value.inputs[elementId] = value;
+    if (fieldName) {
+      runtimeState.value.inputs[fieldName] = value;
+    }
   }
 
   function setCartValue(items: unknown[]) {
-    runtimeState.value.cart = items;
+    runtimeState.value.cart = Array.isArray(items) ? clone(items) : [];
+  }
+
+  function addToCart(item: { id: string | number; name?: string; price?: number; qty?: number; [key: string]: unknown }, quantity?: number) {
+    const itemId = String(item.id);
+    const current = (runtimeState.value.cart || []) as Array<{ id: string; name: string; price: number; qty: number; [key: string]: unknown }>;
+    const next = current.map((i) => ({ ...i }));
+    const existingIndex = next.findIndex((i) => String(i.id) === itemId);
+    const itemQty = Number(item.qty);
+    const rawQty = quantity !== undefined ? Number(quantity) : (Number.isFinite(itemQty) && itemQty > 0 ? itemQty : 1);
+    const addQty = Math.max(1, Number.isFinite(rawQty) ? Math.floor(rawQty) : 1);
+
+    if (existingIndex >= 0) {
+      next[existingIndex] = {
+        ...next[existingIndex],
+        qty: (Number(next[existingIndex].qty) || 0) + addQty,
+      };
+    } else {
+      next.push({
+        ...item,
+        id: itemId,
+        name: String(item.name ?? itemId),
+        price: Number(item.price || 0),
+        qty: addQty,
+      });
+    }
+    runtimeState.value.cart = next;
+    return next;
+  }
+
+  function updateCartItemQty(id: string | number, qty: number) {
+    const itemId = typeof id === 'object' && id !== null && 'id' in id ? String((id as any).id) : String(id);
+    const targetQty = Math.floor(Number(qty));
+    if (!Number.isFinite(targetQty) || targetQty <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+    const current = (runtimeState.value.cart || []) as Array<{ id: string; name: string; price: number; qty: number; [key: string]: unknown }>;
+    runtimeState.value.cart = current.map((item) => {
+      if (String(item.id) === itemId) {
+        return { ...item, qty: targetQty };
+      }
+      return { ...item };
+    });
+  }
+
+  function removeFromCart(id: string | number | { id: string | number }) {
+    const itemId = typeof id === 'object' && id !== null && 'id' in id ? String((id as any).id) : String(id);
+    const current = (runtimeState.value.cart || []) as Array<{ id: string; [key: string]: unknown }>;
+    runtimeState.value.cart = current.filter((item) => String(item.id) !== itemId);
+  }
+
+  function clearCart() {
+    runtimeState.value.cart = [];
   }
 
   function setSessionVar(key: string, value: unknown) {
@@ -156,6 +222,24 @@ export function useCanvasRuntime() {
       runtimeState.value.cart = [];
     }
 
+    if (eventName === 'cart:add' && payload && typeof payload === 'object') {
+      addToCart(payload as any);
+    }
+
+    if (eventName === 'cart:remove' && payload) {
+      const id = typeof payload === 'object' && payload !== null && 'id' in payload
+        ? (payload as any).id
+        : payload;
+      removeFromCart(String(id));
+    }
+
+    if (eventName === 'cart:update-qty' && payload && typeof payload === 'object') {
+      const { id, qty } = payload as { id: string | number; qty: number };
+      if (id !== undefined && qty !== undefined) {
+        updateCartItemQty(id, qty);
+      }
+    }
+
     const handlers = listeners.get(eventName);
     if (!handlers) return;
     for (const handler of handlers) handler(payload);
@@ -174,10 +258,24 @@ export function useCanvasRuntime() {
       timestamp: new Date().toISOString(),
     };
 
+    const headers: Record<string, string> = {
+      ...authHeaders(),
+    };
+    if (context.value.terminalId) {
+      headers['x-terminal-id'] = context.value.terminalId;
+      if (typeof window !== 'undefined') {
+        const storedToken = sessionStorage.getItem(`kogane_term_token_${context.value.terminalId}`);
+        if (storedToken) {
+          headers['x-terminal-session'] = storedToken;
+        }
+      }
+    }
+
     const response = await $fetch<{ results: Array<{ ok: boolean; data?: unknown; error?: string | null }> }>(
       '/api/runtime/event',
       {
         method: 'POST',
+        headers,
         body: envelope,
       },
     );
@@ -251,27 +349,61 @@ export function useCanvasRuntime() {
       };
     }
 
+    const targetElementIds = new Set<string>();
     for (const [elementId, tableName] of Object.entries(runtimeState.value.queryTables)) {
-      if (tableName !== action.table) continue;
-      const rows = runtimeState.value.queryResults[elementId] ?? [];
+      if (tableName === action.table || tableName.endsWith(`_${action.table}`) || Boolean(action.table?.endsWith(`_${tableName}`))) {
+        targetElementIds.add(elementId);
+      }
+    }
+    if (context.value.layout?.elements) {
+      for (const el of context.value.layout.elements) {
+        const elTable = (el as any).tableName;
+        if (elTable === action.table || elTable?.endsWith(`_${action.table}`) || Boolean(action.table?.endsWith(`_${elTable}`))) {
+          targetElementIds.add(el.id);
+        }
+      }
+    }
+
+    for (const elementId of targetElementIds) {
+      const rows = runtimeState.value.queryResults[elementId] ? [...runtimeState.value.queryResults[elementId]] : [];
 
       if (action.type === 'insert' && payload && typeof payload === 'object' && !Array.isArray(payload)) {
-        rows.unshift({
+        const itemPayload = { ...(payload as Record<string, unknown>) };
+        const isProducts = action.table === 'products' || Boolean(action.table?.endsWith('_products'));
+        if (isProducts) {
+          if (itemPayload.available === undefined || itemPayload.available === null) {
+            itemPayload.available = 1;
+          } else {
+            const av = itemPayload.available;
+            itemPayload.available = (av === 1 || av === true || av === '1' || av === 'true') ? 1 : 0;
+          }
+          if (itemPayload.price != null) {
+            const cleanPrice = String(itemPayload.price).trim().replace(/^[$\s]+/, '').replace(/,/g, '').trim();
+            const num = Number(cleanPrice);
+            if (!Number.isNaN(num) && Number.isFinite(num)) {
+              itemPayload.price = num;
+            }
+          }
+        }
+        const optimisticRow = {
           id: `optimistic-${Date.now()}`,
-          ...(payload as Record<string, unknown>),
-        });
+          ...itemPayload,
+        };
+        runtimeState.value.queryResults[elementId] = [optimisticRow, ...rows];
       }
 
       if (action.type === 'update' && action.rowId) {
         runtimeState.value.queryResults[elementId] = rows.map((row) =>
-          row.id === action.rowId
+          String(row.id ?? (row as any)._id ?? (row as any).reference ?? '') === String(action.rowId)
             ? { ...row, ...(payload as Record<string, unknown>) }
             : row,
         );
       }
 
       if (action.type === 'delete' && action.rowId) {
-        runtimeState.value.queryResults[elementId] = rows.filter((row) => row.id !== action.rowId);
+        runtimeState.value.queryResults[elementId] = rows.filter((row) =>
+          String(row.id ?? (row as any)._id ?? (row as any).reference ?? '') !== String(action.rowId)
+        );
       }
     }
 
@@ -304,16 +436,18 @@ export function useCanvasRuntime() {
   }
 
   function validateInsert(action: RuntimeActionDefinition, payload: unknown) {
-    if (action.type !== 'insert' || action.table !== 'products') return null;
+    const isProducts = action.table === 'products' || Boolean(action.table?.endsWith('_products'));
+    if (action.type !== 'insert' || !isProducts) return null;
 
     const values = payload && typeof payload === 'object' && !Array.isArray(payload)
       ? payload as Record<string, unknown>
       : {};
     const name = String(values.name ?? '').trim();
-    const price = String(values.price ?? '').trim();
+    const rawPrice = String(values.price ?? '').trim().replace(/^[$\s]+/, '').replace(/,/g, '').trim();
 
     if (!name) return 'Add a product name before saving.';
-    if (!price || !Number.isFinite(Number(price)) || Number(price) < 0) {
+    const numPrice = Number(rawPrice);
+    if (!rawPrice || !Number.isFinite(numPrice) || numPrice < 0) {
       return 'Enter a valid price before saving.';
     }
 
@@ -324,7 +458,12 @@ export function useCanvasRuntime() {
     element: ElementDef;
     trigger: EventTrigger;
   }) {
-    if (!isActionAllowed(runtimeState.value.permissions, action)) {
+    const effectiveRole = (runtimeState.value.sessionVars?.terminalRole as string)
+      || (runtimeState.value.sessionVars?.role as string)
+      || (context.value.sessionVars?.terminalRole as string)
+      || (context.value.sessionVars?.role as string)
+      || undefined;
+    if (!isActionAllowed(runtimeState.value.permissions, action, effectiveRole)) {
       await alert({
         title: 'Permission required',
         description: 'This action is disabled for the current role.',
@@ -429,6 +568,41 @@ export function useCanvasRuntime() {
 
     try {
       const result = await enqueue(envelope, rollback);
+
+      if (action.type === 'insert' && resolvedPayload && typeof resolvedPayload === 'object') {
+        for (const key of Object.keys(resolvedPayload)) {
+          delete runtimeState.value.inputs[key];
+        }
+        if (action.payload && typeof action.payload === 'object') {
+          for (const val of Object.values(action.payload)) {
+            if (typeof val === 'string') {
+              if (val.startsWith('$$input.')) {
+                delete runtimeState.value.inputs[val.replace('$$input.', '')];
+              } else if (val.startsWith('$$inputs.')) {
+                delete runtimeState.value.inputs[val.replace('$$inputs.', '')];
+              }
+            }
+          }
+        }
+      }
+
+      if ((action.type === 'insert' || action.type === 'update' || action.type === 'delete') && context.value.layout?.elements) {
+        const matchesActionTable = (tName: string | undefined, actTable: string) => {
+          if (!tName || !actTable) return false;
+          return tName === actTable || tName.endsWith(`_${actTable}`) || actTable.endsWith(`_${tName}`);
+        };
+
+        for (const el of context.value.layout.elements) {
+          if (el.type === 'table-view' && matchesActionTable((el as any).tableName, action.table)) {
+            reloadElement(el).catch(() => {});
+          } else if (el.type === 'cart-widget' && matchesActionTable((el as any).productTable ?? 'products', action.table)) {
+            reloadElement(el).catch(() => {});
+          } else if (el.type === 'chart' && matchesActionTable((el as any).tableName, action.table)) {
+            reloadElement(el).catch(() => {});
+          }
+        }
+      }
+
       if (action.onSuccess) await dispatch(action.onSuccess, options);
       return result;
     } catch {
@@ -458,16 +632,20 @@ export function useCanvasRuntime() {
     }
 
     if (element.type === 'table-view' && element.source !== 'audit-log' && element.tableName) {
-        await runQueryAction(element.id, {
-          type: 'query',
-          source: element.source ?? 'business-table',
-          table: element.tableName,
-          columns: element.columns,
-          orderBy: element.orderBy,
-          descending: element.descending,
-          targetElementId: element.id,
-          limit: element.pageSize ?? 20,
-          where: element.filters,
+      const queryColumns = element.columns.length > 0 && !element.columns.includes('*') && !element.columns.includes('id')
+        ? ['id', ...element.columns]
+        : element.columns;
+
+      await runQueryAction(element.id, {
+        type: 'query',
+        source: element.source ?? 'business-table',
+        table: element.tableName,
+        columns: queryColumns,
+        orderBy: element.orderBy,
+        descending: element.descending,
+        targetElementId: element.id,
+        limit: element.pageSize ?? 20,
+        where: element.filters,
       }, 'load');
     }
 
@@ -522,15 +700,40 @@ export function useCanvasRuntime() {
     return events.some((binding) => !isActionAllowed(runtimeState.value.permissions, binding.action));
   }
 
+  function formatCurrency(amount: unknown) {
+    const rawCountry = (runtimeState.value.sessionVars?.country as string)
+      || (context.value.sessionVars?.country as string)
+      || undefined;
+    const rawCurrency = (runtimeState.value.sessionVars?.currency as string)
+      || (context.value.sessionVars?.currency as string)
+      || undefined;
+    const rawSymbol = (runtimeState.value.sessionVars?.currencySymbol as string)
+      || (context.value.sessionVars?.currencySymbol as string)
+      || undefined;
+
+    const matched = findCountry(rawCountry || rawCurrency || rawSymbol);
+    const country = rawCountry || matched.code;
+    const currency = rawCurrency || matched.currency;
+    const symbol = rawSymbol || matched.symbol;
+    const decimals = matched.decimals;
+
+    return formatCurrencyAmount(amount, { symbol, currency, country, decimals });
+  }
+
   return {
     state: readonly(runtimeState),
     context: readonly(context),
+    formatCurrency,
     configure,
     reset,
     on,
     emitLocal,
     setInputValue,
     setCartValue,
+    addToCart,
+    updateCartItemQty,
+    removeFromCart,
+    clearCart,
     setSessionVar,
     dispatch,
     triggerElement,
