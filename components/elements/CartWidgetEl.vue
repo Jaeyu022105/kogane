@@ -669,6 +669,7 @@ function printReceipt() {
 
   const printWindow = window.open('', '_blank', 'width=420,height=680');
   if (!printWindow) return;
+  printWindow.opener = null;
 
   printWindow.document.write(`
     <!doctype html>

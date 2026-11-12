@@ -7,6 +7,7 @@ definePageMeta({ layout: 'dashboard' });
 
 import { Check, Globe, Sparkles, Upload, Lock, ShieldCheck, Eye, EyeOff, KeyRound, Laptop, LogOut } from 'lucide-vue-next';
 import { COUNTRIES, findCountry } from '~/lib/currency';
+import { sanitizeImageSrc } from '~/lib/securityClient';
 
 const { session, authHeaders, setSession, hydrateSession } = useAuth();
 const { business, fetchBusiness, updateTheme, updateCountry } = useBusiness();
@@ -577,7 +578,7 @@ const businessDetailItems = computed(() => {
             class="w-14 h-14 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
             style="background: rgba(61,24,32,0.05); border: 1px solid rgba(61,24,32,0.1);"
           >
-            <img v-if="business.logoUrl" :src="business.logoUrl" :alt="t('settings_business_logo')" class="w-full h-full object-cover" />
+            <img v-if="business.logoUrl && sanitizeImageSrc(business.logoUrl)" :src="sanitizeImageSrc(business.logoUrl)" :alt="t('settings_business_logo')" class="w-full h-full object-cover" />
             <span v-else class="text-xs font-mono" style="color: rgba(61,24,32,0.3);">{{ t('settings_logo_short') }}</span>
           </div>
           <div class="flex-1 min-w-0">

@@ -232,12 +232,36 @@ function compareValues(a: unknown, b: unknown, caseInsensitive = false): number 
 
 function matchesLike(value: unknown, pattern: string): boolean {
   if (value == null) return false;
-  const escaped = pattern
-    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    .replace(/%/g, '.*')
-    .replace(/_/g, '.');
-  const re = new RegExp(`^${escaped}$`, 'i');
-  return re.test(String(value));
+  // Iterative two-pointer SQL LIKE matcher (case-insensitive, immune to ReDoS)
+  const s = String(value).toLowerCase();
+  const p = String(pattern).toLowerCase();
+  let si = 0;
+  let pi = 0;
+  let starIdx = -1;
+  let matchIdx = 0;
+
+  while (si < s.length) {
+    if (pi < p.length && (p[pi] === '_' || p[pi] === s[si])) {
+      si++;
+      pi++;
+    } else if (pi < p.length && p[pi] === '%') {
+      starIdx = pi;
+      matchIdx = si;
+      pi++;
+    } else if (starIdx !== -1) {
+      pi = starIdx + 1;
+      matchIdx++;
+      si = matchIdx;
+    } else {
+      return false;
+    }
+  }
+
+  while (pi < p.length && p[pi] === '%') {
+    pi++;
+  }
+
+  return pi === p.length;
 }
 
 function extractSchemaAndShortName(fullTableName: string): { schemaName: string | null; shortName: string } {

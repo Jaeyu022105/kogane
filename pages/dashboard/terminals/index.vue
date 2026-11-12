@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Building2, Terminal as TerminalIcon, Plus, ArrowRight, Eye, EyeOff, Check, Copy, Sparkles } from 'lucide-vue-next';
-import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { ALL_TERMINAL_PERMISSION_PRESETS, presetsForIndustry } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, layoutVariantsForPreset } from '~/lib/starterWorkstations';
 import TerminalCard from '~/components/TerminalCard.vue';
 
@@ -30,21 +30,25 @@ const error      = ref<string | null>(null);
 const pinVisible = ref(false);
 const pinCopied  = ref(false);
 
+const availablePresets = computed(() => presetsForIndustry(business.value?.colorPalette?.businessType));
+
 const form = reactive({
   displayName: '',
   pin:         '',
   resolution:  '1280x720',
-  presetKey:   TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register',
-  layoutVariant: defaultLayoutVariantForPreset(TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register'),
+  presetKey:   ALL_TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register',
+  layoutVariant: defaultLayoutVariantForPreset(ALL_TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register'),
 });
 
 const currentLayoutVariants = computed(() => layoutVariantsForPreset(form.presetKey));
 
 function openCreateModal(presetKey?: string) {
   if (presetKey) {
-    form.presetKey = presetKey;
+    form.presetKey = presetKey as any;
+  } else {
+    form.presetKey = availablePresets.value[0]?.key ?? ALL_TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register';
   }
-  const preset = TERMINAL_PERMISSION_PRESETS.find(p => p.key === form.presetKey) ?? TERMINAL_PERMISSION_PRESETS[0];
+  const preset = ALL_TERMINAL_PERMISSION_PRESETS.find(p => p.key === form.presetKey) ?? ALL_TERMINAL_PERMISSION_PRESETS[0];
   const count = terminals.value.filter(t => t.role === preset.label).length + 1;
   form.displayName = `${preset.label} ${count}`;
   form.pin = String(1000 + Math.floor(Math.random() * 9000));
@@ -65,8 +69,8 @@ watch(() => form.presetKey, (nextPresetKey) => {
     form.layoutVariant = defaultLayoutVariantForPreset(nextPresetKey);
   }
 
-  const preset = TERMINAL_PERMISSION_PRESETS.find(p => p.key === nextPresetKey);
-  if (preset && (!form.displayName || TERMINAL_PERMISSION_PRESETS.some(p => form.displayName.startsWith(p.label)))) {
+  const preset = ALL_TERMINAL_PERMISSION_PRESETS.find(p => p.key === nextPresetKey);
+  if (preset && (!form.displayName || ALL_TERMINAL_PERMISSION_PRESETS.some(p => form.displayName.startsWith(p.label)))) {
     const count = terminals.value.filter(t => t.role === preset.label).length + 1;
     form.displayName = `${preset.label} ${count}`;
   }
@@ -166,7 +170,7 @@ async function createTerminal() {
     pinCopied.value  = false;
     form.displayName = '';
     form.pin         = '';
-    form.presetKey   = TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register';
+    form.presetKey   = availablePresets.value[0]?.key ?? ALL_TERMINAL_PERMISSION_PRESETS[0]?.key ?? 'cashier-register';
     form.layoutVariant = defaultLayoutVariantForPreset(form.presetKey);
     await loadTerminals();
   } catch (err: any) {
@@ -271,7 +275,7 @@ watch(() => route.query.create, (nextPreset) => {
         <!-- Starter Presets Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full text-left mb-6">
           <button
-            v-for="preset in TERMINAL_PERMISSION_PRESETS"
+            v-for="preset in availablePresets"
             :key="preset.key"
             type="button"
             class="p-4 rounded-xl border transition-all text-left group bg-white cursor-pointer hover:border-[#FF5776] hover:shadow-md"
@@ -384,7 +388,7 @@ watch(() => route.query.create, (nextPreset) => {
             <div>
               <label for="new-terminal-permission" class="text-xs font-semibold block mb-1.5" style="color: rgba(61,24,32,0.7);">Staff access</label>
               <select id="new-terminal-permission" v-model="form.presetKey" class="input-warm w-full px-4 py-2.5 text-sm">
-                <option v-for="preset in TERMINAL_PERMISSION_PRESETS" :key="preset.key" :value="preset.key">
+                <option v-for="preset in availablePresets" :key="preset.key" :value="preset.key">
                   {{ preset.label }}
                 </option>
               </select>

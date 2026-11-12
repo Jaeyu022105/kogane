@@ -1,7 +1,9 @@
 import type { ElementType, RuntimeActionDefinition } from '~/lib/uiTypes';
 
 export type TablePermissionKey = 'read' | 'insert' | 'update' | 'delete';
-export type PermissionPresetKey = 'cashier-register' | 'catalog-registrar' | 'inventory-manager' | 'kitchen-display' | 'reports-viewer';
+export type CorePermissionPresetKey = 'cashier-register' | 'catalog-registrar' | 'inventory-manager' | 'kitchen-display' | 'reports-viewer';
+export type IndustryPermissionPresetKey = 'dispatch-console' | 'billing-ledger' | 'appointment-desk' | 'service-directory';
+export type PermissionPresetKey = CorePermissionPresetKey | IndustryPermissionPresetKey;
 
 export interface TablePermissionSet {
   read: boolean;
@@ -24,6 +26,7 @@ export interface PermissionPreset {
   key: PermissionPresetKey;
   label: string;
   description: string;
+  industries?: string[];
   recommendedElements: ElementType[];
   optionalElements: ElementType[];
   permissions: TerminalPermissions;
@@ -132,6 +135,99 @@ function normalizeTablePermissionSet(value?: Partial<TablePermissionSet>): Table
   };
 }
 
+/**
+ * Specialized terminal permission presets tailored to non-restaurant industries
+ * (Logistics, Accounting, Retail, Clinic, Services, Education, and Custom Operations).
+ */
+export const INDUSTRY_PERMISSION_PRESETS: PermissionPreset[] = [
+  {
+    key: 'dispatch-console',
+    label: 'Dispatch & Delivery Console',
+    description: 'Create waybills, scan tracking codes, assign drivers, and update delivery statuses.',
+    industries: ['logistics', 'retail', 'restaurant', 'other'],
+    recommendedElements: ['text', 'scan-field', 'input-field', 'button', 'table-view'],
+    optionalElements: ['chart', 'upload'],
+    permissions: {
+      tables: {
+        '*': { ...DENY_ALL_TABLE_PERMISSIONS },
+        deliveries: { read: true, insert: true, update: true, delete: false },
+        customers: { read: true, insert: true, update: false, delete: false },
+        staff: { read: true, insert: false, update: false, delete: false },
+        inventory: { read: true, insert: false, update: true, delete: false },
+        orders: { read: true, insert: false, update: true, delete: false },
+      },
+      audit_log: { visible: false },
+      reports: { visible: false },
+    },
+  },
+  {
+    key: 'billing-ledger',
+    label: 'Billing & Ledger Desk',
+    description: 'Issue invoices, track payment status, log operating expenses, and monitor cashflow.',
+    industries: ['accounting', 'clinic', 'services', 'education', 'other'],
+    recommendedElements: ['text', 'input-field', 'button', 'table-view', 'chart'],
+    optionalElements: ['upload', 'image'],
+    permissions: {
+      tables: {
+        '*': { ...DENY_ALL_TABLE_PERMISSIONS },
+        invoices: { read: true, insert: true, update: true, delete: false },
+        expenses: { read: true, insert: true, update: true, delete: false },
+        customers: { read: true, insert: true, update: false, delete: false },
+        staff: { read: true, insert: false, update: false, delete: false },
+        orders: { read: true, insert: false, update: false, delete: false },
+      },
+      audit_log: { visible: false },
+      reports: { visible: true },
+    },
+  },
+  {
+    key: 'appointment-desk',
+    label: 'Appointments & Intake Desk',
+    description: 'Schedule visits, check in patients, clients, or students, and manage active session queues.',
+    industries: ['clinic', 'services', 'education', 'restaurant', 'other'],
+    recommendedElements: ['text', 'input-field', 'button', 'table-view'],
+    optionalElements: ['chart', 'upload'],
+    permissions: {
+      tables: {
+        '*': { ...DENY_ALL_TABLE_PERMISSIONS },
+        appointments: { read: true, insert: true, update: true, delete: false },
+        customers: { read: true, insert: true, update: true, delete: false },
+        staff: { read: true, insert: false, update: false, delete: false },
+        invoices: { read: true, insert: false, update: false, delete: false },
+      },
+      audit_log: { visible: false },
+      reports: { visible: false },
+    },
+  },
+  {
+    key: 'service-directory',
+    label: 'Directory & Roster Desk',
+    description: 'Register clients, patients, students, or loyalty members and manage staff shifts and assignments.',
+    industries: ['retail', 'clinic', 'education', 'services', 'accounting', 'logistics', 'other'],
+    recommendedElements: ['text', 'input-field', 'button', 'table-view'],
+    optionalElements: ['chart', 'image', 'upload'],
+    permissions: {
+      tables: {
+        '*': { ...DENY_ALL_TABLE_PERMISSIONS },
+        customers: { read: true, insert: true, update: true, delete: false },
+        staff: { read: true, insert: true, update: true, delete: false },
+        appointments: { read: true, insert: false, update: false, delete: false },
+        invoices: { read: true, insert: false, update: false, delete: false },
+        deliveries: { read: true, insert: false, update: false, delete: false },
+        expenses: { read: true, insert: false, update: false, delete: false },
+        orders: { read: true, insert: false, update: false, delete: false },
+      },
+      audit_log: { visible: false },
+      reports: { visible: false },
+    },
+  },
+];
+
+export const ALL_TERMINAL_PERMISSION_PRESETS: PermissionPreset[] = [
+  ...TERMINAL_PERMISSION_PRESETS,
+  ...INDUSTRY_PERMISSION_PRESETS,
+];
+
 const ROLE_PRESET_ALIASES: Record<string, PermissionPresetKey> = {
   'menu-catalog': 'catalog-registrar',
   'catalog-desk': 'catalog-registrar',
@@ -139,15 +235,33 @@ const ROLE_PRESET_ALIASES: Record<string, PermissionPresetKey> = {
   'front-counter': 'cashier-register',
   'cashier': 'cashier-register',
   'stock-room': 'inventory-manager',
+  'warehouse-desk': 'inventory-manager',
+  'warehouse': 'inventory-manager',
   'inventory': 'inventory-manager',
   'kitchen-queue': 'kitchen-display',
   'kitchen': 'kitchen-display',
   'kitchen-display': 'kitchen-display',
   'kitchen-station': 'kitchen-display',
-  'finance-console': 'reports-viewer',
-  'care-desk': 'reports-viewer',
-  'service-overview': 'reports-viewer',
-  'campus-overview': 'reports-viewer',
+  'dispatch': 'dispatch-console',
+  'courier': 'dispatch-console',
+  'delivery-desk': 'dispatch-console',
+  'dispatch-console': 'dispatch-console',
+  'billing': 'billing-ledger',
+  'ledger': 'billing-ledger',
+  'bookkeeping': 'billing-ledger',
+  'finance-console': 'billing-ledger',
+  'billing-ledger': 'billing-ledger',
+  'appointments': 'appointment-desk',
+  'triage': 'appointment-desk',
+  'intake': 'appointment-desk',
+  'care-desk': 'appointment-desk',
+  'campus-overview': 'appointment-desk',
+  'appointment-desk': 'appointment-desk',
+  'directory': 'service-directory',
+  'clienteling': 'service-directory',
+  'roster': 'service-directory',
+  'service-overview': 'service-directory',
+  'service-directory': 'service-directory',
   'reports': 'reports-viewer',
 };
 
@@ -166,7 +280,7 @@ export function presetByRoleOrKey(identifier?: string | null): PermissionPreset 
   }
 
   return (
-    TERMINAL_PERMISSION_PRESETS.find(
+    ALL_TERMINAL_PERMISSION_PRESETS.find(
       (p) =>
         p.key.toLowerCase() === lower ||
         p.label.toLowerCase().replace(/[-_\s]+/g, '-') === lower ||
@@ -306,12 +420,51 @@ export function isActionAllowed(
 }
 
 export function presetByKey(key: string | null | undefined): PermissionPreset | null {
-  return TERMINAL_PERMISSION_PRESETS.find((preset) => preset.key === key) ?? null;
+  return ALL_TERMINAL_PERMISSION_PRESETS.find((preset) => preset.key === key) ?? null;
+}
+
+export function presetsForIndustry(businessType?: string | null): PermissionPreset[] {
+  const normalized = (businessType ?? '').toLowerCase().trim();
+  const preferred: Record<string, PermissionPresetKey[]> = {
+    restaurant: ['cashier-register', 'kitchen-display', 'catalog-registrar', 'inventory-manager', 'appointment-desk', 'reports-viewer'],
+    logistics: ['dispatch-console', 'inventory-manager', 'service-directory', 'reports-viewer'],
+    accounting: ['billing-ledger', 'service-directory', 'reports-viewer'],
+    retail: ['cashier-register', 'catalog-registrar', 'inventory-manager', 'service-directory', 'dispatch-console', 'reports-viewer'],
+    clinic: ['appointment-desk', 'service-directory', 'billing-ledger', 'inventory-manager', 'reports-viewer'],
+    services: ['appointment-desk', 'service-directory', 'billing-ledger', 'reports-viewer'],
+    education: ['appointment-desk', 'service-directory', 'billing-ledger', 'reports-viewer'],
+    other: ['service-directory', 'appointment-desk', 'billing-ledger', 'dispatch-console', 'cashier-register', 'inventory-manager', 'reports-viewer'],
+  };
+  const order = preferred[normalized];
+  if (!order) return ALL_TERMINAL_PERMISSION_PRESETS;
+
+  const picked = order
+    .map((key) => presetByKey(key))
+    .filter((preset): preset is PermissionPreset => Boolean(preset));
+  const pickedKeys = new Set(picked.map((p) => p.key));
+  const remaining = ALL_TERMINAL_PERMISSION_PRESETS.filter((p) => !pickedKeys.has(p.key));
+  return [...picked, ...remaining];
 }
 
 export function inferPermissionPreset(permissions: TerminalPermissions | string | null | undefined): PermissionPreset | null {
   const normalized = normalizePermissions(permissions);
   const wildcard = normalizeTablePermissionSet(normalized.tables['*']);
+
+  if (normalized.tables.deliveries?.insert && normalized.tables.deliveries?.update) {
+    return presetByKey('dispatch-console');
+  }
+
+  if (normalized.tables.invoices?.insert && normalized.tables.expenses?.insert) {
+    return presetByKey('billing-ledger');
+  }
+
+  if (normalized.tables.appointments?.insert && normalized.tables.appointments?.update) {
+    return presetByKey('appointment-desk');
+  }
+
+  if (normalized.tables.customers?.insert && normalized.tables.staff?.insert) {
+    return presetByKey('service-directory');
+  }
 
   if (
     wildcard.read &&

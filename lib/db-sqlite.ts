@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { DbAdapter, QueryResult, SingleResult } from './db';
 import { hashPasswordSync } from './authUtils';
+import { validateIdentifier } from './schemaUtils';
 
 export function resolveSqliteDbPath(): string {
   if (process.env.SQLITE_DB_PATH) {
@@ -301,14 +302,14 @@ export class SqliteAdapter implements DbAdapter {
 
   async insert<T>(table: string, values: Record<string, unknown>, schema?: string): Promise<SingleResult<T>> {
     try {
-      const tbl = schema ? `${schema}_${table}` : table;
-      const keys = Object.keys(values);
+      const tbl = this.assertSafeTable(table, schema);
+      const keys = this.assertSafeKeys(values, 'insert values');
       const placeholders = keys.map(() => '?').join(', ');
-      const cols = keys.join(', ');
+      const cols = keys.map(k => `"${k}"`).join(', ');
 
       const row = this.db
-        .query<T, unknown[]>(`INSERT INTO ${tbl} (${cols}) VALUES (${placeholders}) RETURNING *`)
-        .get(...Object.values(values)) as T;
+        .query<T, unknown[]>(`INSERT INTO "${tbl}" (${cols}) VALUES (${placeholders}) RETURNING *`)
+        .get(...keys.map(k => values[k])) as T;
 
       return { data: row, error: null };
     } catch (err) {
@@ -318,12 +319,12 @@ export class SqliteAdapter implements DbAdapter {
 
   async update(table: string, values: Record<string, unknown>, where: Record<string, unknown>, schema?: string): Promise<{ error: string | null }> {
     try {
-      const tbl = schema ? `${schema}_${table}` : table;
-      const setClause = Object.keys(values).map(k => `${k} = ?`).join(', ');
-      const whereClause = Object.keys(where).map(k => `${k} = ?`).join(' AND ');
-      const params = [...Object.values(values), ...Object.values(where)];
+      const tbl = this.assertSafeTable(table, schema);
+      const valKeys = this.assertSafeKeys(values, 'update values'); const setClause = valKeys.map(k => `"${k}" = ?`).join(', ');
+      const whereKeys = this.assertSafeKeys(where, 'where clause'); const whereClause = whereKeys.map(k => `"${k}" = ?`).join(' AND ');
+      const params = [...valKeys.map(k => values[k]), ...whereKeys.map(k => where[k])];
 
-      this.db.query(`UPDATE ${tbl} SET ${setClause} WHERE ${whereClause}`).run(...params);
+      this.db.query(`UPDATE "${tbl}" SET ${setClause} WHERE ${whereClause}`).run(...params);
       return { error: null };
     } catch (err) {
       return { error: (err as Error).message };
@@ -332,14 +333,38 @@ export class SqliteAdapter implements DbAdapter {
 
   async delete(table: string, where: Record<string, unknown>, schema?: string): Promise<{ error: string | null }> {
     try {
-      const tbl = schema ? `${schema}_${table}` : table;
-      const whereClause = Object.keys(where).map(k => `${k} = ?`).join(' AND ');
+      const tbl = this.assertSafeTable(table, schema);
+      const whereKeys = this.assertSafeKeys(where, 'where clause'); const whereClause = whereKeys.map(k => `"${k}" = ?`).join(' AND ');
 
-      this.db.query(`DELETE FROM ${tbl} WHERE ${whereClause}`).run(...Object.values(where));
+      this.db.query(`DELETE FROM "${tbl}" WHERE ${whereClause}`).run(...whereKeys.map(k => where[k]));
       return { error: null };
     } catch (err) {
       return { error: (err as Error).message };
     }
+  }
+
+  private assertSafeTable(table: string, schema?: string): string {
+    if (schema !== undefined) {
+      validateIdentifier(schema);
+    }
+    if (table !== '__storage_blobs') {
+      validateIdentifier(table);
+    }
+    return schema ? `${schema}_${table}` : table;
+  }
+
+  private assertSafeKeys(obj: Record<string, unknown>, kind: string): string[] {
+    if (!obj || typeof obj !== 'object') {
+      throw new Error(`Invalid ${kind} object`);
+    }
+    const keys = Object.keys(obj);
+    if (keys.length === 0) {
+      throw new Error(`Empty ${kind} columns are not allowed`);
+    }
+    for (const k of keys) {
+      validateIdentifier(k);
+    }
+    return keys;
   }
 
   async execute(sql: string): Promise<{ error: string | null }> {

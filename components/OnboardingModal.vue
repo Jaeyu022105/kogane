@@ -17,7 +17,7 @@ import {
   X
 } from 'lucide-vue-next';
 import type { SchemaDef, TableDef } from '~/lib/schemaUtils';
-import { TERMINAL_PERMISSION_PRESETS, type PermissionPresetKey } from '~/lib/permissions';
+import { ALL_TERMINAL_PERMISSION_PRESETS, type PermissionPresetKey } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, inferStarterTerminals, layoutVariantsForPreset } from '~/lib/starterWorkstations';
 import { UI_LAYOUT_BUNDLES, buildBusinessPalette, extractPaletteFromLogoDataUrl, type LayoutBundleKey, type ParticleEffect, type SurfaceStyle } from '~/lib/workspaceBranding';
 import { COUNTRIES, findCountry, type CountryOption } from '~/lib/currency';
@@ -392,7 +392,7 @@ watch(starterTerminalSeeds, (next) => {
 
 const starterTerminalCards = computed(() =>
   starterTerminalSeeds.value.map((terminal) => {
-    const preset = TERMINAL_PERMISSION_PRESETS.find((item) => item.key === terminal.presetKey);
+    const preset = ALL_TERMINAL_PERMISSION_PRESETS.find((item) => item.key === terminal.presetKey);
     const plan = terminalStylePlan.value[terminal.presetKey];
 
     return {
@@ -526,6 +526,7 @@ async function handleSubmit() {
           currencySymbol: selectedCountryRecord.value.symbol,
           languagePreference: locale.value,
           uiStyle: uiStyle.value,
+          businessType: selectedType.value,
           onboardingPreset: selectedPreset.value,
           layoutBundle: layoutBundle.value,
           surfaceStyle: surfaceStyle.value,

@@ -6,6 +6,7 @@
 import { defineEventHandler, getQuery } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
+import { validateIdentifier } from '~/lib/schemaUtils';
 import { isPrefixDb } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
@@ -29,9 +30,18 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { columns: null, rows: null, total: 0, error: 'Business not found' };
   if (business.admin_user_id !== userId) return { columns: null, rows: null, total: 0, error: 'Forbidden' };
 
+  try {
+    validateIdentifier(tableName);
+    validateIdentifier(business.schema_name);
+  } catch (err) {
+    return { columns: null, rows: null, total: 0, error: (err as Error).message };
+  }
+
   const isDevMode = isPrefixDb();
-  const pageNum = Math.max(1, parseInt(page ?? '1', 10));
-  const pageSize = Math.min(200, parseInt(limit ?? '50', 10));
+  const rawPage = Number.parseInt(String(page ?? '1'), 10);
+  const rawLimit = Number.parseInt(String(limit ?? '50'), 10);
+  const pageNum = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const pageSize = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(200, rawLimit) : 50;
   const offset = (pageNum - 1) * pageSize;
 
   let columns: { name: string; type: string }[] = [];

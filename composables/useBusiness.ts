@@ -18,6 +18,7 @@ export interface ColorPalette {
   currency?: string;
   currencySymbol?: string;
   uiStyle?: string;
+  businessType?: string | null;
   onboardingPreset?: string | null;
   layoutBundle?: 'aurora-service' | 'ink-studio' | 'paper-ledger';
   surfaceStyle?: 'rounded' | 'square';

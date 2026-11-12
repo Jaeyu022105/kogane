@@ -47,7 +47,13 @@ export default defineEventHandler(async (event) => {
   const errors: string[] = [];
 
   for (const table of schemaDef.tables ?? []) {
-    const sql = buildCreateTableSql(table, business.schema_name, dialect);
+    let sql: string;
+    try {
+      sql = buildCreateTableSql(table, business.schema_name, dialect);
+    } catch (err) {
+      errors.push(`${table?.name ?? 'table'}: ${(err as Error).message}`);
+      continue;
+    }
     const { error } = await db.execute(sql);
     if (error) errors.push(`${table.name}: ${error}`);
   }

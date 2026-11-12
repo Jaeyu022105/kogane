@@ -20,7 +20,7 @@ import {
 import Canvas from '~/components/Canvas.vue';
 import PropertiesPanel from '~/components/PropertiesPanel.vue';
 import { DEFAULT_LAYOUT_THEME, type ElementDef, type ElementType, type UiLayout } from '~/lib/uiTypes';
-import { BUILDER_PRESETS } from '~/lib/builderPresets';
+import { ALL_BUILDER_PRESETS } from '~/lib/builderPresets';
 import { inferPermissionPreset, normalizePermissions } from '~/lib/permissions';
 import { STATION_OBJECTS, type StationObjectElementBlueprint } from '~/lib/stationObjects';
 
@@ -431,7 +431,7 @@ function dropElement(item: BuilderPaletteItem, x = 80, y = 80, w = item.defaultW
 }
 
 function applyBuilderPreset(presetId: string) {
-  const preset = BUILDER_PRESETS.find(p => p.id === presetId);
+  const preset = ALL_BUILDER_PRESETS.find(p => p.id === presetId);
   if (!preset) return;
   if (!confirm('Apply this preset? It will replace the current layout.')) return;
   loadLayout(preset.layout);
@@ -997,7 +997,7 @@ onUnmounted(() => {
 
           <div class="p-4 space-y-3">
             <div
-              v-for="preset in BUILDER_PRESETS"
+              v-for="preset in ALL_BUILDER_PRESETS"
               :key="preset.id"
               class="rounded-2xl p-4 space-y-2 transition-all"
               style="background: #fdf7f2; border: 1px solid rgba(61,24,32,0.08);"

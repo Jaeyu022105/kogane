@@ -1,6 +1,7 @@
 import type { TerminalPermissions } from '~/lib/permissions';
 import { isActionAllowed, normalizePermissions } from '~/lib/permissions';
 import { findCountry, formatCurrencyAmount } from '~/lib/currency';
+import { evaluateSafeCondition, sanitizeNavigationUrl } from '~/lib/securityClient';
 import {
   CANVAS_RUNTIME_KEY,
   resolveRuntimePathTemplate,
@@ -289,7 +290,9 @@ export function useCanvasRuntime() {
     runtimeState.value.queryResults[targetElementId] = Array.isArray(result.data)
       ? result.data as Record<string, unknown>[]
       : [];
-    runtimeState.value.queryTables[targetElementId] = action.table;
+    if (action.table) {
+      runtimeState.value.queryTables[targetElementId] = action.table;
+    }
     return runtimeState.value.queryResults[targetElementId];
   }
 
@@ -424,15 +427,12 @@ export function useCanvasRuntime() {
 
   function evaluateCondition(condition: string | undefined): boolean {
     if (!condition || !condition.trim()) return true;
-
-    try {
-      const ctx = resolverContext();
-      // eslint-disable-next-line no-new-func
-      const fn = new Function('inputs', 'session', 'cart', `return !!(${condition})`);
-      return fn(ctx.inputs, ctx.session ?? {}, ctx.cart);
-    } catch {
-      return false;
-    }
+    const ctx = resolverContext();
+    return evaluateSafeCondition(condition, {
+      inputs: ctx.inputs,
+      session: (ctx.session ?? {}) as Record<string, unknown>,
+      cart: ctx.cart,
+    });
   }
 
   function validateInsert(action: RuntimeActionDefinition, payload: unknown) {
@@ -494,7 +494,16 @@ export function useCanvasRuntime() {
 
     if (action.type === 'navigate') {
       if (import.meta.client && action.url) {
-        window.location.href = action.url;
+        const safeUrl = sanitizeNavigationUrl(action.url);
+        if (!safeUrl) {
+          await alert({
+            title: 'Blocked navigation',
+            description: 'This URL scheme is not allowed for security reasons.',
+            confirmLabel: 'Dismiss',
+          });
+          return null;
+        }
+        window.location.href = safeUrl;
       }
 
       if (action.onSuccess) await dispatch(action.onSuccess, options);
@@ -586,18 +595,19 @@ export function useCanvasRuntime() {
         }
       }
 
-      if ((action.type === 'insert' || action.type === 'update' || action.type === 'delete') && context.value.layout?.elements) {
+      if ((action.type === 'insert' || action.type === 'update' || action.type === 'delete') && context.value.layout?.elements && action.table) {
+        const actionTable = action.table;
         const matchesActionTable = (tName: string | undefined, actTable: string) => {
           if (!tName || !actTable) return false;
           return tName === actTable || tName.endsWith(`_${actTable}`) || actTable.endsWith(`_${tName}`);
         };
 
         for (const el of context.value.layout.elements) {
-          if (el.type === 'table-view' && matchesActionTable((el as any).tableName, action.table)) {
+          if (el.type === 'table-view' && matchesActionTable((el as any).tableName, actionTable)) {
             reloadElement(el).catch(() => {});
-          } else if (el.type === 'cart-widget' && matchesActionTable((el as any).productTable ?? 'products', action.table)) {
+          } else if (el.type === 'cart-widget' && matchesActionTable((el as any).productTable ?? 'products', actionTable)) {
             reloadElement(el).catch(() => {});
-          } else if (el.type === 'chart' && matchesActionTable((el as any).tableName, action.table)) {
+          } else if (el.type === 'chart' && matchesActionTable((el as any).tableName, actionTable)) {
             reloadElement(el).catch(() => {});
           }
         }

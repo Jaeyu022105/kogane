@@ -6,7 +6,7 @@
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
-import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { ALL_TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset } from '~/lib/starterWorkstations';
 import { writeAuditLog } from '~/server/utils/audit';
 import { getBusinessForAdmin } from '~/server/utils/business';
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
     brandConfig = {};
   }
 
-  const preset = TERMINAL_PERMISSION_PRESETS.find((item) => item.key === body.presetKey) ?? TERMINAL_PERMISSION_PRESETS[0];
+  const preset = ALL_TERMINAL_PERMISSION_PRESETS.find((item) => item.key === body.presetKey) ?? ALL_TERMINAL_PERMISSION_PRESETS[0];
   const { terminal, error } = await createManagedTerminal({
     businessId: body.businessId,
     businessSchema: business.schema_name,

@@ -12,6 +12,7 @@ import type { PermissionPresetKey } from '~/lib/permissions';
 import type { SchemaDef } from '~/lib/schemaUtils';
 import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/managedTerminals';
 import { findCountry } from '~/lib/currency';
+import { sanitizeImageSrc } from '~/lib/securityClient';
 import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
@@ -51,10 +52,13 @@ export default defineEventHandler(async (event) => {
 
   const mergedPalette = {
     ...(body.colorPalette || {}),
+    businessType: body.businessType || body.colorPalette?.businessType || null,
     country: countryCode,
     currency: currencyCode,
     currencySymbol: currencySymbol,
   };
+
+  const safeLogoUrl = body.logoUrl ? (sanitizeImageSrc(body.logoUrl) || null) : null;
 
   let schemaName = '';
   let business: ({ id: string } & Record<string, unknown>) | null = null;
@@ -65,7 +69,7 @@ export default defineEventHandler(async (event) => {
     schemaName = existing.schema_name;
     const { error: updateErr } = await db.update('businesses', {
       name: body.businessName.trim(),
-      logo_url: body.logoUrl || null,
+      logo_url: safeLogoUrl,
       color_palette: JSON.stringify(mergedPalette),
       country: countryCode,
       currency: currencyCode,
@@ -92,7 +96,7 @@ export default defineEventHandler(async (event) => {
     const { data: newBiz, error } = await db.insert<{ id: string } & Record<string, unknown>>('businesses', {
       admin_user_id: userId,
       name: body.businessName.trim(),
-      logo_url: body.logoUrl || null,
+      logo_url: safeLogoUrl,
       color_palette: JSON.stringify(mergedPalette),
       country: countryCode,
       currency: currencyCode,
@@ -113,7 +117,13 @@ export default defineEventHandler(async (event) => {
   const tableErrors: string[] = [];
 
   for (const table of body.schemaDef?.tables ?? []) {
-    const sql = buildCreateTableSql(table, schemaName, dialect);
+    let sql: string;
+    try {
+      sql = buildCreateTableSql(table, schemaName, dialect);
+    } catch (err) {
+      tableErrors.push(`${table?.name ?? 'table'}: ${(err as Error).message}`);
+      continue;
+    }
     const { error: tableErr } = await db.execute(sql);
     if (tableErr) tableErrors.push(`${table.name}: ${tableErr}`);
   }

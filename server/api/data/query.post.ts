@@ -24,9 +24,13 @@ export default defineEventHandler(async (event) => {
     return { data: null, error: 'Missing businessId or tableName' };
   }
 
+  const rawCols = Array.isArray(body.columns) ? body.columns : [];
+
   try {
     validateIdentifier(body.tableName);
-    for (const col of body.columns ?? []) validateIdentifier(col);
+    for (const col of rawCols) {
+      if (col !== '*') validateIdentifier(col);
+    }
   } catch (err) {
     return { data: null, error: (err as Error).message };
   }
@@ -39,12 +43,22 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { data: null, error: 'Business not found' };
   if (business.admin_user_id !== userId) return { data: null, error: 'Forbidden' };
 
+  try {
+    validateIdentifier(business.schema_name);
+  } catch {
+    return { data: null, error: 'Invalid business schema identifier' };
+  }
+
   const isDevMode = isPrefixDb();
-  const cols = body.columns?.length
-    ? (body.columns.includes('*') || body.columns.includes('id') ? body.columns.join(', ') : `id, ${body.columns.join(', ')}`)
+  const cols = rawCols.length
+    ? (rawCols.includes('*')
+        ? '*'
+        : (rawCols.includes('id') ? rawCols : ['id', ...rawCols]).map((c) => `"${c}"`).join(', '))
     : '*';
-  const limit = Math.min(body.limit ?? 50, 200);
-  const offset = body.offset ?? 0;
+  const parsedLimit = Number(body.limit);
+  const parsedOffset = Number(body.offset);
+  const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(Math.floor(parsedLimit), 200) : 50;
+  const offset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? Math.floor(parsedOffset) : 0;
 
   let sql: string;
   let params: unknown[];

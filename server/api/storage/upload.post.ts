@@ -11,6 +11,16 @@ const GUEST_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'ima
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']);
 const DOCUMENT_TYPES = new Set(['application/pdf']);
 
+const EXTENSION_MIME_MAP: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  svg: 'image/svg+xml',
+  pdf: 'application/pdf',
+};
+
 function maxBytesForType(contentType: string) {
   if (IMAGE_TYPES.has(contentType)) return 5 * 1024 * 1024;
   if (DOCUMENT_TYPES.has(contentType)) return 10 * 1024 * 1024;
@@ -51,6 +61,14 @@ export default defineEventHandler(async (event) => {
     safePath = sanitizeStoragePath(rawPath);
   } catch {
     return { url: null, error: 'Invalid storage path' };
+  }
+
+  const fileName = safePath.split('/').pop() ?? '';
+  const dotIdx = fileName.lastIndexOf('.');
+  const ext = dotIdx !== -1 ? fileName.slice(dotIdx + 1).toLowerCase() : '';
+  const expectedMime = EXTENSION_MIME_MAP[ext];
+  if (!expectedMime || expectedMime !== contentType) {
+    return { url: null, error: 'File extension does not match declared file type' };
   }
 
   let actorType: AuditActorType | null = null;

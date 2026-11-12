@@ -1,5 +1,5 @@
 import { db } from '~/lib/db';
-import { BUILDER_PRESETS } from '~/lib/builderPresets';
+import { ALL_BUILDER_PRESETS } from '~/lib/builderPresets';
 import { hashPin } from '~/lib/authUtils';
 import { presetByKey, type PermissionPresetKey } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, inferStarterTerminals } from '~/lib/starterWorkstations';
@@ -15,6 +15,10 @@ const PRESET_LAYOUT_MAP: Record<PermissionPresetKey, string> = {
   'inventory-manager': 'inventory-station',
   'kitchen-display': 'kitchen-station',
   'reports-viewer': 'reports-station',
+  'dispatch-console': 'dispatch-station',
+  'billing-ledger': 'billing-station',
+  'appointment-desk': 'appointment-station',
+  'service-directory': 'directory-station',
 };
 
 function clone<T>(value: T): T {
@@ -132,6 +136,85 @@ function applyLayoutVariant(layoutSeed: typeof DEFAULT_LAYOUT, presetKey: Permis
       title: 'Activity Targets',
     });
   }
+
+  if (presetKey === 'dispatch-console' && layoutVariant === 'route-board') {
+    patchElement(layoutSeed, 'dispatch-table', {
+      position: { x: 40, y: 108, width: 1200, height: 340, zIndex: 2 },
+      title: 'Fleet Delivery Board',
+      subtitle: 'Monitor all active routes and courier dispatches across the top.',
+    });
+    patchElement(layoutSeed, 'dispatch-scan', {
+      position: { x: 40, y: 468, width: 380, height: 48, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'dispatch-tracking', {
+      position: { x: 40, y: 530, width: 184, height: 48, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'dispatch-driver', {
+      position: { x: 236, y: 530, width: 184, height: 48, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'dispatch-origin', {
+      position: { x: 440, y: 468, width: 250, height: 48, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'dispatch-destination', {
+      position: { x: 440, y: 530, width: 250, height: 48, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'dispatch-status', {
+      position: { x: 710, y: 468, width: 250, height: 48, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'dispatch-submit', {
+      position: { x: 710, y: 530, width: 530, height: 48, zIndex: 2 },
+    });
+  }
+
+  if (presetKey === 'billing-ledger' && layoutVariant === 'expense-audit') {
+    patchElement(layoutSeed, 'billing-expenses-table', {
+      position: { x: 496, y: 108, width: 744, height: 310, zIndex: 2 },
+      title: 'Expense Ledger (Priority)',
+    });
+    patchElement(layoutSeed, 'billing-invoices-table', {
+      position: { x: 496, y: 436, width: 744, height: 242, zIndex: 2 },
+      title: 'Client Invoices',
+    });
+  }
+
+  if (presetKey === 'appointment-desk' && layoutVariant === 'triage-board') {
+    patchElement(layoutSeed, 'appt-queue-table', {
+      position: { x: 40, y: 116, width: 1200, height: 350, zIndex: 2 },
+      title: 'Wide Check-In & Triage Queue',
+    });
+    patchElement(layoutSeed, 'appt-customer', {
+      position: { x: 40, y: 486, width: 280, height: 50, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'appt-staff', {
+      position: { x: 336, y: 486, width: 220, height: 50, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'appt-datetime', {
+      position: { x: 572, y: 486, width: 220, height: 50, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'appt-duration', {
+      position: { x: 808, y: 486, width: 140, height: 50, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'appt-status', {
+      position: { x: 964, y: 486, width: 276, height: 50, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'appt-notes', {
+      position: { x: 40, y: 552, width: 820, height: 52, zIndex: 2 },
+    });
+    patchElement(layoutSeed, 'appt-submit', {
+      position: { x: 876, y: 552, width: 364, height: 52, zIndex: 2 },
+    });
+  }
+
+  if (presetKey === 'service-directory' && layoutVariant === 'roster-board') {
+    patchElement(layoutSeed, 'dir-staff-table', {
+      position: { x: 496, y: 108, width: 744, height: 290, zIndex: 2 },
+      title: 'Active Crew & Staff Roster',
+    });
+    patchElement(layoutSeed, 'dir-customers-table', {
+      position: { x: 496, y: 416, width: 744, height: 262, zIndex: 2 },
+      title: 'Client & Member Directory',
+    });
+  }
 }
 
 export async function createManagedTerminal(options: {
@@ -157,7 +240,7 @@ export async function createManagedTerminal(options: {
     }
   }
 
-  const initialLayoutPreset = BUILDER_PRESETS.find((item) => item.id === PRESET_LAYOUT_MAP[preset.key]);
+  const initialLayoutPreset = ALL_BUILDER_PRESETS.find((item) => item.id === PRESET_LAYOUT_MAP[preset.key]);
   const layoutSeed = clone(initialLayoutPreset?.layout ?? DEFAULT_LAYOUT);
   applyLayoutVariant(layoutSeed, preset.key, options.layoutVariant ?? defaultLayoutVariantForPreset(preset.key));
   const layoutData = applyBrandingToLayout(layoutSeed, options.brandConfig);

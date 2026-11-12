@@ -3,6 +3,8 @@
  * These are used by both the builder (editor) and runtime renderer.
  */
 
+import { sanitizeImageSrc, sanitizeNavigationUrl } from './securityClient';
+
 export type ElementType =
   | 'button'
   | 'text'
@@ -376,7 +378,7 @@ function legacyActionToEvents(action?: LegacyElementAction): ElementEventBinding
       trigger: 'click',
       action: {
         type: 'navigate',
-        url: String(action.payload.url ?? ''),
+        url: sanitizeNavigationUrl(action.payload.url) ?? '',
       },
     }];
   }
@@ -400,33 +402,53 @@ function legacyActionToEvents(action?: LegacyElementAction): ElementEventBinding
   }
 
   if (action.type === 'custom-script') {
-    return [{
-      trigger: 'click',
-      action: {
-        type: 'emit',
-        event: 'runtime:legacy-script',
-        payload: {
-          script: String(action.payload.script ?? ''),
-        },
-      },
-    }];
+    return [];
   }
 
   return [];
 }
 
+function normalizeAction(rawAction: unknown, depth = 0): RuntimeActionDefinition | null {
+  if (depth > 20 || !rawAction || typeof rawAction !== 'object') return null;
+
+  const candidate = { ...(rawAction as Record<string, unknown>) };
+  if (typeof candidate.type !== 'string' || !candidate.type) return null;
+  if (candidate.type === 'custom-script') return null;
+  if (candidate.type === 'emit' && candidate.event === 'runtime:legacy-script') return null;
+
+  if (candidate.type === 'navigate') {
+    candidate.url = sanitizeNavigationUrl(candidate.url) ?? '';
+  }
+
+  if ('onSuccess' in candidate) {
+    const safeSuccess = normalizeAction(candidate.onSuccess, depth + 1);
+    if (safeSuccess) candidate.onSuccess = safeSuccess;
+    else delete candidate.onSuccess;
+  }
+
+  if ('onFailure' in candidate) {
+    const safeFailure = normalizeAction(candidate.onFailure, depth + 1);
+    if (safeFailure) candidate.onFailure = safeFailure;
+    else delete candidate.onFailure;
+  }
+
+  return candidate as unknown as RuntimeActionDefinition;
+}
+
 function normalizeEvents(events: unknown, fallbackAction?: LegacyElementAction): ElementEventBinding[] {
   const safeEvents = Array.isArray(events) ? events : [];
-  const mapped = safeEvents
-    .filter((event): event is Record<string, unknown> => Boolean(event && typeof event === 'object'))
-    .map((event) => ({
-      id: typeof event.id === 'string' ? event.id : crypto.randomUUID(),
-      trigger: (event.trigger as EventTrigger) ?? 'click',
-      action: {
-        ...(typeof event.action === 'object' && event.action ? event.action : {}),
-      } as RuntimeActionDefinition,
-    }))
-    .filter((event) => event.action?.type);
+  const mapped: ElementEventBinding[] = [];
+  for (const event of safeEvents) {
+    if (!event || typeof event !== 'object') continue;
+    const rec = event as Record<string, unknown>;
+    const safe = normalizeAction(rec.action);
+    if (!safe) continue;
+    mapped.push({
+      id: typeof rec.id === 'string' ? rec.id : crypto.randomUUID(),
+      trigger: (rec.trigger as EventTrigger) ?? 'click',
+      action: safe,
+    });
+  }
 
   if (mapped.length > 0) return mapped;
   return legacyActionToEvents(fallbackAction).map((event) => ({
@@ -486,7 +508,7 @@ function normalizeElement(raw: unknown): ElementDef | null {
       return {
         ...base,
         type: 'image',
-        src: String(source.src ?? ''),
+        src: sanitizeImageSrc(source.src),
         fit: source.fit ?? 'cover',
         radius: source.radius != null ? Number(source.radius) : undefined,
       } as ImageElementDef;

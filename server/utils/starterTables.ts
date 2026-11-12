@@ -44,6 +44,69 @@ export const STARTER_BUSINESS_TABLES: Record<string, TableDef> = {
       { name: 'reorder_at', type: 'integer', nullable: true },
     ],
   },
+  customers: {
+    name: 'customers',
+    columns: [
+      { name: 'full_name', type: 'text', nullable: false },
+      { name: 'email', type: 'text', nullable: true, unique: true },
+      { name: 'phone', type: 'text', nullable: true },
+      { name: 'address', type: 'text', nullable: true },
+      { name: 'notes', type: 'text', nullable: true },
+    ],
+  },
+  staff: {
+    name: 'staff',
+    columns: [
+      { name: 'full_name', type: 'text', nullable: false },
+      { name: 'role', type: 'text', nullable: false },
+      { name: 'email', type: 'text', nullable: true },
+      { name: 'phone', type: 'text', nullable: true },
+      { name: 'active', type: 'boolean', nullable: false, default: '1' },
+    ],
+  },
+  appointments: {
+    name: 'appointments',
+    columns: [
+      { name: 'customer_name', type: 'text', nullable: false },
+      { name: 'staff_id', type: 'text', nullable: true },
+      { name: 'scheduled_at', type: 'timestamptz', nullable: false },
+      { name: 'duration_min', type: 'integer', nullable: true },
+      { name: 'status', type: 'text', nullable: false, default: "'scheduled'" },
+      { name: 'notes', type: 'text', nullable: true },
+    ],
+  },
+  invoices: {
+    name: 'invoices',
+    columns: [
+      { name: 'invoice_number', type: 'text', nullable: false, unique: true },
+      { name: 'client_name', type: 'text', nullable: false },
+      { name: 'issue_date', type: 'date', nullable: false },
+      { name: 'due_date', type: 'date', nullable: true },
+      { name: 'total_amount', type: 'numeric', nullable: false },
+      { name: 'paid', type: 'boolean', nullable: false, default: '0' },
+    ],
+  },
+  expenses: {
+    name: 'expenses',
+    columns: [
+      { name: 'description', type: 'text', nullable: false },
+      { name: 'category', type: 'text', nullable: true },
+      { name: 'amount', type: 'numeric', nullable: false },
+      { name: 'expense_date', type: 'date', nullable: false },
+      { name: 'receipt_url', type: 'text', nullable: true },
+    ],
+  },
+  deliveries: {
+    name: 'deliveries',
+    columns: [
+      { name: 'tracking_code', type: 'text', nullable: false, unique: true },
+      { name: 'origin', type: 'text', nullable: true },
+      { name: 'destination', type: 'text', nullable: false },
+      { name: 'status', type: 'text', nullable: false, default: "'pending'" },
+      { name: 'driver_name', type: 'text', nullable: true },
+      { name: 'delivered_at', type: 'timestamptz', nullable: true },
+    ],
+  },
 };
 
 export function starterTableNamesForPreset(presetKey?: string | null): string[] {
@@ -56,6 +119,14 @@ export function starterTableNamesForPreset(presetKey?: string | null): string[] 
       return ['inventory'];
     case 'kitchen-display':
       return ['orders'];
+    case 'dispatch-console':
+      return ['deliveries'];
+    case 'billing-ledger':
+      return ['invoices', 'expenses'];
+    case 'appointment-desk':
+      return ['appointments', 'customers'];
+    case 'service-directory':
+      return ['customers', 'staff'];
     default:
       return [];
   }

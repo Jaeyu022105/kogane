@@ -123,10 +123,10 @@ let unsubscribeRealtime: (() => void) | null = null;
 
 function statusBadgeClasses(status: string) {
   const s = String(status || '').toLowerCase();
-  if (s === 'fulfilled' || s === 'completed' || s === 'served') {
+  if (s === 'fulfilled' || s === 'completed' || s === 'served' || s === 'delivered' || s === 'paid') {
     return 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30';
   }
-  if (s === 'preparing' || s === 'in_progress') {
+  if (s === 'preparing' || s === 'in_progress' || s === 'dispatched' || s === 'in_transit' || s === 'checked_in') {
     return 'bg-sky-500/20 text-sky-600 dark:text-sky-300 border-sky-500/30';
   }
   return 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30';
@@ -228,6 +228,10 @@ const canDeleteTable = computed(() => {
 
 const isProductsTable = computed(() => props.element.tableName === 'products' || Boolean(props.element.tableName?.endsWith('_products')));
 const isOrdersTable = computed(() => props.element.tableName === 'orders' || Boolean(props.element.tableName?.endsWith('_orders')));
+const isDeliveriesTable = computed(() => props.element.tableName === 'deliveries' || Boolean(props.element.tableName?.endsWith('_deliveries')));
+const isAppointmentsTable = computed(() => props.element.tableName === 'appointments' || Boolean(props.element.tableName?.endsWith('_appointments')));
+const isInvoicesTable = computed(() => props.element.tableName === 'invoices' || Boolean(props.element.tableName?.endsWith('_invoices')));
+const isStatusCycleTable = computed(() => isOrdersTable.value || isDeliveriesTable.value || isAppointmentsTable.value);
 
 const hasRowActions = computed(() => {
   if (isOrdersTable.value) {
@@ -287,9 +291,31 @@ async function markOrderServed(row: Record<string, unknown>, e: Event) {
 async function cycleOrderStatus(row: Record<string, unknown>, e: Event) {
   e.stopPropagation();
   const rowId = row.id ?? (row as any)._id ?? (row as any).reference;
-  if (props.builderMode || !effectiveRuntime.value || !isOrdersTable.value || !rowId || !canUpdateTable.value) return;
-  const current = String(row.status || 'pending').toLowerCase();
-  const nextStatus = current === 'pending' ? 'preparing' : current === 'preparing' ? 'fulfilled' : 'pending';
+  if (props.builderMode || !effectiveRuntime.value || !isStatusCycleTable.value || !rowId || !canUpdateTable.value) return;
+
+  let nextStatus: string;
+  if (isDeliveriesTable.value) {
+    const current = String(row.status || 'pending').toLowerCase();
+    nextStatus = current === 'pending'
+      ? 'dispatched'
+      : current === 'dispatched'
+        ? 'in_transit'
+        : current === 'in_transit'
+          ? 'delivered'
+          : 'pending';
+  } else if (isAppointmentsTable.value) {
+    const current = String(row.status || 'scheduled').toLowerCase();
+    nextStatus = current === 'scheduled'
+      ? 'checked_in'
+      : current === 'checked_in'
+        ? 'in_progress'
+        : current === 'in_progress'
+          ? 'completed'
+          : 'scheduled';
+  } else {
+    const current = String(row.status || 'pending').toLowerCase();
+    nextStatus = current === 'pending' ? 'preparing' : current === 'preparing' ? 'fulfilled' : 'pending';
+  }
 
   const previousStatus = row.status;
   row.status = nextStatus;
@@ -308,6 +334,32 @@ async function cycleOrderStatus(row: Record<string, unknown>, e: Event) {
   } catch (err) {
     row.status = previousStatus;
     console.error('Failed to bump order status:', err);
+  }
+}
+
+async function toggleInvoicePaid(row: Record<string, unknown>, e: Event) {
+  e.stopPropagation();
+  const rowId = row.id ?? (row as any)._id ?? (row as any).reference;
+  if (props.builderMode || !effectiveRuntime.value || !isInvoicesTable.value || !rowId || !canUpdateTable.value) return;
+  const currentlyPaid = row.paid === 1 || row.paid === true || String(row.paid).toLowerCase() === 'true' || String(row.paid) === '1';
+  const nextPaid = currentlyPaid ? 0 : 1;
+  const previousPaid = row.paid;
+  row.paid = nextPaid;
+
+  try {
+    await effectiveRuntime.value.dispatch({
+      type: 'update',
+      table: props.element.tableName || 'invoices',
+      rowId,
+      payload: { paid: nextPaid },
+    }, {
+      element: props.element,
+      trigger: 'click',
+    });
+    await fetchRows();
+  } catch (err) {
+    row.paid = previousPaid;
+    console.error('Failed to update invoice payment status:', err);
   }
 }
 
@@ -769,11 +821,11 @@ onUnmounted(() => {
             >
               <template v-if="column === 'status'">
                 <button
-                  v-if="isOrdersTable && !builderMode && canUpdateTable"
+                  v-if="isStatusCycleTable && !builderMode && canUpdateTable"
                   type="button"
                   class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer hover:brightness-125 shadow-sm"
                   :class="statusBadgeClasses(String(row[column] ?? 'pending'))"
-                  title="Click to advance status (pending → preparing → fulfilled)"
+                  :title="isDeliveriesTable ? 'Click to advance delivery status (pending → dispatched → in_transit → delivered)' : isAppointmentsTable ? 'Click to advance visit status (scheduled → checked_in → in_progress → completed)' : 'Click to advance status (pending → preparing → fulfilled)'"
                   @click.stop="cycleOrderStatus(row, $event)"
                 >
                   <span class="w-1.5 h-1.5 rounded-full bg-current" :class="{ 'animate-pulse': !isOrderServed(row) }" />
@@ -786,6 +838,25 @@ onUnmounted(() => {
                 >
                   <span class="w-1.5 h-1.5 rounded-full bg-current" />
                   {{ displayStatus(row[column]) }}
+                </span>
+              </template>
+              <template v-else-if="column === 'paid' && isInvoicesTable">
+                <button
+                  v-if="!builderMode && canUpdateTable"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer hover:brightness-125 shadow-sm"
+                  :class="statusBadgeClasses(row[column] === 1 || row[column] === true || String(row[column]) === '1' || String(row[column]).toLowerCase() === 'true' ? 'paid' : 'unpaid')"
+                  title="Click to toggle Paid / Unpaid"
+                  @click.stop="toggleInvoicePaid(row, $event)"
+                >
+                  {{ row[column] === 1 || row[column] === true || String(row[column]) === '1' || String(row[column]).toLowerCase() === 'true' ? 'PAID' : 'UNPAID' }}
+                </button>
+                <span
+                  v-else
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
+                  :class="statusBadgeClasses(row[column] === 1 || row[column] === true || String(row[column]) === '1' || String(row[column]).toLowerCase() === 'true' ? 'paid' : 'unpaid')"
+                >
+                  {{ row[column] === 1 || row[column] === true || String(row[column]) === '1' || String(row[column]).toLowerCase() === 'true' ? 'PAID' : 'UNPAID' }}
                 </span>
               </template>
               <template v-else-if="column === 'items' && isOrdersTable">

@@ -38,7 +38,12 @@ export default defineEventHandler(async (event) => {
   const dialect = getSqlDialect();
 
   for (const col of body.addColumns) {
-    const sql = buildAddColumnSql(body.tableName, col, business.schema_name, dialect);
+    let sql: string;
+    try {
+      sql = buildAddColumnSql(body.tableName, col, business.schema_name, dialect);
+    } catch (err) {
+      return { error: (err as Error).message, success: false };
+    }
     const { error } = await db.execute(sql);
     if (error) return { error: `Failed to add column "${col.name}": ${error}`, success: false };
   }

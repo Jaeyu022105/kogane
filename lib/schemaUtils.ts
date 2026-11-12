@@ -25,21 +25,72 @@ export interface SchemaDef {
 
 // Allowed characters for table/column identifiers — prevent SQL injection
 const IDENTIFIER_RE = /^[a-z][a-z0-9_]{0,62}$/;
+const FORBIDDEN_IDENTIFIERS = new Set(['__proto__', 'constructor', 'prototype']);
 
-/** Validate identifier to prevent SQL injection. */
+/** Validate identifier to prevent SQL injection and prototype pollution. */
 export function validateIdentifier(name: string): void {
-  if (!IDENTIFIER_RE.test(name)) {
+  if (typeof name !== 'string' || FORBIDDEN_IDENTIFIERS.has(name) || !IDENTIFIER_RE.test(name)) {
     throw new Error(
-      `Invalid identifier "${name}". Only lowercase letters, digits, and underscores are allowed (must start with a letter).`
+      `Invalid identifier "${String(name)}". Only lowercase letters, digits, and underscores are allowed (must start with a letter).`
     );
   }
 }
 
-/** Validate all identifiers within a table definition. */
+const SAFE_DEFAULT_FUNCTIONS = new Set([
+  'now()',
+  'current_timestamp',
+  'current_date',
+  "(datetime('now'))",
+  'gen_random_uuid()',
+]);
+
+/** Validate column DEFAULT expression so arbitrary SQL cannot be injected via schema definitions. */
+export function validateColumnDefault(defaultValue: unknown): void {
+  if (typeof defaultValue !== 'string') {
+    throw new Error('Invalid column default value: must be a string literal.');
+  }
+  const trimmed = defaultValue.trim();
+  if (!trimmed || trimmed.length > 128) {
+    throw new Error('Invalid column default value: empty or exceeds 128 characters.');
+  }
+  if (SAFE_DEFAULT_FUNCTIONS.has(trimmed.toLowerCase())) {
+    return;
+  }
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return;
+  }
+  if (/^(true|false|null)$/i.test(trimmed)) {
+    return;
+  }
+  if (/^'[A-Za-z0-9_ .,:+\-/@#()]{0,120}'$/.test(trimmed)) {
+    return;
+  }
+  throw new Error(
+    `Unsafe column default expression "${trimmed}". Only numeric, boolean/null, simple single-quoted text literals, or standard timestamp defaults are allowed.`
+  );
+}
+
+/** Validate all identifiers, types, defaults, and foreign-key references within a table definition. */
 export function validateTableDef(table: TableDef): void {
+  if (!table || typeof table !== 'object' || !Array.isArray(table.columns)) {
+    throw new Error('Invalid table definition.');
+  }
   validateIdentifier(table.name);
   for (const col of table.columns) {
+    if (!col || typeof col !== 'object') {
+      throw new Error('Invalid column definition.');
+    }
     validateIdentifier(col.name);
+    if (!Object.prototype.hasOwnProperty.call(TYPE_MAP_PG, col.type)) {
+      throw new Error(`Unsupported column type "${String(col.type)}".`);
+    }
+    if (col.default !== undefined && col.default !== '') {
+      validateColumnDefault(col.default);
+    }
+    if (col.references) {
+      validateIdentifier(col.references.table);
+      validateIdentifier(col.references.column);
+    }
   }
 }
 
@@ -64,6 +115,7 @@ const TYPE_MAP_SQLITE: Record<ColumnType, string> = {
 
 /** Build a CREATE TABLE SQL string for Postgres. */
 export function buildCreateTableSql(table: TableDef, schema: string, dialect: 'postgres' | 'sqlite' = 'postgres'): string {
+  validateIdentifier(schema);
   validateTableDef(table);
 
   const typeMap = dialect === 'sqlite' ? TYPE_MAP_SQLITE : TYPE_MAP_PG;
@@ -88,11 +140,20 @@ export function buildCreateTableSql(table: TableDef, schema: string, dialect: 'p
 }
 
 function buildColumnSql(col: ColumnDef, typeMap: Record<ColumnType, string>): string {
+  validateIdentifier(col.name);
+  if (!Object.prototype.hasOwnProperty.call(typeMap, col.type)) {
+    throw new Error(`Unsupported column type "${String(col.type)}".`);
+  }
   const parts: string[] = [`${col.name} ${typeMap[col.type]}`];
   if (!col.nullable) parts.push('NOT NULL');
   if (col.unique) parts.push('UNIQUE');
-  if (col.default !== undefined) parts.push(`DEFAULT ${col.default}`);
+  if (col.default !== undefined && col.default !== '') {
+    validateColumnDefault(col.default);
+    parts.push(`DEFAULT ${col.default.trim()}`);
+  }
   if (col.references) {
+    validateIdentifier(col.references.table);
+    validateIdentifier(col.references.column);
     parts.push(`REFERENCES ${col.references.table}(${col.references.column})`);
   }
   return parts.join(' ');
@@ -100,6 +161,7 @@ function buildColumnSql(col: ColumnDef, typeMap: Record<ColumnType, string>): st
 
 /** Build DROP TABLE SQL. */
 export function buildDropTableSql(tableName: string, schema: string, dialect: 'postgres' | 'sqlite' = 'postgres'): string {
+  validateIdentifier(schema);
   validateIdentifier(tableName);
   const tbl = dialect === 'sqlite'
     ? `${schema}_${tableName}`
@@ -109,6 +171,7 @@ export function buildDropTableSql(tableName: string, schema: string, dialect: 'p
 
 /** Build ALTER TABLE ADD COLUMN SQL. */
 export function buildAddColumnSql(tableName: string, col: ColumnDef, schema: string, dialect: 'postgres' | 'sqlite' = 'postgres'): string {
+  validateIdentifier(schema);
   validateIdentifier(tableName);
   validateIdentifier(col.name);
 

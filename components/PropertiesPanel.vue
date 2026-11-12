@@ -1156,7 +1156,7 @@ function applyThemeToCurrentWidgets() {
             <input v-if="eventBinding.action.type === 'upload'" :value="eventBinding.action.path ?? ''" class="input-warm w-full px-2 py-1.5 text-xs font-mono" placeholder="assets/logo.png" @input="updateEventAction(index, { path: ($event.target as HTMLInputElement).value || undefined })" />
 
             <div class="pt-2 border-t mt-2" style="border-color: rgba(61,24,32,0.08);">
-              <label class="text-[10px] text-gray-400 mb-0.5 block">Condition (JS Expression)</label>
+              <label class="text-[10px] text-gray-400 mb-0.5 block">Condition (Safe Expression)</label>
               <input
                 :value="eventBinding.action.condition ?? ''"
                 class="input-warm w-full px-2 py-1.5 text-xs font-mono"

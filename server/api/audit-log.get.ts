@@ -21,8 +21,10 @@ export default defineEventHandler(async (event) => {
     to?: string;
   };
 
-  const page = Math.max(1, Number.parseInt(query.page ?? '1', 10));
-  const perPage = Math.min(200, Math.max(1, Number.parseInt(query.per_page ?? '50', 10)));
+  const rawPage = Number.parseInt(String(query.page ?? '1'), 10);
+  const rawPerPage = Number.parseInt(String(query.per_page ?? '50'), 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const perPage = Number.isFinite(rawPerPage) && rawPerPage > 0 ? Math.min(200, rawPerPage) : 50;
   const offset = (page - 1) * perPage;
 
   const clauses = [`business_id = ${sqlPlaceholder(1)}`];

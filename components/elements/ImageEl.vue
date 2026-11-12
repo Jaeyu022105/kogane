@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { ImageElementDef } from '~/lib/uiTypes';
+import { sanitizeImageSrc } from '~/lib/securityClient';
 
 const props = defineProps<{ element: ImageElementDef; runtime?: any; builderMode?: boolean }>();
+
+const safeSrc = computed(() => sanitizeImageSrc(props.element.src));
 
 async function handleClick() {
   if (props.builderMode || !props.runtime) return;
@@ -16,7 +19,8 @@ async function handleClick() {
     @click="handleClick"
   >
     <img
-      :src="element.src"
+      v-if="safeSrc"
+      :src="safeSrc"
       :alt="element.label ?? 'image'"
       class="w-full h-full"
       :style="{ objectFit: element.fit }"

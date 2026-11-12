@@ -7,6 +7,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { findCountry } from '~/lib/currency';
+import { sanitizeImageSrc } from '~/lib/securityClient';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -20,7 +21,9 @@ export default defineEventHandler(async (event) => {
   }>(event);
 
   const updates: Record<string, unknown> = {};
-  if (body.logoUrl !== undefined) updates.logo_url = body.logoUrl;
+  if (body.logoUrl !== undefined) {
+    updates.logo_url = body.logoUrl ? (sanitizeImageSrc(body.logoUrl) || null) : null;
+  }
   if (body.name !== undefined && body.name.trim()) updates.name = body.name.trim();
 
   // If country is provided, resolve corresponding currency and currency symbol if not explicitly given
