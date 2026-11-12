@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Eye, EyeOff, KeyRound, Link2, Trash2, ArrowRight, Settings2 } from 'lucide-vue-next';
+import { Eye, EyeOff, KeyRound, Link2, Check, Trash2, ArrowRight, Settings2 } from 'lucide-vue-next';
 import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
 import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
 
@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const { authHeaders } = useAuth();
 const { confirm, alert } = useModal();
-const { buildShareUrl, copyToClipboard } = useShareOrigin();
+const { buildShareUrl, copyToClipboard, isOnlineHost } = useShareOrigin();
 
 const showPin = ref(false);
 const deleting = ref(false);
@@ -127,7 +127,7 @@ async function deleteTerminal() {
     <!-- Status badge -->
     <div class="flex items-center justify-between">
       <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LAN Ready
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {{ isOnlineHost ? 'Online Ready' : 'LAN Ready' }}
       </span>
       <span class="text-[10px] font-mono text-[rgba(61,24,32,0.4)]">
         {{ terminal.is_public ? 'Public Link' : 'PIN Protected' }}
@@ -169,18 +169,18 @@ async function deleteTerminal() {
 
     <!-- Info/Sharing buttons grid -->
     <div class="grid grid-cols-2 gap-2">
-      <!-- Copy LAN Link Button -->
+      <!-- Copy Terminal Link Button -->
       <button
         type="button"
         class="text-xs font-medium px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 border-none cursor-pointer"
         style="color: rgba(61, 24, 32, 0.65); background: rgba(61, 24, 32, 0.06);"
-        :title="copiedLink ? 'LAN terminal link copied!' : 'Copy LAN terminal link'"
-        :aria-label="copiedLink ? 'Terminal link copied' : 'Copy LAN terminal link'"
+        :title="copiedLink ? 'Terminal link copied!' : (isOnlineHost ? 'Copy terminal link' : 'Copy LAN terminal link')"
+        :aria-label="copiedLink ? 'Terminal link copied' : (isOnlineHost ? 'Copy terminal link' : 'Copy LAN terminal link')"
         @click="copyLink"
       >
         <Check v-if="copiedLink" class="w-3.5 h-3.5 text-emerald-600" />
         <Link2 v-else class="w-3.5 h-3.5" />
-        {{ copiedLink ? 'Copied Link' : 'Copy LAN Link' }}
+        {{ copiedLink ? 'Copied Link' : (isOnlineHost ? 'Copy Link' : 'Copy LAN Link') }}
       </button>
 
       <!-- PIN Code display / copy -->

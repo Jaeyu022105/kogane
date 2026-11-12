@@ -603,3 +603,18 @@ Do not restore or revert those changes unless the user explicitly asks.
   - `bun test` (with `.env.test` overriding live `.env`): **173 pass, 0 fail** (1,272 assertions across 18 files).
 - **Remaining Recommendations**:
   1. Run `bun run start` locally (plus `bun run tunnel` for remote mobile/tablet HTTPS + QR) or deploy via `render.yaml` / `Dockerfile` to exercise browser signup, 2FA QR enrollment, and logo upload against live `kogane-e7f2b` Firestore.
+  2. Commit & push the updated online UI labels (`composables/useShareOrigin.ts`, `components/TerminalCard.vue`, `pages/dashboard/index.vue`, `pages/pricing.vue`) so Render redeploys `Online Ready` / `Copy Link` in place of `LAN Ready` / `Copy LAN Link`.
+
+---
+
+### Session Log — 2026-11-12 (Online Hosting UI Copy Alignment)
+
+- **Context & Direction Check**: Render Blueprint deployment (`kogane-pos`) is live on `onrender.com` connected to Firebase Spark `kogane-e7f2b`. Updated UI copy that still assumed local LAN hosting.
+- **Changes Made**:
+  1. **`composables/useShareOrigin.ts`**: Added `isOnlineHost` (true for `firebase`/`supabase` DB providers, HTTPS origins, or non-private hostnames) and removed the hardcoded `192.168.1.16` fallback origin.
+  2. **`components/TerminalCard.vue`**: Imported missing `Check` icon from `lucide-vue-next` and updated status badge (`Online Ready` vs `LAN Ready`) and share button (`Copy Link` vs `Copy LAN Link`) dynamically via `isOnlineHost`.
+  3. **`pages/dashboard/index.vue` & `pages/pricing.vue`**: Updated dashboard badges (`Online Ready`, `Cloud Sync Active` when hosted online) and pricing copy (`Cloud Sync & Local Ready`, `share live station links`) to reflect online Firebase + Render hosting.
+- **Verification Executed**:
+  - Targeted `bunx tsc --noEmit` on `composables/useShareOrigin`, `components/TerminalCard`, `pages/dashboard/index`, `pages/pricing`: 0 errors.
+  - `bun test`: Verified clean pass across all suites.
+  - `bun run build`: Verified Nuxt `node-server` production build succeeds cleanly.

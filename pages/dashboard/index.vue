@@ -30,6 +30,7 @@ type DashboardTerminal = {
 };
 
 const { authHeaders } = useAuth();
+const { isOnlineHost } = useShareOrigin();
 const terminals = ref<DashboardTerminal[]>([]);
 const terminalLoading = ref(false);
 const terminalError = ref('');
@@ -128,7 +129,7 @@ watch(() => business.value?.id, loadTerminals);
             <span class="badge-dot" /> {{ t('dashboard_preset_mode') }}
           </span>
           <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md flex items-center gap-1.5" style="background: rgba(16,185,129,0.1); color: #059669;">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />LAN Ready
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />{{ isOnlineHost ? 'Online Ready' : 'LAN Ready' }}
           </span>
         </div>
 
@@ -211,7 +212,7 @@ watch(() => business.value?.id, loadTerminals);
                 Workstations & Terminals
               </p>
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LAN Active
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {{ isOnlineHost ? 'Cloud Sync Active' : 'LAN Active' }}
               </span>
             </div>
             <h2 class="font-serif text-2xl mt-1" style="color: rgb(var(--shell-sidebar));">Your Workstations</h2>

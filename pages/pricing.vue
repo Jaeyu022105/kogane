@@ -87,9 +87,9 @@ const workstationModels = [
             <div class="pillar-icon-wrap">
               <WifiOff class="w-6 h-6 text-[#FF5776]" />
             </div>
-            <h3 class="pillar-title">100% Local LAN Availability</h3>
+            <h3 class="pillar-title">Cloud Sync &amp; Local Ready</h3>
             <p class="pillar-text">
-              All terminals communicate seamlessly across your local premises network. If external internet drops, your business operations and cash registers never stop.
+              All terminals stay synced across phones, tablets, and desktop counters whether hosted online with Firebase or running on your venue network.
             </p>
           </div>
 
@@ -147,7 +147,7 @@ const workstationModels = [
       <div class="m-cta-inner">
         <h2 class="m-cta-heading">Ready to configure your venue?</h2>
         <p class="m-cta-sub">
-          Launch your local workspace, configure terminals, and share LAN links with staff instantly.
+          Launch your workspace, configure terminals, and share live station links with staff instantly.
         </p>
         <div class="m-cta-btns">
           <NuxtLink v-if="isLoggedIn" to="/dashboard/terminals" class="m-btn-primary ribbon">

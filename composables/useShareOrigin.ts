@@ -1,10 +1,30 @@
 /**
- * Builds links that are safe to share with another device during LAN demos.
- * If NUXT_PUBLIC_SHARE_ORIGIN is set, copied terminal links use that origin
- * instead of localhost.
+ * Builds links that are safe to share with staff devices (cloud HTTPS domain in
+ * online hosting, or NUXT_PUBLIC_SHARE_ORIGIN / active origin in local setups).
  */
 export function useShareOrigin() {
   const config = useRuntimeConfig();
+
+  function isLocalHostname(hostname: string): boolean {
+    const h = hostname.toLowerCase();
+    return (
+      h === 'localhost'
+      || h === '127.0.0.1'
+      || h.startsWith('192.168.')
+      || h.startsWith('10.')
+      || /^172\.(1[6-9]|2\d|3[01])\./.test(h)
+    );
+  }
+
+  const isOnlineHost = computed(() => {
+    const provider = String(config.public.dbProvider || '').trim().toLowerCase();
+    if (provider === 'firebase' || provider === 'supabase') return true;
+    if (import.meta.client) {
+      if (window.location.protocol === 'https:') return true;
+      return !isLocalHostname(window.location.hostname);
+    }
+    return config.public.devMode !== true;
+  });
 
   function currentOrigin() {
     if (!import.meta.client) return '';
@@ -21,7 +41,7 @@ export function useShareOrigin() {
   function resolveOrigin() {
     if (import.meta.client) {
       const loc = window.location;
-      // If client is already connecting via a non-localhost host (LAN IP or domain), that origin is proven to work!
+      // If client is already connecting via a non-localhost host (domain or LAN IP), that origin works directly
       if (loc.hostname !== 'localhost' && loc.hostname !== '127.0.0.1') {
         return loc.origin;
       }
@@ -31,12 +51,10 @@ export function useShareOrigin() {
     if (configured) return configured;
 
     if (import.meta.client) {
-      const loc = window.location;
-      // If viewed on localhost, fallback to default LAN IP so copied links work when opened on phones/tablets
-      return `${loc.protocol}//192.168.1.16:${loc.port || '3000'}`;
+      return window.location.origin;
     }
 
-    return 'http://192.168.1.16:3000';
+    return '';
   }
 
   function buildShareUrl(path: string) {
@@ -84,5 +102,5 @@ export function useShareOrigin() {
     }
   }
 
-  return { buildShareUrl, copyToClipboard, resolveOrigin };
+  return { buildShareUrl, copyToClipboard, resolveOrigin, isOnlineHost };
 }
