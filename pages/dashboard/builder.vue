@@ -576,7 +576,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col overflow-hidden bg-[#f6efe8]">
+  <div class="relative flex-1 min-h-0 flex flex-col overflow-hidden bg-[#f6efe8]">
     <header class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-6 py-3 shrink-0 bg-[#fdf7f2]" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
       <div class="flex items-center gap-4 min-w-0">
         <div class="flex items-center gap-2 text-lg font-semibold" style="color: rgb(var(--shell-sidebar));">
@@ -695,8 +695,8 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <div class="flex-1 flex overflow-hidden bg-[#e5dfd8]">
-      <aside class="w-16 shrink-0 bg-white flex flex-col items-center py-4 gap-1 z-10 shadow-sm" style="border-right: 1px solid rgba(61,24,32,0.1);">
+    <div class="relative flex-1 min-h-0 flex overflow-hidden bg-[#e5dfd8]">
+      <aside class="w-16 shrink-0 min-h-0 bg-white flex flex-col items-center py-4 gap-1 z-10 shadow-sm" style="border-right: 1px solid rgba(61,24,32,0.1);">
         <!-- Pointer / select tool -->
         <button
           class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
@@ -982,7 +982,7 @@ onUnmounted(() => {
         @click.self="showPresetsPanel = false"
       >
         <div
-          class="w-[400px] h-full bg-white flex flex-col shadow-2xl overflow-y-auto"
+          class="w-[400px] h-full min-h-0 bg-white flex flex-col shadow-2xl overflow-y-auto overscroll-contain"
           style="border-left: 1px solid rgba(61,24,32,0.1);"
         >
           <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">

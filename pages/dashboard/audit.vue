@@ -155,7 +155,7 @@ function applyFilters() {
 </script>
 
 <template>
-  <div class="dashboard-readable flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="dashboard-readable relative flex-1 min-h-0 overflow-y-auto overscroll-contain" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Header ───────────────────────────────────────────────── -->
     <div class="px-10 pt-10 pb-8" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
@@ -170,7 +170,7 @@ function applyFilters() {
     <div class="px-10 py-7 space-y-6">
 
       <!-- ── Filter bar ─────────────────────────────────────────── -->
-      <div class="flex flex-wrap items-end gap-3">
+      <div class="relative flex flex-wrap items-end gap-3">
         <div class="flex items-center gap-1.5 shrink-0" style="color: rgba(61,24,32,0.35);">
           <Filter class="w-3.5 h-3.5" />
           <span class="text-[10px] font-mono uppercase tracking-widest">Filters</span>

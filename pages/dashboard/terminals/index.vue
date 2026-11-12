@@ -194,7 +194,7 @@ watch(() => route.query.create, (nextPreset) => {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="relative flex-1 min-h-0 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Page header ──────────────────────────────────────────────────────── -->
     <div
       class="px-8 py-5 flex items-center justify-between shrink-0"
@@ -220,7 +220,7 @@ watch(() => route.query.create, (nextPreset) => {
     </div>
 
     <!-- ── Content area ─────────────────────────────────────────────────────── -->
-    <div class="flex-1 overflow-y-auto px-8 py-6">
+    <div class="relative flex-1 min-h-0 overflow-y-auto overscroll-contain px-8 py-6">
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center py-20">
         <div

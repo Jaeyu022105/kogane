@@ -658,3 +658,41 @@ Do not restore or revert those changes unless the user explicitly asks.
   - `bun run build`: Exited 0 (`✨ Build complete!`, Nitro `node-server` `.output/server/index.mjs`, total size 20.7 MB / 4.02 MB gzip).
 - **Remaining Recommendations**:
   1. Run a live browser smoke check on `/dashboard/reports` alongside a `/terminal/[id]` cashier checkout to visually inspect the SVG diagrams, hover/tap tooltips, and live SSE update pulse across desktop and 375px mobile viewports.
+
+---
+
+### Session Log — 2026-11-12 (Dashboard Sidebar & Settings Viewport Scroll Containment Fix)
+
+- **Context & Direction Check**: Continued on the Render + Firebase Spark (`kogane-e7f2b` Cloud Firestore) deployment architecture (`DEV_MODE=true` SQLite for local dev/tests). No scope redirection introduced.
+- **Root Cause Found**:
+  - On `/dashboard/settings` (when a business workspace is loaded), `<label for="settings-language" class="sr-only">` (`position: absolute` with `top: auto` at `y ≈ 1518px`) had no positioned ancestor inside the `overflow-y-auto` scroll container or `h-dvh overflow-hidden` dashboard shell. Its containing block defaulted to `<html>`, escaping all `overflow: hidden` / `overflow-y: auto` boundaries and inflating `document.documentElement.scrollHeight` to `1519px` on an `835px` viewport.
+  - Because `<aside>` (the left sidebar) was not scrollable, wheel scrolling over the sidebar bubbled to the document root and scrolled the entire `h-dvh` shell upward, exposing empty whitespace below the sidebar footer and main content.
+- **Changes Made**:
+  1. **`layouts/dashboard.vue`**: Added `relative w-full overscroll-none` to the `h-dvh overflow-hidden` root shell, `h-full min-h-0 overflow-hidden overscroll-contain` + `shrink-0` header/footer to `<aside>`, `min-h-0 overflow-y-auto overscroll-contain` to `<nav>` (so short/zoomed viewports scroll the nav internally), and `relative min-h-0` to `<main>`.
+  2. **`pages/dashboard/settings.vue` & `pages/dashboard/audit.vue`**: Added `relative min-h-0 overscroll-contain` to the page scroll containers and `relative` to the sections/containers holding `.sr-only` labels (`settings-language`, `audit-*` filter labels) so `position: absolute` accessibility labels remain contained within their scroll areas.
+  3. **`pages/dashboard/index.vue`, `pages/dashboard/reports.vue`, `pages/dashboard/terminals/index.vue`, `pages/dashboard/terminals/[id].vue`**: Aligned dashboard page scroll containers with `relative min-h-0 overscroll-contain`.
+  4. **`tests/dashboard-sidebar-scroll.test.ts` (new)**: Added regression tests verifying layout shell containment, internal `<nav>` scrollability, and `relative` scroll containers across dashboard pages.
+- **Verification Executed**:
+  - `bun test`: **189 pass, 0 fail** (1,399 expect() calls across 20 files).
+  - Targeted `bunx tsc --noEmit`: 0 errors in modified `.vue` files; only pre-existing `TS2307` (`bun:test`) in `tests/dashboard-sidebar-scroll.test.ts`.
+  - `bun run build`: Exited 0 (`✨ Build complete!`, Nitro `node-server` `.output/server/index.mjs`).
+  - Headless Chrome CDP verification against `.output/server/index.mjs` (authenticated admin + business): verified `document.documentElement.scrollHeight === window.innerHeight` (`835px`) and `window.scrollY === 0` after wheel scrolling over the left sidebar across `/dashboard`, `/dashboard/terminals`, `/dashboard/audit`, `/dashboard/reports`, and `/dashboard/settings` (`1280x930`), confirmed main settings wheel scroll (`pageTop: 500`, `scrollY: 0`), confirmed short-viewport (`1280x350`) internal sidebar `<nav>` scroll (`navTop: 5`, `scrollY: 0`), and confirmed mobile (`375x667`) zero vertical/horizontal overflow (`docSH: 667`, `docSW: 375`).
+- **Remaining Recommendations**:
+  1. Commit and push these changes so Render (`kogane-pos.onrender.com`) redeploys the fixed dashboard layout and `/dashboard/settings` scroll containment.
+
+---
+
+### Session Log — 2026-11-12 (Dashboard Scroll Containment Review & Full-Shell Hardening Pass)
+
+- **Context & Direction Check**: Continued on the Render + Firebase Spark (`kogane-e7f2b` Cloud Firestore) deployment architecture (`DEV_MODE=true` SQLite for local dev/tests). No scope redirection introduced.
+- **Gaps Found & Fixed**:
+  1. **Remaining Uncontained Dashboard Pages (`pages/dashboard/database.vue`, `pages/dashboard/builder.vue`)**: Both pages use `layout: 'dashboard'` but still lacked `relative min-h-0` on their outer flex shells and `min-h-0 overscroll-contain` on their internal scrollports (`database.vue` table list, grid area, presets drawer, slide-overs; `builder.vue` workspace container, tool palette `<aside>`, presets slide-over). Aligned both with the rest of `pages/dashboard/*`.
+  2. **Dashboard Document Viewport Lock (`layouts/dashboard.vue`, `assets/css/tailwind.css`)**: Added `dashboard-viewport-lock` via `useHead` (`htmlAttrs` / `bodyAttrs`) and CSS (`height: 100dvh; overflow: hidden; overscroll-behavior: none;`) so the document root cannot scroll on `/dashboard/*` even if future children or browser zoom/subpixel rounding cause transient overflow, while cleaning up automatically when navigating back to marketing/auth routes.
+  3. **Expanded Regression Tests (`tests/dashboard-sidebar-scroll.test.ts`)**: Added assertions for `database.vue`, `builder.vue`, `dashboard-viewport-lock` in `layouts/dashboard.vue` + `assets/css/tailwind.css`, and an invariant verifying all `.sr-only` labels across `pages/dashboard/**/*.vue` sit inside `relative` overflow containers.
+- **Verification Executed**:
+  - `bun test`: **190 pass, 0 fail** (1,414 assertions across 20 files).
+  - Targeted `bunx tsc --noEmit`: 0 errors in `layouts/dashboard.vue`, `pages/dashboard/*`, and `assets/css/tailwind.css` (only pre-existing `TS2307` for `bun:test` in `tests/dashboard-sidebar-scroll.test.ts`).
+  - `bun run build`: Exited 0 (`✨ Build complete!`, Nitro `node-server` `.output/server/index.mjs`).
+  - Headless Chrome CDP verification against freshly built `.output/server/index.mjs`: verified `docSH === ih` (`930`), `docSW === iw` (`1280`), and `scrollY === 0` after sidebar wheel across all 8 dashboard routes (`/dashboard`, `/dashboard/terminals`, `/dashboard/terminals/[id]`, `/dashboard/audit`, `/dashboard/reports`, `/dashboard/settings`, `/dashboard/database`, `/dashboard/builder`), verified short viewport (`1280x350`, `navTop: 5`, `scrollY: 0`), mobile drawer open (`375x667`, `scrollY: 0`, `mainTop: 0`), and clean removal of `dashboard-viewport-lock` + normal scrolling (`scrollY: 500`) upon client-side navigation to `/`.
+- **Remaining Recommendations**:
+  1. Restore or discard `test-launcher-temp.db` changes before committing if clean git status is desired (`tests/launcher.test.ts` mutates tracked `test-launcher-temp.db` on each `bun test` run), then commit and push to redeploy `kogane-pos.onrender.com`.

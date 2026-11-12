@@ -311,7 +311,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="terminal-settings-page flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="terminal-settings-page relative flex-1 min-h-0 overflow-y-auto overscroll-contain" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <header class="px-8 py-5 flex items-center justify-between sticky top-0 z-50 bg-[#fdf7f2]/80 backdrop-blur-xl border-b border-black/[0.03]">

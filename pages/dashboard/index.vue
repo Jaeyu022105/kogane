@@ -119,7 +119,7 @@ watch(() => business.value?.id, loadTerminals);
 </script>
 
 <template>
-  <div class="dashboard-page flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="dashboard-page relative flex-1 min-h-0 overflow-y-auto overscroll-contain" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Top greeting bar ───────────────────────────────────────── -->
     <div class="dashboard-greeting px-10 pt-12 pb-10" style="border-bottom: 1px solid rgba(61,24,32,0.06);">

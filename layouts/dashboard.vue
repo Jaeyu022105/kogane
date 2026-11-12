@@ -25,7 +25,11 @@ const pageTitle = computed(() => {
   return 'Dashboard';
 });
 
-useHead(() => ({ title: `${pageTitle.value} - Kogane` }));
+useHead(() => ({
+  title: `${pageTitle.value} - Kogane`,
+  htmlAttrs: { class: 'dashboard-viewport-lock' },
+  bodyAttrs: { class: 'dashboard-viewport-lock' },
+}));
 
 onMounted(async () => {
   loadLocale();
@@ -70,7 +74,7 @@ function handleOnboardingDone() {
 </script>
 
 <template>
-  <div class="flex h-dvh overflow-hidden" style="background: rgb(var(--shell-bg));">
+  <div class="relative flex h-dvh w-full overflow-hidden overscroll-none" style="background: rgb(var(--shell-bg));">
 
     <!-- ── Sidebar ───────────────────────────────────────────────── -->
     <div
@@ -81,12 +85,12 @@ function handleOnboardingDone() {
     />
 
     <aside
-      class="dashboard-sidebar w-[200px] flex flex-col shrink-0"
+      class="dashboard-sidebar w-[200px] h-full min-h-0 flex flex-col shrink-0 overflow-hidden overscroll-contain"
       :class="{ 'dashboard-sidebar-open': sidebarOpen }"
       style="background: #ffffff; border-right: 1px solid rgba(61,24,32,0.08);"
     >
       <!-- Wordmark -->
-      <div class="px-5 py-5" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
+      <div class="px-5 py-5 shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
         <NuxtLink to="/" class="flex items-center gap-2.5 no-underline">
           <div
             class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
@@ -107,7 +111,7 @@ function handleOnboardingDone() {
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-2 pt-4 space-y-0.5">
+      <nav class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 pt-4 space-y-0.5">
         <NuxtLink
           v-for="item in navItems"
           :key="item.to"
@@ -132,7 +136,7 @@ function handleOnboardingDone() {
       </nav>
 
       <!-- User footer -->
-      <div class="px-4 py-4" style="border-top: 1px solid rgba(245,237,228,0.08);">
+      <div class="px-4 py-4 shrink-0" style="border-top: 1px solid rgba(245,237,228,0.08);">
         <div class="flex items-center gap-2.5">
           <img
             v-if="session?.profilePicture"
@@ -167,7 +171,7 @@ function handleOnboardingDone() {
     </aside>
 
     <!-- ── Main content area ──────────────────────────────────────── -->
-    <main class="flex-1 flex flex-col min-w-0 overflow-hidden" style="background: rgb(var(--shell-bg));">
+    <main class="relative flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden" style="background: rgb(var(--shell-bg));">
       <div class="dashboard-mobile-header">
         <button
           type="button"

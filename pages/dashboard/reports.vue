@@ -459,7 +459,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="reports-page flex-1 overflow-y-auto font-sans" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="reports-page relative flex-1 min-h-0 overflow-y-auto overscroll-contain font-sans" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Header ───────────────────────────────────────────────── -->
     <div class="px-10 pt-10 pb-8 flex flex-wrap items-end justify-between gap-4" style="border-bottom: 1px solid rgba(104, 41, 58, 0.1);">

@@ -459,7 +459,7 @@ const businessDetailItems = computed(() => {
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="relative flex-1 min-h-0 overflow-y-auto overscroll-contain" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
 
     <!-- ── Header ───────────────────────────────────────────────── -->
     <div class="px-10 pt-10 pb-8" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
@@ -697,7 +697,7 @@ const businessDetailItems = computed(() => {
       </section>
 
       <!-- ── System Language ────────────────────────────────────── -->
-      <section class="space-y-3">
+      <section class="relative space-y-3">
         <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
           <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">{{ t('settings_system_overline') }}</p>
           <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">{{ t('settings_language') }}</h2>

@@ -43,6 +43,13 @@ html, body {
   min-height: 100dvh;
 }
 
+html.dashboard-viewport-lock,
+body.dashboard-viewport-lock {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* ── Scrollbar ───────────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }

@@ -420,9 +420,9 @@ function getTablePositionSafe(name: string) {
 </script>
 
 <template>
-  <div class="flex-1 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="relative flex-1 min-h-0 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Left sidebar: schema / table tree ──────────────────────────────── -->
-    <aside class="w-56 shrink-0 flex flex-col overflow-hidden" style="background: #1a0e11; border-right: 1px solid rgba(255,255,255,0.05);">
+    <aside class="w-56 shrink-0 min-h-0 flex flex-col overflow-hidden overscroll-contain" style="background: #1a0e11; border-right: 1px solid rgba(255,255,255,0.05);">
       <!-- Header -->
       <div class="px-4 py-3 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(255,255,255,0.07);">
         <span class="text-xs font-semibold tracking-widest uppercase" style="color: rgba(245,237,228,0.4);">Tables</span>
@@ -446,7 +446,7 @@ function getTablePositionSafe(name: string) {
       </div>
 
       <!-- Table list -->
-      <div class="flex-1 overflow-y-auto py-1 px-2">
+      <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain py-1 px-2">
         <div v-if="loading" class="px-2 py-4 text-xs" style="color: rgba(245,237,228,0.25);">Loading…</div>
 
         <button
@@ -486,7 +486,7 @@ function getTablePositionSafe(name: string) {
     </aside>
 
     <!-- ── Main content area ───────────────────────────────────────────────── -->
-    <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="relative flex-1 min-h-0 flex flex-col overflow-hidden">
       <!-- Topbar -->
       <header
         class="px-6 py-3 flex items-center gap-3 shrink-0 bg-white"
@@ -563,7 +563,7 @@ function getTablePositionSafe(name: string) {
       </header>
 
       <!-- Grid area -->
-      <div class="flex-1 overflow-auto">
+      <div class="relative flex-1 min-h-0 overflow-auto overscroll-contain">
         <!-- Empty state: no table selected -->
         <div v-if="!selectedTable" class="flex items-center justify-center h-full">
           <div class="text-center space-y-2">
@@ -782,7 +782,7 @@ function getTablePositionSafe(name: string) {
     <Transition name="v">
       <aside
         v-if="showPresets"
-        class="w-64 shrink-0 bg-white flex flex-col overflow-y-auto"
+        class="w-64 shrink-0 min-h-0 bg-white flex flex-col overflow-y-auto overscroll-contain"
         style="border-left: 1px solid rgba(61,24,32,0.1);"
       >
         <div class="px-5 py-4 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
@@ -823,7 +823,7 @@ function getTablePositionSafe(name: string) {
         @click.self="showNewTable = false"
       >
         <div
-          class="w-[480px] h-full bg-white flex flex-col shadow-2xl overflow-y-auto"
+          class="w-[480px] h-full min-h-0 bg-white flex flex-col shadow-2xl overflow-y-auto overscroll-contain"
           style="border-left: 1px solid rgba(61,24,32,0.1);"
         >
           <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
@@ -957,7 +957,7 @@ function getTablePositionSafe(name: string) {
         @click.self="showAddRow = false"
       >
         <div
-          class="w-[480px] h-full bg-white flex flex-col shadow-2xl overflow-y-auto"
+          class="w-[480px] h-full min-h-0 bg-white flex flex-col shadow-2xl overflow-y-auto overscroll-contain"
           style="border-left: 1px solid rgba(61,24,32,0.1);"
         >
           <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
