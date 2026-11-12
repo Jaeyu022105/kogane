@@ -77,6 +77,22 @@ export interface PredictiveForecasts {
   confidenceUpper30d: number;
 }
 
+export interface PaymentChannelMetric {
+  method: string;
+  label: string;
+  orders: number;
+  revenue: number;
+  shareOfSales: number;
+}
+
+export interface OrderStatusMetric {
+  status: string;
+  label: string;
+  orders: number;
+  revenue: number;
+  shareOfOrders: number;
+}
+
 export interface SalesMetricsReport {
   summary: {
     totalRevenue: number;
@@ -88,6 +104,8 @@ export interface SalesMetricsReport {
   };
   trends: DailyTrendPoint[];
   topItems: TopItemMetric[];
+  paymentBreakdown: PaymentChannelMetric[];
+  statusBreakdown: OrderStatusMetric[];
   forecasts: PredictiveForecasts;
   orders: RawOrderRecord[];
 }
@@ -409,6 +427,68 @@ export function calculateSalesMetrics(
   const movingAverage3d = latestTrend?.movingAverage3d ?? dailyRunRate;
   const movingAverage7d = latestTrend?.movingAverage7d ?? dailyRunRate;
 
+  // 5. Payment Channel & Order Status Breakdowns (for live sales diagrams)
+  const formatChannelLabel = (raw: string): string => {
+    const clean = raw.trim().toLowerCase();
+    if (clean === 'gcash') return 'GCash';
+    if (clean === 'qr' || clean === 'qrph') return 'QR / E-Wallet';
+    if (clean === 'cash') return 'Cash';
+    if (clean === 'card') return 'Card';
+    if (!clean) return 'Cash';
+    return clean.replace(/[_-]+/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+  };
+
+  const formatStatusLabel = (raw: string): string => {
+    const clean = raw.trim().toLowerCase();
+    if (!clean) return 'Pending';
+    return clean.replace(/[_-]+/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+  };
+
+  const paymentMap = new Map<string, { orders: number; revenue: number }>();
+  const statusMap = new Map<string, { orders: number; revenue: number }>();
+
+  for (const order of orders) {
+    const orderTotal = Number(order.total) || 0;
+    const methodKey = (order.payment_method || 'cash').trim().toLowerCase() || 'cash';
+    const curPay = paymentMap.get(methodKey) ?? { orders: 0, revenue: 0 };
+    curPay.orders += 1;
+    curPay.revenue += orderTotal;
+    paymentMap.set(methodKey, curPay);
+
+    const statusKey = (order.status || 'pending').trim().toLowerCase() || 'pending';
+    const curStatus = statusMap.get(statusKey) ?? { orders: 0, revenue: 0 };
+    curStatus.orders += 1;
+    curStatus.revenue += orderTotal;
+    statusMap.set(statusKey, curStatus);
+  }
+
+  const paymentBreakdown: PaymentChannelMetric[] = Array.from(paymentMap.entries())
+    .map(([method, data]) => {
+      const share = totalRevenue > 0
+        ? (data.revenue / totalRevenue) * 100
+        : totalOrders > 0
+          ? (data.orders / totalOrders) * 100
+          : 0;
+      return {
+        method,
+        label: formatChannelLabel(method),
+        orders: data.orders,
+        revenue: Number(data.revenue.toFixed(2)),
+        shareOfSales: Number(share.toFixed(1)),
+      };
+    })
+    .sort((a, b) => b.revenue - a.revenue || b.orders - a.orders);
+
+  const statusBreakdown: OrderStatusMetric[] = Array.from(statusMap.entries())
+    .map(([status, data]) => ({
+      status,
+      label: formatStatusLabel(status),
+      orders: data.orders,
+      revenue: Number(data.revenue.toFixed(2)),
+      shareOfOrders: totalOrders > 0 ? Number(((data.orders / totalOrders) * 100).toFixed(1)) : 0,
+    }))
+    .sort((a, b) => b.orders - a.orders || b.revenue - a.revenue);
+
   return {
     summary: {
       totalRevenue: Number(totalRevenue.toFixed(2)),
@@ -420,6 +500,8 @@ export function calculateSalesMetrics(
     },
     trends,
     topItems,
+    paymentBreakdown,
+    statusBreakdown,
     forecasts: {
       periodDays,
       dailyRunRate: Number(dailyRunRate.toFixed(2)),

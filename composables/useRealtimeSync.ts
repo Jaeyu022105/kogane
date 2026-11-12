@@ -21,6 +21,8 @@ export function useRealtimeSync() {
   let eventSource: EventSource | null = null;
   let supabaseChannel: any = null;
   const handlers = new Set<MutationHandler>();
+  let connectHandler: MutationHandler | null = null;
+  let hasConnectedOnce = false;
 
   function onMutation(handler: MutationHandler) {
     handlers.add(handler);
@@ -45,12 +47,15 @@ export function useRealtimeSync() {
     terminalId?: string;
     slug?: string;
     onMutation?: MutationHandler;
+    onReconnect?: () => void;
   }) {
     if (!import.meta.client) return;
 
     disconnect();
+    hasConnectedOnce = false;
 
     if (options.onMutation) {
+      connectHandler = options.onMutation;
       onMutation(options.onMutation);
     }
 
@@ -73,10 +78,19 @@ export function useRealtimeSync() {
     try {
       eventSource = new EventSource(streamUrl);
 
-      eventSource.onopen = () => {
+      const markConnected = () => {
+        const isReconnect = hasConnectedOnce && !isConnected.value;
+        hasConnectedOnce = true;
         isConnected.value = true;
         status.value = 'connected';
         error.value = null;
+        if (isReconnect) {
+          options.onReconnect?.();
+        }
+      };
+
+      eventSource.onopen = () => {
+        markConnected();
       };
 
       eventSource.onmessage = (event) => {
@@ -84,8 +98,7 @@ export function useRealtimeSync() {
           const payload = JSON.parse(event.data);
 
           if (payload?.type === 'connected') {
-            isConnected.value = true;
-            status.value = 'connected';
+            markConnected();
           } else if (payload?.type === 'table-mutation' || payload?.table) {
             notify(payload as RealtimeTableMutation);
           }
@@ -144,6 +157,11 @@ export function useRealtimeSync() {
   }
 
   function disconnect() {
+    if (connectHandler) {
+      handlers.delete(connectHandler);
+      connectHandler = null;
+    }
+
     if (eventSource) {
       eventSource.close();
       eventSource = null;

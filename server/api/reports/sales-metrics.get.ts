@@ -11,7 +11,15 @@ export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const businessResult = await getBusinessForAdminUser(userId);
   if (!businessResult.data) {
-    return { error: 'Business not found', summary: null, trends: [], topItems: [], forecasts: null };
+    return {
+      error: 'Business not found',
+      summary: null,
+      trends: [],
+      topItems: [],
+      paymentBreakdown: [],
+      statusBreakdown: [],
+      forecasts: null,
+    };
   }
 
   const query = getQuery(event) as { from?: string; to?: string };
@@ -24,7 +32,15 @@ export default defineEventHandler(async (event) => {
   );
 
   if (error) {
-    return { error, summary: null, trends: [], topItems: [], forecasts: null };
+    return {
+      error,
+      summary: null,
+      trends: [],
+      topItems: [],
+      paymentBreakdown: [],
+      statusBreakdown: [],
+      forecasts: null,
+    };
   }
 
   const report = calculateSalesMetrics(orders, range.from, range.to);
@@ -34,6 +50,8 @@ export default defineEventHandler(async (event) => {
     summary: report.summary,
     trends: report.trends,
     topItems: report.topItems,
+    paymentBreakdown: report.paymentBreakdown,
+    statusBreakdown: report.statusBreakdown,
     forecasts: report.forecasts,
     ordersCount: orders.length,
   };

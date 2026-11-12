@@ -1,12 +1,19 @@
 import { defineEventHandler, getQuery } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
-import { getBusinessForAdminUser, qualifyBusinessTable, replacePlaceholdersForDialect, sqlPlaceholder } from '~/server/utils/business';
+import { validateIdentifier } from '~/lib/schemaUtils';
+import {
+  getBusinessForAdminUser,
+  isPrefixDb,
+  qualifyBusinessTable,
+  replacePlaceholdersForDialect,
+  sqlPlaceholder,
+} from '~/server/utils/business';
 import { getBusinessTableColumns } from '~/server/utils/businessTable';
 import { inDateRange, normalizeDateRange, toDateBucket, type ReportGrouping } from '~/server/utils/reporting';
 
-const REVENUE_COLUMNS = ['total', 'amount', 'grand_total', 'subtotal'];
-const DATE_COLUMNS = ['created_at', 'transaction_date', 'date'];
+const REVENUE_COLUMNS = ['total', 'amount', 'grand_total', 'total_amount', 'subtotal'];
+const DATE_COLUMNS = ['created_at', 'transaction_date', 'issue_date', 'date'];
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -19,7 +26,8 @@ export default defineEventHandler(async (event) => {
   const grouping = (query.group ?? 'day') as ReportGrouping;
   const range = normalizeDateRange(query.from, query.to);
 
-  const candidateTables = ['transactions', 'orders', 'invoices'];
+  // Match salesMetrics.ts table priority: Cashier & POS write to orders first
+  const candidateTables = ['orders', 'transactions', 'invoices'];
   let chosenTable: string | null = null;
   let revenueColumn: string | undefined;
   let dateColumn: string | undefined;
@@ -50,11 +58,16 @@ export default defineEventHandler(async (event) => {
     };
   }
 
+  validateIdentifier(dateColumn);
+  validateIdentifier(revenueColumn);
   const table = qualifyBusinessTable(businessResult.data.schema_name, chosenTable);
   const params: unknown[] = [range.from.toISOString(), range.to.toISOString()];
-  const sql = replacePlaceholdersForDialect(
-    `SELECT "${dateColumn}" as report_date, "${revenueColumn}" as revenue FROM ${table} WHERE "${dateColumn}" >= ${sqlPlaceholder(1)} AND "${dateColumn}" <= ${sqlPlaceholder(2)} ORDER BY "${dateColumn}" ASC`,
-  );
+  const isSqliteOrPrefix = isPrefixDb();
+  const sql = isSqliteOrPrefix
+    ? `SELECT "${dateColumn}" as report_date, "${revenueColumn}" as revenue FROM ${table} WHERE datetime("${dateColumn}") >= datetime(?) AND datetime("${dateColumn}") <= datetime(?) ORDER BY "${dateColumn}" ASC`
+    : replacePlaceholdersForDialect(
+        `SELECT "${dateColumn}" as report_date, "${revenueColumn}" as revenue FROM ${table} WHERE "${dateColumn}" >= ${sqlPlaceholder(1)} AND "${dateColumn}" <= ${sqlPlaceholder(2)} ORDER BY "${dateColumn}" ASC`,
+      );
   const result = await db.query<{ report_date: string; revenue: number | string | null }>(sql, params);
 
   const grouped = new Map<string, { revenue: number; transactions: number }>();

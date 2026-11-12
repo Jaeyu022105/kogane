@@ -618,3 +618,43 @@ Do not restore or revert those changes unless the user explicitly asks.
   - Targeted `bunx tsc --noEmit` on `composables/useShareOrigin`, `components/TerminalCard`, `pages/dashboard/index`, `pages/pricing`: 0 errors.
   - `bun test`: Verified clean pass across all suites.
   - `bun run build`: Verified Nuxt `node-server` production build succeeds cleanly.
+
+---
+
+### Session Log — 2026-11-12 (Live Sales Diagrams & Reports Readability Pass)
+
+- **Context & Direction Check**: Continued on the Render + Firebase Spark (`kogane-e7f2b` Cloud Firestore) deployment architecture (`DEV_MODE=true` SQLite for local dev/tests). No scope redirection introduced.
+- **Changes Made**:
+  1. **Payment & Order Status Breakdowns (`server/utils/salesMetrics.ts`, `server/api/reports/sales-metrics.get.ts`)**: Added `PaymentChannelMetric` (`paymentBreakdown`) and `OrderStatusMetric` (`statusBreakdown`) to `calculateSalesMetrics()` and exposed them from `GET /api/reports/sales-metrics`.
+  2. **Pure Diagram Geometry Library (`lib/reportDiagrams.ts`)**: Added `isSalesMutationTable()`, `formatShortPeriodLabel()`, `buildTrendChartSeries()` (with Revenue / Orders / Avg. Order metrics, 7-day moving average line, single-point bar fallback, and capped X-axis label thinning), `buildDonutSlices()` (with two-arc 100% single-channel circle handling), and `buildHorizontalBars()`.
+  3. **Interactive Live Diagrams Component (`components/SalesDiagrams.vue`)**: Built responsive SVG diagrams for **Sales Over Time**, **Top Selling Items**, and **Sales by Payment Method** with hover/focus point & slice inspection, smooth bar transitions, and a live SSE sync status pill (`Live updates active` / `Sale synced just now` / `Live updates paused`).
+  4. **Reports Page Live Sync & Typography Alignment (`pages/dashboard/reports.vue`)**:
+     - Integrated `SalesDiagrams` on both **Sales Transactions** (matching `day`/`week`/`month` grouping) and **Performance & Forecasts** (with 7-day moving average overlay), plus a **Gross Receipts Allocation** bar on **Tax Filing Schedule**.
+     - Connected `useRealtimeSync()` SSE stream for the active business (`business.value.id`) so incoming `orders`/`transactions`/`invoices`/`products` mutations trigger debounced silent refreshes and live pulse highlights.
+     - Replaced `font-mono`, `text-[10px]`/`text-[11px]` micro-sizes, and low-contrast `text-stone-400` / low-alpha `rgba(61,24,32,0.35)` text across all 5 report tabs with Kogane's website-consistent **Inter (`font-sans` + `tabular-nums`)** and **DM Serif Display (`font-serif`)** hierarchy using high-contrast maroon ink (`#68293A`, `#4a2530`, `#5c3742`).
+  5. **Tests (`tests/reports-diagrams-readability.test.ts`)**: Added 12 unit and integration tests covering diagram math/edge cases, `salesMetrics` breakdowns, reports typography checks, and end-to-end `/api/reports/sales-metrics` + `realtimeHub` live updates under `FirestoreAdapter`.
+- **Verification Executed**:
+  - `bun test`: **185 pass, 0 fail** (1,371 assertions across 19 files).
+  - `bunx tsc --noEmit`: 0 errors in `lib/reportDiagrams.ts`, `components/SalesDiagrams.vue`, `pages/dashboard/reports.vue`, and `server/api/reports/sales-metrics.get.ts`; only pre-existing errors remain (`TS2322` in `server/utils/salesMetrics.ts:541` and `TS2307` for `bun:test` in test files).
+  - `bun run build`: Exited 0 (`✨ Build complete!`, Nitro `node-server` `.output/server/index.mjs`).
+- **Remaining Recommendations**:
+  1. Run a live browser smoke check on `/dashboard/reports` alongside a `/terminal/[id]` cashier checkout to visually inspect the SVG diagrams, hover tooltips, and live SSE update pulse in Chromium/mobile viewport.
+  2. Notice `realtimeHub` SSE is in-memory per Node process (works out of the box on a single Render web service); if ever scaled horizontally across multiple instances, bridge `realtimeHub` over Firestore `onSnapshot` or Redis pub/sub.
+
+---
+
+### Session Log — 2026-11-12 (Review & Hardening Pass: Live Sales Diagrams & Reports Readability)
+
+- **Context & Direction Check**: Continued on the Render + Firebase Spark (`kogane-e7f2b` Cloud Firestore) deployment architecture (`DEV_MODE=true` SQLite for local dev/tests). Fixed bugs uncovered during independent review of the prior pass.
+- **Changes Made**:
+  1. **Transactions Endpoint Parity & SQLite Date Filtering (`server/api/reports/transactions.get.ts`)**: Aligned table selection (`orders`, `transactions`, `invoices`), revenue/date column selection, and identifier validation with `server/utils/salesMetrics.ts`, and normalized SQLite/prefix-DB date bounds with `datetime(...)` so `YYYY-MM-DD HH:MM:SS` (`datetime('now')`) orders are not dropped against ISO-8601 `T...Z` bounds.
+  2. **Realtime Sync Cleanup & Reconnect Resync (`composables/useRealtimeSync.ts`)**: Tracked the internal `connect()` mutation listener so `disconnect()` removes it cleanly (preventing duplicate callbacks across reconnects/toggles) and added an `onReconnect` callback when SSE re-establishes after a drop.
+  3. **Diagram Math & Interactive Accessibility (`lib/reportDiagrams.ts`, `components/SalesDiagrams.vue`)**: Increased `padLeft` to `64` for multi-character currency symbols, eliminated duplicate integer Y-axis ticks for small order counts (`0..3`), switched SVG area gradient IDs to `useId()`, included currency symbols on `>= 1000` axis ticks, guarded `pt.value > 0` on single-point bars, unified donut revenue-vs-orders metric selection, added keyboard/touch `@click`/`@blur`/`tabindex="0"` focus handling, bumped SVG text to `12px`, improved accent text contrast (`#B8294B`), and rendered `statusBreakdown` ("Order Fulfillment Mix").
+  4. **Reports Page State, Tax Rate & Sync Resilience (`pages/dashboard/reports.vue`)**: Added `effectiveTaxRateDecimal()` so a `0%` tax rate does not fall back to `10%`, cleared stale `performanceData` on failed non-silent fetches, added `onReconnect` catch-up sync + 15s disconnected fallback polling, and replaced remaining `#FF5776` small eyebrow text with `#B8294B`.
+  5. **Expanded Regression Tests (`tests/reports-diagrams-readability.test.ts`)**: Added unit, static, and Firestore/SQLite integration tests for small-order Y-ticks, `SalesDiagrams.vue` (`useId`, `statusBreakdown`, `#B8294B`), `reports.vue` (`effectiveTaxRateDecimal`, `onReconnect`), `transactions.get.ts` table parity when an empty `transactions` table exists, and SQLite `datetime('now')` same-day orders.
+- **Verification Executed**:
+  - `bun test`: **187 pass, 0 fail** (1,387 expect() calls across 19 files).
+  - `bunx tsc --noEmit`: 0 errors in changed files (`server/api/reports/transactions.get.ts`, `composables/useRealtimeSync.ts`, `lib/reportDiagrams.ts`, `components/SalesDiagrams.vue`, `pages/dashboard/reports.vue`, `server/api/reports/sales-metrics.get.ts`); only pre-existing repo errors remain (`TS2322` in `server/utils/salesMetrics.ts:541`, `TS2307` for `bun:test`/`bun:sqlite`, etc.).
+  - `bun run build`: Exited 0 (`✨ Build complete!`, Nitro `node-server` `.output/server/index.mjs`, total size 20.7 MB / 4.02 MB gzip).
+- **Remaining Recommendations**:
+  1. Run a live browser smoke check on `/dashboard/reports` alongside a `/terminal/[id]` cashier checkout to visually inspect the SVG diagrams, hover/tap tooltips, and live SSE update pulse across desktop and 375px mobile viewports.
