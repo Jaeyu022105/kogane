@@ -9,7 +9,7 @@ import { LayoutDashboard, Terminal, Settings, Power, Shield, BarChart3, Menu, X 
 
 const router = useRouter();
 const route  = useRoute();
-const { session, isLoggedIn, logout }                      = useAuth();
+const { session, isLoggedIn, hydrateSession, logout }      = useAuth();
 const { business, fetchBusiness }                          = useBusiness();
 const { showOnboarding, openOnboarding, closeOnboarding }  = useOnboarding();
 const { isEnterprise }                                     = useEnterpriseAccess();
@@ -29,6 +29,8 @@ useHead(() => ({ title: `${pageTitle.value} - Kogane` }));
 
 onMounted(async () => {
   loadLocale();
+
+  await hydrateSession();
 
   if (!isLoggedIn.value) {
     router.push({
@@ -55,8 +57,8 @@ function isActive(to: string) {
   return route.path === to || (to !== '/dashboard' && route.path.startsWith(to));
 }
 
-function handleLogout() {
-  logout();
+async function handleLogout() {
+  await logout();
   router.push({ path: '/login', query: { redirect: route.fullPath } });
 }
 

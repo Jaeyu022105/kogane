@@ -1,7 +1,7 @@
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import {
-  isDevDb,
+  isPrefixDb,
   qualifyBusinessTable,
   replacePlaceholdersForDialect,
   sqlPlaceholder,
@@ -127,7 +127,7 @@ export async function queryBusinessRows<T = Record<string, unknown>>(
 export async function getBusinessTableColumns(schemaName: string, tableName: string) {
   validateIdentifier(tableName);
 
-  if (isDevDb) {
+  if (isPrefixDb()) {
     const table = qualifyBusinessTable(schemaName, tableName);
     const result = await db.query<{ name: string; type: string }>(`PRAGMA table_info(${table})`);
     return {

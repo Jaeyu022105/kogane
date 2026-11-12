@@ -22,7 +22,7 @@ interface TerminalRuntimeSession {
 
 const route = useRoute();
 const terminalId = computed(() => route.params.id as string);
-const { isLoggedIn, authHeaders, loadDevSession } = useAuth();
+const { isLoggedIn, authHeaders, hydrateSession } = useAuth();
 
 const pin = ref('');
 const showPinDigits = ref(false);
@@ -117,8 +117,28 @@ function adminEntryLocation() {
   };
 }
 
+function terminalRequestHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { ...authHeaders() };
+  if (typeof window !== 'undefined') {
+    const termToken = sessionStorage.getItem(`kogane_term_token_${terminalId.value}`);
+    if (termToken) {
+      headers['x-terminal-session'] = termToken;
+    }
+  }
+  return headers;
+}
+
+function extractTerminalError(err: unknown): unknown {
+  const anyErr = err as { data?: { error?: string; message?: string }; message?: string };
+  return anyErr?.data?.error || anyErr?.data?.message || anyErr?.message;
+}
+
 function friendlyTerminalMessage(value: unknown, fallback: string) {
-  const message = String(value ?? '').toLowerCase();
+  const raw = String(value ?? '').trim();
+  const message = raw.toLowerCase();
+  if (message.includes('too many') || message.includes('try again in') || message.includes('429')) {
+    return message.includes('too many') ? raw : 'Too many PIN attempts. Please wait before trying again.';
+  }
   if (message.includes('invalid credential')) return 'That PIN is not correct. Try again.';
   if (message.includes('missing credential') || message.includes('pin is required')) return 'Enter the terminal PIN to continue.';
   if (message.includes('not found')) return 'This terminal is no longer available.';
@@ -126,7 +146,7 @@ function friendlyTerminalMessage(value: unknown, fallback: string) {
 }
 
 async function bootstrap() {
-  loadDevSession();
+  await hydrateSession();
 
   const res = await $fetch<{
     businessId: string;
@@ -159,7 +179,7 @@ async function bootstrap() {
       token?: string | null;
       error: string | null;
     }>(`/api/terminals/${terminalId.value}/session`, {
-      headers: authHeaders(),
+      headers: terminalRequestHeaders(),
     });
     if (sessionRes?.session) {
       if (sessionRes.token && typeof window !== 'undefined') {
@@ -227,7 +247,7 @@ async function login() {
     configureRuntime(session.value);
     pin.value = '';
   } catch (err) {
-    loginError.value = friendlyTerminalMessage((err as Error).message, 'We could not sign you in right now. Try again.');
+    loginError.value = friendlyTerminalMessage(extractTerminalError(err), 'We could not sign you in right now. Try again.');
   } finally {
     loading.value = false;
   }
@@ -242,7 +262,7 @@ async function loginAsAdmin() {
       token?: string | null;
       error: string | null;
     }>(`/api/terminals/${terminalId.value}/session`, {
-      headers: authHeaders(),
+      headers: terminalRequestHeaders(),
     });
 
     if (sessionRes?.session) {
@@ -312,7 +332,7 @@ async function logout(forceAdminBypass = false) {
   try {
     const res = await $fetch<{ success: boolean; error: string | null }>('/api/terminals/logout', {
       method: 'POST',
-      headers: authHeaders(),
+      headers: terminalRequestHeaders(),
       body: {
         terminalId: terminalId.value,
         pin: forceAdminBypass ? '' : logoutPin.value,
@@ -334,7 +354,7 @@ async function logout(forceAdminBypass = false) {
     closeLogoutPrompt();
     await navigateTo(adminEntryLocation());
   } catch (err) {
-    logoutError.value = friendlyTerminalMessage((err as Error).message, 'We could not exit terminal mode right now. Try again.');
+    logoutError.value = friendlyTerminalMessage(extractTerminalError(err), 'We could not exit terminal mode right now. Try again.');
   } finally {
     logoutLoading.value = false;
   }

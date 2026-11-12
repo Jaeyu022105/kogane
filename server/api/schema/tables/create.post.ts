@@ -9,6 +9,7 @@ import { db } from '~/lib/db';
 import { buildCreateTableSql, validateTableDef } from '~/lib/schemaUtils';
 import type { TableDef } from '~/lib/schemaUtils';
 import { writeAuditLog } from '~/server/utils/audit';
+import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -33,8 +34,7 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { error: 'Business not found', success: false };
   if (business.admin_user_id !== userId) return { error: 'Forbidden', success: false };
 
-  const isDevMode = process.env.DEV_MODE === 'true';
-  const dialect = isDevMode ? 'sqlite' : 'postgres';
+  const dialect = getSqlDialect();
   const sql = buildCreateTableSql(body.table, business.schema_name, dialect);
 
   const { error } = await db.execute(sql);

@@ -9,3 +9,9 @@ node_modules/
 .output/
 dist/
 backups/
+dev-storage/
+
+# Firebase / GCP Service Account Credentials (never commit)
+*firebase-adminsdk*.json
+service-account*.json
+firebase-credentials*.json

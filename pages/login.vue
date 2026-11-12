@@ -5,19 +5,21 @@ definePageMeta({ layout: 'default' });
 
 const router = useRouter();
 const route  = useRoute();
-const { isLoggedIn, setSession, loadDevSession } = useAuth();
+const runtimeConfig = useRuntimeConfig();
+const isDevMode = computed(() => Boolean(runtimeConfig.public?.devMode));
+const { isLoggedIn, setSession, hydrateSession, authHeaders, session } = useAuth();
 const { openOnboarding }                        = useOnboarding();
 const { t, locale, detectedLocale, setLocale, loadLocale, availableLocales, translateFor } = useLocale();
 
-const mode = ref<'login' | 'signup' | '2fa-setup'>((route.query.mode as any) || 'login');
+const mode = ref<'login' | 'signup' | '2fa-setup' | '2fa-verify'>((route.query.mode as any) || 'login');
 const signupStep = ref(0); // 0: Lang, 1: Profile, 2: Birthday, 3: Wizard handoff
 
 useHead(() => ({
-  title: `${mode.value === 'login' ? t('login_title') : t('signup_title')} - Kogane`,
+  title: `${mode.value === 'login' || mode.value === '2fa-verify' ? t('login_title') : t('signup_title')} - Kogane`,
 }));
 
 // Form state
-const email           = ref(mode.value === 'signup' ? '' : 'admin@kogane.dev');
+const email           = ref('');
 const password        = ref('');
 const confirmPassword = ref('');
 const fullName        = ref('');
@@ -105,13 +107,17 @@ const birthYear = ref('');
 
 const enable2FA = ref(false);
 const verificationCode = ref('');
+const challengeToken = ref<string | null>(null);
+const twoFactorSecret = ref('');
+const qrCodeDataUrl = ref('');
+const setupBackupCodes = ref<string[]>([]);
 
 const error    = ref<string | null>(null);
 const loading  = ref(false);
 
 const primaryTitleKey = computed(() => {
   if (mode.value === 'login') return 'login_title';
-  if (mode.value === '2fa-setup') return '2fa_title';
+  if (mode.value === '2fa-setup' || mode.value === '2fa-verify') return '2fa_title';
   if (signupStep.value === 0) return 'lang_picker_title';
   if (signupStep.value === 1) return 'step1_heading';
   if (signupStep.value === 2) return 'step2_heading';
@@ -135,12 +141,20 @@ const languageOptions = computed(() =>
   })),
 );
 
+function isSafePath(path: string | null | undefined): path is string {
+  return typeof path === 'string'
+    && path.startsWith('/')
+    && !path.startsWith('//')
+    && !path.startsWith('/\\')
+    && !path.includes('://');
+}
+
 const redirectTarget = computed(() => {
   const target = typeof route.query.redirect === 'string'
     ? route.query.redirect
     : '/dashboard';
 
-  return target.startsWith('/') ? target : '/dashboard';
+  return isSafePath(target) ? target : '/dashboard';
 });
 
 const exitTarget = computed(() => {
@@ -148,7 +162,7 @@ const exitTarget = computed(() => {
     ? route.query.returnTo
     : null;
 
-  return target && target.startsWith('/') ? target : null;
+  return isSafePath(target) ? target : null;
 });
 
 function leaveLoginPage() {
@@ -158,10 +172,10 @@ function leaveLoginPage() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadLocale();
-  loadDevSession();
-  if (isLoggedIn.value) router.push(redirectTarget.value);
+  const active = await hydrateSession();
+  if (active && isLoggedIn.value) router.push(redirectTarget.value);
 });
 
 async function nextStep() {
@@ -221,10 +235,23 @@ async function handleAction() {
     }
     loading.value = true;
     try {
-      const res = await $fetch<{ session: any; error: string | null }>('/api/auth/login', {
+      const res = await $fetch<{
+        session: any;
+        requires2fa?: boolean;
+        challengeToken?: string;
+        error: string | null;
+      }>('/api/auth/login', {
         method: 'POST',
+        credentials: 'include',
         body: { email: email.value.trim(), password: password.value },
       });
+
+      if (res.requires2fa && res.challengeToken) {
+        challengeToken.value = res.challengeToken;
+        verificationCode.value = '';
+        mode.value = '2fa-verify';
+        return;
+      }
 
       if (res.error || !res.session) {
         error.value = res.error ?? t('error_login_failed');
@@ -238,6 +265,33 @@ async function handleAction() {
     } finally {
       loading.value = false;
     }
+  } else if (mode.value === '2fa-verify') {
+    const cleaned = verificationCode.value.trim();
+    if (cleaned.length < 6) {
+      error.value = t('error_invalid_code') || 'Please enter a valid 6-digit code or backup code.';
+      return;
+    }
+    loading.value = true;
+    try {
+      const res = await $fetch<{ session: any; error: string | null }>('/api/auth/2fa/verify', {
+        method: 'POST',
+        credentials: 'include',
+        body: { challengeToken: challengeToken.value, code: cleaned },
+      });
+
+      if (res.error || !res.session) {
+        error.value = res.error ?? (t('error_invalid_code') || 'Invalid verification code.');
+        return;
+      }
+
+      challengeToken.value = null;
+      setSession(res.session);
+      router.push(redirectTarget.value);
+    } catch (err: any) {
+      error.value = err?.data?.error || err?.message || 'Verification failed';
+    } finally {
+      loading.value = false;
+    }
   } else if (mode.value === 'signup') {
     if (signupStep.value < 3) {
       await nextStep();
@@ -245,26 +299,56 @@ async function handleAction() {
       await handleSignupSubmit();
     }
   } else if (mode.value === '2fa-setup') {
-    if (verificationCode.value.length < 6) {
-      error.value = t('error_invalid_code');
+    if (setupBackupCodes.value.length > 0) {
+      openOnboarding();
+      router.push(redirectTarget.value);
       return;
     }
-    await handleSignupSubmit();
+
+    const cleaned = verificationCode.value.replace(/\s+/g, '');
+    if (!/^\d{6}$/.test(cleaned)) {
+      error.value = t('error_invalid_code') || 'Please enter the 6-digit code from your authenticator app.';
+      return;
+    }
+
+    loading.value = true;
+    try {
+      const res = await $fetch<{ enabled: boolean; backupCodes?: string[]; error: string | null }>('/api/auth/2fa/enable', {
+        method: 'POST',
+        credentials: 'include',
+        headers: authHeaders(),
+        body: { code: cleaned },
+      });
+
+      if (res.error || !res.enabled) {
+        error.value = res.error ?? 'Failed to enable 2FA';
+        return;
+      }
+
+      if (session.value) {
+        setSession({ ...session.value, has2fa: true });
+      }
+      setupBackupCodes.value = res.backupCodes ?? [];
+      if (setupBackupCodes.value.length === 0) {
+        openOnboarding();
+        router.push(redirectTarget.value);
+      }
+    } catch (err: any) {
+      error.value = err?.data?.error || err?.message || '2FA activation failed';
+    } finally {
+      loading.value = false;
+    }
   }
 }
 
 async function handleSignupSubmit() {
-  if (enable2FA.value && mode.value !== '2fa-setup') {
-    mode.value = '2fa-setup';
-    return;
-  }
-
   loading.value = true;
   error.value = null;
 
   try {
     const res = await $fetch<{ session: any; error: string | null }>('/api/auth/signup', {
       method: 'POST',
+      credentials: 'include',
       body: {
         email: email.value.trim(),
         password: password.value,
@@ -272,7 +356,7 @@ async function handleSignupSubmit() {
         username: username.value.trim(),
         profilePhotoUrl: profilePhotoUrl.value || undefined,
         languagePreference: locale.value,
-        has2fa: enable2FA.value,
+        has2fa: false,
       },
     });
 
@@ -282,6 +366,33 @@ async function handleSignupSubmit() {
     }
 
     setSession(res.session);
+
+    if (enable2FA.value) {
+      const setupRes = await $fetch<{
+        secret: string;
+        qrCodeDataUrl: string;
+        error: string | null;
+      }>('/api/auth/2fa/setup', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${res.session.token}` },
+      });
+
+      if (setupRes.error || !setupRes.secret) {
+        error.value = setupRes.error ?? 'Could not initialize 2FA setup. You can enable it later in Settings.';
+        openOnboarding();
+        router.push(redirectTarget.value);
+        return;
+      }
+
+      twoFactorSecret.value = setupRes.secret;
+      qrCodeDataUrl.value = setupRes.qrCodeDataUrl;
+      verificationCode.value = '';
+      setupBackupCodes.value = [];
+      mode.value = '2fa-setup';
+      return;
+    }
+
     openOnboarding();
     router.push(redirectTarget.value);
   } catch (err: any) {
@@ -289,6 +400,11 @@ async function handleSignupSubmit() {
   } finally {
     loading.value = false;
   }
+}
+
+function skipTwoFactorSetup() {
+  openOnboarding();
+  router.push(redirectTarget.value);
 }
 
 const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -617,6 +733,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 {{ loading ? t('btn_signing_in') : t('btn_signin') }}
               </button>
               <button
+                v-if="isDevMode"
                 type="button"
                 class="w-full text-center text-xs py-1.5 text-[rgba(104,41,58,0.65)] hover:text-[#68293A] bg-transparent border-0 cursor-pointer underline transition-colors"
                 @click="fillDemoAdmin"
@@ -625,32 +742,101 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               </button>
             </template>
 
-            <template v-if="mode === '2fa-setup'">
-              <div class="qr-placeholder">
-                <QrCode class="w-16 h-16" style="color: #68293A;" />
-                <p class="qr-text">Scan with Authy, Google Authenticator, etc.</p>
-              </div>
+            <template v-if="mode === '2fa-verify'">
               <div class="field">
-                <label for="2fa-code" class="field-label">{{ t('field_verification_code') }}</label>
+                <label for="2fa-verify-code" class="field-label">Authenticator or Backup Code</label>
                 <input
-                  id="2fa-code"
+                  id="2fa-verify-code"
                   v-model="verificationCode"
                   type="text"
                   required
-                  class="field-input text-center text-lg tracking-widest"
-                  placeholder="000000"
-                  maxlength="6"
+                  autocomplete="one-time-code"
+                  class="field-input text-center text-lg tracking-widest font-mono"
+                  placeholder="000000 or ABCD-1234"
+                  maxlength="12"
                 />
+                <p class="text-xs text-[rgba(104,41,58,0.65)] mt-1">
+                  Enter the 6-digit code from your authenticator app or one of your 8-character recovery codes.
+                </p>
               </div>
-              
+
               <button
                 id="login-submit"
                 type="submit"
                 :disabled="loading"
                 class="login-submit"
               >
-                {{ t('btn_complete_setup') }}
+                {{ loading ? 'Verifying...' : 'Verify & Sign In' }}
               </button>
+            </template>
+
+            <template v-if="mode === '2fa-setup'">
+              <template v-if="setupBackupCodes.length === 0">
+                <div class="qr-placeholder">
+                  <img
+                    v-if="qrCodeDataUrl"
+                    :src="qrCodeDataUrl"
+                    alt="Two-factor authentication QR code"
+                    class="w-40 h-40 rounded-lg border border-[rgba(104,41,58,0.12)] bg-white p-1"
+                  />
+                  <QrCode v-else class="w-16 h-16" style="color: #68293A;" />
+                  <p class="qr-text">Scan with Google Authenticator, Authy, 1Password, or Apple Passwords.</p>
+                  <div v-if="twoFactorSecret" class="mt-2 w-full text-center">
+                    <span class="block text-[11px] uppercase tracking-wider text-[rgba(104,41,58,0.55)]">Manual entry key</span>
+                    <code class="inline-block mt-1 px-2.5 py-1 rounded bg-[rgba(104,41,58,0.06)] text-xs font-mono text-[#68293A] select-all break-all">
+                      {{ twoFactorSecret }}
+                    </code>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="2fa-code" class="field-label">{{ t('field_verification_code') }}</label>
+                  <input
+                    id="2fa-code"
+                    v-model="verificationCode"
+                    type="text"
+                    required
+                    autocomplete="one-time-code"
+                    class="field-input text-center text-lg tracking-widest font-mono"
+                    placeholder="000000"
+                    maxlength="6"
+                  />
+                </div>
+
+                <button
+                  id="login-submit"
+                  type="submit"
+                  :disabled="loading"
+                  class="login-submit"
+                >
+                  {{ loading ? 'Activating 2FA...' : t('btn_complete_setup') }}
+                </button>
+              </template>
+
+              <template v-else>
+                <div class="rounded-xl border border-[rgba(104,41,58,0.15)] bg-[rgba(104,41,58,0.04)] p-4">
+                  <p class="text-sm font-semibold text-[#68293A] mb-1">Save your backup recovery codes</p>
+                  <p class="text-xs text-[rgba(104,41,58,0.75)] mb-3">
+                    Each code can be used once if you lose access to your authenticator device.
+                  </p>
+                  <div class="grid grid-cols-2 gap-2 font-mono text-xs">
+                    <div
+                      v-for="code in setupBackupCodes"
+                      :key="code"
+                      class="px-2.5 py-1.5 rounded bg-white border border-[rgba(104,41,58,0.12)] text-center text-[#68293A] select-all"
+                    >
+                      {{ code }}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  id="login-submit"
+                  type="submit"
+                  class="login-submit"
+                >
+                  Continue to Workspace
+                </button>
+              </template>
             </template>
 
             <div v-if="error" class="login-error">
@@ -670,8 +856,13 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
           <p v-else-if="mode === 'signup' && signupStep > 0" class="login-dev-note">
             {{ t('have_account') }} <a href="#" @click.prevent="mode = 'login'" class="link-text">{{ t('sign_in_link') }}</a>
           </p>
-          <p v-else-if="mode === '2fa-setup'" class="login-dev-note">
-            <a href="#" @click.prevent="mode = 'signup'" class="link-text">{{ t('back_to_signup') }}</a>
+          <p v-else-if="mode === '2fa-verify'" class="login-dev-note">
+            <a href="#" @click.prevent="mode = 'login'; challengeToken = null; verificationCode = ''; error = null;" class="link-text">
+              Back to password sign in
+            </a>
+          </p>
+          <p v-else-if="mode === '2fa-setup' && setupBackupCodes.length === 0" class="login-dev-note">
+            <a href="#" @click.prevent="skipTwoFactorSetup" class="link-text">Skip 2FA setup for now</a>
           </p>
 
           <p class="login-legal">

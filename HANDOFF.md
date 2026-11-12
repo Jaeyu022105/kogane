@@ -37,7 +37,7 @@ These are firm boundaries that should not be crossed or implied in any UI copy, 
 - **No native iOS, Android, or desktop app.** Kogane runs in modern web browsers. There are no compiled native packages, no App Store submissions, and no Electron builds.
 - **No payment gateway integrations.** Stripe, PayPal, PayMongo, and equivalent services are explicitly out of scope. Do not add payment API keys, webhooks, or live payment flows.
 - **No enterprise hardware SDKs.** Barcode/QR scanner support uses browser key-burst emulation. No USB, Bluetooth, or vendor-specific driver integration is included.
-- **No paid cloud infrastructure.** The local dev environment uses SQLite via Bun. Production targets free-tier Supabase/PostgreSQL. Do not provision paid services without explicit instruction.
+- **No paid third-party SaaS lock-in.** Local development runs standalone SQLite via Bun (`DEV_MODE=true`). Online cloud hosting targets **Firebase** (Firebase App Hosting / Hosting + Cloud Functions Gen 2, Cloud Firestore, and Firebase Storage), with Supabase/PostgreSQL kept only as a legacy alternative (`DB_PROVIDER=supabase`). Do not provision unrelated paid infrastructure without explicit instruction.
 - **No marketplace or plugin ecosystem.** There is no third-party extension system, plugin store, or external app marketplace.
 
 ---
@@ -85,16 +85,21 @@ Implemented or partially implemented areas:
 
 Main stack:
 
-- Nuxt 3 and Vue 3
+- Nuxt 3 and Vue 3 (SSR + Nitro server routes, Firebase App Hosting / Cloud Functions Gen 2)
 - Bun runtime
 - Tailwind CSS plus custom CSS
 - SQLite in development via `bun:sqlite`
-- Supabase/PostgreSQL intended for production
+- Online production hosting: **Firebase** — Cloud Firestore (`DB_PROVIDER=firebase`, `lib/db-firebase.ts`, `lib/firebaseAdmin.ts`), Firebase Storage (`lib/storage.ts`), Firebase Hosting / App Hosting (`firebase.json`, `apphosting.yaml`), strict deny-client-SDK rules (`firestore.rules`, `storage.rules`)
+- Legacy optional production: Supabase / PostgreSQL (`DB_PROVIDER=supabase`)
+- Security stack: PBKDF2-SHA256 passwords & terminal PINs, AES-256-GCM encrypted TOTP 2FA secrets (`lib/security.ts`), SHA-256 hashed stateful `sessions` (`lib/authUtils.ts`), sliding-window rate limiting (`lib/rateLimit.ts`), HTTP security headers (`server/middleware/security.ts`), and secret-stripping DTO mappers (`lib/mappers.ts`)
 
 Important files:
 
 - `README.md`: high-level project overview. Some text may have encoding artifacts and may lag behind code.
-- `lib/db.ts`: database adapter switch based on `DEV_MODE`.
+- `lib/db.ts`: database adapter switch based on `DB_PROVIDER` / `DEV_MODE` (`sqlite`, `firebase`, `supabase`).
+- `lib/db-firebase.ts` & `lib/firebaseAdmin.ts`: Cloud Firestore `DbAdapter` + Firebase Admin SDK singleton (`__schema_meta` tracking + SQL-to-Firestore translation).
+- `lib/security.ts`, `lib/rateLimit.ts`, `lib/mappers.ts`: AES-256-GCM encryption, RFC 6238 TOTP & QR code generation, single-use backup codes, rate limiting, and DTO field mapping.
+- `server/middleware/security.ts`: strict HTTP security headers across all responses.
 - `lib/db-sqlite.ts`: local SQLite adapter; creates `dev.db`.
 - `lib/uiTypes.ts`: shared layout, element, theme, and runtime event types.
 - `lib/builderPresets.ts`: starter terminal layouts (the actual presets).
@@ -440,3 +445,161 @@ Do not restore or revert those changes unless the user explicitly asks.
 - Kogane is not a payment system. Do not add real money flows.
 - Update this handoff after every meaningful prompt — include why a decision was made, not just what files changed.
 - When implementing new terminal features, check `lib/uiTypes.ts`, `lib/builderPresets.ts`, and `lib/stationObjects.ts` first to understand existing type and layout conventions before adding new ones.
+- **Session Log Protocol (Mandatory)**: Every future AI session MUST read `HANDOFF.md` at startup to capture project direction, redirections, prior changes, and recommendations, and MUST append a dated session log below upon completion recording: (1) any project redirection and its rationale, (2) exact changes and files touched, (3) empirical verification results, and (4) next recommendations.
+
+---
+
+## Firebase Online Hosting, Security Hardening, Stateful Sessions & 2FA Migration Pass — November 2026
+
+### Project Direction & Redirection
+
+- **Redirection Decision**: Redirected production deployment away from local-only hosting (`dev.db` SQLite + LAN executable) and optional Supabase toward **Firebase Online Hosting** (Firebase App Hosting / Firebase Hosting + Nitro Cloud Functions Gen 2, Cloud Firestore, and Firebase Storage).
+- **Why**: Local-only SQLite/LAN deployment limits multi-location access, remote management, managed TLS/HTTPS, and operational durability for long-term multi-user SaaS hosting. Retaining local SQLite behind `DEV_MODE=true` preserves zero-config local testing while `DB_PROVIDER=firebase` powers online production.
+
+### What Changed
+
+1. **Firebase Online Hosting, Cloud Firestore & Firebase Storage Migration**:
+   - Added `lib/firebaseAdmin.ts`: Firebase Admin singleton supporting `FIREBASE_SERVICE_ACCOUNT_JSON` (raw JSON or Base64), `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY`, or Application Default Credentials (`applicationDefault()`).
+   - Added `lib/db-firebase.ts`: `FirestoreAdapter` implementing `DbAdapter` plus `InMemoryFirestoreStore` for offline unit testing. Translates parameterized SQL (`SELECT` with `JOIN`, `WHERE`, `COLLATE NOCASE`, `datetime()`, `LIKE`, `IS NULL`, `ORDER BY`, `LIMIT`, `OFFSET`, `COUNT(*)`, `INSERT`, `UPDATE`, `DELETE`, `PRAGMA table_info`, `sqlite_master`, `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`) against Firestore collections and `__schema_meta`.
+   - Updated `lib/db.ts` (`DbProvider = 'sqlite' | 'firebase' | 'supabase'`, dynamic `getDbProvider()`, `setDbAdapterForTest()`, `resetDbAdapter()`) and refactored prefix-table dialect checks across `server/utils/business.ts`, `server/utils/businessTable.ts`, `server/utils/starterTables.ts`, `server/utils/salesMetrics.ts`, `server/api/data/query.post.ts`, `server/api/presets/apply.post.ts`, `server/api/businesses/create.post.ts`, `server/api/businesses/onboard.post.ts`, `server/api/schema/tables/*.ts`, and `server/api/terminals/insert.post.ts`.
+   - Updated `lib/storage.ts` to add `FirebaseStorageAdapter` using Cloud Storage via Firebase Admin when Firebase is active.
+   - Added Firebase deployment configs: `firebase.json`, `apphosting.yaml`, `.firebaserc`, `firestore.rules`, `firestore.indexes.json`, `storage.rules`, updated `nuxt.config.ts` (`runtimeConfig` + `nitro.firebase` Gen 2 config), `package.json` (`build:firebase` / `deploy:firebase`), and `.env.example`.
+
+2. **Security, Cryptography, Hashing, Mapping & Rate Limiting**:
+   - Created `lib/security.ts`: `getSessionSecret`, constant-time `timingSafeEqualStr`, `hashTokenSha256`, AES-256-GCM `encryptSecret` / `decryptSecret` (for at-rest 2FA secrets), Base32 encode/decode, RFC 6238 TOTP generation/verification, `buildOtpAuthUri`, `generateQrDataUrl` (via `qrcode`), salted single-use backup recovery codes (`generateBackupCodes` / `verifyAndConsumeBackupCode`), and `isSafeRedirectPath`.
+   - Updated `lib/authUtils.ts` with salted PBKDF2-SHA256 PIN hashing (`hashPin` -> `pin_pbkdf2$100000$...`) + legacy SHA-256 verification and transparent upgrade in `server/api/terminals/login.post.ts`.
+   - Created `lib/rateLimit.ts`: sliding-window rate limiter with `Retry-After` & HTTP 429 enforcement applied to admin login, signup, 2FA verification/setup/disable, and terminal PIN login.
+   - Created `lib/mappers.ts`: DTO field mappers stripping `password_hash`, `pin_hash`, `two_factor_secret`, `two_factor_backup_codes`, and `token_hash` before serializing responses, plus `normalizeEmail` and User-Agent device summarization.
+   - Created `server/middleware/security.ts`: injects `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-XSS-Protection`, and HTTPS `Strict-Transport-Security`.
+
+3. **Fixed Admin & Terminal Logins + Stateful Sessions**:
+   - Added persistent `sessions` schema in `lib/db-sqlite.ts` (and Firestore `sessions` collection) storing SHA-256 `token_hash`, `session_type` (`admin` | `terminal`), `two_factor_verified`, `ip_address`, `user_agent`, `last_active_at`, `expires_at`, and `revoked_at`.
+   - Updated `lib/authUtils.ts` to persist, validate, refresh, and revoke stateful admin & terminal sessions, reject `dev-admin-token` in real production, validate HMAC signatures with timing-safe comparison, use HTTPS-aware cookie `secure` flags (`isSecureRequest`), and accept both `HttpOnly` cookies (`kogane_admin_session`, `kogane_term_<id>`) and `Bearer` / `x-terminal-session` headers.
+   - Fixed `composables/useAuth.ts`, `app.vue`, `layouts/dashboard.vue`, `pages/index.vue`, and `pages/login.vue`: added `hydrateSession()` against `GET /api/auth/me` before dashboard auth-guard redirects (fixing production refresh logouts and stale `localStorage` redirect loops), gated demo autofill behind `runtimeConfig.public.devMode`, validated safe redirects, and fixed `server/api/terminals/logout.post.ts` (`await clearTerminalSession(event, targetTerminalId)`) and `server/api/terminals/insert.post.ts` (`verifyTerminalSession`).
+   - Added `GET /api/auth/sessions` and `POST /api/auth/sessions/revoke` + updated `POST /api/auth/change-password` to revoke all other active sessions.
+
+4. **End-to-End Two-Factor Authentication (2FA)**:
+   - Added `two_factor_enabled`, `two_factor_secret`, `two_factor_backup_codes`, `two_factor_verified_at` user columns + migrations in `lib/db-sqlite.ts`.
+   - Implemented `POST /api/auth/2fa/setup`, `enable`, `verify`, `disable`, and `backup-codes`.
+   - Updated `POST /api/auth/login` to issue a short-lived pending challenge token when 2FA is enabled (`verifyAdmin` blocks unverified pending tokens) and complete login only after TOTP or single-use backup code verification in `/api/auth/2fa/verify`.
+   - Replaced fake QR placeholder in `pages/login.vue` with real QR scan + manual setup key + 2FA login challenge + backup code recovery view, and added **Two-Factor Authentication** and **Active Sessions** management cards in `pages/dashboard/settings.vue`.
+
+### Verification Results
+
+- `bun test`: **160 pass, 0 fail** (1,102 expect() calls across 18 test files), including new `tests/firebase-security-2fa-sessions.test.ts` (12 tests covering AES-256-GCM encryption, PBKDF2 PIN hashing/upgrade, TOTP/QR/single-use backup codes, DTO mappers, `FirestoreAdapter` CRUD/JOIN/DDL/full auth flow, stateful session revocation, 2FA login challenge lifecycle, and 429 rate limiting).
+- `bun run build` (`node-server` preset): exited with code 0 (`✨ Build complete!`).
+- `bun run build:firebase` (`Nitro preset: firebase` Cloud Functions Gen 2 + `.output/public`): exited with code 0 (`✨ Build complete!`).
+- **Not verified live**: Actual deployment (`firebase deploy`) against a live GCP/Firebase project and live browser E2E testing were not executed because no Firebase project credentials or running interactive browser environment exist in this workspace.
+
+### Recommendations & Next Steps for Future AI
+
+1. **Provision Live Firebase Project & Secrets**: Update `.firebaserc` with the real project ID, set `SESSION_SECRET`, `ENCRYPTION_KEY`, and `FIREBASE_SERVICE_ACCOUNT_JSON` in Firebase App Hosting / Functions secret manager, and deploy `firestore.rules`, `firestore.indexes.json`, and `storage.rules` via `firebase deploy`.
+2. **Real-Time Multi-Instance Sync on Firebase**: In-memory `realtimeHub.ts` broadcasts within a single Node/Cloud Run instance; if scaling to multiple Cloud Functions / App Hosting instances, bridge `realtimeHub` over Firestore `onSnapshot` listeners or Redis/PubSub so kitchen displays receive cross-instance events instantly.
+3. **Browser E2E Login / 2FA Smoke Test**: Exercise `/login` (signup with 2FA QR scan, login with 2FA challenge, backup code consumption) and `/dashboard/settings` (active session revocation across two browser contexts) against the running Nuxt server.
+4. **Admin Email Verification & Password Reset**: Add verified-email / forgot-password token delivery once an outbound email provider (e.g., Resend / SendGrid / Firebase Trigger Email) is configured.
+
+
+---
+
+### Session Log — 2026-11-12 (Verification Review & Hardening Pass)
+
+- **Context & Direction Check**: Confirmed redirection from local SQLite/LAN hosting to Firebase Hosting / App Hosting, Cloud Firestore, and Firebase Storage while keeping `DEV_MODE=true` SQLite intact for local tests and offline dev. No new scope redirection introduced.
+- **Defects Found & Fixed**:
+  1. **Session Hydration Schema Mismatch (`composables/useAuth.ts`)**: `GET /api/auth/me` (`mapUserRecordToDto`) returns `user.id` and `user.profilePhotoUrl`, whereas `hydrateSession()` previously read `data.user.userId` and `data.user.profilePicture`, overwriting `session.value.userId` with `undefined` on mount/refresh. Fixed `hydrateSession()` to resolve `data.user.userId || data.user.id` and `data.user.profilePicture ?? data.user.profilePhotoUrl`, and clear stale local state if neither ID is present.
+  2. **Firestore SQL `IN` / `NOT IN` & Schema Name Resolution (`lib/db-firebase.ts`)**:
+     - Added `[NOT] IN (...)` predicate evaluation inside `evaluateWhereRows()` so queries such as `server/api/reports/table-activity.get.ts` (`action_type IN ('insert', 'update', 'delete')`) filter accurately instead of returning unfiltered rows.
+     - Fixed `extractSchemaAndShortName()`'s greedy regex and added `resolveSchemaAndShortName()` backed by `businesses.schema_name` lookup so multi-underscore tenant table names (`order_items` under `biz_usr_1234`, `menu_items` under `tenant_abc`) map accurately in `__schema_meta`.
+  3. **Firebase Storage Runtime Detection (`lib/storage.ts`) & Dynamic Reporting Dialect (`server/api/reports/custom.post.ts`)**:
+     - Updated `FirebaseStorageAdapter.getBucketName()` and `useStorage()` to recognize `GCLOUD_PROJECT`, `GOOGLE_CLOUD_PROJECT`, and `FIREBASE_CONFIG` JSON (alongside `FIREBASE_PROJECT_ID` / `FIREBASE_STORAGE_BUCKET`), preventing silent fallback to local `DevStorageAdapter` on Firebase App Hosting / Cloud Functions.
+     - Switched `server/api/reports/custom.post.ts` from module-load `isDevDb` to dynamic `isPrefixDb()`.
+  4. **Sensitive Auth/2FA Endpoint Rate Limiting (`server/api/auth/2fa/{enable,disable,backup-codes}.post.ts`, `server/api/auth/change-password.post.ts`)**: Added `enforceRateLimit` / `recordRateLimitAttempt` / `clearRateLimit` (HTTP 429 + `Retry-After`) to prevent brute-forcing 6-digit TOTP codes or current passwords from an active session.
+  5. **Client Hydration & Terminal Auth Consistency (`layouts/marketing.vue`, `pages/terminal/[id].vue`)**: Switched marketing layout and terminal page mount hydration from `loadDevSession()` to `hydrateSession()`, passed stored `x-terminal-session` headers on terminal session/logout requests, and surfaced HTTP 429 rate-limit messages in `friendlyTerminalMessage()`.
+- **Verification Executed**:
+  - `bun test`: **165 pass, 0 fail** (1,167 assertions across 18 files), including 5 new regression tests in `tests/firebase-security-2fa-sessions.test.ts` covering `useAuth.hydrateSession()` <-> `GET /api/auth/me`, Firestore `IN` / `NOT IN` & multi-underscore schema metadata, `table-activity` under `FirestoreAdapter`, `useStorage()` GCP/Firebase env resolution, and HTTP 429 rate limiting on `2fa/enable`, `2fa/disable`, `2fa/backup-codes`, and `change-password`.
+  - `bun run build`: Exited 0 (`.output/server/index.mjs`, Nitro `node-server`).
+  - `bun run build:firebase`: Exited 0 (`Nitro preset: firebase`, `.output/server` + `.output/public`).
+- **Remaining Recommendations for Next Session**:
+  1. Replace the placeholder project ID in `.firebaserc`, configure runtime secrets (`SESSION_SECRET`, `ENCRYPTION_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`), and run a live smoke test against Cloud Firestore and Firebase Storage (`RealFirestoreStore` + `FirebaseStorageAdapter`).
+  2. Run a Playwright or manual browser walkthrough of `/login`, `/dashboard/settings`, `/pricing`, and `/terminal/[id]` (cookie handling, QR scan 2FA challenge, session revocation, terminal rate limit error banner).
+
+---
+
+### Session Log — 2026-11-12 (Typecheck, Rate-Limit & Firebase Config Cleanup Pass)
+
+- **Context & Direction Check**: Continued on the Firebase online hosting, security hardening, stateful sessions, and 2FA architecture (`DEV_MODE=true` SQLite for local/offline dev; `DB_PROVIDER=firebase` + Cloud Firestore / Firebase Storage / Nitro `firebase` Gen 2 preset for online production). No scope redirection introduced.
+- **Changes Made**:
+  1. **`composables/useAuth.ts`**: Removed unreachable duplicate `clearLocalSession()` after `return null;` in `hydrateSession()` and ensured `isHydrated.value = true;` is set before returning `null` when `/api/auth/me` returns no user.
+  2. **`lib/rateLimit.ts`**: Replaced truthiness check on `event?.node?.res?.setHeader` with `typeof ... === 'function'` (`TS2774`) and passed numeric `result.retryAfterSeconds` to `setResponseHeader(event, 'Retry-After', ...)` (`TS2345`).
+  3. **Route Handler & Test Type Safety**: Fixed `.catch(() => ({}))` union widening in `server/api/auth/{login,signup,change-password}.post.ts`, `server/api/auth/sessions/revoke.post.ts`, and `server/api/auth/2fa/{backup-codes,disable,enable,verify}.post.ts`; typed `business` in `server/api/businesses/onboard.post.ts`; and narrowed `setupRes.secret` in `tests/firebase-security-2fa-sessions.test.ts`.
+  4. **`server/api/storage/upload.post.ts`**: Kept `actorType` strictly typed as `AuditActorType | null` (`'admin' | 'inpoint' | null`), skipped `writeAuditLog` for unauthenticated guest uploads (`businessId === null`), and added sliding-window IP rate limiting (`guest_image_upload`, 10 attempts / 15 min, HTTP 429 + `Retry-After`) for unauthenticated image uploads.
+  5. **`lib/firebaseAdmin.ts` & `lib/storage.ts`**: Added `parseFirebaseConfig()`, `resolveFirebaseProjectId()`, and `resolveFirebaseStorageBucket()` so deployments supplying only `FIREBASE_SERVICE_ACCOUNT_JSON` (raw or Base64, without explicit `FIREBASE_PROJECT_ID` or `FIREBASE_STORAGE_BUCKET`) resolve `projectId` and `<project_id>.firebasestorage.app` across Firebase Admin initialization, `FirebaseStorageAdapter.getBucketName()`, and `useStorage()` mode detection.
+  6. **`server/api/terminals/logout.post.ts`**: Added `terminal_pin` sliding-window rate limiting (10 attempts / 5 min, HTTP 429 + `Retry-After`) on terminal PIN logout while preserving admin passthrough bypass.
+- **Verification Results**:
+  - `bunx tsc --noEmit`: 0 errors across all touched source files (`composables/useAuth.ts`, `lib/rateLimit.ts`, `lib/firebaseAdmin.ts`, `lib/storage.ts`, `server/api/auth/**`, `server/api/businesses/onboard.post.ts`, `server/api/storage/upload.post.ts`, `server/api/terminals/logout.post.ts`); remaining `tsc` errors are pre-existing in unrelated files (`useCanvas*`, `builderPresets.ts`, `workspaceBranding.ts`, `salesMetrics.ts`, `taxFiling.ts`, `tailwind.config.ts`, `scripts/*`, and `bun:sqlite`/`bun:test` module declarations).
+  - `bun test`: **169 pass, 0 fail** (1,218 assertions across 18 files), including 4 new regression tests in `tests/firebase-security-2fa-sessions.test.ts` covering `useAuth.hydrateSession()` null-user hydration state, `FIREBASE_SERVICE_ACCOUNT_JSON` fallback in `firebaseAdmin`/`useStorage`, `/api/terminals/logout` PIN rate limiting + admin bypass, and `/api/storage/upload` guest image rate limiting + PDF rejection.
+  - `bun run build` (`Nitro preset: node-server`): exited 0 (`✨ Build complete!`).
+  - `bun run build:firebase` (`Nitro preset: firebase` Gen 2, `.output/nitro.json` verified): exited 0 (`✨ Build complete!`).
+- **Deployment Notes & Next Recommendations**:
+  1. Deploying with `FIREBASE_SERVICE_ACCOUNT_JSON` alone now configures Firestore and Storage buckets automatically (`<project_id>.firebasestorage.app`); still set `SESSION_SECRET`, `ENCRYPTION_KEY`, and update `.firebaserc` before `firebase deploy`.
+  2. Live `firebase deploy` against a provisioned Firebase project and Playwright/manual browser E2E verification remain unexecuted in this offline workspace.
+
+---
+
+### Session Log — 2026-11-12 (Independent Security Review & Final Verification Pass)
+
+- **Context & Direction Check**: Confirmed continuation on the Firebase online hosting, security hardening, stateful sessions, and 2FA architecture (`DEV_MODE=true` SQLite for local/offline dev; `DB_PROVIDER=firebase` + Cloud Firestore / Firebase Storage / Nitro `firebase` Gen 2 preset for online production). No scope redirection introduced.
+- **Defects Found & Fixed**:
+  1. **Cross-Tenant Admin Bypass on Terminal Logout (`server/api/terminals/logout.post.ts`)**: `adminUserId` was extracted from `verifyAdmin(event)` but never matched against the target terminal's business owner, allowing an authenticated admin of a different business to bypass PIN verification and write `'admin'` logout audit entries to another tenant. Fixed by verifying `businesses.admin_user_id = adminUserId` for `terminal.business_id` before allowing admin passthrough, and normalizing `body.pin` string validation.
+  2. **Unauthenticated SVG Upload & Path Traversal Error Handling (`server/api/storage/upload.post.ts`)**: Restricted unauthenticated guest uploads to raster images only (`GUEST_IMAGE_TYPES`: `jpeg`, `png`, `webp`, `gif`, excluding `image/svg+xml` to prevent inline SVG script XSS via `/api/dev/storage/...`) while keeping `image/svg+xml` enabled for authenticated business admins/terminals, and wrapped `sanitizeStoragePath` in `try/catch` to return clean `{ url: null, error: 'Invalid storage path' }` responses.
+  3. **Settings Logo Upload Auth Headers (`pages/dashboard/settings.vue`)**: Added `credentials: 'include'` and `headers: authHeaders()` to `uploadLogo()` so Bearer-authenticated admins upload to `biz-${businessId}` with audit logging rather than falling back to the rate-limited guest upload path.
+  4. **Explicit `DB_PROVIDER` Precedence in Storage (`lib/storage.ts`)**: Updated `useStorage()` so explicit `DB_PROVIDER=sqlite` or `DB_PROVIDER=supabase` (without `FIREBASE_STORAGE_BUCKET`) is not overridden by ambient GCP environment variables (`GCLOUD_PROJECT`, `GOOGLE_CLOUD_PROJECT`, `FIREBASE_CONFIG`).
+- **Verification Executed**:
+  - `bun test`: **170 pass, 0 fail** (1,227 assertions across 18 files), including new regression tests in `tests/firebase-security-2fa-sessions.test.ts` covering cross-tenant terminal logout rejection, guest SVG/path-traversal rejection + admin SVG upload, and `DB_PROVIDER=sqlite` storage precedence under ambient `GCLOUD_PROJECT`.
+  - `bunx tsc --noEmit`: 0 errors across all touched source files (`composables/useAuth.ts`, `lib/rateLimit.ts`, `lib/firebaseAdmin.ts`, `lib/storage.ts`, `server/api/auth/**`, `server/api/businesses/onboard.post.ts`, `server/api/storage/upload.post.ts`, `server/api/terminals/logout.post.ts`, `pages/dashboard/settings.vue`); only pre-existing `TS2307` (`bun:test`) remains in `tests/firebase-security-2fa-sessions.test.ts`.
+  - `bun run build` (`Nitro preset: node-server`) and `bun run build:firebase` (`Nitro preset: firebase` Gen 2): both exited 0 (`✨ Build complete!`).
+- **Remaining Recommendations**:
+  1. Provision a live Firebase project (`.firebaserc`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`) and verify live `RealFirestoreStore`, `FirebaseStorageAdapter`, and `firebase deploy`.
+  2. Run a real browser E2E walkthrough covering `/login` (2FA QR + backup codes), `/dashboard/settings` (logo upload, 2FA, session revocation), and `/terminal/[id]` (PIN rate limiting & logout).
+
+---
+
+### Session Log — 2026-11-12 (Firebase Spark Free-Tier Architectural Workaround)
+
+- **Project Direction & Redirection**:
+  - **Redirection Decision**: Adapted online production deployment for the user's free **Firebase Spark** project (`kogane-e7f2b`, Firestore region `asia-southeast1`) without requiring a Blaze billing upgrade (`Cloud Functions Gen 2`, `Firebase App Hosting`, and `Firebase Storage` all require Blaze, whereas **Cloud Firestore** is free on Spark).
+  - **Architectural Workaround**: Keep **Cloud Firestore** (`DB_PROVIDER=firebase`) as the free online database, replace Blaze Firebase Storage with `FirestoreStorageAdapter` (`__storage_blobs` collection), and replace Blaze Cloud Functions / App Hosting with either a zero-card free Node PaaS (`render.yaml` / `Dockerfile` for Render / Koyeb / Fly) or a local Node/Bun host connected online to Firestore + `bun run tunnel` HTTPS URL & QR.
+- **What Changed**:
+  1. **Spark-Free Asset Storage (`lib/storage.ts`, `lib/db-firebase.ts`, `server/utils/storageServe.ts`, `server/api/storage/files/[...path].get.ts`, `server/api/dev/storage/[...path].get.ts`, `server/api/storage/upload.post.ts`)**:
+     - Added `FirestoreStorageAdapter` (`FIRESTORE_STORAGE_COLLECTION = '__storage_blobs'`, `FIRESTORE_STORAGE_MAX_BYTES = 700 * 1024`) storing small assets/logos/avatars via `db` using SHA-256 hex document IDs (no `/` in Firestore doc IDs), enforcing the 700 KB binary guard under Firestore's 1 MiB document limit, rejecting trailing-slash object keys, and returning `/api/storage/files/<safeBucket>/<safePath>`.
+     - Added O(1) `getById` / `delete` fast-paths for `id = ?` lookups, updates, and deletes in `FirestoreAdapter` (`lib/db-firebase.ts`) and skipped `businesses` schema-meta scans on platform collections (`__storage_blobs`, `sessions`, `users`, `terminals`, etc.) so `/api/storage/files/...` reads do not trigger full-collection Firestore scans on Spark quotas.
+     - Updated `useStorage()` to activate `FirestoreStorageAdapter` via `STORAGE_PROVIDER=firestore`, `FIREBASE_SPARK_MODE=true`, or `DB_PROVIDER=firebase` without an explicit `FIREBASE_STORAGE_BUCKET` or Blaze GCP runtime env (`GCLOUD_PROJECT` / `GOOGLE_CLOUD_PROJECT` / `FIREBASE_CONFIG`), keeping existing Blaze/explicit-bucket tests working.
+     - Created `server/utils/storageServe.ts` and `server/api/storage/files/[...path].get.ts` (and aligned `server/api/dev/storage/[...path].get.ts`) to serve stored files via `useStorage().read(...)` with traversal rejection (HTTP 400), `Content-Type`, `X-Content-Type-Options: nosniff`, `Cache-Control: public, max-age=31536000, immutable`, and `Content-Security-Policy: sandbox` for `image/svg+xml`.
+     - Updated `server/api/storage/upload.post.ts` to catch `FirestoreStorageAdapter` size limit / storage errors and return `{ url: null, error }` with HTTP 413/500 cleanly.
+  2. **Project Config, Security Ignores & Free Node Hosting (`render.yaml`, `Dockerfile`, `.firebaserc`, `.gitignore`, `.dockerignore`, `.env.example`, `nuxt.config.ts`, `DEPLOYMENT.md`)**:
+     - Updated `.firebaserc` default project ID to `kogane-e7f2b`.
+     - Updated `.gitignore` and `.dockerignore` to exclude `*firebase-adminsdk*.json`, `service-account*.json`, `firebase-credentials*.json`, and `dev-storage/`.
+     - Updated `.env.example`, `nuxt.config.ts`, and `DEPLOYMENT.md` to document `STORAGE_PROVIDER=firestore`, `FIREBASE_SPARK_MODE=true`, `asia-southeast1` alongside `us-central1`, and both zero-card Spark workarounds (Free Node PaaS + Spark Firestore, and local host + Spark Firestore + `bun run tunnel`).
+     - Added `render.yaml` (Render Free Web Service running `node .output/server/index.mjs` with `DB_PROVIDER=firebase`, `STORAGE_PROVIDER=firestore`, `DEV_MODE=false`, `COOKIE_SECURE=true`, `FIREBASE_PROJECT_ID=kogane-e7f2b`, `FIREBASE_REGION=asia-southeast1`) and updated `Dockerfile` (`NITRO_PRESET=node-server`, dynamic `${PORT:-3000}` healthcheck).
+  3. **Tests (`tests/firebase-security-2fa-sessions.test.ts`)**:
+     - Added tests covering `useStorage()` Spark mode selection (`STORAGE_PROVIDER=firestore`, `FIREBASE_SPARK_MODE=true`, `DB_PROVIDER=firebase` without bucket vs explicit Blaze bucket), `FirestoreStorageAdapter` CRUD/upsert/list/700 KB limit/traversal rejection, and `/api/storage/upload` + `/api/storage/files/[...path]` serving, SVG `Content-Security-Policy: sandbox`, `nosniff`, 404, traversal rejection (400), and 413 oversized payload handling.
+- **Verification Results**:
+  - `bun test`: **173 pass, 0 fail** (1,269 expect() calls across 18 files).
+  - Targeted `bunx tsc --noEmit`: 0 errors in all touched source files (`lib/storage.ts`, `server/utils/storageServe.ts`, `server/api/storage/files/[...path].get.ts`, `server/api/dev/storage/[...path].get.ts`, `server/api/storage/upload.post.ts`, `nuxt.config.ts`); only pre-existing `TS2307` (`bun:test`) in `tests/firebase-security-2fa-sessions.test.ts`.
+  - `bun run build`: Exited 0 (`✨ Build complete!`, Nitro `node-server` `.output/server/index.mjs`).
+- **Next Recommendations**:
+  1. Deploy Firestore rules/indexes (`firebase deploy --only firestore` — free on Spark) and push to Render / Koyeb using `render.yaml` or `Dockerfile` with `FIREBASE_SERVICE_ACCOUNT_JSON` set in the PaaS dashboard.
+  2. Run a live smoke test against `kogane-e7f2b` (`asia-southeast1`) verifying admin signup/login, logo upload to `__storage_blobs`, and `/api/storage/files/...` serving in a real browser.
+
+---
+
+### Session Log — 2026-11-12 (Live `kogane-e7f2b` Firestore Verification & Hermetic `.env.test`)
+
+- **Context & Direction Check**: Verified live Cloud Firestore provisioning (`kogane-e7f2b`, `asia-southeast1`) against the Firebase Spark workaround. No scope redirection introduced.
+- **Changes Made**:
+  1. **Hermetic Test Isolation (`.env.test`)**: Added `.env.test` clearing Firebase/Supabase runtime credentials during `bun test` (`NODE_ENV=test`, `DEV_MODE=true`, `DB_PROVIDER=sqlite`, empty `STORAGE_PROVIDER` / `FIREBASE_SERVICE_ACCOUNT_JSON`) so having live production `.env` values locally never causes `bun test` to write test records into live `kogane-e7f2b` Cloud Firestore.
+  2. **Local Live Firebase `.env` Setup**: Configured local gitignored `.env` (`DEV_MODE=false`, `DB_PROVIDER=firebase`, `STORAGE_PROVIDER=firestore`, `FIREBASE_PROJECT_ID=kogane-e7f2b`, `FIREBASE_REGION=asia-southeast1`, random `SESSION_SECRET` / `ENCRYPTION_KEY`, and base64-encoded service account JSON) and cleaned temporary test probe collections from Firestore.
+- **Verification Executed**:
+  - **Live Cloud Firestore + `FirestoreStorageAdapter` Smoke Test (`kogane-e7f2b`, `asia-southeast1`)**: Verified real `db.insert`, `db.queryOne`, `db.delete`, `FirestoreStorageAdapter.upload`, `read`, and `delete` roundtrip (`bytesMatched: true`, `/api/storage/files/public/assets/live_smoke_logo.png`), with all temporary collections cleaned up (`remainingCollections: []`).
+  - `bun test` (with `.env.test` overriding live `.env`): **173 pass, 0 fail** (1,272 assertions across 18 files).
+- **Remaining Recommendations**:
+  1. Run `bun run start` locally (plus `bun run tunnel` for remote mobile/tablet HTTPS + QR) or deploy via `render.yaml` / `Dockerfile` to exercise browser signup, 2FA QR enrollment, and logo upload against live `kogane-e7f2b` Firestore.

@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// All database reads/writes in Kogane are mediated by authenticated Nuxt server endpoints
+// using the Firebase Admin SDK (PBKDF2/HMAC auth, 2FA, stateful sessions, and business-level ACLs).
+// Direct unauthenticated browser/client access to Firestore is explicitly denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

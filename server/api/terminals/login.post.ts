@@ -4,8 +4,9 @@
  * Returns a session token for the terminal session.
  */
 
-import { defineEventHandler, readBody } from 'h3';
-import { issueTerminalSession, verifyPin } from '~/lib/authUtils';
+import { defineEventHandler, readBody, setResponseStatus } from 'h3';
+import { hashPin, issueTerminalSession, verifyPin } from '~/lib/authUtils';
+import { enforceRateLimit, getClientIp, recordRateLimitAttempt, clearRateLimit } from '~/lib/rateLimit';
 import { normalizeLayout } from '~/lib/uiTypes';
 import { normalizePermissions } from '~/lib/permissions';
 import { db } from '~/lib/db';
@@ -23,6 +24,23 @@ export default defineEventHandler(async (event) => {
   if (!body.pin || (!body.terminalId && (!body.businessId || !body.displayName))) {
     return { error: 'Missing credentials', session: null, token: null };
   }
+
+  const rateId = body.terminalId || `${body.businessId}:${body.displayName}`;
+  const rateLimit = enforceRateLimit(event, {
+    scope: 'terminal_pin',
+    identifier: rateId,
+    maxAttempts: 10,
+    windowMs: 5 * 60 * 1000,
+  });
+  if (!rateLimit.allowed) {
+    setResponseStatus(event, 429);
+    return {
+      error: `Too many PIN attempts. Please wait ${rateLimit.retryAfterSeconds} seconds.`,
+      session: null,
+      token: null,
+    };
+  }
+  const rateKey = `terminal_pin:${getClientIp(event)}:${rateId.toLowerCase()}`;
 
   const query = body.terminalId
     ? `
@@ -80,10 +98,24 @@ export default defineEventHandler(async (event) => {
     business_color_palette?: string | null;
   }>(query, params);
 
-  if (!terminal) return { error: 'Invalid credentials', session: null, token: null };
+  if (!terminal) {
+    recordRateLimitAttempt(rateKey, 5 * 60 * 1000);
+    return { error: 'Invalid credentials', session: null, token: null };
+  }
 
   const valid = await verifyPin(body.pin, terminal.pin_hash);
-  if (!valid) return { error: 'Invalid credentials', session: null, token: null };
+  if (!valid) {
+    recordRateLimitAttempt(rateKey, 5 * 60 * 1000);
+    return { error: 'Invalid credentials', session: null, token: null };
+  }
+
+  clearRateLimit(rateKey);
+
+  // Transparently upgrade legacy unsalted/static-salted SHA-256 PIN hashes to PBKDF2
+  if (!terminal.pin_hash.startsWith('pin_pbkdf2$')) {
+    const upgradedHash = await hashPin(body.pin);
+    await db.update('terminals', { pin_hash: upgradedHash }, { id: terminal.id });
+  }
 
   // Parse UI layout from stored JSON
   let uiLayout;

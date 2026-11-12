@@ -42,17 +42,40 @@ export class SqliteAdapter implements DbAdapter {
   private _bootstrap() {
     this.db.run(`
       CREATE TABLE IF NOT EXISTS users (
-        id                  TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-        email               TEXT NOT NULL UNIQUE COLLATE NOCASE,
-        password_hash       TEXT NOT NULL,
-        full_name           TEXT,
-        username            TEXT,
-        profile_photo_url   TEXT,
-        language_preference TEXT DEFAULT 'en',
-        created_at          TEXT DEFAULT (datetime('now')),
-        updated_at          TEXT DEFAULT (datetime('now'))
+        id                      TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        email                   TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        password_hash           TEXT NOT NULL,
+        full_name               TEXT,
+        username                TEXT,
+        profile_photo_url       TEXT,
+        language_preference     TEXT DEFAULT 'en',
+        two_factor_enabled      INTEGER NOT NULL DEFAULT 0,
+        two_factor_secret       TEXT,
+        two_factor_backup_codes TEXT,
+        two_factor_verified_at  TEXT,
+        created_at              TEXT DEFAULT (datetime('now')),
+        updated_at              TEXT DEFAULT (datetime('now'))
       )
     `);
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id                  TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        session_type        TEXT NOT NULL DEFAULT 'admin',
+        token_hash          TEXT NOT NULL,
+        user_id             TEXT,
+        terminal_id         TEXT,
+        business_id         TEXT,
+        two_factor_verified INTEGER NOT NULL DEFAULT 1,
+        ip_address          TEXT,
+        user_agent          TEXT,
+        last_active_at      TEXT DEFAULT (datetime('now')),
+        expires_at          TEXT NOT NULL,
+        revoked_at          TEXT,
+        created_at          TEXT DEFAULT (datetime('now'))
+      )
+    `);
+    this.db.run("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)");
+    this.db.run("CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash)");
     this.db.run(`
       CREATE TABLE IF NOT EXISTS businesses (
         id            TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
@@ -113,6 +136,22 @@ export class SqliteAdapter implements DbAdapter {
         created_at     TEXT DEFAULT (datetime('now'))
       )
     `);
+
+    try {
+      this.db.run("ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER NOT NULL DEFAULT 0");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE users ADD COLUMN two_factor_secret TEXT");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE users ADD COLUMN two_factor_backup_codes TEXT");
+    } catch (e) { }
+
+    try {
+      this.db.run("ALTER TABLE users ADD COLUMN two_factor_verified_at TEXT");
+    } catch (e) { }
 
     try {
       this.db.run("ALTER TABLE terminals ADD COLUMN pin_length INTEGER NOT NULL DEFAULT 4");

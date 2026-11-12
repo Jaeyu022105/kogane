@@ -2,11 +2,12 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { limitSqlRows, validateReadOnlySql } from '~/lib/sql';
-import { getBusinessForAdminUser, isDevDb, listBusinessTables } from '~/server/utils/business';
+import { getBusinessForAdminUser, isPrefixDb, listBusinessTables } from '~/server/utils/business';
 
 function qualifySqlTables(sql: string, schemaName: string, tables: string[]): string {
+  const prefixMode = isPrefixDb();
   return tables.reduce((currentSql, table) => {
-    const qualified = isDevDb
+    const qualified = prefixMode
       ? `${schemaName}_${table}`
       : `"${schemaName}"."${table}"`;
     return currentSql.replace(new RegExp(`\\b${table}\\b`, 'g'), qualified);

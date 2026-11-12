@@ -1,0 +1,38 @@
+# Render Free Web Service Blueprint (zero credit card required)
+# Pairs Nuxt Nitro Node SSR/API server with Firebase Spark free-tier Cloud Firestore (kogane-e7f2b).
+services:
+  - type: web
+    name: kogane-pos
+    runtime: node
+    plan: free
+    region: singapore
+    healthCheckPath: /
+    buildCommand: npm install --include=dev && npx nuxt build
+    startCommand: node .output/server/index.mjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: NITRO_PRESET
+        value: node-server
+      - key: DEV_MODE
+        value: "false"
+      - key: DB_PROVIDER
+        value: firebase
+      - key: STORAGE_PROVIDER
+        value: firestore
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: FIREBASE_PROJECT_ID
+        value: kogane-e7f2b
+      - key: FIREBASE_REGION
+        value: asia-southeast1
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: NUXT_PUBLIC_SHARE_ORIGIN
+        sync: false

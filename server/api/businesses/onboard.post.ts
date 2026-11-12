@@ -6,12 +6,13 @@
 
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
-import { db } from '~/lib/db';
+import { db, getDbProvider } from '~/lib/db';
 import { validateIdentifier, buildCreateTableSql } from '~/lib/schemaUtils';
 import type { PermissionPresetKey } from '~/lib/permissions';
 import type { SchemaDef } from '~/lib/schemaUtils';
 import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/managedTerminals';
 import { findCountry } from '~/lib/currency';
+import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -56,7 +57,7 @@ export default defineEventHandler(async (event) => {
   };
 
   let schemaName = '';
-  let business = null;
+  let business: ({ id: string } & Record<string, unknown>) | null = null;
 
   if (existing) {
     if (!body.override) return { error: 'Admin already has a business. Use override to overwrite.', business: null };
@@ -73,7 +74,10 @@ export default defineEventHandler(async (event) => {
 
     if (updateErr) return { error: updateErr, business: null };
     
-    const { data: b } = await db.queryOne('SELECT * FROM businesses WHERE id = ?', [existing.id]);
+    const { data: b } = await db.queryOne<{ id: string } & Record<string, unknown>>(
+      'SELECT * FROM businesses WHERE id = ?',
+      [existing.id],
+    );
     business = b;
   } else {
     const cleanId = userId.toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -85,7 +89,7 @@ export default defineEventHandler(async (event) => {
       return { error: 'Could not generate a valid schema name', business: null };
     }
 
-    const { data: newBiz, error } = await db.insert('businesses', {
+    const { data: newBiz, error } = await db.insert<{ id: string } & Record<string, unknown>>('businesses', {
       admin_user_id: userId,
       name: body.businessName.trim(),
       logo_url: body.logoUrl || null,
@@ -100,10 +104,9 @@ export default defineEventHandler(async (event) => {
     business = newBiz;
   }
 
-  const isDevMode = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
-  const dialect   = isDevMode ? 'sqlite' : 'postgres';
+  const dialect = getSqlDialect();
 
-  if (!isDevMode) {
+  if (getDbProvider() === 'supabase') {
     await db.execute(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`);
   }
 

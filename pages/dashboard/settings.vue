@@ -5,10 +5,10 @@
 
 definePageMeta({ layout: 'dashboard' });
 
-import { Check, Globe, Sparkles, Upload, Lock, ShieldCheck, Eye, EyeOff } from 'lucide-vue-next';
+import { Check, Globe, Sparkles, Upload, Lock, ShieldCheck, Eye, EyeOff, KeyRound, Laptop, LogOut } from 'lucide-vue-next';
 import { COUNTRIES, findCountry } from '~/lib/currency';
 
-const { session, authHeaders } = useAuth();
+const { session, authHeaders, setSession, hydrateSession } = useAuth();
 const { business, fetchBusiness, updateTheme, updateCountry } = useBusiness();
 const { openOnboarding }                     = useOnboarding();
 const { t, availableLocales, setLocale, locale } = useLocale();
@@ -69,6 +69,7 @@ async function handlePasswordChange() {
     currentPassword.value = '';
     newPassword.value = '';
     confirmNewPassword.value = '';
+    void loadSessions();
     setTimeout(() => { passwordSuccess.value = false; }, 3500);
   } catch (err: any) {
     passwordError.value = err?.data?.error || err?.message || 'Failed to update password.';
@@ -76,6 +77,209 @@ async function handlePasswordChange() {
     changingPassword.value = false;
   }
 }
+
+// ── Two-Factor Authentication (2FA) ───────────────────────────────────────────
+const twoFactorLoading = ref(false);
+const twoFactorError = ref<string | null>(null);
+const twoFactorNotice = ref<string | null>(null);
+const twoFactorQr = ref('');
+const twoFactorSecret = ref('');
+const twoFactorOtp = ref('');
+const twoFactorBackupCodes = ref<string[]>([]);
+const twoFactorActionPassword = ref('');
+const twoFactorDisableCode = ref('');
+const showDisable2fa = ref(false);
+
+async function beginTwoFactorSetup() {
+  twoFactorError.value = null;
+  twoFactorNotice.value = null;
+  twoFactorBackupCodes.value = [];
+  twoFactorLoading.value = true;
+  try {
+    const res = await $fetch<{
+      secret: string;
+      qrCodeDataUrl: string;
+      error: string | null;
+    }>('/api/auth/2fa/setup', {
+      method: 'POST',
+      credentials: 'include',
+      headers: authHeaders(),
+    });
+    if (res.error || !res.secret) {
+      twoFactorError.value = res.error || 'Could not initialize 2FA setup.';
+      return;
+    }
+    twoFactorSecret.value = res.secret;
+    twoFactorQr.value = res.qrCodeDataUrl;
+    twoFactorOtp.value = '';
+  } catch (err: any) {
+    twoFactorError.value = err?.data?.error || err?.message || 'Could not initialize 2FA setup.';
+  } finally {
+    twoFactorLoading.value = false;
+  }
+}
+
+async function activateTwoFactor() {
+  twoFactorError.value = null;
+  twoFactorNotice.value = null;
+  const code = twoFactorOtp.value.replace(/\s+/g, '');
+  if (!/^\d{6}$/.test(code)) {
+    twoFactorError.value = 'Enter the 6-digit code shown in your authenticator app.';
+    return;
+  }
+  twoFactorLoading.value = true;
+  try {
+    const res = await $fetch<{ enabled: boolean; backupCodes?: string[]; error: string | null }>('/api/auth/2fa/enable', {
+      method: 'POST',
+      credentials: 'include',
+      headers: authHeaders(),
+      body: { code },
+    });
+    if (res.error || !res.enabled) {
+      twoFactorError.value = res.error || 'Verification failed.';
+      return;
+    }
+    twoFactorQr.value = '';
+    twoFactorSecret.value = '';
+    twoFactorOtp.value = '';
+    twoFactorBackupCodes.value = res.backupCodes ?? [];
+    twoFactorNotice.value = 'Two-factor authentication is now enabled.';
+    if (session.value) {
+      setSession({ ...session.value, has2fa: true });
+    }
+  } catch (err: any) {
+    twoFactorError.value = err?.data?.error || err?.message || 'Could not activate 2FA.';
+  } finally {
+    twoFactorLoading.value = false;
+  }
+}
+
+async function regenerateBackupCodes() {
+  twoFactorError.value = null;
+  twoFactorNotice.value = null;
+  if (!twoFactorActionPassword.value) {
+    twoFactorError.value = 'Enter your current password to regenerate backup codes.';
+    return;
+  }
+  twoFactorLoading.value = true;
+  try {
+    const res = await $fetch<{ backupCodes?: string[]; error: string | null }>('/api/auth/2fa/backup-codes', {
+      method: 'POST',
+      credentials: 'include',
+      headers: authHeaders(),
+      body: { password: twoFactorActionPassword.value },
+    });
+    if (res.error || !res.backupCodes) {
+      twoFactorError.value = res.error || 'Failed to regenerate backup codes.';
+      return;
+    }
+    twoFactorBackupCodes.value = res.backupCodes;
+    twoFactorActionPassword.value = '';
+    twoFactorNotice.value = 'New backup codes generated. Previous codes are invalidated.';
+  } catch (err: any) {
+    twoFactorError.value = err?.data?.error || err?.message || 'Failed to regenerate backup codes.';
+  } finally {
+    twoFactorLoading.value = false;
+  }
+}
+
+async function disableTwoFactor() {
+  twoFactorError.value = null;
+  twoFactorNotice.value = null;
+  if (!twoFactorActionPassword.value || !twoFactorDisableCode.value.trim()) {
+    twoFactorError.value = 'Provide both your password and an authenticator or backup code.';
+    return;
+  }
+  twoFactorLoading.value = true;
+  try {
+    const res = await $fetch<{ disabled?: boolean; error: string | null }>('/api/auth/2fa/disable', {
+      method: 'POST',
+      credentials: 'include',
+      headers: authHeaders(),
+      body: {
+        password: twoFactorActionPassword.value,
+        code: twoFactorDisableCode.value.trim(),
+      },
+    });
+    if (res.error || !res.disabled) {
+      twoFactorError.value = res.error || 'Failed to disable 2FA.';
+      return;
+    }
+    twoFactorActionPassword.value = '';
+    twoFactorDisableCode.value = '';
+    twoFactorBackupCodes.value = [];
+    showDisable2fa.value = false;
+    twoFactorNotice.value = 'Two-factor authentication has been disabled.';
+    await hydrateSession(true);
+  } catch (err: any) {
+    twoFactorError.value = err?.data?.error || err?.message || 'Failed to disable 2FA.';
+  } finally {
+    twoFactorLoading.value = false;
+  }
+}
+
+// ── Active Stateful Sessions ─────────────────────────────────────────────────
+interface ActiveSessionItem {
+  id: string;
+  sessionType: string;
+  deviceLabel: string;
+  ipAddress: string | null;
+  lastActiveAt: string;
+  expiresAt: string;
+  isCurrent?: boolean;
+}
+
+const activeSessions = ref<ActiveSessionItem[]>([]);
+const loadingSessions = ref(false);
+const sessionsError = ref<string | null>(null);
+const revokingSessionId = ref<string | null>(null);
+
+async function loadSessions() {
+  loadingSessions.value = true;
+  sessionsError.value = null;
+  try {
+    const res = await $fetch<{ sessions?: ActiveSessionItem[]; error: string | null }>('/api/auth/sessions', {
+      method: 'GET',
+      credentials: 'include',
+      headers: authHeaders(),
+    });
+    if (res.error) {
+      sessionsError.value = res.error;
+      return;
+    }
+    activeSessions.value = res.sessions ?? [];
+  } catch (err: any) {
+    sessionsError.value = err?.data?.error || err?.message || 'Could not load active sessions.';
+  } finally {
+    loadingSessions.value = false;
+  }
+}
+
+async function revokeSession(options: { sessionId?: string; allOthers?: boolean }) {
+  sessionsError.value = null;
+  revokingSessionId.value = options.allOthers ? '__others__' : (options.sessionId ?? null);
+  try {
+    const res = await $fetch<{ success: boolean; error: string | null }>('/api/auth/sessions/revoke', {
+      method: 'POST',
+      credentials: 'include',
+      headers: authHeaders(),
+      body: options,
+    });
+    if (res.error || !res.success) {
+      sessionsError.value = res.error || 'Failed to revoke session.';
+      return;
+    }
+    await loadSessions();
+  } catch (err: any) {
+    sessionsError.value = err?.data?.error || err?.message || 'Failed to revoke session.';
+  } finally {
+    revokingSessionId.value = null;
+  }
+}
+
+onMounted(() => {
+  void loadSessions();
+});
 
 const selectedLanguage = ref(locale.value);
 const selectedCountry  = ref(business.value?.country ?? 'US');
@@ -215,6 +419,8 @@ async function uploadLogo() {
 
       const res = await $fetch<{ url: string; error: string | null }>('/api/storage/upload', {
         method: 'POST',
+        credentials: 'include',
+        headers: authHeaders(),
         body:   form,
       });
 
@@ -624,6 +830,257 @@ const businessDetailItems = computed(() => {
           <Lock class="w-4 h-4" />
           {{ changingPassword ? 'Updating Password…' : 'Update Password' }}
         </button>
+      </section>
+
+      <!-- ── Two-Factor Authentication ─────────────────────────── -->
+      <section class="pt-6 space-y-4" style="border-top: 1px solid rgba(61,24,32,0.08);">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Two-Factor Authentication (2FA)</h2>
+            <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.45);">
+              Protect your admin account with a TOTP authenticator app and single-use backup codes.
+            </p>
+          </div>
+          <span
+            class="text-[11px] font-mono px-2.5 py-1 rounded-full shrink-0"
+            :style="session?.has2fa
+              ? 'background: rgba(22,163,74,0.1); color: #15803d;'
+              : 'background: rgba(61,24,32,0.06); color: rgba(61,24,32,0.6);'"
+          >
+            {{ session?.has2fa ? 'Enabled' : 'Not enabled' }}
+          </span>
+        </div>
+
+        <div
+          v-if="twoFactorError"
+          class="text-xs px-3 py-2 rounded"
+          style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #dc2626;"
+        >
+          {{ twoFactorError }}
+        </div>
+
+        <div
+          v-if="twoFactorNotice"
+          class="text-xs px-3 py-2 rounded flex items-center gap-1.5"
+          style="background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); color: #15803d;"
+        >
+          <ShieldCheck class="w-4 h-4" /> {{ twoFactorNotice }}
+        </div>
+
+        <div v-if="twoFactorBackupCodes.length > 0" class="rounded-lg p-3.5 space-y-2" style="background: rgba(61,24,32,0.03); border: 1px solid rgba(61,24,32,0.1);">
+          <p class="text-xs font-semibold" style="color: rgb(var(--shell-sidebar));">Save your backup recovery codes</p>
+          <p class="text-[11px]" style="color: rgba(61,24,32,0.6);">Each recovery code works once if your authenticator is unavailable.</p>
+          <div class="grid grid-cols-2 gap-1.5 font-mono text-xs">
+            <code
+              v-for="code in twoFactorBackupCodes"
+              :key="code"
+              class="px-2 py-1 rounded bg-white text-center select-all"
+              style="border: 1px solid rgba(61,24,32,0.1);"
+            >
+              {{ code }}
+            </code>
+          </div>
+        </div>
+
+        <template v-if="!session?.has2fa">
+          <div v-if="!twoFactorSecret">
+            <button
+              class="py-2.5 px-4 text-xs font-semibold rounded-lg btn-primary btn-ribbon flex items-center gap-2 disabled:opacity-40"
+              :disabled="twoFactorLoading"
+              @click="beginTwoFactorSetup"
+            >
+              <KeyRound class="w-3.5 h-3.5" />
+              {{ twoFactorLoading ? 'Preparing Setup…' : 'Enable Two-Factor Auth' }}
+            </button>
+          </div>
+
+          <div v-else class="rounded-lg p-4 space-y-3" style="background: rgba(61,24,32,0.025); border: 1px solid rgba(61,24,32,0.1);">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+              <img
+                v-if="twoFactorQr"
+                :src="twoFactorQr"
+                alt="2FA QR code"
+                class="w-32 h-32 rounded bg-white p-1 shrink-0"
+                style="border: 1px solid rgba(61,24,32,0.12);"
+              />
+              <div class="space-y-1.5 text-xs">
+                <p class="font-medium" style="color: rgb(var(--shell-sidebar));">Scan with your authenticator app</p>
+                <p style="color: rgba(61,24,32,0.55);">Or enter this manual setup key:</p>
+                <code class="block px-2.5 py-1 rounded bg-white font-mono text-[11px] break-all select-all" style="border: 1px solid rgba(61,24,32,0.1);">
+                  {{ twoFactorSecret }}
+                </code>
+              </div>
+            </div>
+
+            <div class="flex items-end gap-2">
+              <div class="flex-1">
+                <label for="settings-2fa-otp" class="text-[10px] font-mono uppercase tracking-widest block mb-1" style="color: rgba(61,24,32,0.4);">
+                  6-Digit Verification Code
+                </label>
+                <input
+                  id="settings-2fa-otp"
+                  v-model="twoFactorOtp"
+                  type="text"
+                  maxlength="6"
+                  class="input-warm w-full px-3 py-2 text-xs font-mono tracking-widest"
+                  style="border: 1.5px solid rgba(61,24,32,0.12); background: white; border-radius: 0.5rem; height: 2.25rem;"
+                  placeholder="000000"
+                />
+              </div>
+              <button
+                class="py-2 px-4 text-xs font-semibold rounded-lg btn-primary btn-ribbon h-9 disabled:opacity-40"
+                :disabled="twoFactorLoading"
+                @click="activateTwoFactor"
+              >
+                Verify & Enable
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="rounded-lg p-3.5 space-y-3" style="background: rgba(61,24,32,0.025); border: 1px solid rgba(61,24,32,0.1);">
+            <div>
+              <label for="settings-2fa-password" class="text-[10px] font-mono uppercase tracking-widest block mb-1" style="color: rgba(61,24,32,0.4);">
+                Current Password (required for 2FA changes)
+              </label>
+              <input
+                id="settings-2fa-password"
+                v-model="twoFactorActionPassword"
+                type="password"
+                class="input-warm w-full px-3 py-2 text-xs"
+                style="border: 1.5px solid rgba(61,24,32,0.12); background: white; border-radius: 0.5rem; height: 2.25rem;"
+                placeholder="Enter current password"
+              />
+            </div>
+
+            <div v-if="showDisable2fa">
+              <label for="settings-2fa-disable-code" class="text-[10px] font-mono uppercase tracking-widest block mb-1" style="color: rgba(61,24,32,0.4);">
+                Authenticator or Backup Code
+              </label>
+              <input
+                id="settings-2fa-disable-code"
+                v-model="twoFactorDisableCode"
+                type="text"
+                maxlength="12"
+                class="input-warm w-full px-3 py-2 text-xs font-mono"
+                style="border: 1.5px solid rgba(61,24,32,0.12); background: white; border-radius: 0.5rem; height: 2.25rem;"
+                placeholder="000000 or recovery code"
+              />
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="py-2 px-3 text-xs font-semibold rounded-lg transition-colors"
+                style="background: white; border: 1px solid rgba(61,24,32,0.16); color: rgb(var(--shell-sidebar));"
+                :disabled="twoFactorLoading"
+                @click="regenerateBackupCodes"
+              >
+                Regenerate Backup Codes
+              </button>
+              <button
+                v-if="!showDisable2fa"
+                type="button"
+                class="py-2 px-3 text-xs font-semibold rounded-lg"
+                style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+                @click="showDisable2fa = true"
+              >
+                Disable 2FA…
+              </button>
+              <button
+                v-else
+                type="button"
+                class="py-2 px-3 text-xs font-semibold rounded-lg"
+                style="background: #dc2626; color: white;"
+                :disabled="twoFactorLoading"
+                @click="disableTwoFactor"
+              >
+                Confirm Disable 2FA
+              </button>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- ── Active Sessions ───────────────────────────────────── -->
+      <section class="pt-6 space-y-4 pb-8" style="border-top: 1px solid rgba(61,24,32,0.08);">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">Active Sessions</h2>
+            <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.45);">
+              Devices currently signed into your admin account. Revoke any unrecognized session immediately.
+            </p>
+          </div>
+          <button
+            v-if="activeSessions.length > 1"
+            type="button"
+            class="text-[11px] font-medium px-2.5 py-1.5 rounded-lg shrink-0"
+            style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626;"
+            :disabled="revokingSessionId !== null"
+            @click="revokeSession({ allOthers: true })"
+          >
+            Sign out other devices
+          </button>
+        </div>
+
+        <div
+          v-if="sessionsError"
+          class="text-xs px-3 py-2 rounded"
+          style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #dc2626;"
+        >
+          {{ sessionsError }}
+        </div>
+
+        <div v-if="loadingSessions" class="text-xs" style="color: rgba(61,24,32,0.45);">
+          Loading active sessions…
+        </div>
+
+        <div v-else-if="activeSessions.length === 0" class="text-xs" style="color: rgba(61,24,32,0.45);">
+          No tracked stateful sessions yet (sign in again to create one).
+        </div>
+
+        <div v-else class="space-y-2">
+          <div
+            v-for="item in activeSessions"
+            :key="item.id"
+            class="flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5"
+            style="background: rgba(61,24,32,0.025); border: 1px solid rgba(61,24,32,0.09);"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <Laptop class="w-4 h-4 shrink-0" style="color: rgba(61,24,32,0.5);" />
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium truncate" style="color: rgb(var(--shell-sidebar));">
+                    {{ item.deviceLabel }}
+                  </span>
+                  <span
+                    v-if="item.isCurrent"
+                    class="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                    style="background: rgba(22,163,74,0.1); color: #15803d;"
+                  >
+                    Current
+                  </span>
+                </div>
+                <p class="text-[11px] truncate" style="color: rgba(61,24,32,0.5);">
+                  {{ item.ipAddress || 'Unknown IP' }} · Active {{ new Date(item.lastActiveAt).toLocaleString() }}
+                </p>
+              </div>
+            </div>
+
+            <button
+              v-if="!item.isCurrent"
+              type="button"
+              class="text-xs px-2.5 py-1 rounded flex items-center gap-1 shrink-0"
+              style="background: white; border: 1px solid rgba(61,24,32,0.15); color: #dc2626;"
+              :disabled="revokingSessionId === item.id"
+              @click="revokeSession({ sessionId: item.id })"
+            >
+              <LogOut class="w-3 h-3" />
+              Revoke
+            </button>
+          </div>
+        </div>
       </section>
 
     </div>

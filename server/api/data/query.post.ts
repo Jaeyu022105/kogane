@@ -8,6 +8,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { isPrefixDb } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -38,7 +39,7 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { data: null, error: 'Business not found' };
   if (business.admin_user_id !== userId) return { data: null, error: 'Forbidden' };
 
-  const isDevMode = process.env.DEV_MODE === 'true';
+  const isDevMode = isPrefixDb();
   const cols = body.columns?.length
     ? (body.columns.includes('*') || body.columns.includes('id') ? body.columns.join(', ') : `id, ${body.columns.join(', ')}`)
     : '*';

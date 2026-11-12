@@ -9,6 +9,7 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { buildCreateTableSql } from '~/lib/schemaUtils';
 import type { SchemaDef } from '~/lib/schemaUtils';
+import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -42,8 +43,7 @@ export default defineEventHandler(async (event) => {
     return { error: 'Invalid preset schema definition', success: false };
   }
 
-  const isDevMode = process.env.DEV_MODE === 'true';
-  const dialect = isDevMode ? 'sqlite' : 'postgres';
+  const dialect = getSqlDialect();
   const errors: string[] = [];
 
   for (const table of schemaDef.tables ?? []) {

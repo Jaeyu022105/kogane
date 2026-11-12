@@ -1,19 +1,24 @@
-import { defineEventHandler, readBody, getCookie } from 'h3';
+import { defineEventHandler, readBody } from 'h3';
+import { verifyTerminalSession } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { isPrefixDb } from '~/server/utils/business';
 import { realtimeHub } from '~/server/utils/realtimeHub';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { terminalId, tableName, record } = body;
+  const { terminalId, tableName, record } = body ?? {};
 
   if (!terminalId || !tableName || !record) {
     return { success: false, error: 'Missing required fields' };
   }
 
-  // Authorize by checking if there's a valid session cookie for this terminal
-  const sessionCookie = getCookie(event, `terminal_session_${terminalId}`);
-  if (!sessionCookie) return { success: false, error: 'Unauthorized' };
+  // Authorize via signed & stateful terminal session
+  try {
+    await verifyTerminalSession(event, terminalId);
+  } catch {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   // Fetch the business associated with this terminal
   const { data: terminal, error: terminalErr } = await db.queryOne<{ business_id: string }>(
@@ -39,7 +44,7 @@ export default defineEventHandler(async (event) => {
       validateIdentifier(key);
     }
 
-    const isDevMode = process.env.DEV_MODE === 'true';
+    const isDevMode = isPrefixDb();
     const tbl = isDevMode
       ? `${business.schema_name}_${tableName}`
       : `"${business.schema_name}"."${tableName}"`;

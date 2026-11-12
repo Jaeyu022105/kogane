@@ -1,22 +1,31 @@
 /**
  * POST /api/auth/change-password
  * Changes the authenticated admin user's password.
- * Verifies current password before updating to the new hashed password.
+ * Verifies current password before updating to the new PBKDF2-hashed password
+ * and revokes all other active sessions for security.
  */
 
-import { defineEventHandler, readBody } from 'h3';
-import { db } from '~/lib/db';
-import { hashPasswordSync, verifyAdmin, verifyPasswordSync } from '~/lib/authUtils';
+import { defineEventHandler, readBody, setResponseStatus } from 'h3';
+import { db, getDbProvider } from '~/lib/db';
+import {
+  hashPasswordSync,
+  revokeAllUserSessions,
+  verifyAdmin,
+  verifyPasswordSync,
+} from '~/lib/authUtils';
+import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
 import { createClient } from '@supabase/supabase-js';
 
-export default defineEventHandler(async (event) => {
-  const { userId, email } = await verifyAdmin(event);
+type ChangePasswordBody = {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+};
 
-  const body = await readBody<{
-    currentPassword?: string;
-    newPassword?: string;
-    confirmPassword?: string;
-  }>(event);
+export default defineEventHandler(async (event) => {
+  const { userId, email, sessionId } = await verifyAdmin(event);
+
+  const body: ChangePasswordBody = (await readBody<ChangePasswordBody>(event).catch((): ChangePasswordBody => ({}))) ?? {};
 
   const currentPassword = body?.currentPassword;
   const newPassword = body?.newPassword;
@@ -26,7 +35,7 @@ export default defineEventHandler(async (event) => {
     return { error: 'Current password and new password are required', success: false };
   }
 
-  if (newPassword.length < 6) {
+  if (newPassword.trim().length < 6) {
     return { error: 'New password must be at least 6 characters long', success: false };
   }
 
@@ -34,11 +43,24 @@ export default defineEventHandler(async (event) => {
     return { error: 'New passwords do not match', success: false };
   }
 
-  const isDevMode = process.env.DEV_MODE === 'true';
-  const hasSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+  const rateWindowMs = 10 * 60 * 1000;
+  const rate = enforceRateLimit(event, {
+    scope: 'admin_change_password',
+    identifier: userId,
+    maxAttempts: 8,
+    windowMs: rateWindowMs,
+  });
+  if (!rate.allowed) {
+    setResponseStatus(event, 429);
+    return {
+      error: `Too many password change attempts. Try again in ${rate.retryAfterSeconds} seconds.`,
+      success: false,
+    };
+  }
+  const rateKey = `admin_change_password:${getClientIp(event)}:${userId.toLowerCase()}`;
 
   // Cloud Supabase mode
-  if (!isDevMode && hasSupabase) {
+  if (getDbProvider() === 'supabase') {
     try {
       const supabase = createClient(
         process.env.SUPABASE_URL!,
@@ -51,6 +73,7 @@ export default defineEventHandler(async (event) => {
           password: currentPassword,
         });
         if (signInErr) {
+          recordRateLimitAttempt(rateKey, rateWindowMs);
           return { error: 'Current password is incorrect', success: false };
         }
       }
@@ -63,13 +86,14 @@ export default defineEventHandler(async (event) => {
         return { error: updateErr.message || 'Failed to update password', success: false };
       }
 
+      clearRateLimit(rateKey);
       return { success: true, message: 'Password updated successfully', error: null };
     } catch (err: any) {
       return { error: err?.message || 'Failed to update password', success: false };
     }
   }
 
-  // Local SQLite mode
+  // SQLite & Firebase Firestore mode
   const { data: user, error: userErr } = await db.queryOne<{
     id: string;
     password_hash: string;
@@ -81,8 +105,11 @@ export default defineEventHandler(async (event) => {
 
   const isMatch = verifyPasswordSync(currentPassword, user.password_hash);
   if (!isMatch) {
+    recordRateLimitAttempt(rateKey, rateWindowMs);
     return { error: 'Current password is incorrect', success: false };
   }
+
+  clearRateLimit(rateKey);
 
   const newHash = hashPasswordSync(newPassword);
   const { error: updateErr } = await db.update('users', {
@@ -93,6 +120,9 @@ export default defineEventHandler(async (event) => {
   if (updateErr) {
     return { error: 'Failed to update password. Please try again.', success: false };
   }
+
+  // Revoke all other sessions on password change
+  await revokeAllUserSessions(userId, sessionId);
 
   return { success: true, message: 'Password updated successfully', error: null };
 });

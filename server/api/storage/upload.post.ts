@@ -1,10 +1,13 @@
 import { Buffer } from 'node:buffer';
-import { defineEventHandler, readMultipartFormData } from 'h3';
+import { defineEventHandler, readMultipartFormData, setResponseStatus } from 'h3';
+import type { AuditActorType } from '~/lib/audit';
 import { verifyAdmin, verifyTerminalSession } from '~/lib/authUtils';
+import { enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
 import { useStorage, sanitizeStoragePath } from '~/lib/storage';
 import { getBusinessForAdminUser } from '~/server/utils/business';
 import { writeAuditLog } from '~/server/utils/audit';
 
+const GUEST_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']);
 const DOCUMENT_TYPES = new Set(['application/pdf']);
 
@@ -41,15 +44,22 @@ export default defineEventHandler(async (event) => {
     return { url: null, error: 'File exceeds the allowed size limit' };
   }
 
-  const safeLogicalBucket = sanitizeStoragePath(logicalBucket);
-  const safePath = sanitizeStoragePath(rawPath);
+  let safeLogicalBucket: string;
+  let safePath: string;
+  try {
+    safeLogicalBucket = sanitizeStoragePath(logicalBucket);
+    safePath = sanitizeStoragePath(rawPath);
+  } catch {
+    return { url: null, error: 'Invalid storage path' };
+  }
 
-  let actorType: 'admin' | 'inpoint' | 'signup' = 'admin';
+  let actorType: AuditActorType | null = null;
   let actorName = 'Admin';
   let businessId: string | null = null;
 
   try {
     const { userId } = await verifyAdmin(event);
+    actorType = 'admin';
     const business = await getBusinessForAdminUser(userId);
     if (business.data) {
       businessId = business.data.id;
@@ -61,25 +71,45 @@ export default defineEventHandler(async (event) => {
       actorName = session.displayName;
       businessId = session.businessId;
     } catch {
-      // Unauthenticated uploads are only allowed for images (e.g. signup avatars)
-      if (!IMAGE_TYPES.has(contentType)) {
+      // Unauthenticated uploads are only allowed for safe raster images (e.g. signup avatars)
+      if (!GUEST_IMAGE_TYPES.has(contentType)) {
         return { url: null, error: 'Authentication required for this file type' };
       }
-      actorType = 'signup';
-      actorName = 'Guest';
+
+      const rateWindowMs = 15 * 60 * 1000;
+      const rate = enforceRateLimit(event, {
+        scope: 'guest_image_upload',
+        maxAttempts: 10,
+        windowMs: rateWindowMs,
+      });
+      if (!rate.allowed) {
+        setResponseStatus(event, 429);
+        return {
+          url: null,
+          error: `Too many upload attempts. Try again in ${rate.retryAfterSeconds} seconds.`,
+        };
+      }
+      recordRateLimitAttempt(`guest_image_upload:${getClientIp(event)}`, rateWindowMs);
     }
   }
 
   const storage = useStorage();
   const physicalBucket = businessId ? `biz-${businessId}` : 'public';
   const finalPath = `${safeLogicalBucket}/${safePath}`;
-  const url = await storage.upload(physicalBucket, finalPath, {
-    data: filePart.data,
-    contentType,
-    upsert: true,
-  });
+  let url: string;
+  try {
+    url = await storage.upload(physicalBucket, finalPath, {
+      data: filePart.data,
+      contentType,
+      upsert: true,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Storage upload failed';
+    setResponseStatus(event, /limit|exceeds|700 KB/i.test(message) ? 413 : 500);
+    return { url: null, error: message };
+  }
 
-  if (businessId) {
+  if (businessId && actorType) {
     try {
       await writeAuditLog({
         businessId,

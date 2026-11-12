@@ -6,6 +6,7 @@
 import { defineEventHandler, getQuery } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
+import { isPrefixDb } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -24,7 +25,7 @@ export default defineEventHandler(async (event) => {
   if (error || !business) return { error: 'Business not found', tables: null };
   if (business.admin_user_id !== userId) return { error: 'Forbidden', tables: null };
 
-  const isDevMode = process.env.DEV_MODE === 'true';
+  const isDevMode = isPrefixDb();
 
   let tables: string[] = [];
 

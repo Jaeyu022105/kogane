@@ -3,15 +3,12 @@
  * Root app entry — loads auth session and injects business theme on mount.
  */
 
-const { loadDevSession } = useAuth();
+const { hydrateSession } = useAuth();
 const { loadLocale }     = useLocale();
 
 onMounted(() => {
   loadLocale();
-  // Restore dev session from localStorage on page load
-  if (process.env.NODE_ENV !== 'production' || process.env.DEV_MODE === 'true') {
-    loadDevSession();
-  }
+  void hydrateSession();
 });
 </script>
 

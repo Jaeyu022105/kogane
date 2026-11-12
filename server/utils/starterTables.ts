@@ -1,6 +1,6 @@
 import { db } from '~/lib/db';
 import { buildAddColumnSql, buildCreateTableSql, type TableDef } from '~/lib/schemaUtils';
-import { isDevDb, listBusinessTables } from '~/server/utils/business';
+import { getSqlDialect, listBusinessTables } from '~/server/utils/business';
 import { getBusinessTableColumns } from '~/server/utils/businessTable';
 
 export const STARTER_BUSINESS_TABLES: Record<string, TableDef> = {
@@ -78,7 +78,7 @@ export async function ensureStarterBusinessTable(schemaName: string, tableName: 
     const sql = buildCreateTableSql(
       starterTable,
       schemaName,
-      isDevDb ? 'sqlite' : 'postgres',
+      getSqlDialect(),
     );
 
     const result = await db.execute(sql);
@@ -102,7 +102,7 @@ export async function ensureStarterBusinessTable(schemaName: string, tableName: 
       starterTable.name,
       column,
       schemaName,
-      isDevDb ? 'sqlite' : 'postgres',
+      getSqlDialect(),
     );
 
     const result = await db.execute(sql);

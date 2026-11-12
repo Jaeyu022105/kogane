@@ -5,7 +5,7 @@
 
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
-import { db } from '~/lib/db';
+import { db, getDbProvider } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { findCountry } from '~/lib/currency';
 
@@ -61,9 +61,8 @@ export default defineEventHandler(async (event) => {
 
   if (error || !business) return { error: error ?? 'Insert failed', business: null };
 
-  // Provision the schema namespace (no-op in SQLite — prefixing handles it)
-  const isDevMode = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
-  if (!isDevMode) {
+  // Provision the schema namespace (only needed for Postgres/Supabase)
+  if (getDbProvider() === 'supabase') {
     await db.execute(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`);
   }
 

@@ -10,3 +10,7 @@ _risk_doc_review
 .system_generated
 .agents
 scratch
+dev-storage
+*firebase-adminsdk*.json
+service-account*.json
+firebase-credentials*.json

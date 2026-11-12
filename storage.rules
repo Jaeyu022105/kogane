@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// All media uploads go through /api/storage/upload (Admin SDK validation & path sanitization).
+// Public asset buckets (avatars/branding assets) may be read publicly; direct client writes are denied.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /assets/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /avatars/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,8 +1,11 @@
 # =========================================================
 # Kogane Production Multi-Stage Dockerfile
+# Compatible with Render, Koyeb, Fly.io, and Docker hosts
+# Supports Firebase Spark (DB_PROVIDER=firebase + STORAGE_PROVIDER=firestore)
+# as well as standalone SQLite (DEV_MODE=true).
 # =========================================================
 
-# Stage 1: Dependency installation & production build
+# Stage 1: Dependency installation & Nuxt Nitro production build
 FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
@@ -14,8 +17,9 @@ RUN bun install --frozen-lockfile
 # Copy application source code
 COPY . .
 
-# Build Nuxt production bundle
-ENV NODE_ENV=production
+# Build Nuxt Nitro Node server bundle (.output/server/index.mjs)
+ENV NODE_ENV=production \
+    NITRO_PRESET=node-server
 RUN bun run build
 
 # Stage 2: Minimal production runtime
@@ -23,12 +27,12 @@ FROM oven/bun:1-alpine AS runner
 
 WORKDIR /app
 
-# Set production environment variables
+# Set production environment defaults (override via PaaS / container env vars)
 ENV NODE_ENV=production \
     PORT=3000 \
     HOST=0.0.0.0
 
-# Copy only the compiled output from the builder stage
+# Copy only the compiled Nitro output from the builder stage
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/package.json ./package.json
 
@@ -40,6 +44,6 @@ USER bun
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
+  CMD sh -c "wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-3000}/ || exit 1"
 
 CMD ["bun", "run", ".output/server/index.mjs"]

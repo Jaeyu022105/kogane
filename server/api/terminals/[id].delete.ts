@@ -39,6 +39,12 @@ export default defineEventHandler(async (event) => {
     return { success: false, error: deleted.error };
   }
 
+  await db.update(
+    'sessions',
+    { revoked_at: new Date().toISOString() },
+    { terminal_id: terminalId },
+  );
+
   await writeAuditLog({
     businessId: business.id,
     actorId: userId,

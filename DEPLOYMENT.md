@@ -235,3 +235,46 @@ This resets all test orders to 0, purges old temporary test tables, seeds a fres
 
 ### Problem 3: Accidental tablet logout
 - Staff can simply re-enter the 4-digit PIN on the screen. The session token will be reissued automatically.
+
+---
+
+## 9. Online Cloud Hosting on Firebase Spark Free Tier (No Credit Card / No Blaze Required)
+
+Firebase **Cloud Functions Gen 2**, **Firebase App Hosting**, and **Firebase Storage** require upgrading to the **Blaze** pay-as-you-go billing plan, whereas **Cloud Firestore** (`kogane-e7f2b`, region `asia-southeast1`) works **100% free on the Spark plan**.
+
+Kogane works around all Blaze-only services cleanly with two zero-cost deployment options:
+
+- **Spark Asset Storage (`FirestoreStorageAdapter`)**: Setting `STORAGE_PROVIDER=firestore` (or `FIREBASE_SPARK_MODE=true`, or `DB_PROVIDER=firebase` without `FIREBASE_STORAGE_BUCKET`) stores small uploaded logos/avatars (`<= 700 KB` binary) in the Firestore `__storage_blobs` collection and serves them securely at `/api/storage/files/<bucket>/<path>` (with `X-Content-Type-Options: nosniff` and `Content-Security-Policy: sandbox` on `image/svg+xml`).
+
+### Workaround A: Free Node PaaS (Render / Koyeb without Credit Card) + Firebase Spark Firestore
+
+1. **Deploy `firestore.rules` and `firestore.indexes.json`** (Firestore-only, free on Spark):
+   ```cmd
+   firebase deploy --only firestore
+   ```
+2. **Generate a Firebase Admin service account key** for `kogane-e7f2b` (keep it out of git — `*firebase-adminsdk*.json`, `service-account*.json`, and `firebase-credentials*.json` are gitignored).
+3. **Deploy using `render.yaml` (Render Free Web Service) or `Dockerfile` (Render / Koyeb / Fly)**:
+   - Set environment variables:
+     - `DEV_MODE=false`
+     - `DB_PROVIDER=firebase`
+     - `STORAGE_PROVIDER=firestore`
+     - `COOKIE_SECURE=true`
+     - `FIREBASE_PROJECT_ID=kogane-e7f2b`
+     - `FIREBASE_REGION=asia-southeast1`
+     - `SESSION_SECRET` & `ENCRYPTION_KEY` (64+ char random secrets)
+     - `FIREBASE_SERVICE_ACCOUNT_JSON` (raw or base64-encoded service account JSON)
+     - `NUXT_PUBLIC_SHARE_ORIGIN=https://<your-service-domain>`
+   - Render runs `node .output/server/index.mjs` (or Docker runs `bun run .output/server/index.mjs`) backed by live Cloud Firestore in `asia-southeast1`.
+
+### Workaround B: Local Host Connected Online to Firebase Spark Firestore + HTTPS Tunnel (`bun run tunnel`)
+
+1. Build the production server locally:
+   ```cmd
+   bun run build
+   ```
+2. Set `DEV_MODE=false`, `DB_PROVIDER=firebase`, `STORAGE_PROVIDER=firestore`, `COOKIE_SECURE=true`, `FIREBASE_PROJECT_ID=kogane-e7f2b`, `FIREBASE_REGION=asia-southeast1`, `SESSION_SECRET`, `ENCRYPTION_KEY`, and `FIREBASE_SERVICE_ACCOUNT_JSON` in `.env`.
+3. Start the local server (`bun run start`), then in a second terminal expose a public HTTPS URL + scannable QR code for remote phones/tablets:
+   ```cmd
+   bun run tunnel
+   ```
+   *(Optionally set `NUXT_PUBLIC_SHARE_ORIGIN` to the generated HTTPS tunnel URL.)*

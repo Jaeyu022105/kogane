@@ -1,33 +1,26 @@
 /**
  * GET /api/auth/me
- * Returns the currently authenticated admin user's profile.
+ * Returns the currently authenticated admin user's mapped profile (no secret fields).
  */
 
 import { defineEventHandler } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
+import { mapUserRecordToDto } from '~/lib/mappers';
 
 export default defineEventHandler(async (event) => {
-  const { userId, email } = await verifyAdmin(event);
+  const { userId, email, sessionId } = await verifyAdmin(event);
 
-  const { data: user } = await db.queryOne<{
-    id: string;
-    email: string;
-    full_name?: string;
-    username?: string;
-    profile_photo_url?: string;
-    language_preference?: string;
-  }>('SELECT id, email, full_name, username, profile_photo_url, language_preference FROM users WHERE id = ?', [userId]);
+  const { data: user } = await db.queryOne<Record<string, unknown>>(
+    'SELECT id, email, full_name, username, profile_photo_url, language_preference, two_factor_enabled, created_at, updated_at FROM users WHERE id = ?',
+    [userId],
+  );
 
   if (user) {
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name || (userId === 'dev-admin' ? 'Restaurant Manager' : 'Admin User'),
-        username: user.username || 'admin',
-        profilePhotoUrl: user.profile_photo_url,
-        languagePreference: user.language_preference || 'en',
+        ...mapUserRecordToDto(user),
+        sessionId: sessionId ?? null,
       },
       error: null,
     };
@@ -41,6 +34,8 @@ export default defineEventHandler(async (event) => {
       username: 'admin',
       profilePhotoUrl: undefined,
       languagePreference: 'en',
+      has2fa: false,
+      sessionId: sessionId ?? null,
     },
     error: null,
   };

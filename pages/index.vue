@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useLocale();
-const { isLoggedIn, loadDevSession } = useAuth();
+const { isLoggedIn, hydrateSession } = useAuth();
 definePageMeta({ layout: 'marketing' });
 
 useSeoMeta({
@@ -9,7 +9,7 @@ useSeoMeta({
 });
 
 onMounted(() => {
-  loadDevSession();
+  void hydrateSession();
 });
 
 /* SVG path strings for industry chips */

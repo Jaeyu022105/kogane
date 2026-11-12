@@ -33,12 +33,23 @@ export default defineNuxtConfig({
   // Runtime config — server-only secrets + public client vars
   runtimeConfig: {
     devMode: process.env.DEV_MODE === 'true',
+    dbProvider: process.env.DB_PROVIDER || '',
+    // Use STORAGE_PROVIDER=firestore (or FIREBASE_SPARK_MODE=true) on Firebase Spark free tier (<= 700 KB assets in Firestore)
+    storageProvider: process.env.STORAGE_PROVIDER || '',
+    firebaseSparkMode: process.env.FIREBASE_SPARK_MODE === 'true',
+    sessionSecret: process.env.SESSION_SECRET || '',
+    encryptionKey: process.env.ENCRYPTION_KEY || '',
+    firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
+    firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET || '',
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY || '',
     public: {
-      supabaseUrl:     process.env.SUPABASE_URL || '',
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
-      enterpriseTools: process.env.NUXT_PUBLIC_ENTERPRISE_TOOLS || '',
-      shareOrigin:     process.env.NUXT_PUBLIC_SHARE_ORIGIN || '',
+      devMode:           process.env.DEV_MODE === 'true',
+      dbProvider:        process.env.DB_PROVIDER || '',
+      firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
+      supabaseUrl:       process.env.SUPABASE_URL || '',
+      supabaseAnonKey:   process.env.SUPABASE_ANON_KEY || '',
+      enterpriseTools:   process.env.NUXT_PUBLIC_ENTERPRISE_TOOLS || '',
+      shareOrigin:       process.env.NUXT_PUBLIC_SHARE_ORIGIN || '',
     },
   },
 
@@ -49,6 +60,16 @@ export default defineNuxtConfig({
 
   // Suppress nitro warning about better-sqlite3 — it's server-only
   nitro: {
+    ...(process.env.NITRO_PRESET === 'firebase' ? { preset: 'firebase' } : {}),
+    firebase: {
+      gen: 2,
+      nodeVersion: '20',
+      httpsOptions: {
+        // Cloud Functions Gen 2 requires Blaze; Spark deployments use Node PaaS (Render/Koyeb) or `bun run tunnel`
+        // with Cloud Firestore in e.g. 'asia-southeast1' or 'us-central1'.
+        region: process.env.FIREBASE_REGION || 'asia-southeast1',
+      },
+    },
     experimental: {
       wasm: false,
     },

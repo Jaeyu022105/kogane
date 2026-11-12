@@ -110,6 +110,15 @@ export default defineEventHandler(async (event) => {
     return { success: false, error, terminal: null };
   }
 
+  // Revoke active stateful sessions when a terminal's PIN is rotated
+  if (typeof updates.pin_hash === 'string') {
+    await db.update(
+      'sessions',
+      { revoked_at: new Date().toISOString() },
+      { terminal_id: terminalId },
+    );
+  }
+
   const refreshed = await db.queryOne<{
     id: string;
     business_id: string;

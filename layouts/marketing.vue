@@ -3,7 +3,7 @@ import { Menu, X } from 'lucide-vue-next';
 
 const { t, loadLocale } = useLocale();
 const route = useRoute();
-const { isLoggedIn, loadDevSession } = useAuth();
+const { isLoggedIn, hydrateSession } = useAuth();
 
 const navLinks = computed(() => [
   { label: t('nav_features'), to: '/features' },
@@ -18,7 +18,7 @@ function closeMobileMenu() {
 
 onMounted(() => {
   loadLocale();
-  loadDevSession();
+  void hydrateSession();
   const handler = () => { scrolled.value = window.scrollY > 24; };
   window.addEventListener('scroll', handler, { passive: true });
   onUnmounted(() => window.removeEventListener('scroll', handler));

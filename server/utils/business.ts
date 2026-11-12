@@ -1,4 +1,4 @@
-import { db } from '~/lib/db';
+import { db, getDbProvider } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 
 export interface BusinessRecord {
@@ -24,6 +24,14 @@ export interface TerminalContext {
 }
 
 export const isDevDb = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
+
+export function isPrefixDb(): boolean {
+  return getDbProvider() !== 'supabase';
+}
+
+export function getSqlDialect(): 'sqlite' | 'postgres' {
+  return getDbProvider() === 'supabase' ? 'postgres' : 'sqlite';
+}
 
 export async function getBusinessById(businessId: string) {
   return db.queryOne<BusinessRecord>(
@@ -68,7 +76,7 @@ export async function getTerminalContext(terminalId: string) {
 }
 
 export async function listBusinessTables(schemaName: string) {
-  if (isDevDb) {
+  if (isPrefixDb()) {
     const result = await db.query<{ name: string }>(
       `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ? ORDER BY name`,
       [`${schemaName}_%`],
@@ -91,17 +99,18 @@ export async function listBusinessTables(schemaName: string) {
 
 export function qualifyBusinessTable(schemaName: string, tableName: string): string {
   validateIdentifier(schemaName);
-  const cleanTableName = isDevDb && tableName.startsWith(`${schemaName}_`)
+  const usePrefix = isPrefixDb();
+  const cleanTableName = usePrefix && tableName.startsWith(`${schemaName}_`)
     ? tableName.slice(schemaName.length + 1)
     : tableName;
   validateIdentifier(cleanTableName);
-  return isDevDb
+  return usePrefix
     ? `${schemaName}_${cleanTableName}`
     : `"${schemaName}"."${cleanTableName}"`;
 }
 
 export function sqlPlaceholder(index: number): string {
-  return isDevDb ? '?' : `$${index}`;
+  return isPrefixDb() ? '?' : `$${index}`;
 }
 
 export function sqlPlaceholders(count: number, startAt = 1): string[] {
@@ -109,7 +118,7 @@ export function sqlPlaceholders(count: number, startAt = 1): string[] {
 }
 
 export function replacePlaceholdersForDialect(sql: string): string {
-  if (!isDevDb) return sql;
+  if (!isPrefixDb()) return sql;
   return sql.replace(/\$[0-9]+/g, '?');
 }
 

@@ -7,7 +7,7 @@
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import {
-  isDevDb,
+  isPrefixDb,
   qualifyBusinessTable,
   replacePlaceholdersForDialect,
   sqlPlaceholder,
@@ -213,7 +213,7 @@ export async function fetchBusinessOrders(
   const qualified = qualifyBusinessTable(schemaName, chosenTable);
   validateIdentifier(dateCol);
   validateIdentifier(revenueCol);
-  const isSqlite = isDevDb;
+  const isSqlite = isPrefixDb();
   const sql = isSqlite
     ? `SELECT * FROM ${qualified} WHERE datetime("${dateCol}") >= datetime(?) AND datetime("${dateCol}") <= datetime(?) ORDER BY "${dateCol}" ASC`
     : replacePlaceholdersForDialect(

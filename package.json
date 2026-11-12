@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "bun --bun nuxt build",
+    "build:firebase": "bun -e \"process.exitCode = Bun.spawnSync(['bun', '--bun', 'nuxt', 'build', '--preset=firebase'], { stdio: ['inherit','inherit','inherit'], env: { ...process.env, NITRO_PRESET: 'firebase' } }).exitCode\"",
+    "deploy:firebase": "firebase deploy --only hosting,functions,firestore,storage",
     "dev": "bun --bun nuxt dev --host 0.0.0.0 --port 3000",
     "dev:lan": "bun --bun nuxt dev --host 0.0.0.0 --port 3000",
     "generate": "bun --bun nuxt generate",
@@ -24,13 +26,16 @@
   "dependencies": {
     "@nuxtjs/i18n": "^10.3.0",
     "@supabase/supabase-js": "^2.49.4",
+    "firebase-admin": "^14.5.1",
     "lucide-vue-next": "^1.0.0",
     "nuxt": "^3.16.2",
+    "qrcode": "^1.5.4",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",
+    "@types/qrcode": "^1.5.6",
     "typescript": "^5.8.3"
   }
 }
