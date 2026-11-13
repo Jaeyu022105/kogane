@@ -42,12 +42,25 @@ CREATE TABLE IF NOT EXISTS public.terminals (
 -- Platform Preset Layouts & Templates
 CREATE TABLE IF NOT EXISTS public.presets (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id       UUID REFERENCES public.businesses(id) ON DELETE CASCADE,
   name              TEXT NOT NULL,
   description       TEXT,
+  category          TEXT,
+  preset_key        TEXT,
   schema_definition TEXT DEFAULT '{}',
   ui_layout         TEXT DEFAULT '{}',
+  permissions       TEXT DEFAULT '{}',
+  version           INTEGER NOT NULL DEFAULT 1,
+  updated_at        TIMESTAMPTZ DEFAULT now(),
   created_at        TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE public.presets ADD COLUMN IF NOT EXISTS business_id UUID REFERENCES public.businesses(id) ON DELETE CASCADE;
+ALTER TABLE public.presets ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE public.presets ADD COLUMN IF NOT EXISTS preset_key TEXT;
+ALTER TABLE public.presets ADD COLUMN IF NOT EXISTS permissions TEXT DEFAULT '{}';
+ALTER TABLE public.presets ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE public.presets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 -- Audit Log & Activity Trail
 CREATE TABLE IF NOT EXISTS public.audit_log (
@@ -68,6 +81,7 @@ CREATE TABLE IF NOT EXISTS public.audit_log (
 -- Indexes for fast lookups
 CREATE INDEX IF NOT EXISTS idx_terminals_business_id ON public.terminals(business_id);
 CREATE INDEX IF NOT EXISTS idx_terminals_public_slug ON public.terminals(public_slug);
+CREATE INDEX IF NOT EXISTS idx_presets_business_id ON public.presets(business_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_business_id ON public.audit_log(business_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON public.audit_log(created_at DESC);
 

@@ -113,10 +113,16 @@ export class SqliteAdapter implements DbAdapter {
     this.db.run(`
       CREATE TABLE IF NOT EXISTS presets (
         id                TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        business_id       TEXT REFERENCES businesses(id) ON DELETE CASCADE,
         name              TEXT NOT NULL,
         description       TEXT,
+        category          TEXT,
+        preset_key        TEXT,
         schema_definition TEXT DEFAULT '{}',
         ui_layout         TEXT DEFAULT '{}',
+        permissions       TEXT DEFAULT '{}',
+        version           INTEGER NOT NULL DEFAULT 1,
+        updated_at        TEXT DEFAULT (datetime('now')),
         created_at        TEXT DEFAULT (datetime('now'))
       )
     `);
@@ -184,6 +190,27 @@ export class SqliteAdapter implements DbAdapter {
 
     try {
       this.db.run("ALTER TABLE businesses ADD COLUMN currency_symbol TEXT DEFAULT '$'");
+    } catch (e) { }
+    try {
+      this.db.run('ALTER TABLE presets ADD COLUMN business_id TEXT REFERENCES businesses(id) ON DELETE CASCADE');
+    } catch (e) { }
+    try {
+      this.db.run('ALTER TABLE presets ADD COLUMN category TEXT');
+    } catch (e) { }
+    try {
+      this.db.run('ALTER TABLE presets ADD COLUMN preset_key TEXT');
+    } catch (e) { }
+    try {
+      this.db.run("ALTER TABLE presets ADD COLUMN permissions TEXT DEFAULT '{}'");
+    } catch (e) { }
+    try {
+      this.db.run('ALTER TABLE presets ADD COLUMN version INTEGER NOT NULL DEFAULT 1');
+    } catch (e) { }
+    try {
+      this.db.run('ALTER TABLE presets ADD COLUMN updated_at TEXT');
+    } catch (e) { }
+    try {
+      this.db.run('CREATE INDEX IF NOT EXISTS idx_presets_business_id ON presets(business_id)');
     } catch (e) { }
     try {
       const existingUser = this.db.query("SELECT id FROM users WHERE email = 'admin@kogane.dev'").get();

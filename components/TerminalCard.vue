@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Eye, EyeOff, KeyRound, Link2, Check, Trash2, ArrowRight, Settings2 } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
+import { Eye, EyeOff, KeyRound, Link2, Check, Trash2, ArrowRight, Settings2, RefreshCw } from 'lucide-vue-next';
 import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
-import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { getTerminalPresetStatus } from '~/lib/builderPresets';
+import { presetByRoleOrKey } from '~/lib/permissions';
 
 const props = defineProps<{
   terminal: {
@@ -13,11 +14,13 @@ const props = defineProps<{
     pin_code: string | null;
     is_public: number | boolean | null;
     public_slug: string | null;
-  }
+  };
+  latestPresetVersions?: Record<string, number>;
 }>();
 
 const emit = defineEmits<{
   (e: 'deleted'): void;
+  (e: 'synced', payload: { terminalId: string; terminal?: Record<string, unknown> }): void;
 }>();
 
 const { authHeaders } = useAuth();
@@ -26,11 +29,55 @@ const { buildShareUrl, copyToClipboard, isOnlineHost } = useShareOrigin();
 
 const showPin = ref(false);
 const deleting = ref(false);
+const syncing = ref(false);
 const copiedLink = ref(false);
 const copiedPin = ref(false);
 
+const presetStatus = computed(() =>
+  getTerminalPresetStatus(props.terminal, props.latestPresetVersions),
+);
+
 function roleLabel(value: string) {
-  return TERMINAL_PERMISSION_PRESETS.find((preset) => preset.key === value)?.label ?? 'Staff workspace';
+  return presetByRoleOrKey(value)?.label ?? presetStatus.value.presetName ?? (value || 'Staff workspace');
+}
+
+async function syncPreset() {
+  if (syncing.value) return;
+  syncing.value = true;
+  try {
+    const res = await $fetch<{
+      success?: boolean;
+      updated?: boolean;
+      alreadyCurrent?: boolean;
+      toVersion?: number;
+      terminal?: Record<string, unknown>;
+      error?: string | null;
+    }>('/api/presets/sync', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        terminalId: props.terminal.id,
+        force: !presetStatus.value.updateAvailable,
+      },
+    });
+    if (res?.error) {
+      await alert({
+        title: 'Unable to sync preset',
+        description: res.error,
+        confirmLabel: 'Close',
+      });
+      return;
+    }
+    emit('synced', { terminalId: props.terminal.id, terminal: res?.terminal });
+  } catch (err: any) {
+    await alert({
+      title: 'Unable to sync preset',
+      description: err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Could not sync preset update.',
+      confirmLabel: 'Close',
+    });
+  } finally {
+    syncing.value = false;
+  }
 }
 
 function friendlyTerminalError(value: unknown, fallback = 'We could not update this terminal. Please try again.') {
@@ -151,7 +198,18 @@ async function deleteTerminal() {
         <p class="font-semibold text-sm truncate" style="color: rgb(var(--shell-sidebar)); margin: 0;">
           {{ terminal.display_name }}
         </p>
-        <p class="text-xs mt-0.5" style="color: rgba(61, 24, 32, 0.35); margin: 0;">{{ roleLabel(terminal.role) }}</p>
+        <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+          <p class="text-xs truncate" style="color: rgba(61, 24, 32, 0.48); margin: 0;">{{ roleLabel(terminal.role) }}</p>
+          <span
+            v-if="presetStatus.linked"
+            class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono"
+            :style="presetStatus.updateAvailable
+              ? 'background: rgba(245, 158, 11, 0.14); color: #b45309;'
+              : 'background: rgba(61, 24, 32, 0.06); color: rgba(61, 24, 32, 0.55);'"
+          >
+            {{ presetStatus.updateAvailable ? `Update available · v${presetStatus.presetVersion}→v${presetStatus.latestVersion}` : `v${presetStatus.presetVersion}` }}
+          </span>
+        </div>
       </div>
       <button
         type="button"
@@ -221,8 +279,33 @@ async function deleteTerminal() {
       </div>
     </div>
 
+    <!-- Preset update prompt -->
+    <button
+      v-if="presetStatus.updateAvailable"
+      type="button"
+      class="w-full text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 border-none cursor-pointer transition-all disabled:opacity-50"
+      style="background: rgba(245, 158, 11, 0.14); color: #92400e;"
+      :disabled="syncing"
+      @click="syncPreset"
+    >
+      <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
+      {{ syncing ? 'Syncing preset...' : 'Sync preset' }}
+    </button>
+
     <!-- Actions row -->
     <div class="flex items-center gap-2 mt-auto">
+      <button
+        v-if="!presetStatus.updateAvailable && presetStatus.canSync"
+        type="button"
+        class="text-xs font-medium px-2.5 py-1.5 rounded-md transition-all border-none cursor-pointer flex items-center gap-1 disabled:opacity-50"
+        style="color: rgba(61, 24, 32, 0.65); background: rgba(61, 24, 32, 0.06);"
+        :disabled="syncing"
+        :title="presetStatus.linked ? 'Re-sync terminal with latest template' : 'Link and sync with official preset'"
+        @click="syncPreset"
+      >
+        <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
+        {{ syncing ? 'Syncing...' : 'Sync preset' }}
+      </button>
 
       <NuxtLink
         :to="`/dashboard/terminals/${terminal.id}`"

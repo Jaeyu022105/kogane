@@ -10,9 +10,9 @@ const { t } = useLocale();
 
 import { Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Plus } from 'lucide-vue-next';
 import TerminalCard from '~/components/TerminalCard.vue';
-import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { presetsForIndustry } from '~/lib/permissions';
 
-const workstationPresets = computed(() => TERMINAL_PERMISSION_PRESETS);
+const workstationPresets = computed(() => presetsForIndustry(business.value?.colorPalette?.businessType));
 
 const now = new Date();
 const hour = now.getHours();
@@ -32,6 +32,7 @@ type DashboardTerminal = {
 const { authHeaders } = useAuth();
 const { isOnlineHost } = useShareOrigin();
 const terminals = ref<DashboardTerminal[]>([]);
+const latestPresetVersions = ref<Record<string, number>>({});
 const terminalLoading = ref(false);
 const terminalError = ref('');
 
@@ -94,15 +95,22 @@ async function loadTerminals() {
   terminalError.value = '';
 
   try {
-    const res = await $fetch<{ terminals?: DashboardTerminal[] | null; error?: string | null }>('/api/terminals', {
-      headers: authHeaders(),
-      query: { businessId: business.value.id },
-    });
-    if (res.error) {
+    const [termRes, presetsRes] = await Promise.all([
+      $fetch<{ terminals?: DashboardTerminal[] | null; error?: string | null }>('/api/terminals', {
+        headers: authHeaders(),
+        query: { businessId: business.value.id },
+      }),
+      $fetch<{ latestVersions?: Record<string, number> }>('/api/presets', {
+        headers: authHeaders(),
+        query: { businessId: business.value.id },
+      }).catch(() => ({ latestVersions: {} })),
+    ]);
+    if (termRes.error) {
       terminalError.value = 'We could not load your terminals right now. Please try again.';
       return;
     }
-    terminals.value = res.terminals ?? [];
+    terminals.value = termRes.terminals ?? [];
+    latestPresetVersions.value = presetsRes?.latestVersions ?? {};
   } catch {
     terminalError.value = 'We could not load your terminals right now. Please try again.';
   } finally {
@@ -262,10 +270,10 @@ watch(() => business.value?.id, loadTerminals);
             <div class="flex items-center justify-between mb-4">
               <div>
                 <h3 class="font-serif text-lg text-[rgb(var(--shell-sidebar))]">Starter Workstations</h3>
-                <p class="text-xs text-[rgba(61,24,32,0.5)]">One-click creation for all 5 official operating workstations:</p>
+                <p class="text-xs text-[rgba(61,24,32,0.5)]">One-click creation for all {{ workstationPresets.length }} official operating workstations:</p>
               </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <NuxtLink
                 v-for="preset in workstationPresets"
                 :key="preset.key"
@@ -308,7 +316,9 @@ watch(() => business.value?.id, loadTerminals);
               v-for="terminal in terminals"
               :key="terminal.id"
               :terminal="terminal"
+              :latest-preset-versions="latestPresetVersions"
               @deleted="onTerminalDeleted(terminal.id)"
+              @synced="loadTerminals"
             />
           </div>
         </div>
