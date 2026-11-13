@@ -8,6 +8,7 @@ import { findCountry, formatCurrencyAmount } from '~/lib/currency';
 import { useBusiness } from '~/composables/useBusiness';
 
 import { parseInspectionItems, type ParsedInspectionItem } from '~/lib/kitchenDisplay';
+import { sanitizeTextInput } from '~/lib/securityClient';
 
 const props = defineProps<{
   element: TableViewElementDef;
@@ -1009,6 +1010,7 @@ onUnmounted(() => {
               <input
                 v-model="editingProduct.name"
                 type="text"
+                maxlength="200"
                 placeholder="Product name"
                 class="w-full rounded-xl px-3 py-2 outline-none border"
                 :style="{
@@ -1016,6 +1018,7 @@ onUnmounted(() => {
                   background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)',
                   color: textColor,
                 }"
+                @input="editingProduct.name = sanitizeTextInput(editingProduct.name, 200, false)"
               />
             </div>
 
@@ -1042,6 +1045,7 @@ onUnmounted(() => {
                 <input
                   v-model="editingProduct.category"
                   type="text"
+                  maxlength="100"
                   placeholder="Category"
                   class="w-full rounded-xl px-3 py-2 outline-none border"
                   :style="{
@@ -1049,6 +1053,7 @@ onUnmounted(() => {
                     background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)',
                     color: textColor,
                   }"
+                  @input="editingProduct.category = sanitizeTextInput(editingProduct.category, 100, false)"
                 />
               </div>
             </div>
@@ -1058,6 +1063,7 @@ onUnmounted(() => {
               <textarea
                 v-model="editingProduct.description"
                 rows="2"
+                maxlength="2000"
                 placeholder="Short description"
                 class="w-full rounded-xl px-3 py-2 outline-none border resize-none"
                 :style="{
@@ -1065,6 +1071,7 @@ onUnmounted(() => {
                   background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)',
                   color: textColor,
                 }"
+                @input="editingProduct.description = sanitizeTextInput(editingProduct.description, 2000, true)"
               />
             </div>
 

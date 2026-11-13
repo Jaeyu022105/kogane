@@ -18,13 +18,23 @@ import {
   verifyAndConsumeBackupCode,
   verifyTotpCode,
 } from '~/lib/security';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type Verify2faBody = { challengeToken?: string; code?: string };
 
 export default defineEventHandler(async (event) => {
   const body: Verify2faBody = (await readBody<Verify2faBody>(event).catch((): Verify2faBody => ({}))) ?? {};
-  const challengeToken = String(body?.challengeToken ?? '').trim();
-  const code = String(body?.code ?? '').trim();
+  const rawChallengeToken = typeof body?.challengeToken === 'string' ? body.challengeToken : '';
+  const rawCode = typeof body?.code === 'string' ? body.code : '';
+  if (
+    hasUnsafeControlChars(rawChallengeToken, false) || rawChallengeToken.length > 512 ||
+    hasUnsafeControlChars(rawCode, false) || rawCode.length > 64
+  ) {
+    return { session: null, error: 'Invalid verification input.' };
+  }
+
+  const challengeToken = rawChallengeToken.trim();
+  const code = rawCode.trim();
 
   if (!challengeToken || !code) {
     return { session: null, error: 'Challenge token and verification code are required.' };

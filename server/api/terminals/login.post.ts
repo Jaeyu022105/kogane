@@ -12,6 +12,7 @@ import { normalizePermissions } from '~/lib/permissions';
 import { db } from '~/lib/db';
 import { writeAuditLog } from '~/server/utils/audit';
 import { findCountry } from '~/lib/currency';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 export default defineEventHandler(async (event) => {
   const body = (await readBody<{
@@ -21,8 +22,18 @@ export default defineEventHandler(async (event) => {
     pin?: string;
   }>(event)) ?? {};
 
-  if (!body.pin || (!body.terminalId && (!body.businessId || !body.displayName))) {
-    return { error: 'Missing credentials', session: null, token: null };
+  if (
+    typeof body.pin !== 'string' || !body.pin || hasUnsafeControlChars(body.pin, false) || body.pin.length > 20 ||
+    (!body.terminalId && (!body.businessId || !body.displayName))
+  ) {
+    return { error: 'Missing or invalid credentials', session: null, token: null };
+  }
+  if (
+    (body.terminalId && (typeof body.terminalId !== 'string' || hasUnsafeControlChars(body.terminalId, false) || body.terminalId.length > 100)) ||
+    (body.businessId && (typeof body.businessId !== 'string' || hasUnsafeControlChars(body.businessId, false) || body.businessId.length > 100)) ||
+    (body.displayName && (typeof body.displayName !== 'string' || hasUnsafeControlChars(body.displayName, false) || body.displayName.length > 120))
+  ) {
+    return { error: 'Invalid credentials', session: null, token: null };
   }
 
   const rateId = body.terminalId || `${body.businessId}:${body.displayName}`;

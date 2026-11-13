@@ -2,6 +2,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { stripUnsafeControlChars, validateAndSanitizeRecord } from '~/lib/securityClient';
 import { fetchRowById, updateBusinessRow } from '~/server/utils/businessTable';
 import { writeAuditLog } from '~/server/utils/audit';
 import { realtimeHub } from '~/server/utils/realtimeHub';
@@ -15,6 +16,10 @@ export default defineEventHandler(async (event) => {
     return { success: false, error: 'Missing required fields' };
   }
 
+  const cleanRowId = typeof rowId === 'string'
+    ? stripUnsafeControlChars(rowId, false).slice(0, 128)
+    : rowId;
+
   const { data: business, error: bizError } = await db.queryOne<{ schema_name: string; admin_user_id: string }>(
     'SELECT schema_name, admin_user_id FROM businesses WHERE id = ?',
     [businessId],
@@ -25,15 +30,16 @@ export default defineEventHandler(async (event) => {
 
   try {
     validateIdentifier(tableName);
-    const keys = Object.keys(updates);
+    const sanitizedUpdates = validateAndSanitizeRecord(updates);
+    const keys = Object.keys(sanitizedUpdates);
     if (keys.length === 0) return { success: true };
 
     for (const key of keys) {
       validateIdentifier(key);
     }
 
-    const before = await fetchRowById(business.schema_name, tableName, rowId);
-    const updated = await updateBusinessRow(business.schema_name, tableName, rowId, updates);
+    const before = await fetchRowById(business.schema_name, tableName, cleanRowId);
+    const updated = await updateBusinessRow(business.schema_name, tableName, cleanRowId, sanitizedUpdates);
     if (updated.error) {
       return { success: false, error: updated.error };
     }
@@ -45,7 +51,7 @@ export default defineEventHandler(async (event) => {
       actorName: 'Admin',
       actionType: 'update',
       targetTable: tableName,
-      targetId: String(rowId),
+      targetId: String(cleanRowId),
       payloadBefore: before.data,
       payloadAfter: updated.data,
       metadata: {
@@ -56,7 +62,7 @@ export default defineEventHandler(async (event) => {
     realtimeHub.publish(businessId, {
       table: tableName,
       action: 'update',
-      recordId: String(rowId),
+      recordId: String(cleanRowId),
       data: updated.data as Record<string, unknown>,
     });
 

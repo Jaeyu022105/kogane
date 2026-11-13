@@ -5,6 +5,7 @@ import { getBusinessForAdmin } from '~/server/utils/business';
 import { applyBrandingToLayout, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
 import { normalizeLayout } from '~/lib/uiTypes';
 import { normalizePermissions } from '~/lib/permissions';
+import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -46,8 +47,9 @@ export default defineEventHandler(async (event) => {
 
   // ── Basic fields ──────────────────────────────────────────────────────────
 
-  if (typeof body.displayName === 'string' && body.displayName.trim()) {
-    updates.display_name = body.displayName.trim();
+  if (typeof body.displayName === 'string') {
+    const cleanName = sanitizeTextInput(body.displayName, 100, false).trim();
+    if (cleanName) updates.display_name = cleanName;
   }
 
   if (typeof body.pin === 'string' && body.pin.length > 0) {
@@ -62,6 +64,19 @@ export default defineEventHandler(async (event) => {
   // ── Appearance + station config ───────────────────────────────────────────
 
   if (body.brandConfig || body.stationConfig) {
+    let cleanBrandConfig: Partial<WorkspaceBrandConfig> | null = null;
+    let cleanStationConfig: Record<string, unknown> | null = null;
+    try {
+      if (body.brandConfig) {
+        cleanBrandConfig = validateAndSanitizeRecord(body.brandConfig, { maxDepth: 6, maxStringLength: 1000 }) as Partial<WorkspaceBrandConfig>;
+      }
+      if (body.stationConfig) {
+        cleanStationConfig = validateAndSanitizeRecord(body.stationConfig, { maxDepth: 6, maxStringLength: 2000 });
+      }
+    } catch (err) {
+      return { success: false, error: (err as Error).message, terminal: null };
+    }
+
     // Parse existing layout
     let existingLayout: Record<string, unknown> = {};
     try {
@@ -76,10 +91,10 @@ export default defineEventHandler(async (event) => {
     let updatedLayout = { ...existingLayout };
 
     // Re-apply branding if brandConfig was supplied
-    if (body.brandConfig) {
+    if (cleanBrandConfig) {
       const mergedBrandConfig: Partial<WorkspaceBrandConfig> = {
         ...(existingLayout.brandConfig as Partial<WorkspaceBrandConfig> ?? {}),
-        ...body.brandConfig,
+        ...cleanBrandConfig,
       };
 
       // applyBrandingToLayout expects a UiLayout-shaped object
@@ -91,10 +106,10 @@ export default defineEventHandler(async (event) => {
     }
 
     // Merge station config
-    if (body.stationConfig) {
+    if (cleanStationConfig) {
       updatedLayout.stationConfig = {
         ...(existingLayout.stationConfig as Record<string, unknown> ?? {}),
-        ...body.stationConfig,
+        ...cleanStationConfig,
       };
     }
 

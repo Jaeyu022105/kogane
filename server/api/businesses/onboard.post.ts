@@ -12,7 +12,7 @@ import type { PermissionPresetKey } from '~/lib/permissions';
 import type { SchemaDef } from '~/lib/schemaUtils';
 import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/managedTerminals';
 import { findCountry } from '~/lib/currency';
-import { sanitizeImageSrc } from '~/lib/securityClient';
+import { sanitizeImageSrc, sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
 import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
@@ -38,21 +38,50 @@ export default defineEventHandler(async (event) => {
     override?: boolean;
   }>(event);
 
-  if (!body.businessName?.trim()) return { error: 'Business name is required', business: null };
+  const cleanBusinessName = sanitizeTextInput(body.businessName, 120, false).trim();
+  if (!cleanBusinessName) return { error: 'Business name is required', business: null };
+
+  const cleanBusinessType = sanitizeTextInput(body.businessType, 64, false).trim();
+
+  let cleanPalette: Record<string, any> = {};
+  if (body.colorPalette !== undefined && body.colorPalette !== null) {
+    try {
+      cleanPalette = validateAndSanitizeRecord(body.colorPalette, {
+        maxDepth: 6,
+        maxStringLength: 1000,
+        maxArrayLength: 50,
+        maxObjectKeys: 100,
+        allowMultiline: false,
+      });
+    } catch (err) {
+      return { error: (err as Error).message, business: null };
+    }
+  }
+
+  if (Array.isArray(body.terminalConfigs) && body.terminalConfigs.length > 20) {
+    return { error: 'Too many terminal configurations (maximum 20)', business: null };
+  }
+  if (Array.isArray(body.features) && body.features.length > 50) {
+    return { error: 'Too many features specified (maximum 50)', business: null };
+  }
+  if (Array.isArray(body.schemaDef?.tables) && body.schemaDef.tables.length > 50) {
+    return { error: 'Too many tables in schema definition (maximum 50)', business: null };
+  }
 
   const { data: existing } = await db.queryOne<{ id: string; schema_name: string }>(
     'SELECT id, schema_name FROM businesses WHERE admin_user_id = ?',
     [userId],
   );
 
-  const resolvedCountry = findCountry(body.country || body.colorPalette?.country);
-  const countryCode = body.country || resolvedCountry.code;
-  const currencyCode = body.currency || resolvedCountry.currency;
-  const currencySymbol = body.currencySymbol || resolvedCountry.symbol;
+  const cleanCountryInput = sanitizeTextInput(body.country || cleanPalette?.country, 16, false).trim();
+  const resolvedCountry = findCountry(cleanCountryInput);
+  const countryCode = sanitizeTextInput(body.country, 16, false).trim() || resolvedCountry.code;
+  const currencyCode = sanitizeTextInput(body.currency, 16, false).trim() || resolvedCountry.currency;
+  const currencySymbol = sanitizeTextInput(body.currencySymbol, 16, false).trim() || resolvedCountry.symbol;
 
   const mergedPalette = {
-    ...(body.colorPalette || {}),
-    businessType: body.businessType || body.colorPalette?.businessType || null,
+    ...cleanPalette,
+    businessType: cleanBusinessType || cleanPalette?.businessType || null,
     country: countryCode,
     currency: currencyCode,
     currencySymbol: currencySymbol,
@@ -68,7 +97,7 @@ export default defineEventHandler(async (event) => {
     
     schemaName = existing.schema_name;
     const { error: updateErr } = await db.update('businesses', {
-      name: body.businessName.trim(),
+      name: cleanBusinessName,
       logo_url: safeLogoUrl,
       color_palette: JSON.stringify(mergedPalette),
       country: countryCode,
@@ -95,7 +124,7 @@ export default defineEventHandler(async (event) => {
 
     const { data: newBiz, error } = await db.insert<{ id: string } & Record<string, unknown>>('businesses', {
       admin_user_id: userId,
-      name: body.businessName.trim(),
+      name: cleanBusinessName,
       logo_url: safeLogoUrl,
       color_palette: JSON.stringify(mergedPalette),
       country: countryCode,
@@ -133,9 +162,19 @@ export default defineEventHandler(async (event) => {
       await db.delete('terminals', { business_id: business.id });
     }
 
+    const cleanFeatures = Array.isArray(body.features)
+      ? body.features.map((f) => sanitizeTextInput(f, 64, false).trim()).filter(Boolean)
+      : [];
+
     const starterTerminals = body.terminalConfigs?.length
-      ? body.terminalConfigs
-      : inferStarterTerminals(body.businessType, body.features ?? []);
+      ? body.terminalConfigs.map((t) => ({
+          ...t,
+          displayName: sanitizeTextInput(t.displayName, 100, false).trim() || 'Terminal',
+          layoutVariant: t.layoutVariant ? sanitizeTextInput(t.layoutVariant, 64, false).trim() : undefined,
+          resolution: t.resolution ? sanitizeTextInput(t.resolution, 32, false).trim() : undefined,
+          pin: t.pin && /^\d{4,8}$/.test(String(t.pin)) ? String(t.pin) : undefined,
+        }))
+      : inferStarterTerminals(cleanBusinessType, cleanFeatures);
 
     for (const terminal of starterTerminals) {
       const created = await createManagedTerminal({

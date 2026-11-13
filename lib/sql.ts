@@ -77,6 +77,7 @@ export function validateReadOnlySql(sql: string): string {
   const normalized = normalizeSql(sql);
   if (!normalized) throw new Error('SQL is required');
   if (normalized.length > 8000) throw new Error('SQL query exceeds maximum allowed length');
+  if (normalized.includes('\0')) throw new Error('Disallowed NUL byte in SQL query');
 
   const withoutStrings = stripSingleQuotedLiterals(normalized);
   if (/\/\*|\*\//.test(withoutStrings)) {

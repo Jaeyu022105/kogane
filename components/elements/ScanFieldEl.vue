@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ScanFieldElementDef } from '~/lib/uiTypes';
 import { isLightColor } from '~/lib/workspaceBranding';
+import { hasUnsafeControlChars, sanitizeTextInput } from '~/lib/securityClient';
 
 /**
  * ScanFieldEl — hardware barcode/QR scanner input.
@@ -14,6 +15,11 @@ const props = defineProps<{ element: ScanFieldElementDef; runtime?: any; builder
 
 const BURST_THRESHOLD_MS = computed(() => props.element.burstThresholdMs ?? 40);
 const BURST_COMMIT_DELAY_MS = 120;
+const MAX_SCAN_LENGTH = computed(() => {
+  const configured = Number(props.element.maxLength);
+  if (Number.isFinite(configured) && configured > 0) return Math.min(Math.floor(configured), 2000);
+  return 500;
+});
 
 const displayValue = ref('');
 let lastKeyTime = 0;
@@ -26,18 +32,23 @@ const effectiveText = computed(() => props.element.textColor ?? (isLight.value ?
 const effectiveBorder = computed(() => props.element.borderColor ?? (isLight.value ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'));
 
 function commitValue(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return;
+  if (burstTimer) {
+    clearTimeout(burstTimer);
+    burstTimer = null;
+  }
+  const trimmed = sanitizeTextInput(value, MAX_SCAN_LENGTH.value, false).trim();
+  burstBuffer = '';
+  displayValue.value = '';
 
-  props.runtime?.setInputValue?.(props.element.id, trimmed);
-  displayValue.value = trimmed;
+  if (!trimmed) {
+    return;
+  }
+
+  props.runtime?.setInputValue?.(props.element.id, trimmed, props.element.fieldName);
 
   if (!props.builderMode) {
     props.runtime?.triggerElement?.(props.element, 'input:commit');
   }
-
-  burstBuffer = '';
-  displayValue.value = '';
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -48,30 +59,53 @@ function onKeydown(event: KeyboardEvent) {
   lastKeyTime = now;
 
   if (event.key === 'Enter') {
-    if (burstTimer) clearTimeout(burstTimer);
+    event.preventDefault();
+    if (burstTimer) {
+      clearTimeout(burstTimer);
+      burstTimer = null;
+    }
     commitValue(burstBuffer || displayValue.value);
     return;
   }
 
   /* single printable character */
   if (event.key.length === 1) {
+    if (hasUnsafeControlChars(event.key, false)) {
+      event.preventDefault();
+      return;
+    }
     if (gap < BURST_THRESHOLD_MS.value) {
-      /* scanner burst mode — accumulate silently */
-      burstBuffer += event.key;
+      /* scanner burst mode — accumulate silently up to MAX_SCAN_LENGTH */
+      event.preventDefault();
+
+      // If burstBuffer is empty, capture any initial character typed right before burst
+      if (!burstBuffer && displayValue.value) {
+        burstBuffer = displayValue.value;
+        displayValue.value = '';
+      }
+
+      if (burstBuffer.length < MAX_SCAN_LENGTH.value) {
+        burstBuffer += event.key;
+      }
 
       if (burstTimer) clearTimeout(burstTimer);
       burstTimer = setTimeout(() => {
-        commitValue(burstBuffer);
+        if (burstBuffer) {
+          commitValue(burstBuffer);
+        }
       }, BURST_COMMIT_DELAY_MS);
-
-      event.preventDefault();
     }
     /* else: normal keypress, fall through to standard input handling */
   }
 }
 
 function onInput(event: Event) {
-  displayValue.value = (event.target as HTMLInputElement).value;
+  const target = event.target as HTMLInputElement;
+  const clean = sanitizeTextInput(target.value, MAX_SCAN_LENGTH.value, false);
+  if (target.value !== clean) {
+    target.value = clean;
+  }
+  displayValue.value = clean;
 }
 
 function onBlur() {
@@ -89,6 +123,7 @@ onUnmounted(() => {
       :value="displayValue"
       :placeholder="element.placeholder ?? 'Scan barcode or QR code…'"
       type="text"
+      :maxlength="MAX_SCAN_LENGTH"
       autocomplete="off"
       :class="[
         'w-full h-full px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary',

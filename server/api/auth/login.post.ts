@@ -13,14 +13,24 @@ import {
 } from '~/lib/authUtils';
 import { mapUserRecordToDto, normalizeEmail } from '~/lib/mappers';
 import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type LoginBody = { email?: string; password?: string };
 
 export default defineEventHandler(async (event) => {
   const body: LoginBody = (await readBody<LoginBody>(event).catch((): LoginBody => ({}))) ?? {};
 
-  const email = normalizeEmail(body?.email);
-  const password = body?.password;
+  const rawEmail = typeof body?.email === 'string' ? body.email : '';
+  const password = typeof body?.password === 'string' ? body.password : '';
+
+  if (
+    hasUnsafeControlChars(rawEmail, false) || rawEmail.length > 255 ||
+    hasUnsafeControlChars(password, false) || password.length > 255
+  ) {
+    return { error: 'Invalid email or password', session: null };
+  }
+
+  const email = normalizeEmail(rawEmail);
 
   if (!email || !password) {
     return { error: 'Email and password are required', session: null };

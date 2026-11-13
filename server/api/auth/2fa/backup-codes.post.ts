@@ -8,6 +8,7 @@ import { verifyAdmin, verifyPasswordSync } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
 import { generateBackupCodes } from '~/lib/security';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type BackupCodesBody = { password?: string };
 
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const body: BackupCodesBody = (await readBody<BackupCodesBody>(event).catch((): BackupCodesBody => ({}))) ?? {};
 
-  if (!body?.password) {
+  if (typeof body?.password !== 'string' || !body.password || hasUnsafeControlChars(body.password, false) || body.password.length > 255) {
     return { backupCodes: [], error: 'Current password is required to regenerate backup codes.' };
   }
 

@@ -2,6 +2,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyTerminalSession } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { validateAndSanitizeRecord } from '~/lib/securityClient';
 import { isPrefixDb } from '~/server/utils/business';
 import { realtimeHub } from '~/server/utils/realtimeHub';
 
@@ -37,7 +38,8 @@ export default defineEventHandler(async (event) => {
 
   try {
     validateIdentifier(tableName);
-    const keys = Object.keys(record);
+    const sanitizedRecord = validateAndSanitizeRecord(record);
+    const keys = Object.keys(sanitizedRecord);
     if (keys.length === 0) return { success: true };
 
     for (const key of keys) {
@@ -51,7 +53,13 @@ export default defineEventHandler(async (event) => {
 
     const cols = keys.map(k => `"${k}"`).join(', ');
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
-    const values = keys.map(k => record[k]);
+    const values = keys.map((k) => {
+      const val = sanitizedRecord[k];
+      if (val === undefined) return null;
+      if (val instanceof Date) return val.toISOString();
+      if (Array.isArray(val) || (val && typeof val === 'object')) return JSON.stringify(val);
+      return val;
+    });
 
     const sql = `INSERT INTO ${tbl} (${cols}) VALUES (${placeholders})`;
 
@@ -63,7 +71,7 @@ export default defineEventHandler(async (event) => {
     realtimeHub.publish(terminal.business_id, {
       table: tableName,
       action: 'insert',
-      data: record as Record<string, unknown>,
+      data: sanitizedRecord,
     });
 
     return { success: true, error: null };

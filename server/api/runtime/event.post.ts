@@ -9,6 +9,9 @@ import { getTerminalContext, replacePlaceholdersForDialect, sqlPlaceholder } fro
 import { ensureStarterBusinessTable } from '~/server/utils/starterTables';
 import { db } from '~/lib/db';
 import { realtimeHub } from '~/server/utils/realtimeHub';
+import { stripUnsafeControlChars, validateAndSanitizeRecord, validateAndSanitizeValue } from '~/lib/securityClient';
+
+export const MAX_RUNTIME_EVENTS_BATCH = 50;
 
 type RuntimeBatchBody =
   | RuntimeEventEnvelope
@@ -79,7 +82,8 @@ async function queryAuditLogRows(options: {
 
   for (const [key, value] of Object.entries(options.where ?? {})) {
     if (!AUDIT_LOG_FILTER_COLUMNS.has(key) || value == null || value === '') continue;
-    params.push(value);
+    const cleanVal = typeof value === 'string' ? stripUnsafeControlChars(value, false).slice(0, 256) : value;
+    params.push(cleanVal);
     clauses.push(`${key} = ${sqlPlaceholder(params.length)}`);
   }
 
@@ -105,6 +109,13 @@ export default defineEventHandler(async (event) => {
     return { results: [], error: null };
   }
 
+  if (events.length > MAX_RUNTIME_EVENTS_BATCH) {
+    throw createError({
+      statusCode: 400,
+      message: `Event batch exceeds maximum limit of ${MAX_RUNTIME_EVENTS_BATCH} events`,
+    });
+  }
+
   const requestedTerminalId = events[0]?.inpoint_id || getRequestHeader(event, 'x-terminal-id');
   const session = await verifyTerminalSession(event, requestedTerminalId);
 
@@ -118,6 +129,34 @@ export default defineEventHandler(async (event) => {
 
   for (const item of events) {
     try {
+      if (!item || typeof item !== 'object' || !item.action || typeof item.action !== 'object') {
+        throw new Error('Invalid event envelope');
+      }
+
+      if (item.payload !== undefined && item.payload !== null) {
+        if (typeof item.payload === 'object') {
+          item.payload = validateAndSanitizeValue(item.payload);
+        } else if (typeof item.payload === 'string') {
+          item.payload = stripUnsafeControlChars(item.payload, true);
+        }
+      }
+      if (item.action.where !== undefined && item.action.where !== null) {
+        item.action.where = validateAndSanitizeRecord(item.action.where);
+      }
+      if (typeof item.action.table === 'string') {
+        item.action.table = stripUnsafeControlChars(item.action.table, false).slice(0, 128);
+      }
+      if (item.action.rowId !== undefined && item.action.rowId !== null) {
+        item.action.rowId = typeof item.action.rowId === 'string'
+          ? stripUnsafeControlChars(item.action.rowId, false).slice(0, 128)
+          : item.action.rowId;
+      }
+      if (typeof item.element_id === 'string') {
+        item.element_id = stripUnsafeControlChars(item.element_id, false).slice(0, 128);
+      }
+      if (typeof item.trigger === 'string') {
+        item.trigger = stripUnsafeControlChars(item.trigger, false).slice(0, 64) as any;
+      }
       if (!item.inpoint_id || item.inpoint_id !== session.terminalId) {
         item.inpoint_id = session.terminalId;
       }

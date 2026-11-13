@@ -7,7 +7,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { findCountry } from '~/lib/currency';
-import { sanitizeImageSrc } from '~/lib/securityClient';
+import { sanitizeImageSrc, sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -24,22 +24,40 @@ export default defineEventHandler(async (event) => {
   if (body.logoUrl !== undefined) {
     updates.logo_url = body.logoUrl ? (sanitizeImageSrc(body.logoUrl) || null) : null;
   }
-  if (body.name !== undefined && body.name.trim()) updates.name = body.name.trim();
+  if (body.name !== undefined) {
+    const cleanName = sanitizeTextInput(body.name, 120, false).trim();
+    if (cleanName) updates.name = cleanName;
+  }
 
   // If country is provided, resolve corresponding currency and currency symbol if not explicitly given
   if (body.country !== undefined) {
-    const resolved = findCountry(body.country);
+    const cleanCountry = sanitizeTextInput(body.country, 16, false).trim();
+    const resolved = findCountry(cleanCountry);
     updates.country = resolved.code;
-    updates.currency = body.currency || resolved.currency;
-    updates.currency_symbol = body.currencySymbol || resolved.symbol;
+    updates.currency = sanitizeTextInput(body.currency, 16, false).trim() || resolved.currency;
+    updates.currency_symbol = sanitizeTextInput(body.currencySymbol, 16, false).trim() || resolved.symbol;
   } else {
-    if (body.currency !== undefined) updates.currency = body.currency;
-    if (body.currencySymbol !== undefined) updates.currency_symbol = body.currencySymbol;
+    if (body.currency !== undefined) updates.currency = sanitizeTextInput(body.currency, 16, false).trim();
+    if (body.currencySymbol !== undefined) updates.currency_symbol = sanitizeTextInput(body.currencySymbol, 16, false).trim();
   }
 
   if (body.colorPalette !== undefined) {
+    let cleanPalette: Record<string, any> = {};
+    if (body.colorPalette !== null) {
+      try {
+        cleanPalette = validateAndSanitizeRecord(body.colorPalette, {
+          maxDepth: 6,
+          maxStringLength: 1000,
+          maxArrayLength: 50,
+          maxObjectKeys: 100,
+          allowMultiline: false,
+        });
+      } catch (err) {
+        return { error: (err as Error).message, success: false };
+      }
+    }
     const paletteWithCurrency = {
-      ...body.colorPalette,
+      ...cleanPalette,
       ...(updates.country ? { country: updates.country } : {}),
       ...(updates.currency ? { currency: updates.currency } : {}),
       ...(updates.currency_symbol ? { currencySymbol: updates.currency_symbol } : {}),

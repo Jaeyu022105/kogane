@@ -2,6 +2,7 @@
 import { Eye, EyeOff } from 'lucide-vue-next';
 import type { InputFieldElementDef } from '~/lib/uiTypes';
 import { isLightColor } from '~/lib/workspaceBranding';
+import { sanitizeTextInput } from '~/lib/securityClient';
 
 const props = defineProps<{ element: InputFieldElementDef; runtime?: any; builderMode?: boolean }>();
 const emit = defineEmits<{ (e: 'update', field: string, value: unknown): void }>();
@@ -19,6 +20,12 @@ const computedInputType = computed(() => {
   return props.element.inputType;
 });
 
+const MAX_INPUT_LENGTH = computed(() => {
+  const configured = Number(props.element.maxLength);
+  if (Number.isFinite(configured) && configured > 0) return Math.min(Math.floor(configured), 10_000);
+  return 1000;
+});
+
 const model = computed({
   get: () => String(
     props.runtime?.state?.value?.inputs?.[props.element.id]
@@ -27,20 +34,25 @@ const model = computed({
     ?? ''
   ),
   set: (value: string) => {
-    props.runtime?.setInputValue?.(props.element.id, value, props.element.fieldName);
+    const clean = sanitizeTextInput(value, MAX_INPUT_LENGTH.value, false);
+    props.runtime?.setInputValue?.(props.element.id, clean, props.element.fieldName);
   },
 });
 
 const disabled = computed(() => Boolean(props.runtime?.isElementDisabled?.(props.element)));
 
 function onInput(event: Event) {
-  const value = (event.target as HTMLInputElement).value;
+  const target = event.target as HTMLInputElement;
+  const value = sanitizeTextInput(target.value, MAX_INPUT_LENGTH.value, false);
+  if (target.value !== value) {
+    target.value = value;
+  }
   model.value = value;
   emit('update', props.element.fieldName, value);
 }
 
 async function onSelectChange(event: Event) {
-  const value = (event.target as HTMLSelectElement).value;
+  const value = sanitizeTextInput((event.target as HTMLSelectElement).value, MAX_INPUT_LENGTH.value, false);
   model.value = value;
   emit('update', props.element.fieldName, value);
   await commit('select:change');
@@ -55,7 +67,8 @@ onMounted(() => {
   if (props.element.defaultValue !== undefined && props.element.defaultValue !== null && props.element.defaultValue !== '') {
     const existing = props.runtime?.state?.value?.inputs?.[props.element.id];
     if (existing === undefined) {
-      props.runtime?.setInputValue?.(props.element.id, props.element.defaultValue, props.element.fieldName);
+      const cleanDefault = sanitizeTextInput(props.element.defaultValue, MAX_INPUT_LENGTH.value, false);
+      props.runtime?.setInputValue?.(props.element.id, cleanDefault, props.element.fieldName);
     }
   }
 });
@@ -97,6 +110,7 @@ onMounted(() => {
           :placeholder="element.placeholder ?? ''"
           :aria-label="element.fieldName || element.placeholder || 'Input'"
           :value="model"
+          :maxlength="MAX_INPUT_LENGTH"
           :disabled="disabled"
           class="w-full h-full px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-50"
           :class="[

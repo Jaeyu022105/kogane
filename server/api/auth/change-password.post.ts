@@ -15,6 +15,7 @@ import {
 } from '~/lib/authUtils';
 import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
 import { createClient } from '@supabase/supabase-js';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type ChangePasswordBody = {
   currentPassword?: string;
@@ -27,12 +28,20 @@ export default defineEventHandler(async (event) => {
 
   const body: ChangePasswordBody = (await readBody<ChangePasswordBody>(event).catch((): ChangePasswordBody => ({}))) ?? {};
 
-  const currentPassword = body?.currentPassword;
-  const newPassword = body?.newPassword;
-  const confirmPassword = body?.confirmPassword;
+  const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
+  const newPassword = typeof body?.newPassword === 'string' ? body.newPassword : '';
+  const confirmPassword = typeof body?.confirmPassword === 'string' ? body.confirmPassword : '';
 
   if (!currentPassword || !newPassword) {
     return { error: 'Current password and new password are required', success: false };
+  }
+
+  if (
+    hasUnsafeControlChars(currentPassword, false) || currentPassword.length > 255 ||
+    hasUnsafeControlChars(newPassword, false) || newPassword.length > 255 ||
+    hasUnsafeControlChars(confirmPassword, false) || confirmPassword.length > 255
+  ) {
+    return { error: 'Password contains invalid characters or exceeds maximum length', success: false };
   }
 
   if (newPassword.trim().length < 6) {

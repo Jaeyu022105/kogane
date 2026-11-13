@@ -572,15 +572,15 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 <div class="signup-grid">
                   <div class="field">
                     <label for="signup-fullname" class="field-label">{{ t('field_fullname') }}</label>
-                    <input id="signup-fullname" v-model="fullName" type="text" required class="field-input" :placeholder="t('field_fullname_placeholder')" />
+                    <input id="signup-fullname" v-model="fullName" type="text" maxlength="100" required class="field-input" :placeholder="t('field_fullname_placeholder')" />
                   </div>
                   <div class="field">
                     <label for="signup-username" class="field-label">{{ t('field_username') }}</label>
-                    <input id="signup-username" v-model="username" type="text" required class="field-input" :placeholder="t('field_username_placeholder')" />
+                    <input id="signup-username" v-model="username" type="text" maxlength="50" required class="field-input" :placeholder="t('field_username_placeholder')" />
                   </div>
                   <div class="field">
                     <label for="signup-email" class="field-label">{{ t('field_email') }}</label>
-                    <input id="signup-email" v-model="email" type="email" required class="field-input" :placeholder="t('field_email_placeholder')" />
+                    <input id="signup-email" v-model="email" type="email" maxlength="255" required class="field-input" :placeholder="t('field_email_placeholder')" />
                   </div>
                   <div class="field">
                     <label for="signup-password" class="field-label">{{ t('field_password') }}</label>
@@ -589,6 +589,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                         id="signup-password"
                         v-model="password"
                         :type="signupPasswordVisible ? 'text' : 'password'"
+                        maxlength="255"
                         required
                         class="field-input pr-10"
                         :placeholder="t('field_password_placeholder')"
@@ -612,6 +613,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                         id="signup-confirm-password"
                         v-model="confirmPassword"
                         :type="signupConfirmPasswordVisible ? 'text' : 'password'"
+                        maxlength="255"
                         required
                         class="field-input pr-10"
                         placeholder="Re-enter password to confirm"
@@ -693,6 +695,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                   id="login-email"
                   v-model="email"
                   type="email"
+                  maxlength="255"
                   required
                   autocomplete="email"
                   class="field-input"
@@ -706,6 +709,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     id="login-password"
                     v-model="password"
                     :type="loginPasswordVisible ? 'text' : 'password'"
+                    maxlength="255"
                     autocomplete="current-password"
                     class="field-input pr-10"
                     placeholder="Enter password"

@@ -12,6 +12,7 @@ import { db, getDbProvider } from '~/lib/db';
 import { hashPasswordSync, issueStatefulAdminSession } from '~/lib/authUtils';
 import { normalizeEmail } from '~/lib/mappers';
 import { enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
+import { hasUnsafeControlChars, sanitizeImageSrc, sanitizeTextInput } from '~/lib/securityClient';
 
 type SignupBody = {
   email?: string;
@@ -26,10 +27,17 @@ type SignupBody = {
 export default defineEventHandler(async (event) => {
   const body: SignupBody = (await readBody<SignupBody>(event).catch((): SignupBody => ({}))) ?? {};
 
-  const email = normalizeEmail(body?.email);
-  const password = body?.password;
-  const fullName = body?.fullName?.trim() || '';
-  const username = body?.username?.trim() || '';
+  const rawEmail = typeof body?.email === 'string' ? body.email : '';
+  if (hasUnsafeControlChars(rawEmail, false) || rawEmail.length > 255) {
+    return { error: 'Please enter a valid email address', session: null };
+  }
+
+  const email = normalizeEmail(rawEmail);
+  const password = typeof body?.password === 'string' ? body.password : '';
+  const fullName = sanitizeTextInput(body?.fullName, 100, false).trim();
+  const username = sanitizeTextInput(body?.username, 50, false).trim();
+  const safeProfilePhotoUrl = body?.profilePhotoUrl ? (sanitizeImageSrc(body.profilePhotoUrl) || null) : null;
+  const languagePreference = sanitizeTextInput(body?.languagePreference || 'en', 10, false).trim() || 'en';
 
   if (!email) {
     return { error: 'Email is required', session: null };
@@ -42,6 +50,9 @@ export default defineEventHandler(async (event) => {
 
   if (!password || password.trim().length < 6) {
     return { error: 'Password must be at least 6 characters long', session: null };
+  }
+  if (hasUnsafeControlChars(password, false) || password.length > 255) {
+    return { error: 'Password contains invalid characters or exceeds maximum allowed length', session: null };
   }
 
   const rate = enforceRateLimit(event, {
@@ -119,8 +130,8 @@ export default defineEventHandler(async (event) => {
     password_hash: passwordHash,
     full_name: fullName,
     username,
-    profile_photo_url: body?.profilePhotoUrl || null,
-    language_preference: body?.languagePreference || 'en',
+    profile_photo_url: safeProfilePhotoUrl,
+    language_preference: languagePreference,
     two_factor_enabled: 0,
     two_factor_secret: null,
     two_factor_backup_codes: null,

@@ -9,6 +9,7 @@ import { db } from '~/lib/db';
 import { parseJsonSafe } from '~/lib/mappers';
 import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
 import { decryptSecret, verifyAndConsumeBackupCode, verifyTotpCode } from '~/lib/security';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type Disable2faBody = { password?: string; code?: string };
 
@@ -16,8 +17,15 @@ export default defineEventHandler(async (event) => {
   const { userId, sessionId } = await verifyAdmin(event);
   const body: Disable2faBody = (await readBody<Disable2faBody>(event).catch((): Disable2faBody => ({}))) ?? {};
 
-  const password = body?.password;
-  const code = String(body?.code ?? '').trim();
+  const password = typeof body?.password === 'string' ? body.password : '';
+  const rawCode = typeof body?.code === 'string' ? body.code : '';
+  if (
+    hasUnsafeControlChars(password, false) || password.length > 255 ||
+    hasUnsafeControlChars(rawCode, false) || rawCode.length > 64
+  ) {
+    return { disabled: false, error: 'Invalid password or 2FA code.' };
+  }
+  const code = rawCode.trim();
 
   if (!password || !code) {
     return { disabled: false, error: 'Current password and 2FA code are required.' };

@@ -11,6 +11,7 @@ import { defaultLayoutVariantForPreset } from '~/lib/starterWorkstations';
 import { writeAuditLog } from '~/server/utils/audit';
 import { getBusinessForAdmin } from '~/server/utils/business';
 import { createManagedTerminal } from '~/server/utils/managedTerminals';
+import { sanitizeTextInput } from '~/lib/securityClient';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -23,11 +24,12 @@ export default defineEventHandler(async (event) => {
     layoutVariant?: string;
   }>(event);
 
-  if (!body.businessId || !body.displayName || !body.pin) {
+  const cleanDisplayName = sanitizeTextInput(body.displayName, 100, false).trim();
+  if (!body.businessId || !cleanDisplayName || !body.pin) {
     return { error: 'Missing required fields', terminal: null };
   }
 
-  if (!/^\d{4,8}$/.test(body.pin)) {
+  if (typeof body.pin !== 'string' || !/^\d{4,8}$/.test(body.pin)) {
     return { error: 'PIN must be 4–8 digits', terminal: null };
   }
 
@@ -49,11 +51,11 @@ export default defineEventHandler(async (event) => {
   const { terminal, error } = await createManagedTerminal({
     businessId: body.businessId,
     businessSchema: business.schema_name,
-    displayName: body.displayName.trim(),
+    displayName: cleanDisplayName,
     presetKey: preset.key,
     pin: body.pin,
-    resolution: body.resolution,
-    layoutVariant: body.layoutVariant || brandConfig?.terminalLayouts?.[preset.key] || defaultLayoutVariantForPreset(preset.key),
+    resolution: body.resolution ? sanitizeTextInput(body.resolution, 32, false).trim() : undefined,
+    layoutVariant: (body.layoutVariant ? sanitizeTextInput(body.layoutVariant, 64, false).trim() : '') || brandConfig?.terminalLayouts?.[preset.key] || defaultLayoutVariantForPreset(preset.key),
     brandConfig,
   });
 

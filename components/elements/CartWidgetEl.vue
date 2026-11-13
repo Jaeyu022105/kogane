@@ -18,6 +18,7 @@ import { isLightColor } from '~/lib/workspaceBranding';
 import { findCountry, formatCurrencyAmount } from '~/lib/currency';
 import { useBusiness } from '~/composables/useBusiness';
 import { calculateOrderDiscounts, roundCurrency, type DiscountType } from '~/lib/discounts';
+import { sanitizeTextInput } from '~/lib/securityClient';
 
 const props = defineProps<{ element: CartWidgetElementDef; businessId: string; runtime?: any; builderMode?: boolean }>();
 
@@ -1164,6 +1165,7 @@ watch(
             <input
               v-model="tableNumber"
               type="text"
+              maxlength="50"
               placeholder="e.g. Table 4"
               class="w-full rounded-xl px-2.5 py-1.5 text-xs outline-none transition-all"
               :style="{
@@ -1172,6 +1174,7 @@ watch(
                 border: `1px solid ${borderColor}`,
               }"
               :disabled="props.builderMode || submitting"
+              @input="tableNumber = sanitizeTextInput(tableNumber, 50, false)"
             />
           </div>
 
@@ -1231,6 +1234,7 @@ watch(
             <input
               v-model="externalCardAuth"
               type="text"
+              maxlength="100"
               placeholder="Auth / Slip Ref # (Optional)"
               class="w-full rounded-lg px-2.5 py-1 text-[11px] outline-none"
               :style="{
@@ -1238,6 +1242,7 @@ watch(
                 color: textColor,
                 border: `1px solid ${borderColor}`,
               }"
+              @input="externalCardAuth = sanitizeTextInput(externalCardAuth, 100, false)"
             />
           </div>
 
@@ -1380,6 +1385,7 @@ watch(
             <input
               v-model="discountRefNumber"
               type="text"
+              maxlength="100"
               :placeholder="discountType === 'pwd' ? 'PWD ID / Booklet Number (Optional)' : 'Senior (OSCA) ID Number (Optional)'"
               class="w-full rounded-lg px-2.5 py-1 text-[11px] outline-none"
               :style="{
@@ -1387,6 +1393,7 @@ watch(
                 color: textColor,
                 border: `1px solid ${borderColor}`,
               }"
+              @input="discountRefNumber = sanitizeTextInput(discountRefNumber, 100, false)"
             />
           </div>
 
@@ -1407,6 +1414,7 @@ watch(
             <input
               v-model="discountRefNumber"
               type="text"
+              maxlength="100"
               placeholder="Reason (Optional)"
               class="w-full rounded-lg px-2.5 py-1 text-[11px] outline-none"
               :style="{
@@ -1414,6 +1422,7 @@ watch(
                 color: textColor,
                 border: `1px solid ${borderColor}`,
               }"
+              @input="discountRefNumber = sanitizeTextInput(discountRefNumber, 100, false)"
             />
           </div>
 
@@ -1434,6 +1443,7 @@ watch(
             <input
               v-model="discountRefNumber"
               type="text"
+              maxlength="100"
               placeholder="Reason (Optional)"
               class="w-full rounded-lg px-2.5 py-1 text-[11px] outline-none"
               :style="{
@@ -1441,6 +1451,7 @@ watch(
                 color: textColor,
                 border: `1px solid ${borderColor}`,
               }"
+              @input="discountRefNumber = sanitizeTextInput(discountRefNumber, 100, false)"
             />
           </div>
         </div>

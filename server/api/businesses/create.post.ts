@@ -8,6 +8,7 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db, getDbProvider } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { findCountry } from '~/lib/currency';
+import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -19,7 +20,23 @@ export default defineEventHandler(async (event) => {
     colorPalette?: Record<string, any>;
   }>(event);
 
-  if (!body.name?.trim()) return { error: 'Business name is required', business: null };
+  const cleanName = sanitizeTextInput(body.name, 120, false).trim();
+  if (!cleanName) return { error: 'Business name is required', business: null };
+
+  let cleanPalette: Record<string, any> = {};
+  if (body.colorPalette !== undefined && body.colorPalette !== null) {
+    try {
+      cleanPalette = validateAndSanitizeRecord(body.colorPalette, {
+        maxDepth: 6,
+        maxStringLength: 1000,
+        maxArrayLength: 50,
+        maxObjectKeys: 100,
+        allowMultiline: false,
+      });
+    } catch (err) {
+      return { error: (err as Error).message, business: null };
+    }
+  }
 
   // Check this admin doesn't already have a business
   const { data: existing } = await db.queryOne(
@@ -37,13 +54,14 @@ export default defineEventHandler(async (event) => {
     return { error: 'Could not generate a valid schema name', business: null };
   }
 
-  const resolved = findCountry(body.country || body.colorPalette?.country);
-  const countryCode = body.country || resolved.code;
-  const currencyCode = body.currency || resolved.currency;
-  const currencySymbol = body.currencySymbol || resolved.symbol;
+  const cleanCountryInput = sanitizeTextInput(body.country || cleanPalette?.country, 16, false).trim();
+  const resolved = findCountry(cleanCountryInput);
+  const countryCode = sanitizeTextInput(body.country, 16, false).trim() || resolved.code;
+  const currencyCode = sanitizeTextInput(body.currency, 16, false).trim() || resolved.currency;
+  const currencySymbol = sanitizeTextInput(body.currencySymbol, 16, false).trim() || resolved.symbol;
 
   const mergedPalette = {
-    ...(body.colorPalette || {}),
+    ...cleanPalette,
     country: countryCode,
     currency: currencyCode,
     currencySymbol,
@@ -51,7 +69,7 @@ export default defineEventHandler(async (event) => {
 
   const { data: business, error } = await db.insert('businesses', {
     admin_user_id: userId,
-    name: body.name.trim(),
+    name: cleanName,
     color_palette: JSON.stringify(mergedPalette),
     country: countryCode,
     currency: currencyCode,

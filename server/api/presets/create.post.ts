@@ -8,6 +8,7 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import type { SchemaDef } from '~/lib/schemaUtils';
 import type { UiLayout } from '~/lib/uiTypes';
+import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
 
 export default defineEventHandler(async (event) => {
   await verifyAdmin(event);
@@ -19,13 +20,25 @@ export default defineEventHandler(async (event) => {
     uiLayout?: UiLayout;
   }>(event);
 
-  if (!body.name?.trim()) return { error: 'Name is required', preset: null };
+  const cleanName = sanitizeTextInput(body.name, 100, false).trim();
+  if (!cleanName) return { error: 'Name is required', preset: null };
+
+  let cleanSchemaDef: unknown;
+  let cleanUiLayout: unknown = {};
+  try {
+    cleanSchemaDef = validateAndSanitizeRecord(body.schemaDef, { maxDepth: 8, maxStringLength: 2000 });
+    if (body.uiLayout !== undefined) {
+      cleanUiLayout = validateAndSanitizeRecord(body.uiLayout, { maxDepth: 10, maxStringLength: 4000 });
+    }
+  } catch (err) {
+    return { error: (err as Error).message, preset: null };
+  }
 
   const { data: preset, error } = await db.insert('presets', {
-    name: body.name.trim(),
-    description: body.description ?? '',
-    schema_definition: JSON.stringify(body.schemaDef),
-    ui_layout: JSON.stringify(body.uiLayout ?? {}),
+    name: cleanName,
+    description: sanitizeTextInput(body.description ?? '', 1000, true),
+    schema_definition: JSON.stringify(cleanSchemaDef),
+    ui_layout: JSON.stringify(cleanUiLayout),
   });
 
   if (error) return { error, preset: null };

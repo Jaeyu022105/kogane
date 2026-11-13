@@ -13,13 +13,18 @@ import {
   generateBackupCodes,
   verifyTotpCode,
 } from '~/lib/security';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type Enable2faBody = { code?: string };
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
   const body: Enable2faBody = (await readBody<Enable2faBody>(event).catch((): Enable2faBody => ({}))) ?? {};
-  const code = String(body?.code ?? '').trim();
+  const rawCode = typeof body?.code === 'string' ? body.code : '';
+  if (hasUnsafeControlChars(rawCode, false) || rawCode.length > 64) {
+    return { enabled: false, backupCodes: [], error: 'Please enter a valid 6-digit verification code.' };
+  }
+  const code = rawCode.trim();
 
   if (!/^\d{6}$/.test(code.replace(/\s+/g, ''))) {
     return { enabled: false, backupCodes: [], error: 'Please enter a valid 6-digit verification code.' };

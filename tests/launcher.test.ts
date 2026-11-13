@@ -171,9 +171,10 @@ describe('Launcher Port Availability & Inspection', () => {
 });
 
 describe('Launcher Database Preparation & Workstation Setup', () => {
-  const testDbPath = join(process.cwd(), 'test-launcher-temp.db');
+  let testDbPath = join(process.cwd(), `test-launcher-temp-${Math.random().toString(36).slice(2, 8)}.db`);
 
   beforeEach(() => {
+    testDbPath = join(process.cwd(), `test-launcher-temp-${Math.random().toString(36).slice(2, 8)}.db`);
     if (existsSync(testDbPath)) {
       try { unlinkSync(testDbPath); } catch {}
     }

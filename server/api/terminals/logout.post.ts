@@ -3,6 +3,7 @@ import { clearTerminalSession, verifyAdmin, verifyPin, verifyTerminalSession } f
 import { db } from '~/lib/db';
 import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
 import { writeAuditLog } from '~/server/utils/audit';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type TerminalLogoutBody = { terminalId?: string; pin?: string };
 
@@ -65,7 +66,7 @@ export default defineEventHandler(async (event) => {
 
   if (!isOwningAdmin) {
     const pinInput = typeof body.pin === 'string' ? body.pin : '';
-    if (!pinInput) {
+    if (!pinInput || hasUnsafeControlChars(pinInput, false) || pinInput.length > 20) {
       return { success: false, error: 'PIN is required to exit terminal mode' };
     }
 

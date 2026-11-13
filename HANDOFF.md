@@ -727,3 +727,36 @@ Do not restore or revert those changes unless the user explicitly asks.
 - **Remaining Recommendations**:
   1. Run a browser smoke pass on onboarding (`logistics`, `clinic`, `accounting`, `education`, `services`, `retail`, `other`), terminal creation modal, and `/terminal/[id]` runtime interactions (`ScanFieldEl`, `TableViewEl` status cycling/paid toggle, blocked unsafe `navigate` alert).
   2. Restore `test-launcher-temp.db` before committing if clean git status is desired (`tests/launcher.test.ts` mutates tracked `test-launcher-temp.db` during `bun test`).
+
+---
+
+### Session Log — 2026-11-12 (Payload Hardening, NUL-Byte Stripping, Request Size Caps & Input Defense Pass)
+
+- **Context & Direction Check**: Continued on the Render + Firebase Spark (`kogane-e7f2b` Cloud Firestore) deployment architecture (`DEV_MODE=true` SQLite for local dev/tests). Addressed identified security gaps against oversized payload flooding, NUL-byte (`\x00`) string corruption, and deep nesting / stack exhaustion.
+- **Changes Made**:
+  1. **UI Text Inputs & Scanner Defenses (`lib/uiTypes.ts`, `components/elements/InputFieldEl.vue`, `components/elements/ScanFieldEl.vue`, `composables/useCanvasRuntime.ts`, `components/elements/CartWidgetEl.vue`, `components/elements/TableViewEl.vue`)**:
+     - Added `maxLength?: number` to `InputFieldElementDef` and `ScanFieldElementDef`.
+     - Hardened `InputFieldEl.vue`: bound input with `:maxlength="MAX_INPUT_LENGTH"` (default 1,000, max 10,000), added NUL (`\x00`) and C0/C1 non-printable binary control-character stripping on input and commit.
+     - Hardened `ScanFieldEl.vue`: bound burst buffer length to `MAX_SCAN_LENGTH` (default 500, max 2,000), ignored non-printable control keys in `onKeydown`, added `:maxlength` to `<input>`, and sanitized/stripped NUL and control characters in `commitValue` and `onInput`.
+     - Sanitized input values in `useCanvasRuntime.setInputValue` (stripping NUL/controls, capped at 2,000 chars), and added `:maxlength` and control-char sanitizers to `CartWidgetEl.vue` (`tableNumber`, `externalCardAuth`, `discountRefNumber`) and `TableViewEl.vue` (`editingProduct.name`, `category`, `description`).
+  2. **Server Middleware Request Body Size Enforcement (`server/middleware/security.ts`)**:
+     - Enforced `MAX_JSON_BODY_BYTES = 1 * 1024 * 1024` (1 MiB) for non-multipart JSON/text API requests via `Content-Length` header check, pre-buffered body inspection, and bounded stream reader for chunked transfer encoding (throwing HTTP 413 `Payload Too Large`).
+     - Maintained multipart upload ceiling at `MAX_MULTIPART_BODY_BYTES = 15 * 1024 * 1024` (15 MiB) without breaking legitimate `/api/storage/upload` image/document uploads.
+  3. **Universal Payload Validation, Sanitization & Nesting Caps (`lib/securityClient.ts`)**:
+     - Exported `hasUnsafeControlChars`, `stripUnsafeControlChars`, `sanitizeTextInput`, `validateAndSanitizeValue`, and `validateAndSanitizeRecord`.
+     - Enforced `MAX_FIELD_STRING_LENGTH = 65_536` (64 KB), `MAX_OBJECT_DEPTH = 10`, `MAX_ARRAY_LENGTH = 1_000`, `MAX_OBJECT_KEYS = 200`, and rejected prototype pollution keys (`__proto__`, `constructor`, `prototype`) and non-finite numbers (`NaN`, `Infinity`).
+     - Added `MAX_CONDITION_TOKENS = 100` and `MAX_CONDITION_DEPTH = 10` to `evaluateSafeCondition`, preventing call-stack exhaustion on pathological nested parentheses or deep property chains.
+  4. **Database Rows & API Endpoints Hardening (`server/utils/businessTable.ts`, `server/api/runtime/event.post.ts`, `server/api/terminals/insert.post.ts`, `server/api/schema/tables/updateRow.post.ts`, `server/api/data/insert.post.ts`, `server/api/businesses/onboard.post.ts`, `server/api/businesses/theme.patch.ts`, `server/api/businesses/create.post.ts`, `server/api/presets/create.post.ts`, `server/api/auth/*`, `server/api/terminals/*`)**:
+     - `businessTable.ts`: validated and sanitized rows in `insertBusinessRow` and `updateBusinessRow`, stripped NUL bytes from strings in `serializeBusinessValue`, and sanitized row IDs in `fetchRowById` and `deleteBusinessRow`.
+     - `runtime/event.post.ts`: capped event batch size to `MAX_RUNTIME_EVENTS_BATCH = 50` (HTTP 400 when exceeded), and sanitized `item.payload` and `action.where` with NUL stripping and depth caps.
+     - `terminals/insert.post.ts`, `schema/tables/updateRow.post.ts`, `data/insert.post.ts`: sanitized payloads, rejected deep nesting, and stripped NUL bytes before database execution.
+     - `businesses/onboard.post.ts`, `businesses/theme.patch.ts`, `businesses/create.post.ts`, `presets/create.post.ts`: stripped NUL bytes and control characters from names, countries, currencies, and bounded `colorPalette`, `terminalConfigs`, `features`, and `schemaDef`.
+     - `auth/*`: rejected NUL bytes and bounded lengths across admin signup, login, change-password, 2FA verify/enable/disable/backup-codes, session revocation, and terminal PIN login/logout.
+  5. **Automated Hermetic Tests (`tests/payload-hardening-and-limits.test.ts`)**:
+     - Added 22 comprehensive unit and integration tests covering control-character and NUL stripping, text input capping, safe condition recursion and token limits, middleware body size limits (1MB JSON rejection, 15MB multipart rejection, normal JSON acceptance, storage upload pass-through), batch event caps, row write sanitization in SQLite and `InMemoryFirestoreStore`, and auth NUL-byte rejection.
+- **Verification Executed**:
+  - `bun test`: **235 pass, 0 fail** (2,317 `expect()` calls across 23 files).
+  - `bun run build`: Exited 0 (`✨ Build complete!`, Nitro `node-server` `.output/server/index.mjs`, total size 21.0 MB / 4.06 MB gzip).
+- **Remaining Recommendations**:
+  1. Commit and push the security hardening changes to redeploy `kogane-pos.onrender.com`.
+  2. Perform an interactive terminal barcode scan test with a physical USB/Bluetooth handheld scanner (e.g. Netum / Zebra) or hardware emulator in a browser window to verify rapid burst capture feels responsive with the 500-char buffer limit.

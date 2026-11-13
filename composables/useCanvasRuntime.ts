@@ -1,7 +1,7 @@
 import type { TerminalPermissions } from '~/lib/permissions';
 import { isActionAllowed, normalizePermissions } from '~/lib/permissions';
 import { findCountry, formatCurrencyAmount } from '~/lib/currency';
-import { evaluateSafeCondition, sanitizeNavigationUrl } from '~/lib/securityClient';
+import { evaluateSafeCondition, sanitizeNavigationUrl, sanitizeTextInput } from '~/lib/securityClient';
 import {
   CANVAS_RUNTIME_KEY,
   resolveRuntimePathTemplate,
@@ -133,9 +133,12 @@ export function useCanvasRuntime() {
   }
 
   function setInputValue(elementId: string, value: unknown, fieldName?: string) {
-    runtimeState.value.inputs[elementId] = value;
+    const sanitized = typeof value === 'string'
+      ? sanitizeTextInput(value, 2000, false)
+      : value;
+    runtimeState.value.inputs[elementId] = sanitized;
     if (fieldName) {
-      runtimeState.value.inputs[fieldName] = value;
+      runtimeState.value.inputs[fieldName] = sanitized;
     }
   }
 

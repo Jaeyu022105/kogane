@@ -8,6 +8,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
+import { validateAndSanitizeRecord } from '~/lib/securityClient';
 import { writeAuditLog } from '~/server/utils/audit';
 import { realtimeHub } from '~/server/utils/realtimeHub';
 import { ensureStarterBusinessTable } from '~/server/utils/starterTables';
@@ -25,9 +26,11 @@ export default defineEventHandler(async (event) => {
     return { data: null, error: 'Missing required fields' };
   }
 
+  let values: Record<string, unknown>;
   try {
     validateIdentifier(body.tableName);
-    for (const key of Object.keys(body.values)) validateIdentifier(key);
+    values = validateAndSanitizeRecord(body.values);
+    for (const key of Object.keys(values)) validateIdentifier(key);
   } catch (err) {
     return { data: null, error: (err as Error).message };
   }
@@ -42,7 +45,6 @@ export default defineEventHandler(async (event) => {
 
   await ensureStarterBusinessTable(business.schema_name, body.tableName);
 
-  const values = { ...body.values };
   if (body.tableName === 'products') {
     if (values.name != null) {
       values.name = String(values.name).trim();

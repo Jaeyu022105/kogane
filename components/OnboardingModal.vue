@@ -602,6 +602,7 @@ async function handleSubmit() {
                         id="onboarding-business-name"
                         v-model="businessName"
                         type="text"
+                        maxlength="120"
                         placeholder="e.g. Sakura Cafe"
                         class="field-input max-w-sm"
                       />

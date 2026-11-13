@@ -159,6 +159,7 @@ export interface InputFieldElementDef extends BaseElementDef {
   fieldName: string;
   placeholder?: string;
   inputType: 'text' | 'number' | 'date' | 'select' | 'scan';
+  maxLength?: number;
   options?: string[];
   submitGroup?: string;
   defaultValue?: string;
@@ -233,6 +234,7 @@ export interface ScanFieldElementDef extends BaseElementDef {
   type: 'scan-field';
   fieldName: string;
   placeholder?: string;
+  maxLength?: number;
   /** Milliseconds between keystrokes — bursts faster than this are treated as scanner input. */
   burstThresholdMs?: number;
   backgroundColor?: string;

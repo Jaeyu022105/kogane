@@ -10,6 +10,7 @@ import {
   revokeSessionById,
   verifyAdmin,
 } from '~/lib/authUtils';
+import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type RevokeSessionBody = { sessionId?: string; allOthers?: boolean };
 
@@ -22,7 +23,7 @@ export default defineEventHandler(async (event) => {
     return { success: true, revokedCurrent: false, error: null };
   }
 
-  if (!body.sessionId) {
+  if (!body.sessionId || typeof body.sessionId !== 'string' || hasUnsafeControlChars(body.sessionId, false) || body.sessionId.length > 128) {
     return { success: false, revokedCurrent: false, error: 'Missing sessionId' };
   }
 

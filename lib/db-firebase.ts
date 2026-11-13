@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { DbAdapter, QueryResult, SingleResult } from './db';
 import { getFirestoreDb } from './firebaseAdmin';
+import { stripUnsafeControlChars } from './securityClient';
 
 export interface FirestoreDocRecord {
   id: string;
@@ -273,6 +274,36 @@ function extractSchemaAndShortName(fullTableName: string): { schemaName: string 
     };
   }
   return { schemaName: null, shortName: fullTableName };
+}
+
+function sanitizeFirestoreValue(value: unknown, depth = 0): unknown {
+  if (value === null || value === undefined || typeof value === 'boolean') return value;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === 'string') {
+    return stripUnsafeControlChars(value, true);
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (Array.isArray(value)) {
+    if (depth >= 10) return [];
+    return value.map((v) => sanitizeFirestoreValue(v, depth + 1));
+  }
+  if (typeof value === 'object') {
+    if (depth >= 10) return {};
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+      const cleanKey = stripUnsafeControlChars(k, false);
+      if (cleanKey) {
+        out[cleanKey] = sanitizeFirestoreValue(v, depth + 1);
+      }
+    }
+    return out;
+  }
+  return value;
 }
 
 export class FirestoreAdapter implements DbAdapter {
@@ -764,14 +795,15 @@ export class FirestoreAdapter implements DbAdapter {
       const collectionName = schema ? `${schema}_${table}` : table;
       const id = values.id ? String(values.id) : randomUUID().replace(/-/g, '');
       const nowIso = new Date().toISOString();
-      const doc: Record<string, unknown> = {
+      const rawDoc: Record<string, unknown> = {
         ...values,
         id,
         created_at: values.created_at ?? nowIso,
       };
-      if (collectionName === 'users' && typeof doc.email === 'string') {
-        doc.email = doc.email.trim().toLowerCase();
+      if (collectionName === 'users' && typeof rawDoc.email === 'string') {
+        rawDoc.email = rawDoc.email.trim().toLowerCase();
       }
+      const doc = sanitizeFirestoreValue(rawDoc) as Record<string, unknown>;
       await this.store.set(collectionName, id, doc);
       await this.ensureSchemaMetaFromDoc(collectionName, doc);
       return { data: doc as unknown as T, error: null };
@@ -788,11 +820,12 @@ export class FirestoreAdapter implements DbAdapter {
   ): Promise<{ error: string | null }> {
     try {
       const collectionName = schema ? `${schema}_${table}` : table;
+      const cleanValues = sanitizeFirestoreValue(values) as Record<string, unknown>;
       const whereKeys = Object.keys(where);
       if (whereKeys.length === 1 && whereKeys[0] === 'id' && where.id != null && String(where.id) !== '') {
         const existing = await this.store.getById(collectionName, String(where.id));
         if (existing) {
-          await this.store.update(collectionName, existing.id, values);
+          await this.store.update(collectionName, existing.id, cleanValues);
         }
         return { error: null };
       }
@@ -801,7 +834,7 @@ export class FirestoreAdapter implements DbAdapter {
         Object.entries(where).every(([k, v]) => compareValues(row[k], v) === 0),
       );
       for (const row of matching) {
-        await this.store.update(collectionName, row.id, values);
+        await this.store.update(collectionName, row.id, cleanValues);
       }
       return { error: null };
     } catch (err) {
