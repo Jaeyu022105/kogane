@@ -4,26 +4,48 @@ import { Camera, QrCode, Eye, EyeOff } from 'lucide-vue-next';
 definePageMeta({ layout: 'default' });
 
 const router = useRouter();
-const route  = useRoute();
+const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const isDevMode = computed(() => Boolean(runtimeConfig.public?.devMode));
 const { isLoggedIn, setSession, hydrateSession, authHeaders, session } = useAuth();
-const { openOnboarding }                        = useOnboarding();
+const { openOnboarding } = useOnboarding();
 const { t, locale, detectedLocale, setLocale, loadLocale, availableLocales, translateFor } = useLocale();
 
-const mode = ref<'login' | 'signup' | '2fa-setup' | '2fa-verify'>((route.query.mode as any) || 'login');
+function parseMode(raw: unknown): 'login' | 'signup' | '2fa-setup' | '2fa-verify' {
+  if (raw === 'signup') return 'signup';
+  return 'login';
+}
+
+const mode = ref<'login' | 'signup' | '2fa-setup' | '2fa-verify'>(parseMode(route.query.mode));
 const signupStep = ref(0); // 0: Lang, 1: Profile, 2: Birthday, 3: Wizard handoff
 
-useHead(() => ({
-  title: `${mode.value === 'login' || mode.value === '2fa-verify' ? t('login_title') : t('signup_title')} - Kogane`,
-}));
+watch(
+  () => route.query.mode,
+  (nextMode) => {
+    if (nextMode === 'signup') {
+      mode.value = 'signup';
+      signupStep.value = 0;
+      error.value = null;
+    } else if (nextMode === 'login') {
+      mode.value = 'login';
+      error.value = null;
+    }
+  },
+);
+
+usePageSeo({
+  title: () => (mode.value === 'login' || mode.value === '2fa-verify' ? t('login_title') : t('signup_title')),
+  description: () => (mode.value === 'login' ? t('login_subtitle_default') : t('signup_subtitle')),
+  path: '/login',
+  noindex: true,
+});
 
 // Form state
-const email           = ref('');
-const password        = ref('');
+const email = ref('');
+const password = ref('');
 const confirmPassword = ref('');
-const fullName        = ref('');
-const username        = ref('');
+const fullName = ref('');
+const username = ref('');
 
 watch(mode, (newMode) => {
   if (newMode === 'signup' && email.value === 'admin@kogane.dev') {
@@ -112,8 +134,8 @@ const twoFactorSecret = ref('');
 const qrCodeDataUrl = ref('');
 const setupBackupCodes = ref<string[]>([]);
 
-const error    = ref<string | null>(null);
-const loading  = ref(false);
+const error = ref<string | null>(null);
+const loading = ref(false);
 
 const primaryTitleKey = computed(() => {
   if (mode.value === 'login') return 'login_title';
@@ -133,6 +155,7 @@ const languagePickerTitleEcho = computed(() => {
   if (detectedLocale.value === 'en') return '';
   return translateFor(detectedLocale.value, 'lang_picker_title');
 });
+
 const languageOptions = computed(() =>
   availableLocales.map((lang) => ({
     ...lang,
@@ -166,8 +189,7 @@ const exitTarget = computed(() => {
 });
 
 function leaveLoginPage() {
-  if (exitTarget.value)
-  {
+  if (exitTarget.value) {
     router.push(exitTarget.value);
   }
 }
@@ -199,7 +221,7 @@ async function nextStep() {
       return;
     }
   }
-  
+
   if (signupStep.value < 3) {
     signupStep.value++;
   } else {
@@ -414,63 +436,64 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 </script>
 
 <template>
-  <div class="login-shell" role="main">
-    <!-- background blobs -->
-    <div class="login-blob login-blob--top" />
-    <div class="login-blob login-blob--bottom" />
-
+  <main class="login-shell">
     <div class="login-wrap" :class="{ 'login-wrap--wide': mode === 'signup' && signupStep > 0 }">
-      <!-- brand mark -->
-      <div class="login-brand" :style="(mode === 'signup' && signupStep > 0) ? 'justify-content: center;' : ''">
-        <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="3" />
-            <path d="M8 12h8 M8 8h5 M8 16h6" />
+      <!-- Brand link -->
+      <NuxtLink
+        to="/"
+        class="login-brand"
+        :class="{ 'login-brand--centered': mode === 'signup' && signupStep > 0 }"
+      >
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="1" y="1" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.75" />
+            <rect x="4.5" y="4.5" width="5" height="5" fill="#E84A27" />
+            <path d="M11.5 6H15.5M4.5 12.5H15.5M4.5 15.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
           </svg>
         </div>
         <div>
-          <h1 class="brand-name">
-            Kogane
-          </h1>
-          <p class="brand-tagline">Preset workspace setup</p>
+          <span class="brand-name">Kogane</span>
+          <p class="brand-tagline">{{ t('login_brand_tagline') }}</p>
           <p v-if="localizedEcho" class="brand-echo">{{ localizedEcho }}</p>
         </div>
-      </div>
+      </NuxtLink>
 
-      <!-- card -->
+      <!-- Card -->
       <div class="login-card">
-        
         <template v-if="mode === 'signup' && signupStep === 0">
-           <div class="login-card-header">
-             <h2 class="login-title">{{ translateFor('en', 'lang_picker_title') }}</h2>
-             <p class="login-echo">{{ languagePickerTitleEcho }}</p>
-             <p class="login-subtitle">{{ t('lang_picker_subtitle') }}</p>
-           </div>
-           
-           <div class="lang-picker-list">
-             <button
-               v-for="lang in languageOptions"
-               :key="lang.code"
-               type="button"
-               class="lang-option"
-               :aria-pressed="locale === lang.code"
-               @click="selectLanguage(lang.code)"
-             >
-               <span class="lang-option-native">{{ lang.englishLabel }}</span>
-               <span class="lang-option-translated">{{ lang.nativeEcho }}</span>
-             </button>
-           </div>
-           
-           <p class="login-dev-note">
-             {{ t('have_account') }} <a href="#" @click.prevent="mode = 'login'" class="link-text">{{ t('sign_in_link') }}</a>
-           </p>
+          <div class="login-card-header">
+            <h1 class="login-title">{{ translateFor('en', 'lang_picker_title') }}</h1>
+            <p v-if="languagePickerTitleEcho" class="login-echo">{{ languagePickerTitleEcho }}</p>
+            <p class="login-subtitle">{{ t('lang_picker_subtitle') }}</p>
+          </div>
+
+          <div class="lang-picker-list">
+            <button
+              v-for="lang in languageOptions"
+              :key="lang.code"
+              type="button"
+              class="lang-option"
+              :aria-pressed="locale === lang.code"
+              @click="selectLanguage(lang.code)"
+            >
+              <span class="lang-option-native">{{ lang.englishLabel }}</span>
+              <span class="lang-option-translated">{{ lang.nativeEcho }}</span>
+            </button>
+          </div>
+
+          <p class="login-dev-note">
+            {{ t('have_account') }}
+            <button type="button" class="link-btn" @click="mode = 'login'">
+              {{ t('sign_in_link') }}
+            </button>
+          </p>
         </template>
-        
+
         <template v-else>
-          <div class="login-card-header" :style="(mode === 'signup') ? 'text-align: center;' : ''">
-            <h2 class="login-title">
+          <div class="login-card-header" :class="{ 'login-card-header--centered': mode === 'signup' }">
+            <h1 class="login-title">
               {{ mode === 'login' ? t('login_title') : mode === 'signup' ? t('signup_title') : t('2fa_title') }}
-            </h2>
+            </h1>
             <p v-if="localizedEcho && !(mode === 'signup' && signupStep === 0)" class="login-echo">
               {{ localizedEcho }}
             </p>
@@ -488,27 +511,25 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
           </div>
 
           <form class="login-form" @submit.prevent="handleAction">
-            
             <template v-if="mode === 'signup'">
-              
               <!-- Progress indicator -->
               <div class="signup-progress">
                 <div class="progress-bar">
-                  <div class="progress-fill" :style="`width: ${((signupStep - 1) / 2) * 100}%`"></div>
+                  <div class="progress-fill" :style="`width: ${((signupStep - 1) / 2) * 100}%`" />
                 </div>
                 <div class="progress-labels">
-                   <span :class="{'active': signupStep >= 1}">{{ t('step_profile') }}</span>
-                   <span :class="{'active': signupStep >= 2}">{{ t('step_birthday') }}</span>
-                   <span :class="{'active': signupStep >= 3}">{{ t('step_business') }}</span>
+                  <span :class="{ active: signupStep >= 1 }">{{ t('step_profile') }}</span>
+                  <span :class="{ active: signupStep >= 2 }">{{ t('step_birthday') }}</span>
+                  <span :class="{ active: signupStep >= 3 }">{{ t('step_business') }}</span>
                 </div>
               </div>
-              
+
               <div class="step-header">
-                <h3 class="step-title">
-                   {{ signupStep === 1 ? t('step1_heading') : signupStep === 2 ? t('step2_heading') : t('step3_heading') }}
-                </h3>
+                <h2 class="step-title">
+                  {{ signupStep === 1 ? t('step1_heading') : signupStep === 2 ? t('step2_heading') : t('step3_heading') }}
+                </h2>
                 <p class="step-desc">
-                   {{ signupStep === 1 ? t('step1_subheading') : signupStep === 2 ? t('step2_subheading') : t('step3_subheading') }}
+                  {{ signupStep === 1 ? t('step1_subheading') : signupStep === 2 ? t('step2_subheading') : t('step3_subheading') }}
                 </p>
               </div>
 
@@ -536,24 +557,19 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                       v-if="profilePhotoUrl"
                       :src="profilePhotoUrl"
                       alt="Profile preview"
-                      class="w-full h-full object-cover rounded-full"
+                      class="w-full h-full object-cover"
                     />
                     <Camera
                       v-else
-                      class="w-6 h-6 transition-transform group-hover:scale-110"
-                      style="color: rgba(104,41,58,0.4);"
+                      class="w-5 h-5"
+                      aria-hidden="true"
+                      style="color: var(--k-muted, #52524E);"
                     />
-                    <div
-                      v-if="profilePhotoUrl"
-                      class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full text-white text-[11px] font-medium"
-                    >
-                      Change
-                    </div>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-3">
                     <button
                       type="button"
-                      class="profile-upload-text hover:underline cursor-pointer bg-transparent border-0 p-0"
+                      class="profile-upload-text link-btn"
                       @click="triggerPhotoSelect"
                     >
                       {{ profilePhotoUrl ? 'Change photo' : t('upload_photo') }}
@@ -561,7 +577,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     <button
                       v-if="profilePhotoUrl"
                       type="button"
-                      class="text-[11px] text-red-500 hover:underline cursor-pointer bg-transparent border-0 p-0"
+                      class="link-btn link-btn--danger"
                       @click="removePhoto"
                     >
                       Remove
@@ -572,15 +588,39 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 <div class="signup-grid">
                   <div class="field">
                     <label for="signup-fullname" class="field-label">{{ t('field_fullname') }}</label>
-                    <input id="signup-fullname" v-model="fullName" type="text" maxlength="100" required class="field-input" :placeholder="t('field_fullname_placeholder')" />
+                    <input
+                      id="signup-fullname"
+                      v-model="fullName"
+                      type="text"
+                      maxlength="100"
+                      required
+                      class="field-input"
+                      :placeholder="t('field_fullname_placeholder')"
+                    />
                   </div>
                   <div class="field">
                     <label for="signup-username" class="field-label">{{ t('field_username') }}</label>
-                    <input id="signup-username" v-model="username" type="text" maxlength="50" required class="field-input" :placeholder="t('field_username_placeholder')" />
+                    <input
+                      id="signup-username"
+                      v-model="username"
+                      type="text"
+                      maxlength="50"
+                      required
+                      class="field-input"
+                      :placeholder="t('field_username_placeholder')"
+                    />
                   </div>
                   <div class="field">
                     <label for="signup-email" class="field-label">{{ t('field_email') }}</label>
-                    <input id="signup-email" v-model="email" type="email" maxlength="255" required class="field-input" :placeholder="t('field_email_placeholder')" />
+                    <input
+                      id="signup-email"
+                      v-model="email"
+                      type="email"
+                      maxlength="255"
+                      required
+                      class="field-input"
+                      :placeholder="t('field_email_placeholder')"
+                    />
                   </div>
                   <div class="field">
                     <label for="signup-password" class="field-label">{{ t('field_password') }}</label>
@@ -596,17 +636,17 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                       />
                       <button
                         type="button"
-                        class="absolute right-3 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center"
+                        class="password-toggle"
                         :title="signupPasswordVisible ? 'Hide password' : 'Show password'"
                         :aria-label="signupPasswordVisible ? 'Hide password' : 'Show password'"
                         @click="signupPasswordVisible = !signupPasswordVisible"
                       >
-                        <EyeOff v-if="signupPasswordVisible" class="w-4 h-4" />
-                        <Eye v-else class="w-4 h-4" />
+                        <EyeOff v-if="signupPasswordVisible" class="w-4 h-4" aria-hidden="true" />
+                        <Eye v-else class="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
-                  <div class="field" style="grid-column: span 2;">
+                  <div class="field field-span-2">
                     <label for="signup-confirm-password" class="field-label">Confirm Password</label>
                     <div class="relative flex items-center">
                       <input
@@ -620,19 +660,19 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                       />
                       <button
                         type="button"
-                        class="absolute right-3 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center"
+                        class="password-toggle"
                         :title="signupConfirmPasswordVisible ? 'Hide password' : 'Show password'"
                         :aria-label="signupConfirmPasswordVisible ? 'Hide password' : 'Show password'"
                         @click="signupConfirmPasswordVisible = !signupConfirmPasswordVisible"
                       >
-                        <EyeOff v-if="signupConfirmPasswordVisible" class="w-4 h-4" />
-                        <Eye v-else class="w-4 h-4" />
+                        <EyeOff v-if="signupConfirmPasswordVisible" class="w-4 h-4" aria-hidden="true" />
+                        <Eye v-else class="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
                 </div>
               </template>
-              
+
               <!-- Step 2: Birthday -->
               <template v-if="signupStep === 2">
                 <div class="signup-grid birthday-grid">
@@ -659,32 +699,32 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                   </div>
                 </div>
               </template>
-              
+
               <!-- Step 3: Business -->
               <template v-if="signupStep === 3">
                 <div class="signup-grid">
-                  <div class="wizard-handoff" style="grid-column: span 2;">
+                  <div class="wizard-handoff field-span-2">
                     <p class="wizard-handoff-title">{{ t('signup_wizard_handoff_title') }}</p>
                     <p class="wizard-handoff-body">{{ t('signup_wizard_handoff_body') }}</p>
                   </div>
                 </div>
-                
+
                 <div class="toggle-wrap">
                   <label class="toggle-switch">
-                    <input type="checkbox" v-model="enable2FA" />
-                    <span class="toggle-slider"></span>
+                    <input v-model="enable2FA" type="checkbox" />
+                    <span class="toggle-slider" />
                   </label>
                   <span class="toggle-label">{{ t('field_2fa') }}</span>
                 </div>
               </template>
-              
+
               <div class="signup-actions">
-                 <button type="button" class="login-return" @click="prevStep">
-                    {{ t('btn_back') }}
-                 </button>
-                 <button type="submit" :disabled="loading || uploadingPhoto" class="login-submit">
-                    {{ uploadingPhoto ? 'Uploading photo...' : (signupStep < 3 ? t('btn_continue') : t('btn_finish')) }}
-                 </button>
+                <button type="button" class="login-return" @click="prevStep">
+                  {{ t('btn_back') }}
+                </button>
+                <button type="submit" :disabled="loading || uploadingPhoto" class="login-submit">
+                  {{ uploadingPhoto ? 'Uploading photo...' : (signupStep < 3 ? t('btn_continue') : t('btn_finish')) }}
+                </button>
               </div>
             </template>
 
@@ -717,17 +757,17 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                   />
                   <button
                     type="button"
-                    class="absolute right-3 p-1 text-[rgba(104,41,58,0.45)] hover:text-[#68293A] transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center"
+                    class="password-toggle"
                     :title="loginPasswordVisible ? 'Hide password' : 'Show password'"
                     :aria-label="loginPasswordVisible ? 'Hide password' : 'Show password'"
                     @click="loginPasswordVisible = !loginPasswordVisible"
                   >
-                    <EyeOff v-if="loginPasswordVisible" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
+                    <EyeOff v-if="loginPasswordVisible" class="w-4 h-4" aria-hidden="true" />
+                    <Eye v-else class="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
-              
+
               <button
                 id="login-submit"
                 type="submit"
@@ -736,10 +776,11 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               >
                 {{ loading ? t('btn_signing_in') : t('btn_signin') }}
               </button>
+
               <button
                 v-if="isDevMode"
                 type="button"
-                class="w-full text-center text-xs py-1.5 text-[rgba(104,41,58,0.65)] hover:text-[#68293A] bg-transparent border-0 cursor-pointer underline transition-colors"
+                class="dev-autofill-btn"
                 @click="fillDemoAdmin"
               >
                 Auto-fill default admin (admin@kogane.dev / admin123)
@@ -755,11 +796,11 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                   type="text"
                   required
                   autocomplete="one-time-code"
-                  class="field-input text-center text-lg tracking-widest font-mono"
+                  class="field-input field-input--code"
                   placeholder="000000 or ABCD-1234"
                   maxlength="12"
                 />
-                <p class="text-xs text-[rgba(104,41,58,0.65)] mt-1">
+                <p class="field-help">
                   Enter the 6-digit code from your authenticator app or one of your 8-character recovery codes.
                 </p>
               </div>
@@ -781,13 +822,13 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     v-if="qrCodeDataUrl"
                     :src="qrCodeDataUrl"
                     alt="Two-factor authentication QR code"
-                    class="w-40 h-40 rounded-lg border border-[rgba(104,41,58,0.12)] bg-white p-1"
+                    class="w-40 h-40 border border-[#DCDAD3] bg-white p-1"
                   />
-                  <QrCode v-else class="w-16 h-16" style="color: #68293A;" />
+                  <QrCode v-else class="w-16 h-16" aria-hidden="true" style="color: #141414;" />
                   <p class="qr-text">Scan with Google Authenticator, Authy, 1Password, or Apple Passwords.</p>
                   <div v-if="twoFactorSecret" class="mt-2 w-full text-center">
-                    <span class="block text-[11px] uppercase tracking-wider text-[rgba(104,41,58,0.55)]">Manual entry key</span>
-                    <code class="inline-block mt-1 px-2.5 py-1 rounded bg-[rgba(104,41,58,0.06)] text-xs font-mono text-[#68293A] select-all break-all">
+                    <span class="secret-label">Manual entry key</span>
+                    <code class="secret-code">
                       {{ twoFactorSecret }}
                     </code>
                   </div>
@@ -800,7 +841,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     type="text"
                     required
                     autocomplete="one-time-code"
-                    class="field-input text-center text-lg tracking-widest font-mono"
+                    class="field-input field-input--code"
                     placeholder="000000"
                     maxlength="6"
                   />
@@ -817,16 +858,16 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               </template>
 
               <template v-else>
-                <div class="rounded-xl border border-[rgba(104,41,58,0.15)] bg-[rgba(104,41,58,0.04)] p-4">
-                  <p class="text-sm font-semibold text-[#68293A] mb-1">Save your backup recovery codes</p>
-                  <p class="text-xs text-[rgba(104,41,58,0.75)] mb-3">
+                <div class="backup-box">
+                  <p class="backup-title">Save your backup recovery codes</p>
+                  <p class="backup-desc">
                     Each code can be used once if you lose access to your authenticator device.
                   </p>
-                  <div class="grid grid-cols-2 gap-2 font-mono text-xs">
+                  <div class="backup-grid">
                     <div
                       v-for="code in setupBackupCodes"
                       :key="code"
-                      class="px-2.5 py-1.5 rounded bg-white border border-[rgba(104,41,58,0.12)] text-center text-[#68293A] select-all"
+                      class="backup-code"
                     >
                       {{ code }}
                     </div>
@@ -843,197 +884,194 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               </template>
             </template>
 
-            <div v-if="error" class="login-error">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <div v-if="error" class="login-error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              {{ error }}
+              <span>{{ error }}</span>
             </div>
-
           </form>
 
           <p v-if="mode === 'login'" class="login-dev-note">
-            {{ t('no_account') }} <a href="#" @click.prevent="mode = 'signup'; signupStep = 0;" class="link-text">{{ t('sign_up_link') }}</a>
+            {{ t('no_account') }}
+            <button type="button" class="link-btn" @click="mode = 'signup'; signupStep = 0;">
+              {{ t('sign_up_link') }}
+            </button>
           </p>
           <p v-else-if="mode === 'signup' && signupStep > 0" class="login-dev-note">
-            {{ t('have_account') }} <a href="#" @click.prevent="mode = 'login'" class="link-text">{{ t('sign_in_link') }}</a>
+            {{ t('have_account') }}
+            <button type="button" class="link-btn" @click="mode = 'login'">
+              {{ t('sign_in_link') }}
+            </button>
           </p>
           <p v-else-if="mode === '2fa-verify'" class="login-dev-note">
-            <a href="#" @click.prevent="mode = 'login'; challengeToken = null; verificationCode = ''; error = null;" class="link-text">
+            <button
+              type="button"
+              class="link-btn"
+              @click="mode = 'login'; challengeToken = null; verificationCode = ''; error = null;"
+            >
               Back to password sign in
-            </a>
+            </button>
           </p>
           <p v-else-if="mode === '2fa-setup' && setupBackupCodes.length === 0" class="login-dev-note">
-            <a href="#" @click.prevent="skipTwoFactorSetup" class="link-text">Skip 2FA setup for now</a>
+            <button type="button" class="link-btn" @click="skipTwoFactorSetup">
+              Skip 2FA setup for now
+            </button>
           </p>
 
           <p class="login-legal">
-            {{ t('legal_text') }} <NuxtLink to="/terms" class="link-text">{{ t('legal_tos') }}</NuxtLink> {{ t('legal_and') }} <NuxtLink to="/privacy" class="link-text">{{ t('legal_privacy') }}</NuxtLink>.
+            {{ t('legal_text') }}
+            <NuxtLink to="/terms" class="link-text">{{ t('legal_tos') }}</NuxtLink>
+            {{ t('legal_and') }}
+            <NuxtLink to="/privacy" class="link-text">{{ t('legal_privacy') }}</NuxtLink>.
           </p>
 
           <button
             v-if="exitTarget && mode === 'login'"
+            type="button"
             class="login-return"
             @click="leaveLoginPage"
           >
             {{ t('return_terminal') }}
           </button>
-          
         </template>
-
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped>
-/* -- Shell --------------------------------------------------------------- */
+/* Shell */
 .login-shell {
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
-  background: linear-gradient(160deg, #F6E6D7 0%, #FFFFFF 35%);
-  position: relative;
-  overflow: hidden;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 1rem;
+  background: var(--k-bg, #F4F3EF);
+  color: var(--k-ink, #141414);
+  font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
-/* decorative blobs */
-.login-blob {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.login-blob--top {
-  top: -10rem;
-  right: -10rem;
-  width: 28rem;
-  height: 28rem;
-  background: radial-gradient(circle, rgba(255, 87, 118, 0.15) 0%, transparent 70%);
-}
-
-.login-blob--bottom {
-  bottom: -10rem;
-  left: -10rem;
-  width: 28rem;
-  height: 28rem;
-  background: radial-gradient(circle, rgba(104, 41, 58, 0.07) 0%, transparent 70%);
-}
-
-/* -- Content wrap -------------------------------------------------------- */
+/* Content wrap */
 .login-wrap {
-  position: relative;
-  z-index: 1;
   width: 100%;
   max-width: 26rem;
-  animation: fade-up 0.35s ease both;
-  transition: max-width 0.3s ease;
 }
+
 .login-wrap--wide {
-  max-width: 32rem;
+  max-width: 34rem;
 }
 
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* -- Brand mark ---------------------------------------------------------- */
+/* Brand mark */
 .login-brand {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  margin-bottom: 2rem;
-  transition: justify-content 0.3s ease;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  text-decoration: none;
+  color: var(--k-ink, #141414);
+}
+
+.login-brand--centered {
+  justify-content: center;
+}
+
+.login-brand:focus-visible {
+  outline: 2px solid var(--k-accent, #E84A27);
+  outline-offset: 4px;
 }
 
 .brand-mark {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.75rem;
-  background: #68293A;
-  color: #F6E6D7;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 3px;
+  border: 1px solid var(--k-border, #DCDAD3);
+  background: var(--k-surface, #FFFFFF);
+  color: var(--k-ink, #141414);
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(104, 41, 58, 0.28);
 }
-.brand-mark svg { width: 1.3rem; height: 1.3rem; }
 
 .brand-name {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.35rem;
-  color: #68293A;
-  line-height: 1;
-  margin: 0;
-  text-decoration: none;
+  display: block;
+  font-family: var(--k-font-sans, 'Inter', sans-serif);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--k-ink, #141414);
+  line-height: 1.1;
 }
 
 .brand-tagline {
-  font-size: 0.76rem;
-  color: rgba(104, 41, 58, 0.45);
-  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--k-muted, #52524E);
+  margin: 0.18rem 0 0;
 }
 
 .brand-echo {
-  font-size: 0.72rem;
-  color: rgba(104, 41, 58, 0.32);
-  margin: 0.2rem 0 0;
-  letter-spacing: 0.04em;
+  font-size: 0.74rem;
+  color: var(--k-muted, #52524E);
+  margin: 0.15rem 0 0;
 }
 
-/* -- Card ---------------------------------------------------------------- */
+/* Card */
 .login-card {
-  background: #FFFFFF;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(104, 41, 58, 0.09);
-  box-shadow: 0 8px 32px rgba(104, 41, 58, 0.1);
-  padding: 2rem;
+  background: var(--k-surface, #FFFFFF);
+  border-radius: 3px;
+  border: 1px solid var(--k-border, #DCDAD3);
+  padding: clamp(1.25rem, 4vw, 2rem);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
 
-.login-card-header { display: flex; flex-direction: column; gap: 0.35rem; }
+.login-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.login-card-header--centered {
+  text-align: center;
+}
 
 .login-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.45rem;
-  color: #68293A;
+  font-family: var(--k-font-sans, 'Inter', sans-serif);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--k-ink, #141414);
   margin: 0;
-  font-weight: 400;
+  line-height: 1.2;
 }
 
 .login-subtitle {
   font-size: 0.875rem;
-  color: rgba(104, 41, 58, 0.5);
+  color: var(--k-muted, #52524E);
   margin: 0;
   line-height: 1.5;
 }
 
 .login-echo {
   font-size: 0.78rem;
-  color: rgba(104, 41, 58, 0.34);
+  color: var(--k-muted, #52524E);
   margin: 0;
-  letter-spacing: 0.03em;
 }
 
-/* -- Forms & Wizard ──────────────────────────────────────────────────────── */
+/* Forms & Wizard */
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.15rem;
 }
 
 .signup-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .birthday-grid {
@@ -1045,89 +1083,123 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-width: 0;
+}
+
+.field-span-2 {
+  grid-column: span 2;
 }
 
 .field-label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: rgba(104, 41, 58, 0.7);
+  color: var(--k-ink, #141414);
 }
 
 .field-input {
-  background: #FDFAF7;
-  border: 1.5px solid rgba(104, 41, 58, 0.15);
-  border-radius: 0.5rem;
-  color: #68293A;
+  background: var(--k-bg, #F4F3EF);
+  border: 1px solid var(--k-border, #DCDAD3);
+  border-radius: 3px;
+  color: var(--k-ink, #141414);
   font-size: 0.9rem;
-  padding: 0.65rem 0.85rem;
-  font-family: 'Inter', sans-serif;
+  padding: 0.62rem 0.8rem;
+  font-family: var(--k-font-sans, 'Inter', sans-serif);
   width: 100%;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s ease;
 }
 
 .field-input::placeholder {
-  color: rgba(104, 41, 58, 0.35);
+  color: var(--k-muted, #52524E);
+  opacity: 0.75;
 }
 
 .field-input:focus {
   outline: none;
-  border-color: rgba(104, 41, 58, 0.45);
-  box-shadow: 0 0 0 3px rgba(104, 41, 58, 0.07);
+  border-color: var(--k-ink, #141414);
+  background: var(--k-surface, #FFFFFF);
+}
+
+.field-input--code {
+  text-align: center;
+  font-size: 1.05rem;
+  font-family: var(--k-font-mono, monospace);
+  letter-spacing: 0.12em;
+}
+
+.field-help {
+  font-size: 0.76rem;
+  color: var(--k-muted, #52524E);
+  margin: 0.2rem 0 0;
+  line-height: 1.45;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.6rem;
+  padding: 0.25rem;
+  color: var(--k-muted, #52524E);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: var(--k-ink, #141414);
 }
 
 /* Progress Indicator */
 .signup-progress {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
 }
 
 .progress-bar {
-  height: 4px;
-  background: rgba(104, 41, 58, 0.08);
-  border-radius: 2px;
+  height: 3px;
+  background: var(--k-border, #DCDAD3);
   overflow: hidden;
-  position: relative;
 }
 
 .progress-fill {
   height: 100%;
-  background: #68293A;
-  transition: width 0.3s ease;
+  background: var(--k-accent, #E84A27);
+  transition: width 0.25s ease;
 }
 
 .progress-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 0.72rem;
-  color: rgba(104, 41, 58, 0.4);
+  font-size: 0.74rem;
+  color: var(--k-muted, #52524E);
   font-weight: 500;
 }
 
 .progress-labels span.active {
-  color: #68293A;
+  color: var(--k-ink, #141414);
   font-weight: 600;
 }
 
 /* Step Header */
 .step-header {
-  margin-bottom: 0.5rem;
   text-align: left;
 }
 
 .step-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #68293A;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--k-ink, #141414);
   margin: 0 0 0.25rem;
 }
 
 .step-desc {
   font-size: 0.85rem;
-  color: rgba(104, 41, 58, 0.55);
+  color: var(--k-muted, #52524E);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 /* Profile Upload */
@@ -1136,65 +1208,56 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .profile-upload {
-  width: 5rem;
-  height: 5rem;
-  border-radius: 50%;
-  border: 2px dashed rgba(104, 41, 58, 0.25);
-  background: #FDFAF7;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 3px;
+  border: 1px dashed var(--k-border, #DCDAD3);
+  background: var(--k-bg, #F4F3EF);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .profile-upload:hover {
-  border-color: rgba(104, 41, 58, 0.45);
-  background: rgba(104, 41, 58, 0.02);
+  border-color: var(--k-ink, #141414);
 }
 
 .profile-upload-text {
-  font-size: 0.78rem;
-  color: rgba(104, 41, 58, 0.6);
-  font-weight: 500;
+  font-size: 0.8rem;
 }
 
 /* Buttons */
 .signup-actions {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .login-submit {
-  padding: 0.75rem 1.5rem;
-  background: #68293A;
-  color: #F6E6D7;
-  border: none;
-  border-radius: 0.5rem;
+  padding: 0.72rem 1.35rem;
+  background: var(--k-accent, #E84A27);
+  color: var(--k-on-accent, #FFFFFF);
+  border: 1px solid var(--k-accent, #E84A27);
+  border-radius: 3px;
   font-size: 0.9rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--k-font-sans, 'Inter', sans-serif);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-grow: 1;
 }
 
-.login-submit:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.login-submit:active {
-  transform: translateY(0);
+.login-submit:hover:not(:disabled) {
+  background: var(--k-accent-hover, #CC3B1B);
+  border-color: var(--k-accent-hover, #CC3B1B);
 }
 
 .login-submit:disabled {
@@ -1203,16 +1266,15 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .login-return {
-  padding: 0.75rem 1.5rem;
-  background: transparent;
-  color: rgba(104, 41, 58, 0.68);
-  border: 1.5px solid rgba(104, 41, 58, 0.12);
-  border-radius: 0.5rem;
+  padding: 0.72rem 1.25rem;
+  background: var(--k-surface, #FFFFFF);
+  color: var(--k-ink, #141414);
+  border: 1px solid var(--k-border, #DCDAD3);
+  border-radius: 3px;
   font-size: 0.9rem;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--k-font-sans, 'Inter', sans-serif);
   cursor: pointer;
-  transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1220,33 +1282,48 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .login-return:hover {
-  border-color: rgba(104, 41, 58, 0.3);
-  background: rgba(104, 41, 58, 0.03);
+  border-color: var(--k-ink, #141414);
+}
+
+.dev-autofill-btn {
+  width: 100%;
+  text-align: center;
+  font-size: 0.76rem;
+  padding: 0.35rem 0;
+  color: var(--k-muted, #52524E);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dev-autofill-btn:hover {
+  color: var(--k-ink, #141414);
 }
 
 .login-dev-note {
-  font-size: 0.82rem;
-  color: rgba(104, 41, 58, 0.6);
+  font-size: 0.84rem;
+  color: var(--k-muted, #52524E);
   text-align: center;
-  margin: 0.5rem 0 0;
+  margin: 0;
 }
 
 .login-error {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: #FFF0F2;
-  border: 1px solid rgba(255, 87, 118, 0.2);
-  border-radius: 0.5rem;
-  color: #D32F2F;
-  font-size: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: #FFF2F0;
+  border: 1px solid var(--k-accent, #E84A27);
+  border-radius: 3px;
+  color: #B42318;
+  font-size: 0.84rem;
   font-weight: 500;
 }
 
 .login-error svg {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.1rem;
+  height: 1.1rem;
   flex-shrink: 0;
 }
 
@@ -1256,37 +1333,89 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 1.5rem;
-  border: 1px solid rgba(104, 41, 58, 0.1);
-  border-radius: 0.5rem;
-  background: #FDFAF7;
-  margin-bottom: 0.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--k-border, #DCDAD3);
+  border-radius: 3px;
+  background: var(--k-bg, #F4F3EF);
 }
 
 .qr-text {
   font-size: 0.8rem;
-  color: rgba(104, 41, 58, 0.6);
+  color: var(--k-muted, #52524E);
   text-align: center;
   margin: 0;
 }
 
-/* Toggles (2FA) */
+.secret-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--k-muted, #52524E);
+}
+
+.secret-code {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--k-surface, #FFFFFF);
+  border: 1px solid var(--k-border, #DCDAD3);
+  font-size: 0.78rem;
+  font-family: var(--k-font-mono, monospace);
+  color: var(--k-ink, #141414);
+  word-break: break-all;
+}
+
+.backup-box {
+  border: 1px solid var(--k-border, #DCDAD3);
+  background: var(--k-bg, #F4F3EF);
+  border-radius: 3px;
+  padding: 1rem;
+}
+
+.backup-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--k-ink, #141414);
+  margin: 0 0 0.25rem;
+}
+
+.backup-desc {
+  font-size: 0.78rem;
+  color: var(--k-muted, #52524E);
+  margin: 0 0 0.75rem;
+}
+
+.backup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  font-family: var(--k-font-mono, monospace);
+  font-size: 0.78rem;
+}
+
+.backup-code {
+  padding: 0.4rem 0.6rem;
+  background: var(--k-surface, #FFFFFF);
+  border: 1px solid var(--k-border, #DCDAD3);
+  text-align: center;
+  color: var(--k-ink, #141414);
+}
+
+/* Toggle */
 .toggle-wrap {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgba(104, 41, 58, 0.1);
-  border-radius: 0.5rem;
-  background: #FDFAF7;
-  margin-top: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--k-border, #DCDAD3);
+  border-radius: 3px;
+  background: var(--k-bg, #F4F3EF);
 }
 
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 2.5rem;
-  height: 1.35rem;
+  width: 2.4rem;
+  height: 1.3rem;
   flex-shrink: 0;
 }
 
@@ -1300,115 +1429,142 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: rgba(104, 41, 58, 0.15);
-  transition: .3s;
-  border-radius: 1rem;
+  background-color: var(--k-border, #DCDAD3);
+  transition: 0.2s ease;
+  border-radius: 3px;
 }
 
-.toggle-slider:before {
+.toggle-slider::before {
   position: absolute;
-  content: "";
-  height: 1.05rem;
-  width: 1.05rem;
-  left: 0.15rem;
-  bottom: 0.15rem;
-  background-color: white;
-  transition: .3s;
-  border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  content: '';
+  height: 0.95rem;
+  width: 0.95rem;
+  left: 0.18rem;
+  bottom: 0.18rem;
+  background-color: var(--k-surface, #FFFFFF);
+  transition: 0.2s ease;
+  border-radius: 2px;
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: #68293A;
+  background-color: var(--k-accent, #E84A27);
 }
 
-.toggle-switch input:checked + .toggle-slider:before {
-  transform: translateX(1.15rem);
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(1.08rem);
 }
 
 .toggle-label {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #68293A;
+  color: var(--k-ink, #141414);
 }
 
-/* -- Lang Picker --------------------------------------------------------- */
+/* Lang Picker */
 .lang-picker-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  gap: 0.5rem;
 }
+
 .lang-option {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 1rem;
-  border: 1px solid rgba(104, 41, 58, 0.1);
-  border-radius: 0.5rem;
-  background: #FDFAF7;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--k-border, #DCDAD3);
+  border-radius: 3px;
+  background: var(--k-bg, #F4F3EF);
   cursor: pointer;
-  transition: all 0.2s ease;
   text-align: left;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
+
 .lang-option:hover {
-  border-color: rgba(104, 41, 58, 0.3);
-  background: #fdf5f0;
-  transform: translateY(-1px);
+  border-color: var(--k-ink, #141414);
+  background: var(--k-surface-alt, #ECEAE4);
 }
+
 .lang-option-native {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: #68293A;
+  color: var(--k-ink, #141414);
 }
+
 .lang-option-translated {
-  font-size: 0.8rem;
-  color: rgba(104, 41, 58, 0.5);
-  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  color: var(--k-muted, #52524E);
 }
 
 .wizard-handoff {
-  padding: 1rem;
-  border: 1px solid rgba(104, 41, 58, 0.1);
-  border-radius: 0.5rem;
-  background: #FDFAF7;
+  padding: 0.95rem;
+  border: 1px solid var(--k-border, #DCDAD3);
+  border-radius: 3px;
+  background: var(--k-bg, #F4F3EF);
 }
 
 .wizard-handoff-title {
-  margin: 0 0 0.35rem;
-  font-weight: 700;
-  color: #68293A;
+  margin: 0 0 0.3rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--k-ink, #141414);
 }
 
 .wizard-handoff-body {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   line-height: 1.5;
-  color: rgba(104, 41, 58, 0.58);
+  color: var(--k-muted, #52524E);
 }
+
 .login-legal {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   text-align: center;
-  color: rgba(104, 41, 58, 0.45);
+  color: var(--k-muted, #52524E);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.45;
 }
-.link-text {
-  color: #FF5776;
+
+.link-text,
+.link-btn {
+  color: var(--k-accent, #E84A27);
   font-weight: 600;
   text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
 }
-.link-text:hover {
+
+.link-btn--danger {
+  color: #B42318;
+  font-size: 0.78rem;
+}
+
+.link-text:hover,
+.link-btn:hover {
   text-decoration: underline;
 }
 
+.link-text:focus-visible,
+.link-btn:focus-visible,
+.login-submit:focus-visible,
+.login-return:focus-visible,
+.lang-option:focus-visible {
+  outline: 2px solid var(--k-accent, #E84A27);
+  outline-offset: 2px;
+}
+
 @media (max-width: 600px) {
-  .signup-grid {
-    grid-template-columns: 1fr;
-  }
+  .signup-grid,
   .birthday-grid {
     grid-template-columns: 1fr;
   }
+
+  .field-span-2 {
+    grid-column: span 1;
+  }
 }
 </style>
-

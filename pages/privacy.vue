@@ -2,125 +2,260 @@
 const { t } = useLocale();
 definePageMeta({ layout: 'marketing' });
 
-useSeoMeta({
-  title:       `${t('privacy_title')} - Kogane`,
-  description: t('privacy_intro_body'),
+usePageSeo({
+  title: () => t('privacy_title'),
+  description: () => t('privacy_intro_body'),
+  path: '/privacy',
+  ogType: 'article',
 });
+
+interface TextSegment {
+  text: string;
+  strong: boolean;
+}
+
+function parseStrongSegments(raw: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  const regex = /<strong>([\s\S]*?)<\/strong>/gi;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(raw)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ text: raw.slice(lastIndex, match.index), strong: false });
+    }
+    segments.push({ text: match[1], strong: true });
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < raw.length) {
+    segments.push({ text: raw.slice(lastIndex), strong: false });
+  }
+
+  return segments.length > 0 ? segments : [{ text: raw, strong: false }];
+}
+
+const dataItems = computed(() => [
+  parseStrongSegments(t('privacy_data_identity')),
+  parseStrongSegments(t('privacy_data_contact')),
+  parseStrongSegments(t('privacy_data_financial')),
+  parseStrongSegments(t('privacy_data_technical')),
+]);
+
+const usageItems = computed(() => [
+  t('privacy_usage_c1'),
+  t('privacy_usage_c2'),
+  t('privacy_usage_c3'),
+]);
 </script>
 
 <template>
   <div class="legal-page">
-    <div class="legal-header">
-      <div class="legal-container">
-        <h1 class="m-heading">{{ t('privacy_title') }}</h1>
-        <p class="m-sub">{{ t('privacy_last_updated') }}</p>
+    <header class="legal-header">
+      <div class="m-inner">
+        <div class="legal-hero-grid">
+          <div>
+            <h1 class="m-heading">{{ t('privacy_title') }}</h1>
+          </div>
+          <div class="legal-hero-meta">
+            <p class="legal-updated">{{ t('privacy_last_updated') }}</p>
+            <p class="legal-lead">{{ t('privacy_intro_body') }}</p>
+          </div>
+        </div>
       </div>
-    </div>
-    
-    <div class="legal-container legal-content">
-      <h2>{{ t('privacy_intro_title') }}</h2>
-      <p>{{ t('privacy_intro_body') }}</p>
-      
-      <h2>{{ t('privacy_data_title') }}</h2>
-      <p>{{ t('privacy_data_body') }}</p>
-      <ul>
-        <li v-html="t('privacy_data_identity')"></li>
-        <li v-html="t('privacy_data_contact')"></li>
-        <li v-html="t('privacy_data_financial')"></li>
-        <li v-html="t('privacy_data_technical')"></li>
-      </ul>
-      
-      <h2>{{ t('privacy_usage_title') }}</h2>
-      <p>{{ t('privacy_usage_body') }}</p>
-      <ul>
-        <li>{{ t('privacy_usage_c1') }}</li>
-        <li>{{ t('privacy_usage_c2') }}</li>
-        <li>{{ t('privacy_usage_c3') }}</li>
-      </ul>
-      
-      <h2>{{ t('privacy_security_title') }}</h2>
-      <p>{{ t('privacy_security_body') }}</p>
+    </header>
 
-      <h2>{{ t('privacy_retention_title') }}</h2>
-      <p>{{ t('privacy_retention_body') }}</p>
-      
-      <h2>{{ t('privacy_rights_title') }}</h2>
-      <p>{{ t('privacy_rights_body') }}</p>
-    </div>
+    <article class="legal-body">
+      <div class="m-inner">
+        <section class="legal-section">
+          <h2>{{ t('privacy_intro_title') }}</h2>
+          <div class="legal-prose">
+            <p>{{ t('privacy_intro_body') }}</p>
+          </div>
+        </section>
+
+        <section class="legal-section">
+          <h2>{{ t('privacy_data_title') }}</h2>
+          <div class="legal-prose">
+            <p>{{ t('privacy_data_body') }}</p>
+            <ul class="legal-list">
+              <li v-for="(segments, idx) in dataItems" :key="idx">
+                <template v-for="(seg, segIdx) in segments" :key="segIdx">
+                  <strong v-if="seg.strong">{{ seg.text }}</strong>
+                  <template v-else>{{ seg.text }}</template>
+                </template>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="legal-section">
+          <h2>{{ t('privacy_usage_title') }}</h2>
+          <div class="legal-prose">
+            <p>{{ t('privacy_usage_body') }}</p>
+            <ul class="legal-list">
+              <li v-for="(item, idx) in usageItems" :key="idx">{{ item }}</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="legal-section">
+          <h2>{{ t('privacy_security_title') }}</h2>
+          <div class="legal-prose">
+            <p>{{ t('privacy_security_body') }}</p>
+          </div>
+        </section>
+
+        <section class="legal-section">
+          <h2>{{ t('privacy_retention_title') }}</h2>
+          <div class="legal-prose">
+            <p>{{ t('privacy_retention_body') }}</p>
+          </div>
+        </section>
+
+        <section class="legal-section">
+          <h2>{{ t('privacy_rights_title') }}</h2>
+          <div class="legal-prose">
+            <p>{{ t('privacy_rights_body') }}</p>
+          </div>
+        </section>
+
+        <nav class="legal-cross-nav" aria-label="Related documentation">
+          <NuxtLink to="/terms" class="legal-cross-link">{{ t('footer_terms') }} →</NuxtLink>
+          <NuxtLink to="/features" class="legal-cross-link">{{ t('nav_features') }} →</NuxtLink>
+          <NuxtLink to="/pricing" class="legal-cross-link">{{ t('nav_pricing') }} →</NuxtLink>
+        </nav>
+      </div>
+    </article>
   </div>
 </template>
 
 <style scoped>
 .legal-page {
-  padding-bottom: 6rem;
+  background: var(--k-surface, #FFFFFF);
+  color: var(--k-ink, #141414);
 }
 
 .legal-header {
-  background: linear-gradient(180deg, rgba(104, 41, 58, 0.03) 0%, transparent 100%);
-  padding: 4rem 0 2.5rem;
-  border-bottom: 1px solid rgba(104, 41, 58, 0.06);
-  margin-bottom: 3rem;
+  background: var(--k-bg, #F4F3EF);
+  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  padding: 4.5rem 0 3.25rem;
 }
 
-.legal-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 2rem;
+.legal-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 2.5rem;
+  align-items: end;
 }
 
-.legal-content h2 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.6rem;
-  color: #68293A;
-  margin: 2.5rem 0 1rem;
+.legal-updated {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--k-ink, #141414);
 }
 
-.legal-content p {
-  font-size: 1rem;
-  line-height: 1.7;
-  color: rgba(104, 41, 58, 0.7);
-  margin-bottom: 1.2rem;
-}
-
-.legal-content ul {
-  padding-left: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.legal-content li {
-  font-size: 1rem;
-  line-height: 1.7;
-  color: rgba(104, 41, 58, 0.7);
-  margin-bottom: 0.5rem;
-}
-
-.legal-content li strong {
-  color: #68293A;
-}
-
-.m-heading {
-  font-family: 'DM Serif Display', serif;
-  font-size: 2.5rem;
-  color: #68293A;
-  margin-bottom: 0.5rem;
-  font-weight: 400;
-}
-
-.m-sub {
-  font-size: 1rem;
-  color: rgba(104, 41, 58, 0.5);
+.legal-lead {
   margin: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--k-muted, #52524E);
+}
+
+.legal-body {
+  background: var(--k-surface, #FFFFFF);
+  padding: 2rem 0 5rem;
+}
+
+.legal-section {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 2.5rem;
+  padding: 2.25rem 0;
+  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  align-items: start;
+}
+
+.legal-section h2 {
+  margin: 0;
+  font-family: var(--k-font-sans, 'Inter', sans-serif);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--k-ink, #141414);
+}
+
+.legal-prose p {
+  margin: 0 0 1rem;
+  max-width: 66ch;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--k-muted, #52524E);
+}
+
+.legal-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.legal-list {
+  margin: 1rem 0 0;
+  padding-left: 1.25rem;
+  max-width: 66ch;
+}
+
+.legal-list li {
+  font-size: 0.96875rem;
+  line-height: 1.68;
+  color: var(--k-muted, #52524E);
+  margin-bottom: 0.65rem;
+}
+
+.legal-list li:last-child {
+  margin-bottom: 0;
+}
+
+.legal-list li strong {
+  color: var(--k-ink, #141414);
+  font-weight: 600;
+}
+
+.legal-cross-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding-top: 2.25rem;
+}
+
+.legal-cross-link {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--k-ink, #141414);
+  text-decoration: none;
+  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  padding-bottom: 2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.legal-cross-link:hover {
+  color: var(--k-accent, #E84A27);
+  border-color: var(--k-accent, #E84A27);
 }
 
 @media (max-width: 768px) {
   .legal-header {
-    padding: 3rem 0 2rem;
+    padding: 3rem 0 2.25rem;
   }
-  .m-heading {
-    font-size: 2.2rem;
+
+  .legal-hero-grid,
+  .legal-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
   }
-  .legal-content h2 {
-    font-size: 1.4rem;
+
+  .legal-section {
+    padding: 1.75rem 0;
   }
 }
 </style>

@@ -16,6 +16,7 @@ export default {
           secondary:  'rgb(var(--color-secondary) / <alpha-value>)',
           accent:     'rgb(var(--color-accent) / <alpha-value>)',
           background: 'rgb(var(--color-background) / <alpha-value>)',
+          pink:       '#FF5776',
         },
         shell: {
           bg:      'rgb(var(--shell-bg) / <alpha-value>)',
@@ -31,8 +32,13 @@ export default {
           light:   '#8b3a4f',
           deep:    '#4d1e2b',
         },
-        brand: {
-          pink: '#FF5776',
+        marketing: {
+          bg:      '#F4F3EF',
+          surface: '#FFFFFF',
+          ink:     '#141414',
+          muted:   '#52524E',
+          border:  '#DCDAD3',
+          accent:  '#E84A27',
         },
       },
       fontFamily: {
