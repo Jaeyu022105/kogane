@@ -19,12 +19,23 @@ export default defineEventHandler(async (event) => {
 
   const normalized = normalizePermissions(body.permissions);
 
-  const { data: existing } = await db.queryOne<Record<string, unknown>>(
-    'SELECT id, permissions FROM terminals WHERE id = ? AND business_id = ?',
+  const { data: existing } = await db.queryOne<{
+    id: string;
+    display_name?: string | null;
+    role?: string | null;
+    permissions: string | null;
+  }>(
+    'SELECT id, display_name, role, permissions FROM terminals WHERE id = ? AND business_id = ?',
     [terminalId, body.businessId],
   );
 
   if (!existing) return { success: false, error: 'Terminal not found' };
+
+  const hasStoredPermissions = Boolean(existing.permissions && existing.permissions !== '{}');
+  const permissionsBefore = normalizePermissions(
+    existing.permissions,
+    hasStoredPermissions ? undefined : existing.role,
+  );
 
   const { error } = await db.update('terminals', {
     permissions: JSON.stringify(normalized),
@@ -42,10 +53,11 @@ export default defineEventHandler(async (event) => {
     actionType: 'update',
     targetTable: 'terminals',
     targetId: terminalId,
-    payloadBefore: existing,
+    payloadBefore: permissionsBefore,
     payloadAfter: normalized,
     metadata: {
       event: 'terminal:permissions:update',
+      terminal_name: existing.display_name ?? null,
     },
   });
 
