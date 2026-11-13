@@ -18,6 +18,7 @@ const sidebarOpen = ref(false);
 
 const pageTitle = computed(() => {
   if (route.path.startsWith('/dashboard/terminals')) return 'Terminals';
+  if (route.path === '/dashboard/database') return 'Database & Presets';
   if (route.path === '/dashboard/reports') return 'Reports';
   if (route.path === '/dashboard/audit') return 'Activity';
   if (route.path === '/dashboard/settings') return 'Settings';
@@ -25,8 +26,12 @@ const pageTitle = computed(() => {
   return 'Dashboard';
 });
 
+useSeoMeta({
+  robots: 'noindex, nofollow',
+});
+
 useHead(() => ({
-  title: `${pageTitle.value} - Kogane`,
+  title: pageTitle.value,
   htmlAttrs: { class: 'dashboard-viewport-lock' },
   bodyAttrs: { class: 'dashboard-viewport-lock' },
 }));
