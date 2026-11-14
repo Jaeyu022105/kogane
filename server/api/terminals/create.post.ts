@@ -6,7 +6,7 @@
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
-import { ALL_TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { ALL_TERMINAL_PERMISSION_PRESETS, presetByRoleOrKey } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset } from '~/lib/starterWorkstations';
 import { parseAuditJson, redactAuditPayload } from '~/lib/audit';
 import { writeAuditLog } from '~/server/utils/audit';
@@ -48,7 +48,10 @@ export default defineEventHandler(async (event) => {
     brandConfig = {};
   }
 
-  const preset = ALL_TERMINAL_PERMISSION_PRESETS.find((item) => item.key === body.presetKey) ?? ALL_TERMINAL_PERMISSION_PRESETS[0];
+  const preset =
+    ALL_TERMINAL_PERMISSION_PRESETS.find((item) => item.key === body.presetKey) ??
+    presetByRoleOrKey(body.presetKey) ??
+    ALL_TERMINAL_PERMISSION_PRESETS[0];
   const resolvedLayoutVariant = (body.layoutVariant ? sanitizeTextInput(body.layoutVariant, 64, false).trim() : '')
     || brandConfig?.terminalLayouts?.[preset.key]
     || defaultLayoutVariantForPreset(preset.key);
