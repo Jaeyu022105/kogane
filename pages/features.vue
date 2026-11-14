@@ -96,7 +96,7 @@ const extras = computed(() => [
         <div class="feat-hero-intro">
           <p class="m-sub">{{ t('feat_hero_sub') }}</p>
           <div class="feat-hero-actions">
-            <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary">
+            <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary ribbon">
               {{ isLoggedIn ? t('nav_dashboard') : t('feat_cta_btn1') }}
             </NuxtLink>
             <NuxtLink to="/pricing" class="m-btn-secondary">
@@ -127,7 +127,7 @@ const extras = computed(() => [
         <div class="specimen-box">
           <div class="specimen-head">
             <span class="specimen-title">{{ t('onboarding_industry') }}</span>
-            <span class="specimen-meta m-mono">{{ activeIndustrySpec.currency }} · #E84A27</span>
+            <span class="specimen-meta m-mono">{{ activeIndustrySpec.currency }} · #FF5776</span>
           </div>
           <div class="industry-switch-grid">
             <button
@@ -151,7 +151,7 @@ const extras = computed(() => [
       </div>
     </section>
 
-    <section class="module-band module-band--paper">
+    <section class="module-band module-band--cream">
       <div class="m-inner module-grid module-grid--reverse">
         <div class="module-copy">
           <h2 class="m-heading">{{ t('mod_02_title') }}</h2>
@@ -180,7 +180,7 @@ const extras = computed(() => [
       </div>
     </section>
 
-    <section class="module-band module-band--surface">
+    <section class="module-band module-band--maroon">
       <div class="m-inner module-grid">
         <div class="module-copy">
           <h2 class="m-heading">{{ t('mod_03_title') }}</h2>
@@ -229,7 +229,7 @@ const extras = computed(() => [
       </div>
     </section>
 
-    <section class="module-band module-band--paper">
+    <section class="module-band module-band--strawberry">
       <div class="m-inner module-grid module-grid--reverse">
         <div class="module-copy">
           <h2 class="m-heading">{{ t('mod_04_title') }}</h2>
@@ -283,7 +283,7 @@ const extras = computed(() => [
           <p class="m-cta-sub-light" style="margin-bottom: 0;">{{ t('feat_cta_sub') }}</p>
         </div>
         <div class="m-cta-btns">
-          <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary">
+          <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary ribbon">
             {{ isLoggedIn ? t('nav_dashboard') : t('feat_cta_btn1') }}
           </NuxtLink>
           <NuxtLink to="/pricing" class="m-btn-ghost on-dark">
@@ -298,8 +298,7 @@ const extras = computed(() => [
 <style scoped>
 /* Hero */
 .feat-hero {
-  background: var(--k-bg, #F4F3EF);
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  background: transparent;
   padding: clamp(3rem, 7vw, 5rem) 0;
 }
 
@@ -320,20 +319,60 @@ const extras = computed(() => [
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  padding-bottom: 10px;
 }
 
 /* Module bands */
 .module-band {
   padding: clamp(3rem, 6vw, 4.75rem) 0;
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
 }
 
 .module-band--surface {
   background: var(--k-surface, #FFFFFF);
 }
 
-.module-band--paper {
-  background: var(--k-bg, #F4F3EF);
+.module-band--cream {
+  background: var(--k-cream, #F6E6D7);
+}
+
+.module-band--maroon {
+  background: var(--k-dark, #68293A);
+  color: var(--k-on-dark, #F6E6D7);
+}
+
+.module-band--strawberry {
+  background: var(--k-strawberry-soft, #FFEBEF);
+}
+
+.module-band--maroon .m-heading {
+  color: var(--k-on-dark, #F6E6D7);
+}
+
+.module-band--maroon .m-sub {
+  color: var(--k-on-dark-muted, rgba(246, 230, 215, 0.72));
+}
+
+.module-band--maroon .module-list {
+  border-top-color: rgba(246, 230, 215, 0.2);
+}
+
+.module-band--maroon .module-list li {
+  color: var(--k-on-dark, #F6E6D7);
+  border-bottom-color: rgba(246, 230, 215, 0.2);
+}
+
+.module-band--maroon .module-list li::before {
+  color: var(--k-accent, #FF5776);
+}
+
+.module-band--cream .module-list,
+.module-band--cream .module-list li {
+  border-color: var(--k-blush, #E3C7B9);
+}
+
+.module-band--strawberry .module-list,
+.module-band--strawberry .module-list li {
+  border-color: rgba(255, 87, 118, 0.22);
 }
 
 .module-grid {
@@ -359,22 +398,33 @@ const extras = computed(() => [
   list-style: none;
   padding: 0;
   margin: 0;
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
 }
 
 .module-list li {
+  display: flex;
+  gap: 0.65rem;
+  align-items: baseline;
   padding: 0.72rem 0;
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   font-size: 0.925rem;
   line-height: 1.5;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
+}
+
+.module-list li::before {
+  content: '—';
+  color: var(--k-accent, #FF5776);
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* Product Specimens */
 .specimen-box {
-  border: 1px solid var(--k-border, #DCDAD3);
-  background: var(--k-bg, #F4F3EF);
-  border-radius: 3px;
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  background: var(--k-surface, #FFFFFF);
+  border-radius: var(--k-radius, 0.75rem);
+  box-shadow: var(--k-shadow, 0 6px 24px rgba(104, 41, 58, 0.08));
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -382,8 +432,9 @@ const extras = computed(() => [
   min-width: 0;
 }
 
-.module-band--paper .specimen-box {
-  background: var(--k-surface, #FFFFFF);
+.module-band--maroon .specimen-box {
+  border-color: transparent;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
 }
 
 .specimen-head {
@@ -397,12 +448,12 @@ const extras = computed(() => [
 .specimen-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .specimen-meta {
   font-size: 0.78rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 .industry-switch-grid,
@@ -417,31 +468,31 @@ const extras = computed(() => [
   font-size: 0.82rem;
   font-weight: 500;
   text-align: left;
-  background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #141414);
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
+  background: var(--k-surface-alt, #FBF4ED);
+  color: var(--k-ink, #68293A);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
   cursor: pointer;
   transition: border-color 0.12s ease, background-color 0.12s ease;
 }
 
 .spec-btn:hover {
-  border-color: var(--k-ink, #141414);
+  border-color: var(--k-ink, #68293A);
 }
 
 .spec-btn.active {
-  background: var(--k-ink, #141414);
-  color: var(--k-surface, #FFFFFF);
-  border-color: var(--k-ink, #141414);
+  background: var(--k-dark, #68293A);
+  color: var(--k-on-dark, #F6E6D7);
+  border-color: var(--k-dark, #68293A);
 }
 
 .spec-btn:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 2px;
 }
 
 .specimen-rows {
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
 }
 
 .specimen-row {
@@ -450,15 +501,15 @@ const extras = computed(() => [
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.65rem 0;
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   font-size: 0.86rem;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   flex-wrap: wrap;
 }
 
 .specimen-code {
   font-size: 0.78rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 .specimen-station {
@@ -469,23 +520,23 @@ const extras = computed(() => [
 .specimen-tag,
 .specimen-ver {
   font-size: 0.76rem;
-  color: var(--k-accent, #E84A27);
+  color: var(--k-accent, #FF5776);
   font-weight: 600;
 }
 
 .specimen-action {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--k-accent, #E84A27);
+  color: var(--k-accent, #FF5776);
 }
 
 /* Interactive style preview */
 .style-preview {
   padding: 1rem;
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
   background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -498,9 +549,9 @@ const extras = computed(() => [
 }
 
 .style-preview--contrast {
-  background: var(--k-dark, #141414);
-  color: var(--k-on-dark, #F4F3EF);
-  border-color: var(--k-dark, #141414);
+  background: var(--k-dark, #68293A);
+  color: var(--k-on-dark, #F6E6D7);
+  border-color: var(--k-dark, #68293A);
 }
 
 .style-preview--editorial {
@@ -518,24 +569,24 @@ const extras = computed(() => [
 .style-preview-desc {
   margin: 0;
   font-size: 0.82rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   line-height: 1.45;
 }
 
 .style-preview--contrast .style-preview-desc {
-  color: var(--k-on-dark-muted, #A8A69E);
+  color: var(--k-on-dark-muted, rgba(246, 230, 215, 0.72));
 }
 
 .style-preview-line {
   display: flex;
   justify-content: space-between;
   padding-top: 0.45rem;
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   font-size: 0.84rem;
 }
 
 .style-preview--contrast .style-preview-line {
-  border-top-color: #2E2E2B;
+  border-top-color: #4A1A27;
 }
 
 /* Operational Guarantees */
@@ -552,25 +603,27 @@ const extras = computed(() => [
 .extras-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--k-ink, #141414);
+  border-top: 2px solid var(--k-ink, #68293A);
 }
 
 .extra-item {
   padding: 1.5rem 1.5rem 1.5rem 0;
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  border-bottom: 1px solid var(--k-blush, #E3C7B9);
 }
 
 .extra-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--k-ink, #141414);
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--k-ink, #68293A);
   margin: 0 0 0.45rem;
 }
 
 .extra-body {
   font-size: 0.9rem;
   line-height: 1.6;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
 }
 

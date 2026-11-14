@@ -4,8 +4,8 @@
   "description": "Managed Terminal Builder SaaS for everyday businesses.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F4F3EF",
-  "theme_color": "#F4F3EF",
+  "background_color": "#F6E6D7",
+  "theme_color": "#68293A",
   "icons": [
     {
       "src": "/favicon.svg",

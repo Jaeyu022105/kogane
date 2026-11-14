@@ -36,18 +36,8 @@ function handleNavigate(path: string) {
     <header class="error-header">
       <div class="error-nav-inner">
         <a href="/" class="error-brand" @click.prevent="handleNavigate('/')">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect x="1" y="1" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.75" />
-            <rect x="4.5" y="4.5" width="5" height="5" fill="#E84A27" />
-            <path d="M11.5 6H15.5M4.5 12.5H15.5M4.5 15.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
-          </svg>
-          <span>Kogane</span>
+          <span class="error-wordmark">Kogane</span>
+          <span class="error-dot" aria-hidden="true" />
         </a>
 
         <nav class="error-nav-links" aria-label="Main navigation">
@@ -79,7 +69,7 @@ function handleNavigate(path: string) {
           </p>
 
           <div class="error-actions">
-            <button type="button" class="m-btn-primary" @click="handleNavigate('/')">
+            <button type="button" class="m-btn-primary ribbon" @click="handleNavigate('/')">
               {{ t('error_back_home') }}
             </button>
             <a href="/features" class="m-btn-secondary" @click.prevent="handleNavigate('/features')">
@@ -98,16 +88,16 @@ function handleNavigate(path: string) {
 <style scoped>
 .error-shell {
   min-height: 100vh;
-  background: var(--k-bg, #F4F3EF);
-  color: var(--k-ink, #141414);
+  background: linear-gradient(180deg, var(--k-cream, #F6E6D7) 0%, var(--k-surface, #FFFFFF) 32%);
+  color: var(--k-ink, #68293A);
   font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
   display: flex;
   flex-direction: column;
 }
 
 .error-header {
-  background: var(--k-surface, #FFFFFF);
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  background: rgba(255, 253, 251, 0.85);
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
 }
 
 .error-nav-inner {
@@ -124,12 +114,25 @@ function handleNavigate(path: string) {
 .error-brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--k-ink, #141414);
+  gap: 6px;
+  color: var(--k-ink, #68293A);
   text-decoration: none;
+}
+
+.error-wordmark {
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.4rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.error-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--k-accent, #FF5776);
+  margin-bottom: 9px;
 }
 
 .error-nav-links {
@@ -141,13 +144,13 @@ function handleNavigate(path: string) {
 .error-nav-link {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .error-nav-link:hover {
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .error-main {
@@ -163,7 +166,9 @@ function handleNavigate(path: string) {
 .error-card {
   width: 100%;
   background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, #DCDAD3);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: var(--k-radius-lg, 0.9rem);
+  box-shadow: var(--k-shadow-lg, 0 8px 32px rgba(104, 41, 58, 0.1));
   padding: 3rem;
   display: grid;
   grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
@@ -175,16 +180,16 @@ function handleNavigate(path: string) {
   display: inline-block;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--k-accent, #E84A27);
+  color: var(--k-accent, #FF5776);
 }
 
 .error-title {
   margin: 0 0 0.875rem;
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  font-weight: 700;
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: clamp(1.9rem, 3.8vw, 2.75rem);
+  font-weight: 400;
   line-height: 1.1;
-  letter-spacing: -0.025em;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .error-body {
@@ -192,13 +197,14 @@ function handleNavigate(path: string) {
   max-width: 56ch;
   font-size: 1rem;
   line-height: 1.65;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 .error-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  padding-bottom: 10px;
 }
 
 @media (max-width: 768px) {

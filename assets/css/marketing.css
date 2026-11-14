@@ -1,20 +1,32 @@
-/* Kogane Marketing Design System (ONBOX / AiiD editorial tokens)
+/* Kogane Marketing Design System — Neapolitan palette
+ * Chocolate maroon #68293A · strawberry pink #FF5776 · vanilla cream #F6E6D7 · blush #E3C7B9
  * Shared by marketing, pricing, auth, legal, and error pages.
  */
 
 :root {
-  --k-bg: #F4F3EF;
+  --k-bg: #FFFDFB;
+  --k-cream: #F6E6D7;
+  --k-blush: #E3C7B9;
+  --k-strawberry-soft: #FFEBEF;
   --k-surface: #FFFFFF;
-  --k-surface-alt: #ECEAE4;
-  --k-ink: #141414;
-  --k-muted: #52524E;
-  --k-border: #DCDAD3;
-  --k-dark: #141414;
-  --k-on-dark: #F4F3EF;
-  --k-on-dark-muted: #A8A69E;
-  --k-accent: #E84A27;
-  --k-accent-hover: #CC3B1B;
+  --k-surface-alt: #FBF4ED;
+  --k-ink: #68293A;
+  --k-muted: rgba(104, 41, 58, 0.72);
+  --k-border: rgba(104, 41, 58, 0.14);
+  --k-border-strong: rgba(104, 41, 58, 0.28);
+  --k-dark: #68293A;
+  --k-dark-deep: #4A1A27;
+  --k-on-dark: #F6E6D7;
+  --k-on-dark-muted: rgba(246, 230, 215, 0.72);
+  --k-accent: #FF5776;
+  --k-accent-hover: #E84362;
   --k-on-accent: #FFFFFF;
+  --k-radius-sm: 0.55rem;
+  --k-radius: 0.75rem;
+  --k-radius-lg: 0.9rem;
+  --k-shadow: 0 6px 24px rgba(104, 41, 58, 0.08);
+  --k-shadow-lg: 0 12px 36px rgba(104, 41, 58, 0.1);
+  --k-font-serif: 'DM Serif Display', Georgia, serif;
   --k-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --k-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -26,33 +38,35 @@
   padding: 0 clamp(1.25rem, 4vw, 2.5rem);
 }
 
+.m-heading,
+.m-heading-lg,
+.m-heading-md,
+.m-cta-heading,
+.m-cta-heading-light {
+  font-family: var(--k-font-serif);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
 .m-heading {
-  font-family: var(--k-font-sans);
-  font-size: clamp(1.65rem, 3vw, 2.35rem);
-  font-weight: 600;
+  font-size: clamp(1.85rem, 3.4vw, 2.6rem);
   color: var(--k-ink);
-  line-height: 1.12;
-  letter-spacing: -0.015em;
+  line-height: 1.14;
   margin: 0 0 1rem;
 }
 
 .m-heading-lg {
-  font-family: var(--k-font-sans);
-  font-size: clamp(2.1rem, 4.4vw, 3.35rem);
-  font-weight: 600;
+  font-size: clamp(2.3rem, 4.8vw, 3.5rem);
   color: var(--k-ink);
-  line-height: 1.06;
-  letter-spacing: -0.02em;
+  line-height: 1.08;
   margin: 0 0 1.25rem;
 }
 
 .m-heading-md {
-  font-family: var(--k-font-sans);
-  font-size: clamp(1.4rem, 2.4vw, 1.85rem);
-  font-weight: 600;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
   color: var(--k-ink);
   line-height: 1.16;
-  letter-spacing: -0.015em;
   margin: 0 0 0.75rem;
 }
 
@@ -60,7 +74,7 @@
   font-family: var(--k-font-sans);
   font-size: 1rem;
   color: var(--k-muted);
-  line-height: 1.65;
+  line-height: 1.7;
   max-width: 58ch;
   margin: 0;
 }
@@ -88,15 +102,21 @@
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  padding: 0.72rem 1.35rem;
+  padding: 0.72rem 1.5rem;
   font-family: var(--k-font-sans);
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.2;
   text-decoration: none;
-  border-radius: 3px;
+  border-radius: var(--k-radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+}
+
+.m-btn-primary:active,
+.m-btn-dark:active,
+.m-btn-light:active {
+  transform: scale(0.97);
 }
 
 .m-btn-primary:focus-visible,
@@ -105,55 +125,65 @@
 .m-btn-light:focus-visible,
 .m-btn-ghost:focus-visible {
   outline: 2px solid var(--k-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
+/* Primary: chocolate maroon with vanilla ink */
 .m-btn-primary {
+  --ribbon-color: var(--k-dark);
+  background: var(--k-dark);
+  color: var(--k-on-dark);
+  border: 1px solid var(--k-dark);
+  box-shadow: 0 3px 14px rgba(104, 41, 58, 0.22);
+}
+.m-btn-primary:hover {
+  background: var(--k-dark-deep);
+  border-color: var(--k-dark-deep);
+  --ribbon-color: var(--k-dark-deep);
+}
+
+/* Strawberry variant for maroon backgrounds */
+.m-btn-dark {
+  --ribbon-color: var(--k-accent);
   background: var(--k-accent);
   color: var(--k-on-accent);
   border: 1px solid var(--k-accent);
-}
-.m-btn-primary:hover {
-  background: var(--k-accent-hover);
-  border-color: var(--k-accent-hover);
-}
-
-.m-btn-dark {
-  background: var(--k-ink);
-  color: var(--k-surface);
-  border: 1px solid var(--k-ink);
+  box-shadow: 0 3px 14px rgba(255, 87, 118, 0.28);
 }
 .m-btn-dark:hover {
-  background: #2B2B29;
-  border-color: #2B2B29;
+  background: var(--k-accent-hover);
+  border-color: var(--k-accent-hover);
+  --ribbon-color: var(--k-accent-hover);
 }
 
 .m-btn-secondary {
   background: var(--k-surface);
   color: var(--k-ink);
-  border: 1px solid var(--k-border);
+  border: 1.5px solid var(--k-border-strong);
 }
 .m-btn-secondary:hover {
   border-color: var(--k-ink);
-  background: var(--k-bg);
+  background: var(--k-surface-alt);
 }
 
 .m-btn-light {
-  background: var(--k-surface);
+  --ribbon-color: var(--k-cream);
+  background: var(--k-cream);
   color: var(--k-ink);
-  border: 1px solid var(--k-surface);
+  border: 1px solid var(--k-cream);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.12);
 }
 .m-btn-light:hover {
-  background: var(--k-bg);
-  border-color: var(--k-bg);
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  --ribbon-color: #FFFFFF;
 }
 
 .m-btn-ghost {
-  padding: 0.72rem 0.35rem;
+  padding: 0.72rem 0.5rem;
   background: transparent;
   color: var(--k-ink);
   border: 1px solid transparent;
-  font-weight: 500;
 }
 .m-btn-ghost:hover {
   color: var(--k-accent);
@@ -163,7 +193,31 @@
   color: var(--k-on-dark);
 }
 .m-btn-ghost.on-dark:hover {
-  color: var(--k-accent);
+  color: #FFFFFF;
+  opacity: 0.85;
+}
+
+/* Signature bookmark ribbon tail for primary CTAs */
+.m-btn-primary.ribbon,
+.m-btn-dark.ribbon,
+.m-btn-light.ribbon {
+  position: relative;
+  overflow: visible;
+}
+.m-btn-primary.ribbon::after,
+.m-btn-dark.ribbon::after,
+.m-btn-light.ribbon::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 14px;
+  width: 24px;
+  height: 11px;
+  background: var(--ribbon-color, #68293A);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 52%, 0 100%);
+  pointer-events: none;
+  z-index: 1;
+  transition: background-color 0.15s ease;
 }
 
 /* Shared CTA strips */
@@ -181,6 +235,29 @@
   color: var(--k-on-dark);
 }
 
+/* On maroon strips, primary buttons switch to strawberry so they stay visible */
+.m-cta-strip-dark .m-btn-primary {
+  --ribbon-color: var(--k-accent);
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: var(--k-on-accent);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.18);
+}
+.m-cta-strip-dark .m-btn-primary:hover {
+  --ribbon-color: var(--k-accent-hover);
+  background: var(--k-accent-hover);
+  border-color: var(--k-accent-hover);
+}
+.m-cta-strip-dark .m-btn-secondary {
+  background: transparent;
+  color: var(--k-on-dark);
+  border-color: rgba(246, 230, 215, 0.4);
+}
+.m-cta-strip-dark .m-btn-secondary:hover {
+  background: rgba(246, 230, 215, 0.08);
+  border-color: var(--k-on-dark);
+}
+
 .m-cta-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -188,22 +265,16 @@
 }
 
 .m-cta-heading {
-  font-family: var(--k-font-sans);
-  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
-  font-weight: 600;
+  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
   color: var(--k-ink);
   line-height: 1.12;
-  letter-spacing: -0.015em;
   margin: 0 0 0.85rem;
 }
 
 .m-cta-heading-light {
-  font-family: var(--k-font-sans);
-  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
-  font-weight: 600;
+  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
   color: var(--k-on-dark);
   line-height: 1.12;
-  letter-spacing: -0.015em;
   margin: 0 0 0.85rem;
 }
 
@@ -228,6 +299,7 @@
 .m-cta-btns {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.75rem 1rem;
   flex-wrap: wrap;
+  padding-bottom: 10px;
 }

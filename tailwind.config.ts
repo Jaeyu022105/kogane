@@ -33,12 +33,13 @@ export default {
           deep:    '#4d1e2b',
         },
         marketing: {
-          bg:      '#F4F3EF',
+          bg:      '#FFFDFB',
+          cream:   '#F6E6D7',
+          blush:   '#E3C7B9',
           surface: '#FFFFFF',
-          ink:     '#141414',
-          muted:   '#52524E',
-          border:  '#DCDAD3',
-          accent:  '#E84A27',
+          ink:     '#68293A',
+          border:  '#E3C7B9',
+          accent:  '#FF5776',
         },
       },
       fontFamily: {
