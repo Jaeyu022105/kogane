@@ -437,6 +437,10 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 
 <template>
   <main class="login-shell">
+    <!-- background blobs -->
+    <div class="login-blob login-blob--top" aria-hidden="true" />
+    <div class="login-blob login-blob--bottom" aria-hidden="true" />
+
     <div class="login-wrap" :class="{ 'login-wrap--wide': mode === 'signup' && signupStep > 0 }">
       <!-- Brand link -->
       <NuxtLink
@@ -445,10 +449,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
         :class="{ 'login-brand--centered': mode === 'signup' && signupStep > 0 }"
       >
         <div class="brand-mark" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="1" y="1" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.75" />
-            <rect x="4.5" y="4.5" width="5" height="5" fill="#FF5776" />
-            <path d="M11.5 6H15.5M4.5 12.5H15.5M4.5 15.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            <path d="M8 12h8 M8 8h5 M8 16h6" />
           </svg>
         </div>
         <div>
@@ -722,7 +725,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 <button type="button" class="login-return" @click="prevStep">
                   {{ t('btn_back') }}
                 </button>
-                <button type="submit" :disabled="loading || uploadingPhoto" class="login-submit">
+                <button type="submit" :disabled="loading || uploadingPhoto" class="login-submit btn-ribbon">
                   {{ uploadingPhoto ? 'Uploading photo...' : (signupStep < 3 ? t('btn_continue') : t('btn_finish')) }}
                 </button>
               </div>
@@ -772,7 +775,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 id="login-submit"
                 type="submit"
                 :disabled="loading"
-                class="login-submit"
+                class="login-submit btn-ribbon"
               >
                 {{ loading ? t('btn_signing_in') : t('btn_signin') }}
               </button>
@@ -809,7 +812,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 id="login-submit"
                 type="submit"
                 :disabled="loading"
-                class="login-submit"
+                class="login-submit btn-ribbon"
               >
                 {{ loading ? 'Verifying...' : 'Verify & Sign In' }}
               </button>
@@ -851,7 +854,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                   id="login-submit"
                   type="submit"
                   :disabled="loading"
-                  class="login-submit"
+                  class="login-submit btn-ribbon"
                 >
                   {{ loading ? 'Activating 2FA...' : t('btn_complete_setup') }}
                 </button>
@@ -877,7 +880,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                 <button
                   id="login-submit"
                   type="submit"
-                  class="login-submit"
+                  class="login-submit btn-ribbon"
                 >
                   Continue to Workspace
                 </button>
@@ -945,24 +948,56 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 <style scoped>
 /* Shell */
 .login-shell {
+  position: relative;
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: clamp(1.5rem, 4vw, 2.5rem) 1rem;
-  background: linear-gradient(160deg, var(--k-cream, #F6E6D7) 0%, var(--k-surface, #FFFFFF) 38%);
+  overflow: hidden;
+  background: var(--k-cream, #F6E6D7);
   color: var(--k-ink, #68293A);
   font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
+/* Warm ambient blobs */
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+}
+.login-blob--top {
+  width: 500px;
+  height: 500px;
+  top: -180px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(255, 87, 118, 0.14), transparent 70%);
+}
+.login-blob--bottom {
+  width: 400px;
+  height: 400px;
+  bottom: -140px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(104, 41, 58, 0.10), transparent 70%);
+}
+
 /* Content wrap */
 .login-wrap {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 26rem;
+  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .login-wrap--wide {
   max-width: 34rem;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Brand mark */
@@ -996,6 +1031,11 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   color: var(--k-on-dark, #F6E6D7);
   box-shadow: 0 4px 14px rgba(104, 41, 58, 0.24);
   flex-shrink: 0;
+}
+
+.brand-mark svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .brand-name {
@@ -1215,17 +1255,19 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .profile-upload {
   width: 4.5rem;
   height: 4.5rem;
-  border-radius: 0.55rem;
-  border: 1px dashed var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 50%;
+  border: 2px dashed rgba(104, 41, 58, 0.25);
   background: var(--k-surface-alt, #FBF4ED);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .profile-upload:hover {
-  border-color: var(--k-ink, #68293A);
+  border-color: var(--k-accent, #FF5776);
+  background: rgba(255, 87, 118, 0.05);
 }
 
 .profile-upload-text {
@@ -1241,6 +1283,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .login-submit {
+  position: relative;
   padding: 0.72rem 1.35rem;
   background: var(--k-dark, #68293A);
   color: var(--k-on-dark, #F6E6D7);
@@ -1438,7 +1481,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   inset: 0;
   background-color: var(--k-border, rgba(104, 41, 58, 0.14));
   transition: 0.2s ease;
-  border-radius: 0.55rem;
+  border-radius: 1rem;
 }
 
 .toggle-slider::before {
@@ -1450,7 +1493,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   bottom: 0.18rem;
   background-color: var(--k-surface, #FFFFFF);
   transition: 0.2s ease;
-  border-radius: 0.4rem;
+  border-radius: 50%;
 }
 
 .toggle-switch input:checked + .toggle-slider {

@@ -15,7 +15,63 @@ usePageSeo({
   }),
 });
 
-/* Interactive Guided Setup specimen */
+/* SVG path data for module icons — from main */
+const icons = {
+  onboarding: 'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7 M9 12h6 M9 16h4',
+  schema:     'M4 7h16 M4 12h16 M4 17h10 M16 17l2 2 4-4',
+  builder:    'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z',
+  terminal:   'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z M8 10l2 2-2 2 M12 14h4',
+};
+
+const extraIcons = {
+  lock:      'M12 2C9.24 2 7 4.24 7 7v3H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3z',
+  palette:   'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z M8 14s.67 1 2 1 2-1 2-1 M15 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M9 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+  mobile:    'M17 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z M12 18h.01',
+  zap:       'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
+  database:  'M20 8c0 2.21-3.58 4-8 4S4 10.21 4 8s3.58-4 8-4 8 1.79 8 4z M4 8v8c0 2.21 3.58 4 8 4s8-1.79 8-4V8',
+  link:      'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+};
+
+const modules = computed(() => [
+  {
+    id:     'mod-01',
+    tag:    t('mod_01_tag'),
+    title:  t('mod_01_title'),
+    body:   t('mod_01_body'),
+    points: [t('mod_01_p1'), t('mod_01_p2'), t('mod_01_p3'), t('mod_01_p4')],
+    iconKey: 'onboarding' as keyof typeof icons,
+    color:  'cream',
+  },
+  {
+    id:     'mod-02',
+    tag:    t('mod_02_tag'),
+    title:  t('mod_02_title'),
+    body:   t('mod_02_body'),
+    points: [t('mod_02_p1'), t('mod_02_p2'), t('mod_02_p3'), t('mod_02_p4')],
+    iconKey: 'schema' as keyof typeof icons,
+    color:  'maroon',
+  },
+  {
+    id:     'mod-03',
+    tag:    t('mod_03_tag'),
+    title:  t('mod_03_title'),
+    body:   t('mod_03_body'),
+    points: [t('mod_03_p1'), t('mod_03_p2'), t('mod_03_p3'), t('mod_03_p4')],
+    iconKey: 'builder' as keyof typeof icons,
+    color:  'pink',
+  },
+  {
+    id:     'mod-04',
+    tag:    t('mod_04_tag'),
+    title:  t('mod_04_title'),
+    body:   t('mod_04_body'),
+    points: [t('mod_04_p1'), t('mod_04_p2'), t('mod_04_p3'), t('mod_04_p4')],
+    iconKey: 'terminal' as keyof typeof icons,
+    color:  'cream',
+  },
+]);
+
+/* Interactive Guided Setup specimen (Module 01) */
 type SampleIndustry = 'restaurant' | 'logistics' | 'retail' | 'clinic';
 const selectedIndustry = ref<SampleIndustry>('restaurant');
 
@@ -50,7 +106,15 @@ const activeIndustrySpec = computed(() =>
   setupIndustryOptions.value.find((opt) => opt.id === selectedIndustry.value) ?? setupIndustryOptions.value[0],
 );
 
-/* Interactive Style Preset specimen */
+/* Interactive Preset Schema specimen (Module 02) */
+const schemaMappings = [
+  { table: 'orders', station: 'TRM-POS-01 · Counter POS', version: 'v2.4' },
+  { table: 'deliveries', station: 'TRM-DSP-02 · Dispatch Console', version: 'v2.4' },
+  { table: 'inventory', station: 'TRM-INV-03 · Stock Receiving', version: 'v2.4' },
+  { table: 'appointments', station: 'TRM-APT-04 · Intake Desk', version: 'v2.4' },
+];
+
+/* Interactive Style Preset specimen (Module 03) */
 type StyleId = 'warm' | 'compact' | 'contrast' | 'editorial';
 const activeStyle = ref<StyleId>('warm');
 
@@ -65,13 +129,7 @@ const activeStyleSpec = computed(() =>
   styleOptions.value.find((s) => s.id === activeStyle.value) ?? styleOptions.value[0],
 );
 
-const schemaMappings = [
-  { table: 'orders', station: 'TRM-POS-01 · Counter POS', version: 'v2.4' },
-  { table: 'deliveries', station: 'TRM-DSP-02 · Dispatch Console', version: 'v2.4' },
-  { table: 'inventory', station: 'TRM-INV-03 · Stock Receiving', version: 'v2.4' },
-  { table: 'appointments', station: 'TRM-APT-04 · Intake Desk', version: 'v2.4' },
-];
-
+/* Audit Trail specimen (Module 04) */
 const auditSamples = [
   { time: '14:22', actor: 'Platform', action: 'preset:sync', target: 'v2.4 across 4 terminals' },
   { time: '14:18', actor: 'Cashier 01', action: 'order:insert', target: 'ORD-108 · $19.50' },
@@ -79,195 +137,185 @@ const auditSamples = [
 ];
 
 const extras = computed(() => [
-  { title: t('extra_role_title'), body: t('extra_role_body') },
-  { title: t('extra_theme_title'), body: t('extra_theme_body') },
-  { title: t('extra_mobile_title'), body: t('extra_mobile_body') },
-  { title: t('extra_zap_title'), body: t('extra_zap_body') },
-  { title: t('extra_data_title'), body: t('extra_data_body') },
-  { title: t('extra_link_title'), body: t('extra_link_body') },
+  { iconKey: 'lock',     title: t('extra_role_title'),   body: t('extra_role_body') },
+  { iconKey: 'palette',  title: t('extra_theme_title'),  body: t('extra_theme_body') },
+  { iconKey: 'mobile',   title: t('extra_mobile_title'), body: t('extra_mobile_body') },
+  { iconKey: 'zap',      title: t('extra_zap_title'),    body: t('extra_zap_body') },
+  { iconKey: 'database', title: t('extra_data_title'),   body: t('extra_data_body') },
+  { iconKey: 'link',     title: t('extra_link_title'),   body: t('extra_link_body') },
 ]);
 </script>
 
 <template>
   <div>
-    <!-- Hero -->
+    <!-- ── Hero ─────────────────────────────────────────────── -->
     <section class="feat-hero">
-      <div class="m-inner feat-hero-grid">
-        <div class="feat-hero-intro">
-          <p class="m-sub">{{ t('feat_hero_sub') }}</p>
-          <div class="feat-hero-actions">
-            <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary ribbon">
-              {{ isLoggedIn ? t('nav_dashboard') : t('feat_cta_btn1') }}
-            </NuxtLink>
-            <NuxtLink to="/pricing" class="m-btn-secondary">
-              {{ t('feat_cta_btn2') }}
-            </NuxtLink>
-          </div>
-        </div>
-        <div>
-          <h1 class="m-heading-lg">{{ t('feat_hero_heading') }}</h1>
-        </div>
-      </div>
-    </section>
-
-    <!-- Architecture Modules -->
-    <section class="module-band module-band--surface">
-      <div class="m-inner module-grid">
-        <div class="module-copy">
-          <h2 class="m-heading">{{ t('mod_01_title') }}</h2>
-          <p class="m-sub module-body">{{ t('mod_01_body') }}</p>
-          <ul class="module-list">
-            <li>{{ t('mod_01_p1') }}</li>
-            <li>{{ t('mod_01_p2') }}</li>
-            <li>{{ t('mod_01_p3') }}</li>
-            <li>{{ t('mod_01_p4') }}</li>
-          </ul>
-        </div>
-
-        <div class="specimen-box">
-          <div class="specimen-head">
-            <span class="specimen-title">{{ t('onboarding_industry') }}</span>
-            <span class="specimen-meta m-mono">{{ activeIndustrySpec.currency }} · #FF5776</span>
-          </div>
-          <div class="industry-switch-grid">
-            <button
-              v-for="opt in setupIndustryOptions"
-              :key="opt.id"
-              type="button"
-              class="spec-btn"
-              :class="{ active: selectedIndustry === opt.id }"
-              @click="selectedIndustry = opt.id"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
-          <div class="specimen-rows">
-            <div v-for="station in activeIndustrySpec.stations" :key="station" class="specimen-row">
-              <span>{{ station }}</span>
-              <span class="m-mono specimen-tag">Ready</span>
-            </div>
-          </div>
+      <div class="m-inner feat-hero-inner">
+        <p class="m-overline">{{ t('feat_hero_overline') }}</p>
+        <h1 class="m-heading-lg">{{ t('feat_hero_heading') }}</h1>
+        <p class="feat-sub m-sub" style="margin: 0 auto;">
+          {{ t('feat_hero_sub') }}
+        </p>
+        <div class="feat-hero-actions">
+          <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary ribbon">
+            {{ isLoggedIn ? t('nav_dashboard') : t('feat_cta_btn1') }}
+          </NuxtLink>
+          <NuxtLink to="/pricing" class="m-btn-secondary">
+            {{ t('feat_cta_btn2') }}
+          </NuxtLink>
         </div>
       </div>
     </section>
 
-    <section class="module-band module-band--cream">
-      <div class="m-inner module-grid module-grid--reverse">
-        <div class="module-copy">
-          <h2 class="m-heading">{{ t('mod_02_title') }}</h2>
-          <p class="m-sub module-body">{{ t('mod_02_body') }}</p>
-          <ul class="module-list">
-            <li>{{ t('mod_02_p1') }}</li>
-            <li>{{ t('mod_02_p2') }}</li>
-            <li>{{ t('mod_02_p3') }}</li>
-            <li>{{ t('mod_02_p4') }}</li>
-          </ul>
-        </div>
+    <!-- ── Module sections (cream, maroon, pink, cream) ─────── -->
+    <div class="modules-wrapper">
+      <section
+        v-for="(mod, i) in modules"
+        :key="mod.id"
+        class="module-section"
+        :class="`module--${mod.color}`"
+      >
+        <div class="module-inner" :class="{ 'module-inner--reverse': i % 2 !== 0 }">
+          <div class="module-text">
+            <p class="module-tag">{{ mod.tag }}</p>
 
-        <div class="specimen-box">
-          <div class="specimen-head">
-            <span class="specimen-title">Preset table bindings</span>
-            <span class="specimen-meta m-mono">Auto-synced</span>
+            <!-- icon chip -->
+            <div class="module-icon-wrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path :d="icons[mod.iconKey]" />
+              </svg>
+            </div>
+
+            <h2 class="module-title">{{ mod.title }}</h2>
+            <p class="module-body">{{ mod.body }}</p>
+
+            <ul class="module-points">
+              <li v-for="pt in mod.points" :key="pt">
+                <!-- check icon -->
+                <span class="module-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+                {{ pt }}
+              </li>
+            </ul>
           </div>
-          <div class="specimen-rows">
-            <div v-for="map in schemaMappings" :key="map.table" class="specimen-row">
-              <span class="m-mono specimen-code">{{ map.table }}</span>
-              <span class="specimen-station">{{ map.station }}</span>
-              <span class="m-mono specimen-ver">{{ map.version }}</span>
+
+          <div class="module-visual">
+            <div class="visual-blob" aria-hidden="true" />
+            <div class="visual-card">
+              <div class="visual-card-top">
+                <p class="visual-label">{{ mod.title }}</p>
+                <span class="visual-badge m-mono">{{ mod.tag }}</span>
+              </div>
+
+              <!-- Interactive UI Preview 1: Guided Setup -->
+              <div v-if="i === 0" class="specimen-content">
+                <div class="industry-switch-grid">
+                  <button
+                    v-for="opt in setupIndustryOptions"
+                    :key="opt.id"
+                    type="button"
+                    class="spec-btn"
+                    :class="{ active: selectedIndustry === opt.id }"
+                    @click="selectedIndustry = opt.id"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+                <div class="specimen-rows">
+                  <div v-for="station in activeIndustrySpec.stations" :key="station" class="specimen-row">
+                    <span>{{ station }}</span>
+                    <span class="m-mono specimen-tag">Ready</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Interactive UI Preview 2: Industry Presets & Schema Bindings -->
+              <div v-else-if="i === 1" class="specimen-content">
+                <div class="specimen-rows">
+                  <div v-for="map in schemaMappings" :key="map.table" class="specimen-row">
+                    <span class="m-mono specimen-code">{{ map.table }}</span>
+                    <span class="specimen-station">{{ map.station }}</span>
+                    <span class="m-mono specimen-ver">{{ map.version }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Interactive UI Preview 3: Terminal Builder & Style Presets -->
+              <div v-else-if="i === 2" class="specimen-content">
+                <div class="style-switch-row">
+                  <button
+                    v-for="style in styleOptions"
+                    :key="style.id"
+                    type="button"
+                    class="spec-btn"
+                    :class="{ active: activeStyle === style.id }"
+                    @click="activeStyle = style.id"
+                  >
+                    {{ style.label }}
+                  </button>
+                </div>
+                <div class="style-preview" :class="`style-preview--${activeStyle}`">
+                  <div class="style-preview-head">
+                    <strong>Front Counter · TRM-POS-01</strong>
+                    <span class="m-mono m-tabular">$24.50</span>
+                  </div>
+                  <p class="style-preview-desc">{{ activeStyleSpec.desc }}</p>
+                  <div class="style-preview-line">
+                    <span>2 × House Latte</span>
+                    <span class="m-tabular">$11.00</span>
+                  </div>
+                  <div class="style-preview-line">
+                    <span>1 × Almond Tart</span>
+                    <span class="m-tabular">$5.50</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Interactive UI Preview 4: Managed Rollout & Audit Trail -->
+              <div v-else class="specimen-content">
+                <div class="specimen-rows">
+                  <div v-for="entry in auditSamples" :key="entry.time + entry.action" class="specimen-row">
+                    <span class="m-mono m-tabular specimen-code">{{ entry.time }}</span>
+                    <span class="m-mono specimen-action">{{ entry.action }}</span>
+                    <span class="specimen-station">{{ entry.target }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Signature subtle visual-lines bar accent from original design -->
+              <div class="visual-lines" aria-hidden="true">
+                <div
+                  v-for="n in 3"
+                  :key="n"
+                  class="visual-line"
+                  :style="{ width: `${55 + n * 12}%`, opacity: 0.7 - n * 0.12 }"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
-    <section class="module-band module-band--maroon">
-      <div class="m-inner module-grid">
-        <div class="module-copy">
-          <h2 class="m-heading">{{ t('mod_03_title') }}</h2>
-          <p class="m-sub module-body">{{ t('mod_03_body') }}</p>
-          <ul class="module-list">
-            <li>{{ t('mod_03_p1') }}</li>
-            <li>{{ t('mod_03_p2') }}</li>
-            <li>{{ t('mod_03_p3') }}</li>
-            <li>{{ t('mod_03_p4') }}</li>
-          </ul>
-        </div>
-
-        <div class="specimen-box">
-          <div class="specimen-head">
-            <span class="specimen-title">Interface treatment</span>
-            <span class="specimen-meta">{{ activeStyleSpec.label }}</span>
-          </div>
-          <div class="style-switch-row">
-            <button
-              v-for="style in styleOptions"
-              :key="style.id"
-              type="button"
-              class="spec-btn"
-              :class="{ active: activeStyle === style.id }"
-              @click="activeStyle = style.id"
-            >
-              {{ style.label }}
-            </button>
-          </div>
-          <div class="style-preview" :class="`style-preview--${activeStyle}`">
-            <div class="style-preview-head">
-              <strong>Front Counter · TRM-POS-01</strong>
-              <span class="m-mono m-tabular">$24.50</span>
-            </div>
-            <p class="style-preview-desc">{{ activeStyleSpec.desc }}</p>
-            <div class="style-preview-line">
-              <span>2 × House Latte</span>
-              <span class="m-tabular">$11.00</span>
-            </div>
-            <div class="style-preview-line">
-              <span>1 × Almond Tart</span>
-              <span class="m-tabular">$5.50</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="module-band module-band--strawberry">
-      <div class="m-inner module-grid module-grid--reverse">
-        <div class="module-copy">
-          <h2 class="m-heading">{{ t('mod_04_title') }}</h2>
-          <p class="m-sub module-body">{{ t('mod_04_body') }}</p>
-          <ul class="module-list">
-            <li>{{ t('mod_04_p1') }}</li>
-            <li>{{ t('mod_04_p2') }}</li>
-            <li>{{ t('mod_04_p3') }}</li>
-            <li>{{ t('mod_04_p4') }}</li>
-          </ul>
-        </div>
-
-        <div class="specimen-box">
-          <div class="specimen-head">
-            <span class="specimen-title">Live audit & rollout trail</span>
-            <span class="specimen-meta m-mono">PIN + Role Scoped</span>
-          </div>
-          <div class="specimen-rows">
-            <div v-for="entry in auditSamples" :key="entry.time + entry.action" class="specimen-row audit-sample-row">
-              <span class="m-mono m-tabular specimen-code">{{ entry.time }}</span>
-              <span class="m-mono specimen-action">{{ entry.action }}</span>
-              <span class="specimen-station">{{ entry.target }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Operational Guarantees -->
-    <section class="extras-section">
-      <div class="m-inner">
-        <div class="extras-header">
+    <!-- ── Extra capabilities ─────────────────────────────────── -->
+    <section class="section-extras">
+      <div class="extras-inner">
+        <div class="m-label-block">
+          <p class="m-overline">{{ t('extra_overline') }}</p>
           <h2 class="m-heading">{{ t('extra_heading') }}</h2>
-          <p class="m-sub">{{ t('extra_sub') }}</p>
+          <p class="m-sub" style="margin: 0 auto;">{{ t('extra_sub') }}</p>
         </div>
 
-        <div class="extras-list">
-          <div v-for="ex in extras" :key="ex.title" class="extra-item">
+        <div class="extras-grid">
+          <div v-for="ex in extras" :key="ex.title" class="extra-card">
+            <span class="extra-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path :d="extraIcons[ex.iconKey as keyof typeof extraIcons]" />
+              </svg>
+            </span>
             <h3 class="extra-title">{{ ex.title }}</h3>
             <p class="extra-body">{{ ex.body }}</p>
           </div>
@@ -275,20 +323,17 @@ const extras = computed(() => [
       </div>
     </section>
 
-    <!-- Closing CTA -->
-    <section class="m-cta-strip-dark">
-      <div class="m-cta-inner feat-cta-layout">
-        <div>
-          <h2 class="m-cta-heading-light">{{ t('feat_cta_heading') }}</h2>
-          <p class="m-cta-sub-light" style="margin-bottom: 0;">{{ t('feat_cta_sub') }}</p>
-        </div>
+    <!-- ── CTA ───────────────────────────────────────────────── -->
+    <section class="m-cta-strip">
+      <div class="m-cta-inner">
+        <h2 class="m-cta-heading">{{ t('feat_cta_heading') }}</h2>
+        <p class="m-cta-sub">{{ t('feat_cta_sub') }}</p>
         <div class="m-cta-btns">
           <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary ribbon">
             {{ isLoggedIn ? t('nav_dashboard') : t('feat_cta_btn1') }}
           </NuxtLink>
-          <NuxtLink to="/pricing" class="m-btn-ghost on-dark">
-            {{ t('feat_cta_btn2') }}
-          </NuxtLink>
+          <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('feat_cta_btn2') }}</NuxtLink>
+          <NuxtLink to="/login" class="m-btn-ghost">{{ t('nav_signin') }} →</NuxtLink>
         </div>
       </div>
     </section>
@@ -296,380 +341,338 @@ const extras = computed(() => [
 </template>
 
 <style scoped>
-/* Hero */
+/* ── Hero ─────────────────────────────────────────────── */
 .feat-hero {
-  background: transparent;
-  padding: clamp(3rem, 7vw, 5rem) 0;
+  padding: 5.5rem 0 4.5rem;
+  text-align: center;
+  background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(255, 87, 118, 0.08) 0%, transparent 70%);
 }
 
-.feat-hero-grid {
-  display: grid;
-  grid-template-columns: 5fr 7fr;
-  gap: clamp(2rem, 5vw, 4rem);
-  align-items: start;
-}
+.feat-hero-inner { max-width: 680px; }
 
-.feat-hero-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
+.feat-sub { max-width: 580px; }
 
 .feat-hero-actions {
+  margin-top: 2rem;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
-/* Module bands */
-.module-band {
-  padding: clamp(3rem, 6vw, 4.75rem) 0;
-}
+/* ── Module sections ──────────────────────────────────── */
+.modules-wrapper { display: flex; flex-direction: column; }
 
-.module-band--surface {
-  background: var(--k-surface, #FFFFFF);
-}
+.module-section { padding: 5rem 2rem; }
+.module--cream  { background: #FDFAF7; }
+.module--maroon { background: #68293A; }
+.module--pink   { background: #FF5776; }
 
-.module-band--cream {
-  background: var(--k-cream, #F6E6D7);
-}
-
-.module-band--maroon {
-  background: var(--k-dark, #68293A);
-  color: var(--k-on-dark, #F6E6D7);
-}
-
-.module-band--strawberry {
-  background: var(--k-strawberry-soft, #FFEBEF);
-}
-
-.module-band--maroon .m-heading {
-  color: var(--k-on-dark, #F6E6D7);
-}
-
-.module-band--maroon .m-sub {
-  color: var(--k-on-dark-muted, rgba(246, 230, 215, 0.72));
-}
-
-.module-band--maroon .module-list {
-  border-top-color: rgba(246, 230, 215, 0.2);
-}
-
-.module-band--maroon .module-list li {
-  color: var(--k-on-dark, #F6E6D7);
-  border-bottom-color: rgba(246, 230, 215, 0.2);
-}
-
-.module-band--maroon .module-list li::before {
-  color: var(--k-accent, #FF5776);
-}
-
-.module-band--cream .module-list,
-.module-band--cream .module-list li {
-  border-color: var(--k-blush, #E3C7B9);
-}
-
-.module-band--strawberry .module-list,
-.module-band--strawberry .module-list li {
-  border-color: rgba(255, 87, 118, 0.22);
-}
-
-.module-grid {
+.module-inner {
+  max-width: 1100px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(2rem, 5vw, 4rem);
+  gap: 4rem;
   align-items: center;
 }
+.module-inner--reverse { direction: rtl; }
+.module-inner--reverse > * { direction: ltr; }
 
-.module-grid--reverse .module-copy {
-  order: 2;
+.module-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
 }
+.module--cream  .module-tag { color: #FF5776; }
+.module--maroon .module-tag { color: rgba(246, 230, 215, 0.65); }
+.module--pink   .module-tag { color: rgba(255, 255, 255, 0.85); }
 
-.module-grid--reverse .specimen-box {
-  order: 1;
+/* icon wrap */
+.module-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.65rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
 }
+.module-icon-wrap svg { width: 1.4rem; height: 1.4rem; }
+
+.module--cream  .module-icon-wrap { background: rgba(255, 87, 118, 0.1);   color: #FF5776; }
+.module--maroon .module-icon-wrap { background: rgba(246, 230, 215, 0.12); color: #F6E6D7; }
+.module--pink   .module-icon-wrap { background: rgba(255, 255, 255, 0.2);  color: #FFFFFF; }
+
+.module-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 400;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+}
+.module--cream  .module-title { color: #68293A; }
+.module--maroon .module-title { color: #F6E6D7; }
+.module--pink   .module-title { color: #FFFFFF; }
 
 .module-body {
+  font-size: 1rem;
+  line-height: 1.7;
   margin-bottom: 1.5rem;
 }
+.module--cream  .module-body { color: rgba(104, 41, 58, 0.68); }
+.module--maroon .module-body { color: rgba(246, 230, 215, 0.78); }
+.module--pink   .module-body { color: rgba(255, 255, 255, 0.9); }
 
-.module-list {
+.module-points {
   list-style: none;
   padding: 0;
   margin: 0;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-}
-
-.module-list li {
-  display: flex;
-  gap: 0.65rem;
-  align-items: baseline;
-  padding: 0.72rem 0;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  font-size: 0.925rem;
-  line-height: 1.5;
-  color: var(--k-ink, #68293A);
-}
-
-.module-list li::before {
-  content: '—';
-  color: var(--k-accent, #FF5776);
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-/* Product Specimens */
-.specimen-box {
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  background: var(--k-surface, #FFFFFF);
-  border-radius: var(--k-radius, 0.75rem);
-  box-shadow: var(--k-shadow, 0 6px 24px rgba(104, 41, 58, 0.08));
-  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  min-width: 0;
+  gap: 0.55rem;
 }
 
-.module-band--maroon .specimen-box {
-  border-color: transparent;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+.module-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.module--cream  .module-points li { color: rgba(104, 41, 58, 0.78); }
+.module--maroon .module-points li { color: rgba(246, 230, 215, 0.85); }
+.module--pink   .module-points li { color: rgba(255, 255, 255, 0.92); }
+
+/* check icon */
+.module-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+.module-check svg { width: 10px; height: 10px; }
+
+.module--cream  .module-check { background: rgba(104, 41, 58, 0.08); color: #68293A; }
+.module--maroon .module-check { background: rgba(246, 230, 215, 0.14); color: #F6E6D7; }
+.module--pink   .module-check { background: rgba(255, 255, 255, 0.22); color: #FFFFFF; }
+
+/* ── Module visual & interactive specimen ─────────────── */
+.module-visual { position: relative; min-width: 0; }
+
+.visual-blob {
+  position: absolute;
+  inset: -20px;
+  border-radius: 40% 60% 55% 45% / 45% 40% 60% 55%;
+  opacity: 0.08;
+  filter: blur(24px);
+  pointer-events: none;
+}
+.module--cream  .visual-blob { background: #68293A; }
+.module--maroon .visual-blob { background: #F6E6D7; }
+.module--pink   .visual-blob { background: #FFFFFF; }
+
+.visual-card {
+  position: relative;
+  padding: 1.75rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.09);
+  color: #68293A;
 }
 
-.specimen-head {
+.visual-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
-.specimen-title {
-  font-size: 0.875rem;
+.visual-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+  color: rgba(104, 41, 58, 0.55);
+}
+
+.visual-badge {
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  background: rgba(255, 87, 118, 0.1);
+  color: #FF5776;
 }
 
-.specimen-meta {
-  font-size: 0.78rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+.specimen-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
 }
 
 .industry-switch-grid,
 .style-switch-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .spec-btn {
-  padding: 0.52rem 0.75rem;
-  font-size: 0.82rem;
+  padding: 0.48rem 0.7rem;
+  font-size: 0.8rem;
   font-weight: 500;
   text-align: left;
-  background: var(--k-surface-alt, #FBF4ED);
-  color: var(--k-ink, #68293A);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
+  background: #FBF4ED;
+  color: #68293A;
+  border: 1px solid rgba(104, 41, 58, 0.14);
+  border-radius: 0.45rem;
   cursor: pointer;
   transition: border-color 0.12s ease, background-color 0.12s ease;
 }
-
-.spec-btn:hover {
-  border-color: var(--k-ink, #68293A);
-}
-
+.spec-btn:hover { border-color: #68293A; }
 .spec-btn.active {
-  background: var(--k-dark, #68293A);
-  color: var(--k-on-dark, #F6E6D7);
-  border-color: var(--k-dark, #68293A);
-}
-
-.spec-btn:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 2px;
+  background: #68293A;
+  color: #F6E6D7;
+  border-color: #68293A;
 }
 
 .specimen-rows {
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
 }
 
 .specimen-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.65rem 0;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  font-size: 0.86rem;
-  color: var(--k-ink, #68293A);
+  gap: 0.65rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(104, 41, 58, 0.1);
+  font-size: 0.84rem;
+  color: #68293A;
   flex-wrap: wrap;
 }
 
-.specimen-code {
-  font-size: 0.78rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-}
-
-.specimen-station {
-  flex: 1;
-  min-width: 120px;
-}
-
+.specimen-code { font-size: 0.76rem; color: rgba(104, 41, 58, 0.65); }
+.specimen-station { flex: 1; min-width: 110px; }
 .specimen-tag,
-.specimen-ver {
-  font-size: 0.76rem;
-  color: var(--k-accent, #FF5776);
-  font-weight: 600;
-}
+.specimen-ver,
+.specimen-action { font-size: 0.75rem; color: #FF5776; font-weight: 600; }
 
-.specimen-action {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--k-accent, #FF5776);
-}
-
-/* Interactive style preview */
 .style-preview {
-  padding: 1rem;
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
-  background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #68293A);
+  padding: 0.9rem;
+  border: 1px solid rgba(104, 41, 58, 0.14);
+  border-radius: 0.5rem;
+  background: #FDFAF7;
+  color: #68293A;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.45rem;
 }
-
-.style-preview--compact {
-  padding: 0.7rem 0.85rem;
-  gap: 0.3rem;
-  font-size: 0.84rem;
-}
-
-.style-preview--contrast {
-  background: var(--k-dark, #68293A);
-  color: var(--k-on-dark, #F6E6D7);
-  border-color: var(--k-dark, #68293A);
-}
-
-.style-preview--editorial {
-  padding: 1.25rem;
-  gap: 0.75rem;
-}
+.style-preview--compact { padding: 0.65rem 0.8rem; gap: 0.25rem; font-size: 0.82rem; }
+.style-preview--contrast { background: #68293A; color: #F6E6D7; border-color: #68293A; }
+.style-preview--editorial { padding: 1.15rem; gap: 0.65rem; }
 
 .style-preview-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
 }
-
 .style-preview-desc {
   margin: 0;
-  font-size: 0.82rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  font-size: 0.78rem;
+  color: rgba(104, 41, 58, 0.68);
   line-height: 1.45;
 }
-
-.style-preview--contrast .style-preview-desc {
-  color: var(--k-on-dark-muted, rgba(246, 230, 215, 0.72));
-}
-
+.style-preview--contrast .style-preview-desc { color: rgba(246, 230, 215, 0.78); }
 .style-preview-line {
   display: flex;
   justify-content: space-between;
-  padding-top: 0.45rem;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  font-size: 0.84rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
+  font-size: 0.82rem;
+}
+.style-preview--contrast .style-preview-line { border-top-color: rgba(246, 230, 215, 0.2); }
+
+.visual-lines { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.visual-line {
+  height: 6px;
+  border-radius: 0.4rem;
+  background: rgba(104, 41, 58, 0.08);
 }
 
-.style-preview--contrast .style-preview-line {
-  border-top-color: #4A1A27;
+/* ── Extras ───────────────────────────────────────────── */
+.section-extras {
+  padding: 5.5rem 2rem;
+  background: #FFFFFF;
 }
 
-/* Operational Guarantees */
-.extras-section {
-  background: var(--k-surface, #FFFFFF);
-  padding: clamp(3rem, 6vw, 5rem) 0;
-}
+.extras-inner { max-width: 1100px; margin: 0 auto; }
 
-.extras-header {
-  max-width: 660px;
-  margin-bottom: 2.5rem;
-}
-
-.extras-list {
+.extras-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 2px solid var(--k-ink, #68293A);
+  gap: 1.25rem;
 }
 
-.extra-item {
-  padding: 1.5rem 1.5rem 1.5rem 0;
-  border-bottom: 1px solid var(--k-blush, #E3C7B9);
-}
-
-.extra-title {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: 1.25rem;
-  font-weight: 400;
-  line-height: 1.2;
-  color: var(--k-ink, #68293A);
-  margin: 0 0 0.45rem;
-}
-
-.extra-body {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  margin: 0;
-}
-
-/* Closing layout */
-.feat-cta-layout {
+.extra-card {
+  padding: 1.75rem;
+  border-radius: 0.75rem;
+  background: #FDFAF7;
+  border: 1px solid rgba(104, 41, 58, 0.07);
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.extra-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(104, 41, 58, 0.09);
 }
 
-/* Responsive */
+.extra-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 87, 118, 0.1);
+  color: #FF5776;
+  margin-bottom: 0.25rem;
+}
+.extra-icon svg { width: 1.1rem; height: 1.1rem; }
+
+.extra-title { font-weight: 700; font-size: 0.98rem; color: #68293A; margin: 0; }
+.extra-body  { font-size: 0.855rem; color: rgba(104, 41, 58, 0.62); line-height: 1.6; margin: 0; }
+
+/* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {
-  .feat-hero-grid,
-  .module-grid {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  .feat-hero-intro {
-    order: 2;
-  }
-
-  .module-grid--reverse .module-copy,
-  .module-grid--reverse .specimen-box {
-    order: initial;
-  }
-
-  .extras-list {
-    grid-template-columns: 1fr 1fr;
-  }
+  .module-section { padding: 3.5rem 1.25rem; }
+  .module-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+  .module-inner--reverse { direction: ltr; }
+  .section-extras { padding: 4rem 1.25rem; }
+  .extras-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 600px) {
-  .extras-list {
-    grid-template-columns: 1fr;
-  }
-
-  .extra-item {
-    padding-right: 0;
-  }
-
+  .extras-grid,
   .industry-switch-grid,
-  .style-switch-row {
-    grid-template-columns: 1fr;
-  }
+  .style-switch-row { grid-template-columns: 1fr; }
 }
 </style>

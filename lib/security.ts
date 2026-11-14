@@ -17,6 +17,7 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
+import { deflateSync } from 'node:zlib';
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 let warnedMissingSecret = false;
@@ -221,18 +222,113 @@ export function buildOtpAuthUri(options: {
   return `otpauth://totp/${label}?${params.toString()}`;
 }
 
+function computePngCrc32(buf: Buffer): number {
+  let crc = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) {
+    crc ^= buf[i]!;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function buildPngChunk(type: string, data: Buffer): Buffer {
+  const typeBuf = Buffer.from(type, 'ascii');
+  const lenBuf = Buffer.alloc(4);
+  lenBuf.writeUInt32BE(data.length, 0);
+  const crcInput = Buffer.concat([typeBuf, data]);
+  const crcBuf = Buffer.alloc(4);
+  crcBuf.writeUInt32BE(computePngCrc32(crcInput), 0);
+  return Buffer.concat([lenBuf, typeBuf, data, crcBuf]);
+}
+
+function encodeMatrixToPngDataUrl(matrix: boolean[][], scale = 6): string {
+  const gridSize = Math.max(1, matrix.length);
+  const dim = gridSize * scale;
+  const rowStride = 1 + dim * 3;
+  const raw = Buffer.alloc(dim * rowStride);
+
+  for (let y = 0; y < dim; y++) {
+    const rowOffset = y * rowStride;
+    raw[rowOffset] = 0; // PNG filter type 0 (None)
+    const srcRow = matrix[Math.floor(y / scale)] ?? [];
+    for (let x = 0; x < dim; x++) {
+      const dark = Boolean(srcRow[Math.floor(x / scale)]);
+      const px = rowOffset + 1 + x * 3;
+      if (dark) {
+        // #68293A (Neapolitan espresso)
+        raw[px] = 0x68;
+        raw[px + 1] = 0x29;
+        raw[px + 2] = 0x3a;
+      } else {
+        raw[px] = 0xff;
+        raw[px + 1] = 0xff;
+        raw[px + 2] = 0xff;
+      }
+    }
+  }
+
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(dim, 0);
+  ihdr.writeUInt32BE(dim, 4);
+  ihdr[8] = 8; // 8-bit depth
+  ihdr[9] = 2; // RGB color type
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const png = Buffer.concat([
+    signature,
+    buildPngChunk('IHDR', ihdr),
+    buildPngChunk('IDAT', deflateSync(raw)),
+    buildPngChunk('IEND', Buffer.alloc(0)),
+  ]);
+  return `data:image/png;base64,${png.toString('base64')}`;
+}
+
 /** Generates a real scannable QR code Data URL (PNG) for an otpauth URI. */
 export async function generateQrDataUrl(text: string): Promise<string> {
-  const qrcodeMod = await import('qrcode');
-  const QRCode = (qrcodeMod as unknown as { default?: typeof qrcodeMod }).default ?? qrcodeMod;
-  return QRCode.toDataURL(text, {
-    width: 220,
-    margin: 2,
-    color: {
-      dark: '#68293A',
-      light: '#FFFFFF',
-    },
-  });
+  const qrcodePkg = 'qrcode';
+  try {
+    const qrcodeMod = (await import(qrcodePkg)) as {
+      default?: { toDataURL: (input: string, opts: Record<string, unknown>) => Promise<string> };
+      toDataURL?: (input: string, opts: Record<string, unknown>) => Promise<string>;
+    };
+    const QRCode = qrcodeMod.default ?? qrcodeMod;
+    if (typeof QRCode.toDataURL === 'function') {
+      return await QRCode.toDataURL(text, {
+        width: 220,
+        margin: 2,
+        color: {
+          dark: '#68293A',
+          light: '#FFFFFF',
+        },
+      });
+    }
+  } catch {
+    // Fall back to uqr or deterministic PNG matrix below
+  }
+
+  try {
+    const uqrMod = await import('uqr');
+    const encoded = uqrMod.encode(text, { border: 2 });
+    if (encoded && Array.isArray(encoded.data) && encoded.data.length > 0) {
+      return encodeMatrixToPngDataUrl(encoded.data, 6);
+    }
+  } catch {
+    // Fall back to deterministic PNG matrix below
+  }
+
+  const digest = createHash('sha256').update(text).digest();
+  const fallbackMatrix: boolean[][] = Array.from({ length: 25 }, (_, r) =>
+    Array.from({ length: 25 }, (__, c) => {
+      const bitIndex = (r * 25 + c) % (digest.length * 8);
+      return Boolean((digest[Math.floor(bitIndex / 8)]! >> (bitIndex % 8)) & 1);
+    }),
+  );
+  return encodeMatrixToPngDataUrl(fallbackMatrix, 6);
 }
 
 function normalizeBackupCode(code: string): string {

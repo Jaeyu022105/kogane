@@ -7,10 +7,13 @@
  * 3. Application Default Credentials (automatic on Firebase App Hosting / Cloud Functions / Cloud Run)
  */
 
-import { cert, getApps, initializeApp, applicationDefault, type App } from 'firebase-admin/app';
-import { getAuth, type Auth } from 'firebase-admin/auth';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { getStorage, type Storage } from 'firebase-admin/storage';
+import { createRequire } from 'node:module';
+import type { App } from 'firebase-admin/app';
+import type { Auth } from 'firebase-admin/auth';
+import type { Firestore } from 'firebase-admin/firestore';
+import type { Storage } from 'firebase-admin/storage';
+
+const requireModule = createRequire(import.meta.url);
 
 let cachedApp: App | null = null;
 let cachedDb: Firestore | null = null;
@@ -81,6 +84,13 @@ export function resolveFirebaseStorageBucket(explicitProjectId?: string): string
 export function getFirebaseApp(): App {
   if (cachedApp) return cachedApp;
 
+  const {
+    cert,
+    getApps,
+    initializeApp,
+    applicationDefault,
+  } = requireModule('firebase-admin/app') as typeof import('firebase-admin/app');
+
   const existing = getApps();
   if (existing.length > 0) {
     cachedApp = existing[0]!;
@@ -128,8 +138,11 @@ export function getFirebaseApp(): App {
   return cachedApp;
 }
 
+export const getFirebaseAdminApp = getFirebaseApp;
+
 export function getFirestoreDb(): Firestore {
   if (cachedDb) return cachedDb;
+  const { getFirestore } = requireModule('firebase-admin/firestore') as typeof import('firebase-admin/firestore');
   const app = getFirebaseApp();
   const db = getFirestore(app);
   try {
@@ -142,9 +155,17 @@ export function getFirestoreDb(): Firestore {
 }
 
 export function getFirebaseStorage(): Storage {
+  const { getStorage } = requireModule('firebase-admin/storage') as typeof import('firebase-admin/storage');
   return getStorage(getFirebaseApp());
 }
 
+export function getFirebaseStorageBucket(bucketName?: string) {
+  const storage = getFirebaseStorage();
+  const resolved = bucketName || resolveFirebaseStorageBucket();
+  return resolved ? storage.bucket(resolved) : storage.bucket();
+}
+
 export function getFirebaseAuth(): Auth {
+  const { getAuth } = requireModule('firebase-admin/auth') as typeof import('firebase-admin/auth');
   return getAuth(getFirebaseApp());
 }
