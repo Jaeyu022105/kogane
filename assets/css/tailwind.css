@@ -1,4 +1,4 @@
-/* Google Fonts (Inter + JetBrains Mono + DM Serif Display for dashboard reports) */
+/* Google Fonts (DM Serif Display headings, Inter body, JetBrains Mono for IDs) */
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import './marketing.css';
 
@@ -14,7 +14,7 @@
   --shell-pink:         255 87  118;   /* brand #FF5776 */
   --shell-border:       104 41  58;    /* dark borders */
 
-  /* Business brand tokens — overridden per-business via theming system */
+  /* Business brand tokens â€” overridden per-business via theming system */
   --color-primary:    104 41  58;     /* dark */
   --color-secondary:  255 87  118;    /* brand */
   --color-accent:     255 87  118;    /* brand */
@@ -26,7 +26,7 @@
 
   /* Scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(20, 20, 20, 0.25) transparent;
+  scrollbar-color: rgba(255,87,118,0.35) transparent;
 }
 
 /* Base resets */
@@ -53,7 +53,7 @@ body.dashboard-viewport-lock {
 /* Scrollbar */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: rgba(20, 20, 20, 0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb  { background: rgba(255,87,118,0.4); border-radius: 99px; }
 
 /* Utility layers (dashboard and terminal builder components) */
 @layer components {
@@ -76,7 +76,7 @@ body.dashboard-viewport-lock {
     border: 1px solid rgba(61,24,32,0.08);
   }
 
-  /* Legacy glass — map to white card for backward compat */
+  /* Legacy glass â€” map to white card for backward compat */
   .glass {
     background: #ffffff;
     border: 1px solid rgba(61,24,32,0.08);
@@ -133,7 +133,7 @@ body.dashboard-viewport-lock {
   .btn-pink:active { transform: scale(0.97); }
 
   /*
-   * Ribbon bookmark tail — used on dashboard action buttons.
+   * Ribbon bookmark tail â€” used on dashboard action buttons.
    * Usage: class="btn-primary btn-ribbon"
    */
   .btn-ribbon {

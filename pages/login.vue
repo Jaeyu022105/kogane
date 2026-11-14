@@ -447,7 +447,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
         <div class="brand-mark" aria-hidden="true">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <rect x="1" y="1" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.75" />
-            <rect x="4.5" y="4.5" width="5" height="5" fill="#E84A27" />
+            <rect x="4.5" y="4.5" width="5" height="5" fill="#FF5776" />
             <path d="M11.5 6H15.5M4.5 12.5H15.5M4.5 15.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
           </svg>
         </div>
@@ -563,7 +563,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                       v-else
                       class="w-5 h-5"
                       aria-hidden="true"
-                      style="color: var(--k-muted, #52524E);"
+                      style="color: var(--k-muted, rgba(104, 41, 58, 0.72));"
                     />
                   </div>
                   <div class="flex items-center gap-3">
@@ -822,9 +822,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     v-if="qrCodeDataUrl"
                     :src="qrCodeDataUrl"
                     alt="Two-factor authentication QR code"
-                    class="w-40 h-40 border border-[#DCDAD3] bg-white p-1"
+                    class="w-40 h-40 border border-[#E3C7B9] bg-white p-1"
                   />
-                  <QrCode v-else class="w-16 h-16" aria-hidden="true" style="color: #141414;" />
+                  <QrCode v-else class="w-16 h-16" aria-hidden="true" style="color: #68293A;" />
                   <p class="qr-text">Scan with Google Authenticator, Authy, 1Password, or Apple Passwords.</p>
                   <div v-if="twoFactorSecret" class="mt-2 w-full text-center">
                     <span class="secret-label">Manual entry key</span>
@@ -950,8 +950,8 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   align-items: center;
   justify-content: center;
   padding: clamp(1.5rem, 4vw, 2.5rem) 1rem;
-  background: var(--k-bg, #F4F3EF);
-  color: var(--k-ink, #141414);
+  background: linear-gradient(160deg, var(--k-cream, #F6E6D7) 0%, var(--k-surface, #FFFFFF) 38%);
+  color: var(--k-ink, #68293A);
   font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
@@ -972,7 +972,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   gap: 0.75rem;
   margin-bottom: 1.5rem;
   text-decoration: none;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .login-brand--centered {
@@ -980,7 +980,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .login-brand:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 4px;
 }
 
@@ -988,41 +988,43 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 3px;
-  border: 1px solid var(--k-border, #DCDAD3);
-  background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #141414);
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  border: none;
+  background: var(--k-dark, #68293A);
+  color: var(--k-on-dark, #F6E6D7);
+  box-shadow: 0 4px 14px rgba(104, 41, 58, 0.24);
   flex-shrink: 0;
 }
 
 .brand-name {
   display: block;
-  font-family: var(--k-font-sans, 'Inter', sans-serif);
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--k-ink, #141414);
-  line-height: 1.1;
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: var(--k-ink, #68293A);
+  line-height: 1.05;
 }
 
 .brand-tagline {
   font-size: 0.78rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0.18rem 0 0;
 }
 
 .brand-echo {
   font-size: 0.74rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0.15rem 0 0;
 }
 
 /* Card */
 .login-card {
   background: var(--k-surface, #FFFFFF);
-  border-radius: 3px;
-  border: 1px solid var(--k-border, #DCDAD3);
+  border-radius: var(--k-radius-lg, 0.85rem);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  box-shadow: var(--k-shadow-lg, 0 8px 32px rgba(104, 41, 58, 0.1));
   padding: clamp(1.25rem, 4vw, 2rem);
   display: flex;
   flex-direction: column;
@@ -1040,24 +1042,24 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .login-title {
-  font-family: var(--k-font-sans, 'Inter', sans-serif);
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--k-ink, #141414);
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.55rem;
+  font-weight: 400;
+  color: var(--k-ink, #68293A);
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.18;
 }
 
 .login-subtitle {
   font-size: 0.875rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
   line-height: 1.5;
 }
 
 .login-echo {
   font-size: 0.78rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
 }
 
@@ -1093,14 +1095,14 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .field-label {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .field-input {
-  background: var(--k-bg, #F4F3EF);
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
-  color: var(--k-ink, #141414);
+  background: var(--k-surface-alt, #FBF4ED);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
+  color: var(--k-ink, #68293A);
   font-size: 0.9rem;
   padding: 0.62rem 0.8rem;
   font-family: var(--k-font-sans, 'Inter', sans-serif);
@@ -1109,13 +1111,13 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .field-input::placeholder {
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   opacity: 0.75;
 }
 
 .field-input:focus {
   outline: none;
-  border-color: var(--k-ink, #141414);
+  border-color: var(--k-ink, #68293A);
   background: var(--k-surface, #FFFFFF);
 }
 
@@ -1128,7 +1130,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 
 .field-help {
   font-size: 0.76rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0.2rem 0 0;
   line-height: 1.45;
 }
@@ -1137,7 +1139,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   position: absolute;
   right: 0.6rem;
   padding: 0.25rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1147,7 +1149,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .password-toggle:hover {
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 /* Progress Indicator */
@@ -1160,13 +1162,13 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 
 .progress-bar {
   height: 3px;
-  background: var(--k-border, #DCDAD3);
+  background: var(--k-border, rgba(104, 41, 58, 0.14));
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--k-accent, #E84A27);
+  background: var(--k-accent, #FF5776);
   transition: width 0.25s ease;
 }
 
@@ -1174,12 +1176,12 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   display: flex;
   justify-content: space-between;
   font-size: 0.74rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   font-weight: 500;
 }
 
 .progress-labels span.active {
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   font-weight: 600;
 }
 
@@ -1191,13 +1193,13 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .step-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   margin: 0 0 0.25rem;
 }
 
 .step-desc {
   font-size: 0.85rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
   line-height: 1.45;
 }
@@ -1213,9 +1215,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .profile-upload {
   width: 4.5rem;
   height: 4.5rem;
-  border-radius: 3px;
-  border: 1px dashed var(--k-border, #DCDAD3);
-  background: var(--k-bg, #F4F3EF);
+  border-radius: 0.55rem;
+  border: 1px dashed var(--k-border, rgba(104, 41, 58, 0.14));
+  background: var(--k-surface-alt, #FBF4ED);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1223,7 +1225,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .profile-upload:hover {
-  border-color: var(--k-ink, #141414);
+  border-color: var(--k-ink, #68293A);
 }
 
 .profile-upload-text {
@@ -1240,15 +1242,16 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 
 .login-submit {
   padding: 0.72rem 1.35rem;
-  background: var(--k-accent, #E84A27);
-  color: var(--k-on-accent, #FFFFFF);
-  border: 1px solid var(--k-accent, #E84A27);
-  border-radius: 3px;
+  background: var(--k-dark, #68293A);
+  color: var(--k-on-dark, #F6E6D7);
+  border: 1px solid var(--k-dark, #68293A);
+  border-radius: var(--k-radius-sm, 0.55rem);
   font-size: 0.9rem;
   font-weight: 600;
   font-family: var(--k-font-sans, 'Inter', sans-serif);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  box-shadow: 0 3px 14px rgba(104, 41, 58, 0.22);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1256,8 +1259,12 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .login-submit:hover:not(:disabled) {
-  background: var(--k-accent-hover, #CC3B1B);
-  border-color: var(--k-accent-hover, #CC3B1B);
+  background: var(--k-dark-deep, #4A1A27);
+  border-color: var(--k-dark-deep, #4A1A27);
+}
+
+.login-submit:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .login-submit:disabled {
@@ -1268,9 +1275,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .login-return {
   padding: 0.72rem 1.25rem;
   background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #141414);
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
+  color: var(--k-ink, #68293A);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
   font-size: 0.9rem;
   font-weight: 500;
   font-family: var(--k-font-sans, 'Inter', sans-serif);
@@ -1282,7 +1289,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .login-return:hover {
-  border-color: var(--k-ink, #141414);
+  border-color: var(--k-ink, #68293A);
 }
 
 .dev-autofill-btn {
@@ -1290,7 +1297,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   text-align: center;
   font-size: 0.76rem;
   padding: 0.35rem 0;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1298,12 +1305,12 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .dev-autofill-btn:hover {
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .login-dev-note {
   font-size: 0.84rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   text-align: center;
   margin: 0;
 }
@@ -1313,10 +1320,10 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 0.9rem;
-  background: #FFF2F0;
-  border: 1px solid var(--k-accent, #E84A27);
-  border-radius: 3px;
-  color: #B42318;
+  background: #FFF0F2;
+  border: 1px solid var(--k-accent, #FF5776);
+  border-radius: 0.55rem;
+  color: #C62842;
   font-size: 0.84rem;
   font-weight: 500;
 }
@@ -1334,14 +1341,14 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   align-items: center;
   gap: 0.75rem;
   padding: 1.25rem;
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
-  background: var(--k-bg, #F4F3EF);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
+  background: var(--k-surface-alt, #FBF4ED);
 }
 
 .qr-text {
   font-size: 0.8rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   text-align: center;
   margin: 0;
 }
@@ -1349,7 +1356,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .secret-label {
   display: block;
   font-size: 0.75rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 .secret-code {
@@ -1357,30 +1364,30 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   margin-top: 0.3rem;
   padding: 0.3rem 0.6rem;
   background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, #DCDAD3);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   font-size: 0.78rem;
   font-family: var(--k-font-mono, monospace);
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   word-break: break-all;
 }
 
 .backup-box {
-  border: 1px solid var(--k-border, #DCDAD3);
-  background: var(--k-bg, #F4F3EF);
-  border-radius: 3px;
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  background: var(--k-surface-alt, #FBF4ED);
+  border-radius: 0.55rem;
   padding: 1rem;
 }
 
 .backup-title {
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   margin: 0 0 0.25rem;
 }
 
 .backup-desc {
   font-size: 0.78rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0 0 0.75rem;
 }
 
@@ -1395,9 +1402,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .backup-code {
   padding: 0.4rem 0.6rem;
   background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, #DCDAD3);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   text-align: center;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 /* Toggle */
@@ -1406,9 +1413,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 0.9rem;
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
-  background: var(--k-bg, #F4F3EF);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
+  background: var(--k-surface-alt, #FBF4ED);
 }
 
 .toggle-switch {
@@ -1429,9 +1436,9 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: var(--k-border, #DCDAD3);
+  background-color: var(--k-border, rgba(104, 41, 58, 0.14));
   transition: 0.2s ease;
-  border-radius: 3px;
+  border-radius: 0.55rem;
 }
 
 .toggle-slider::before {
@@ -1443,11 +1450,11 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   bottom: 0.18rem;
   background-color: var(--k-surface, #FFFFFF);
   transition: 0.2s ease;
-  border-radius: 2px;
+  border-radius: 0.4rem;
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: var(--k-accent, #E84A27);
+  background-color: var(--k-accent, #FF5776);
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
@@ -1457,7 +1464,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .toggle-label {
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 /* Lang Picker */
@@ -1472,62 +1479,62 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
   align-items: center;
   justify-content: space-between;
   padding: 0.8rem 0.95rem;
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
-  background: var(--k-bg, #F4F3EF);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
+  background: var(--k-surface-alt, #FBF4ED);
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .lang-option:hover {
-  border-color: var(--k-ink, #141414);
-  background: var(--k-surface-alt, #ECEAE4);
+  border-color: var(--k-ink, #68293A);
+  background: var(--k-cream, #F6E6D7);
 }
 
 .lang-option-native {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .lang-option-translated {
   font-size: 0.82rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 .wizard-handoff {
   padding: 0.95rem;
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
-  background: var(--k-bg, #F4F3EF);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
+  background: var(--k-surface-alt, #FBF4ED);
 }
 
 .wizard-handoff-title {
   margin: 0 0 0.3rem;
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .wizard-handoff-body {
   margin: 0;
   font-size: 0.84rem;
   line-height: 1.5;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 .login-legal {
   font-size: 0.76rem;
   text-align: center;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
   line-height: 1.45;
 }
 
 .link-text,
 .link-btn {
-  color: var(--k-accent, #E84A27);
+  color: var(--k-accent, #FF5776);
   font-weight: 600;
   text-decoration: none;
   background: transparent;
@@ -1539,7 +1546,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 }
 
 .link-btn--danger {
-  color: #B42318;
+  color: #C62842;
   font-size: 0.78rem;
 }
 
@@ -1553,7 +1560,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
 .login-submit:focus-visible,
 .login-return:focus-visible,
 .lang-option:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 2px;
 }
 

@@ -46,19 +46,8 @@ onMounted(() => {
     <header class="marketing-nav" :class="{ scrolled }">
       <div class="nav-inner">
         <NuxtLink to="/" class="nav-logo" @click="closeMobileMenu">
-          <svg
-            class="logo-mark"
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect x="1" y="1" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.75" />
-            <rect x="4.5" y="4.5" width="5" height="5" fill="#E84A27" />
-            <path d="M11.5 6H15.5M4.5 12.5H15.5M4.5 15.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
-          </svg>
           <span class="logo-wordmark">Kogane</span>
+          <span class="logo-dot" aria-hidden="true" />
         </NuxtLink>
 
         <nav
@@ -136,19 +125,8 @@ onMounted(() => {
       <div class="footer-inner">
         <div class="footer-brand">
           <NuxtLink to="/" class="nav-logo footer-brand-link">
-            <svg
-              class="logo-mark"
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              aria-hidden="true"
-            >
-              <rect x="1" y="1" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.75" />
-              <rect x="4.5" y="4.5" width="5" height="5" fill="#E84A27" />
-              <path d="M11.5 6H15.5M4.5 12.5H15.5M4.5 15.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
-            </svg>
             <span class="logo-wordmark">Kogane</span>
+            <span class="logo-dot" aria-hidden="true" />
           </NuxtLink>
           <p class="footer-tagline">{{ t('footer_tagline') }}</p>
 
@@ -202,8 +180,8 @@ onMounted(() => {
 /* Shell */
 .marketing-shell {
   min-height: 100dvh;
-  background: var(--k-bg, #F4F3EF);
-  color: var(--k-ink, #141414);
+  background: linear-gradient(180deg, var(--k-cream, #F6E6D7) 0%, var(--k-surface, #FFFFFF) 18%);
+  color: var(--k-ink, #68293A);
   font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
   display: flex;
   flex-direction: column;
@@ -218,13 +196,15 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--k-bg, #F4F3EF);
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
-  transition: background-color 0.15s ease;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .marketing-nav.scrolled {
-  background: var(--k-surface, #FFFFFF);
+  background: rgba(255, 253, 251, 0.97);
+  border-bottom-color: var(--k-border, rgba(104, 41, 58, 0.14));
+  box-shadow: 0 1px 12px rgba(104, 41, 58, 0.06);
 }
 
 .nav-inner {
@@ -241,34 +221,39 @@ onMounted(() => {
 .nav-logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  color: var(--k-ink, #141414);
+  gap: 6px;
+  color: var(--k-ink, #68293A);
   text-decoration: none;
   flex-shrink: 0;
 }
 
 .nav-logo:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 4px;
 }
 
-.logo-mark {
-  display: block;
-  flex-shrink: 0;
+.logo-wordmark {
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.4rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--k-ink, #68293A);
+  letter-spacing: -0.01em;
 }
 
-.logo-wordmark {
-  font-family: var(--k-font-sans, 'Inter', sans-serif);
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: var(--k-ink, #141414);
-  letter-spacing: -0.01em;
+.logo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--k-accent, #FF5776);
+  margin-bottom: 9px;
+  flex-shrink: 0;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.25rem;
   flex: 1;
 }
 
@@ -278,35 +263,38 @@ onMounted(() => {
 
 .nav-link {
   position: relative;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.5rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .nav-link:hover {
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
+  background: rgba(104, 41, 58, 0.06);
 }
 
 .nav-link.active {
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   font-weight: 600;
 }
 
 .nav-link.active::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -2px;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: -1px;
   height: 2px;
-  background: var(--k-accent, #E84A27);
+  border-radius: 2px;
+  background: var(--k-accent, #FF5776);
 }
 
 .nav-link:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 3px;
 }
 
@@ -321,17 +309,17 @@ onMounted(() => {
   padding: 0.48rem 0.9rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   background: transparent;
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
+  border: 1.5px solid rgba(104, 41, 58, 0.2);
+  border-radius: 0.55rem;
   text-decoration: none;
   transition: border-color 0.15s ease, background-color 0.15s ease;
   white-space: nowrap;
 }
 
 .nav-btn-ghost:hover {
-  border-color: var(--k-ink, #141414);
+  border-color: var(--k-ink, #68293A);
   background: var(--k-surface, #FFFFFF);
 }
 
@@ -339,24 +327,29 @@ onMounted(() => {
   padding: 0.48rem 1rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--k-on-accent, #FFFFFF);
-  background: var(--k-accent, #E84A27);
-  border: 1px solid var(--k-accent, #E84A27);
-  border-radius: 3px;
+  color: var(--k-on-dark, #F6E6D7);
+  background: var(--k-dark, #68293A);
+  border: 1px solid var(--k-dark, #68293A);
+  border-radius: 0.55rem;
   text-decoration: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 2px 10px rgba(104, 41, 58, 0.18);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
 }
 
 .nav-btn-primary:hover {
-  background: var(--k-accent-hover, #CC3B1B);
-  border-color: var(--k-accent-hover, #CC3B1B);
+  background: var(--k-dark-deep, #4A1A27);
+  border-color: var(--k-dark-deep, #4A1A27);
+}
+
+.nav-btn-primary:active {
+  transform: scale(0.97);
 }
 
 .nav-btn-ghost:focus-visible,
 .nav-btn-primary:focus-visible,
 .mobile-menu-toggle:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 2px;
 }
 
@@ -366,9 +359,9 @@ onMounted(() => {
   justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
-  color: var(--k-ink, #141414);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
+  color: var(--k-ink, #68293A);
   background: var(--k-surface, #FFFFFF);
   cursor: pointer;
 }
@@ -376,9 +369,9 @@ onMounted(() => {
 /* Footer */
 .marketing-footer {
   margin-top: auto;
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .footer-inner {
@@ -400,7 +393,7 @@ onMounted(() => {
 .footer-tagline {
   font-size: 0.875rem;
   line-height: 1.55;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
   max-width: 30ch;
 }
@@ -415,22 +408,22 @@ onMounted(() => {
 .footer-locale-label {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 .footer-locale-select {
   padding: 0.32rem 0.6rem;
   font-family: var(--k-font-sans, 'Inter', sans-serif);
   font-size: 0.8125rem;
-  color: var(--k-ink, #141414);
-  background: var(--k-bg, #F4F3EF);
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 3px;
+  color: var(--k-ink, #68293A);
+  background: var(--k-surface-alt, #FBF4ED);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.55rem;
   cursor: pointer;
 }
 
 .footer-locale-select:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 2px;
 }
 
@@ -443,33 +436,33 @@ onMounted(() => {
 .footer-col-title {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   margin: 0 0 0.25rem;
 }
 
 .footer-link {
   font-size: 0.875rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .footer-link:hover {
-  color: var(--k-accent, #E84A27);
+  color: var(--k-accent, #FF5776);
 }
 
 .footer-link:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 2px;
 }
 
 .footer-bottom {
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.25rem clamp(1.25rem, 4vw, 2.5rem);
   font-size: 0.8125rem;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 @media (max-width: 768px) {
@@ -493,7 +486,8 @@ onMounted(() => {
     gap: 0;
     padding: 0.5rem clamp(1.25rem, 4vw, 2.5rem) 1rem;
     background: var(--k-surface, #FFFFFF);
-    border-bottom: 1px solid var(--k-border, #DCDAD3);
+    border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+    box-shadow: 0 10px 20px rgba(104, 41, 58, 0.08);
   }
 
   .nav-links.mobile-open {
@@ -501,8 +495,9 @@ onMounted(() => {
   }
 
   .nav-link {
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--k-border, #DCDAD3);
+    padding: 0.75rem 0.25rem;
+    border-radius: 0;
+    border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   }
 
   .nav-link.active::after {
@@ -519,7 +514,7 @@ onMounted(() => {
   }
 
   .nav-link-accent {
-    color: var(--k-accent, #E84A27);
+    color: var(--k-accent, #FF5776);
     font-weight: 600;
   }
 
