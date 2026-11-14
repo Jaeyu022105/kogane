@@ -51,174 +51,113 @@ const usageItems = computed(() => [
 
 <template>
   <div class="legal-page">
-    <header class="legal-header">
-      <div class="m-inner">
-        <div class="legal-hero-grid">
-          <div>
-            <h1 class="m-heading">{{ t('privacy_title') }}</h1>
-          </div>
-          <div class="legal-hero-meta">
-            <p class="legal-updated">{{ t('privacy_last_updated') }}</p>
-            <p class="legal-lead">{{ t('privacy_intro_body') }}</p>
-          </div>
-        </div>
+    <div class="legal-header">
+      <div class="legal-container">
+        <h1 class="m-heading">{{ t('privacy_title') }}</h1>
+        <p class="m-sub">{{ t('privacy_last_updated') }}</p>
       </div>
-    </header>
+    </div>
 
-    <article class="legal-body">
-      <div class="m-inner">
-        <section class="legal-section">
-          <h2>{{ t('privacy_intro_title') }}</h2>
-          <div class="legal-prose">
-            <p>{{ t('privacy_intro_body') }}</p>
-          </div>
-        </section>
+    <div class="legal-container legal-content">
+      <h2>{{ t('privacy_intro_title') }}</h2>
+      <p>{{ t('privacy_intro_body') }}</p>
 
-        <section class="legal-section">
-          <h2>{{ t('privacy_data_title') }}</h2>
-          <div class="legal-prose">
-            <p>{{ t('privacy_data_body') }}</p>
-            <ul class="legal-list">
-              <li v-for="(segments, idx) in dataItems" :key="idx">
-                <template v-for="(seg, segIdx) in segments" :key="segIdx">
-                  <strong v-if="seg.strong">{{ seg.text }}</strong>
-                  <template v-else>{{ seg.text }}</template>
-                </template>
-              </li>
-            </ul>
-          </div>
-        </section>
+      <h2>{{ t('privacy_data_title') }}</h2>
+      <p>{{ t('privacy_data_body') }}</p>
+      <ul>
+        <li v-for="(segments, idx) in dataItems" :key="idx">
+          <template v-for="(seg, segIdx) in segments" :key="segIdx">
+            <strong v-if="seg.strong">{{ seg.text }}</strong>
+            <template v-else>{{ seg.text }}</template>
+          </template>
+        </li>
+      </ul>
 
-        <section class="legal-section">
-          <h2>{{ t('privacy_usage_title') }}</h2>
-          <div class="legal-prose">
-            <p>{{ t('privacy_usage_body') }}</p>
-            <ul class="legal-list">
-              <li v-for="(item, idx) in usageItems" :key="idx">{{ item }}</li>
-            </ul>
-          </div>
-        </section>
+      <h2>{{ t('privacy_usage_title') }}</h2>
+      <p>{{ t('privacy_usage_body') }}</p>
+      <ul>
+        <li v-for="(item, idx) in usageItems" :key="idx">{{ item }}</li>
+      </ul>
 
-        <section class="legal-section">
-          <h2>{{ t('privacy_security_title') }}</h2>
-          <div class="legal-prose">
-            <p>{{ t('privacy_security_body') }}</p>
-          </div>
-        </section>
+      <h2>{{ t('privacy_security_title') }}</h2>
+      <p>{{ t('privacy_security_body') }}</p>
 
-        <section class="legal-section">
-          <h2>{{ t('privacy_retention_title') }}</h2>
-          <div class="legal-prose">
-            <p>{{ t('privacy_retention_body') }}</p>
-          </div>
-        </section>
+      <h2>{{ t('privacy_retention_title') }}</h2>
+      <p>{{ t('privacy_retention_body') }}</p>
 
-        <section class="legal-section">
-          <h2>{{ t('privacy_rights_title') }}</h2>
-          <div class="legal-prose">
-            <p>{{ t('privacy_rights_body') }}</p>
-          </div>
-        </section>
+      <h2>{{ t('privacy_rights_title') }}</h2>
+      <p>{{ t('privacy_rights_body') }}</p>
 
-        <nav class="legal-cross-nav" aria-label="Related documentation">
-          <NuxtLink to="/terms" class="legal-cross-link">{{ t('footer_terms') }} →</NuxtLink>
-          <NuxtLink to="/features" class="legal-cross-link">{{ t('nav_features') }} →</NuxtLink>
-          <NuxtLink to="/pricing" class="legal-cross-link">{{ t('nav_pricing') }} →</NuxtLink>
-        </nav>
-      </div>
-    </article>
+      <nav class="legal-cross-nav" aria-label="Related documentation">
+        <NuxtLink to="/terms" class="legal-cross-link">{{ t('footer_terms') }} &rarr;</NuxtLink>
+        <NuxtLink to="/features" class="legal-cross-link">{{ t('nav_features') }} &rarr;</NuxtLink>
+        <NuxtLink to="/pricing" class="legal-cross-link">{{ t('nav_pricing') }} &rarr;</NuxtLink>
+      </nav>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .legal-page {
-  background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #68293A);
+  padding-bottom: 6rem;
 }
 
 .legal-header {
-  background: linear-gradient(180deg, var(--k-cream, #F6E6D7) 0%, var(--k-surface-alt, #FBF4ED) 100%);
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  padding: 4.5rem 0 3.25rem;
+  background: linear-gradient(180deg, rgba(104, 41, 58, 0.03) 0%, transparent 100%);
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid rgba(104, 41, 58, 0.06);
+  margin-bottom: 3rem;
 }
 
-.legal-hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 2.5rem;
-  align-items: end;
+.legal-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem;
 }
 
-.legal-updated {
-  margin: 0 0 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--k-ink, #68293A);
-}
-
-.legal-lead {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.65;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-}
-
-.legal-body {
-  background: var(--k-surface, #FFFFFF);
-  padding: 2rem 0 5rem;
-}
-
-.legal-section {
-  display: grid;
-  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
-  gap: 2.5rem;
-  padding: 2.25rem 0;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  align-items: start;
-}
-
-.legal-section h2 {
-  margin: 0;
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: 1.35rem;
+.legal-content h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  color: #68293A;
+  margin: 2.5rem 0 1rem;
   font-weight: 400;
-  line-height: 1.25;
-  letter-spacing: -0.005em;
-  color: var(--k-ink, #68293A);
 }
 
-.legal-prose p {
-  margin: 0 0 1rem;
-  max-width: 66ch;
+.legal-content p {
   font-size: 1rem;
   line-height: 1.7;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.72);
+  margin-bottom: 1.2rem;
 }
 
-.legal-prose p:last-child {
-  margin-bottom: 0;
+.legal-content ul {
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.legal-list {
-  margin: 1rem 0 0;
-  padding-left: 1.25rem;
-  max-width: 66ch;
+.legal-content li {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(104, 41, 58, 0.72);
+  margin-bottom: 0.5rem;
 }
 
-.legal-list li {
-  font-size: 0.96875rem;
-  line-height: 1.68;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  margin-bottom: 0.65rem;
+.legal-content li strong {
+  color: #68293A;
 }
 
-.legal-list li:last-child {
-  margin-bottom: 0;
+.m-heading {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.5rem;
+  color: #68293A;
+  margin-bottom: 0.5rem;
+  font-weight: 400;
 }
 
-.legal-list li strong {
-  color: var(--k-ink, #68293A);
-  font-weight: 600;
+.m-sub {
+  font-size: 1rem;
+  color: rgba(104, 41, 58, 0.65);
+  margin: 0;
 }
 
 .legal-cross-nav {
@@ -226,36 +165,34 @@ const usageItems = computed(() => [
   flex-wrap: wrap;
   gap: 1.5rem;
   padding-top: 2.25rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
 }
 
 .legal-cross-link {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   text-decoration: none;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid rgba(104, 41, 58, 0.14);
   padding-bottom: 2px;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .legal-cross-link:hover {
-  color: var(--k-accent, #FF5776);
-  border-color: var(--k-accent, #FF5776);
+  color: #FF5776;
+  border-color: #FF5776;
 }
 
 @media (max-width: 768px) {
   .legal-header {
-    padding: 3rem 0 2.25rem;
+    padding: 3rem 0 2rem;
   }
-
-  .legal-hero-grid,
-  .legal-section {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1rem;
+  .m-heading {
+    font-size: 2.2rem;
   }
-
-  .legal-section {
-    padding: 1.75rem 0;
+  .legal-content h2 {
+    font-size: 1.4rem;
   }
 }
 </style>

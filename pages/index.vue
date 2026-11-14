@@ -34,6 +34,79 @@ onMounted(() => {
   void hydrateSession();
 });
 
+/* ── Original Hero Preview Cards Data & Interactive POS Mock ── */
+const tableRows = computed(() => [
+  { col: t('table_orders'),    type: t('table_cashier'), key: t('table_ready'), keyClass: 'pk' },
+  { col: t('table_inventory'), type: t('table_ops'),     key: '',               keyClass: '' },
+  { col: t('table_customers'), type: t('table_crm'),     key: '',               keyClass: '' },
+  { col: t('table_reports'),   type: t('table_manager'), key: t('table_live'),  keyClass: 'fk' },
+  { col: t('table_brand'),     type: t('table_warm'),    key: '',               keyClass: '' },
+]);
+
+const heroPosQtys = ref<[number, number, number]>([1, 1, 1]);
+const heroPosCharged = ref(false);
+
+const heroPosItems = computed(() => [
+  { idx: 0 as const, label: t('index_mock_item1'), unitPrice: 5.5, qty: heroPosQtys.value[0], alt: false },
+  { idx: 1 as const, label: t('index_mock_item2'), unitPrice: 4.0, qty: heroPosQtys.value[1], alt: true },
+  { idx: 2 as const, label: t('index_mock_item3'), unitPrice: 6.0, qty: heroPosQtys.value[2], alt: false },
+]);
+
+const heroPosTotal = computed(() =>
+  heroPosItems.value.reduce((sum, item) => sum + item.unitPrice * item.qty, 0),
+);
+
+function bumpHeroPosItem(idx: 0 | 1 | 2) {
+  heroPosCharged.value = false;
+  const next: [number, number, number] = [...heroPosQtys.value];
+  next[idx] = (next[idx] % 4) + 1;
+  heroPosQtys.value = next;
+}
+
+function triggerHeroCharge() {
+  if (heroPosCharged.value) {
+    heroPosQtys.value = [1, 1, 1];
+    heroPosCharged.value = false;
+  } else {
+    heroPosCharged.value = true;
+  }
+}
+
+/* ── Original SVG path strings for industry chips ─────────── */
+const industryIcons: Record<string, string> = {
+  restaurant: 'M18 8h1a4 4 0 0 1 0 8h-1 M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z M6 1v3 M10 1v3 M14 1v3',
+  logistics:  'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
+  retail:     'M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0',
+  healthcare: 'M22 12h-4l-3 9L9 3l-3 9H2',
+  construct:  'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
+  finance:    'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+};
+
+const industries = computed(() => [
+  { iconKey: 'restaurant', name: t('ind_restaurant') },
+  { iconKey: 'logistics',  name: t('ind_logistics')  },
+  { iconKey: 'retail',     name: t('ind_retail')     },
+  { iconKey: 'healthcare', name: t('ind_healthcare') },
+  { iconKey: 'construct',  name: t('ind_construct')  },
+  { iconKey: 'finance',    name: t('ind_finance')    },
+]);
+
+/* ── Original SVG path strings for pillar cards ───────────── */
+const pillarIcons: Record<string, string> = {
+  schema:   'M4 7h16 M4 12h16 M4 17h10 M16 17l2 2 4-4',
+  builder:  'M12 2L3 14h9l-1 8 10-12h-9l1-8z',
+  terminal: 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z M8 10l2 2-2 2 M12 14h4',
+  onboard:  'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7 M9 12h6 M9 16h4',
+};
+
+const pillars = computed(() => [
+  { iconKey: 'onboard',  title: t('pillar_setup_title'),    body: t('pillar_setup_body') },
+  { iconKey: 'schema',   title: t('pillar_schema_title'),   body: t('pillar_schema_body') },
+  { iconKey: 'builder',  title: t('pillar_builder_title'),  body: t('pillar_builder_body') },
+  { iconKey: 'terminal', title: t('pillar_terminal_title'), body: t('pillar_terminal_body') },
+]);
+
+/* ── Interactive 4-Preset Terminal Explorer State ─────────── */
 type PresetId = 'pos' | 'dispatch' | 'stock' | 'appt';
 
 const activePreset = ref<PresetId>('pos');
@@ -78,7 +151,7 @@ function togglePlatformVersion() {
     : 'Switched preview to v2.3 baseline preset layout';
 }
 
-/* ── 1. Counter POS interactive state ────────────────────── */
+/* 1. Counter POS interactive state */
 interface PosMenuItem {
   id: string;
   name: string;
@@ -145,7 +218,7 @@ function submitPosOrder() {
   latestAuditEvent.value = `TRM-POS-01 · ${orderNo} submitted ($${total.toFixed(2)} via ${posPayment.value})`;
 }
 
-/* ── 2. Logistics Dispatch interactive state ─────────────── */
+/* 2. Logistics Dispatch interactive state */
 type DispatchStatus = 'Pending' | 'Dispatched' | 'In transit' | 'Delivered';
 
 interface WaybillRow {
@@ -190,7 +263,7 @@ function addWaybill() {
   latestAuditEvent.value = `TRM-DSP-02 · Waybill ${code} created for ${dest}`;
 }
 
-/* ── 3. Stock Receiving interactive state ────────────────── */
+/* 3. Stock Receiving interactive state */
 interface StockRow {
   sku: string;
   name: string;
@@ -225,7 +298,7 @@ function createPoDraft() {
   latestAuditEvent.value = `TRM-INV-03 · Reorder PO drafted for ${lowStockCount.value} low-stock items`;
 }
 
-/* ── 4. Appointment Desk interactive state ───────────────── */
+/* 4. Appointment Desk interactive state */
 type ApptStatus = 'Booked' | 'Checked in' | 'Completed';
 
 interface ApptRow {
@@ -324,47 +397,143 @@ const directoryRows = computed(() => [
 
 <template>
   <div>
-    <!-- Hero (Asymmetric 2-column editorial layout) -->
-    <section class="hero-section">
-      <div class="m-inner hero-grid">
-        <div class="hero-intro">
-          <p class="hero-sub">
-            {{ t('index_hero_sub') }}
-          </p>
-          <ul class="hero-facts">
-            <li>{{ t('index_hero_fact1') }}</li>
-            <li>{{ t('index_hero_fact2') }}</li>
-            <li>{{ t('index_hero_fact3') }}</li>
-          </ul>
+    <!-- ── Hero ─────────────────────────────────────────────── -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-badge">
+          <span class="badge-dot" aria-hidden="true" />
+          {{ t('index_hero_badge') }}
         </div>
 
-        <div class="hero-lead">
-          <h1 class="m-heading-lg hero-headline">
-            {{ t('index_hero_headline') }}
-          </h1>
-          <div class="hero-cta">
-            <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">
-              {{ t('index_dashboard_cta') }}
-            </NuxtLink>
-            <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">
-              {{ t('index_hero_cta1') }}
-            </NuxtLink>
-            <NuxtLink to="/pricing" class="m-btn-secondary">
-              {{ t('index_cta_btn2') }}
-            </NuxtLink>
-            <NuxtLink to="/features" class="m-btn-ghost">
-              {{ t('index_hero_cta2') }}
-            </NuxtLink>
+        <h1 class="hero-headline">{{ t('index_hero_headline') }}</h1>
+
+        <p class="hero-sub">
+          {{ t('index_hero_sub') }}
+        </p>
+
+        <div class="hero-cta">
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
+          <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
+          <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
+        </div>
+
+        <ul class="hero-facts">
+          <li>{{ t('index_hero_fact1') }}</li>
+          <li>{{ t('index_hero_fact2') }}</li>
+          <li>{{ t('index_hero_fact3') }}</li>
+        </ul>
+      </div>
+
+      <div class="hero-preview">
+        <!-- Preview Card 1: Preset Setup Table -->
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="preview-dots" aria-hidden="true">
+              <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
+            </div>
+            <span class="preview-title">{{ t('index_preview_setup') }}</span>
+          </div>
+          <div class="preview-table">
+            <div class="table-head">
+              <span>{{ t('index_table_workflow') }}</span>
+              <span>{{ t('index_table_preset') }}</span>
+              <span>{{ t('index_table_status') }}</span>
+            </div>
+            <div v-for="(row, i) in tableRows" :key="row.col" class="table-row" :class="{ 'row-alt': i % 2 !== 0 }">
+              <span class="col-name">{{ row.col }}</span>
+              <span class="type-badge">{{ row.type }}</span>
+              <span v-if="row.key" :class="['key-badge', row.keyClass]">{{ row.key }}</span>
+              <span v-else />
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Card 2: POS Workspace with Hanging Bookmark Charge Button -->
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="preview-dots" aria-hidden="true">
+              <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
+            </div>
+            <span class="preview-title">{{ t('index_preview_pos') }}</span>
+          </div>
+          <div class="terminal-mock">
+            <div class="terminal-items">
+              <button
+                v-for="item in heroPosItems"
+                :key="item.idx"
+                type="button"
+                class="t-item"
+                :class="{ 't-alt': item.alt }"
+                @click="bumpHeroPosItem(item.idx)"
+              >
+                <span>{{ item.label }} <span v-if="item.qty > 1" class="t-qty">×{{ item.qty }}</span></span>
+                <span class="m-tabular">${{ (item.unitPrice * item.qty).toFixed(2) }}</span>
+              </button>
+            </div>
+            <div class="terminal-total">
+              <span>{{ t('index_mock_total') }}</span>
+              <span class="total-val m-tabular">${{ heroPosTotal.toFixed(2) }}</span>
+            </div>
+            <button
+              type="button"
+              class="terminal-charge btn-ribbon"
+              style="--ribbon-color: #68293A;"
+              @click="triggerHeroCharge"
+            >
+              {{ heroPosCharged ? `✓ ${t('index_mock_charge')} ($${heroPosTotal.toFixed(2)})` : t('index_mock_charge') }}
+            </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Interactive Terminal Preset Explorer -->
+    <!-- ── Industry strip ────────────────────────────────────── -->
+    <section class="section-industries">
+      <div class="section-inner">
+        <p class="m-overline">{{ t('index_industry_overline') }}</p>
+        <div class="industry-grid">
+          <div v-for="ind in industries" :key="ind.name" class="industry-chip">
+            <span class="chip-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path :d="industryIcons[ind.iconKey]" />
+              </svg>
+            </span>
+            <span>{{ ind.name }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Pillars ───────────────────────────────────────────── -->
+    <section class="section-pillars">
+      <div class="section-inner">
+        <div class="m-label-block">
+          <p class="m-overline">{{ t('index_pillars_overline') }}</p>
+          <h2 class="m-heading">{{ t('index_pillars_heading') }}</h2>
+          <p class="m-sub">{{ t('index_pillars_sub') }}</p>
+        </div>
+        <div class="pillar-grid">
+          <div v-for="p in pillars" :key="p.title" class="pillar-card">
+            <span class="pillar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path :d="pillarIcons[p.iconKey]" />
+              </svg>
+            </span>
+            <h3 class="pillar-title">{{ p.title }}</h3>
+            <p class="pillar-body">{{ p.body }}</p>
+            <NuxtLink to="/features" class="pillar-link">{{ t('index_pillars_learn_more') }}</NuxtLink>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Interactive Terminal Preset Explorer (Additive) ────── -->
     <section class="explorer-section" aria-labelledby="explorer-heading">
-      <div class="m-inner">
+      <div class="section-inner">
         <div class="explorer-header">
           <div class="explorer-heading-col">
+            <p class="m-overline">{{ t('index_explorer_title') }}</p>
             <h2 id="explorer-heading" class="m-heading">
               {{ t('index_explorer_heading') }}
             </h2>
@@ -419,6 +588,9 @@ const directoryRows = computed(() => [
           <div class="terminal-window" role="tabpanel">
             <div class="terminal-topbar">
               <div class="terminal-id-group">
+                <div class="preview-dots" aria-hidden="true">
+                  <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
+                </div>
                 <span class="terminal-code m-mono">{{ currentTab.code }}</span>
                 <span class="terminal-title">{{ currentTab.name }}</span>
               </div>
@@ -517,7 +689,8 @@ const directoryRows = computed(() => [
                   </div>
                   <button
                     type="button"
-                    class="terminal-action-btn"
+                    class="terminal-action-btn btn-ribbon"
+                    style="--ribbon-color: #68293A;"
                     :disabled="posTicketLines.length === 0"
                     @click="submitPosOrder"
                   >
@@ -545,7 +718,7 @@ const directoryRows = computed(() => [
                     class="inline-input"
                     placeholder="New destination..."
                   />
-                  <button type="submit" class="inline-submit">
+                  <button type="submit" class="inline-submit btn-ribbon" style="--ribbon-color: #68293A;">
                     {{ t('index_exp_add_waybill') }}
                   </button>
                 </form>
@@ -589,7 +762,8 @@ const directoryRows = computed(() => [
                   </span>
                   <button
                     type="button"
-                    class="inline-submit"
+                    class="inline-submit btn-ribbon"
+                    style="--ribbon-color: #68293A;"
                     :disabled="lowStockCount === 0"
                     @click="createPoDraft"
                   >
@@ -653,7 +827,7 @@ const directoryRows = computed(() => [
                     class="inline-input"
                     placeholder="Visitor name..."
                   />
-                  <button type="submit" class="inline-submit">
+                  <button type="submit" class="inline-submit btn-ribbon" style="--ribbon-color: #68293A;">
                     {{ t('index_exp_checkin') }}
                   </button>
                 </form>
@@ -697,34 +871,54 @@ const directoryRows = computed(() => [
       </div>
     </section>
 
-    <!-- Why Managed SaaS Beats One-Off Agency Software -->
-    <section class="philosophy-section">
-      <div class="m-inner philosophy-grid">
-        <div class="philosophy-lead">
-          <h2 class="m-heading">
-            {{ t('index_philosophy_heading') }}
-          </h2>
+    <!-- ── Philosophy (Restored 2x2 Badges + SaaS Comparison) ── -->
+    <section class="section-philosophy">
+      <div class="section-inner philosophy-inner">
+        <div class="philosophy-text">
+          <p class="m-overline">{{ t('index_philosophy_overline') }}</p>
+          <h2 class="m-heading">{{ t('index_philosophy_heading') }}</h2>
           <p class="m-sub">
             {{ t('index_philosophy_sub') }}
           </p>
-          <NuxtLink to="/features" class="m-btn-secondary" style="margin-top: 1.5rem;">
+
+          <div class="comparison-list">
+            <div v-for="item in comparisons" :key="item.title" class="comparison-row">
+              <h3 class="comparison-title">{{ item.title }}</h3>
+              <p class="comparison-body">{{ item.body }}</p>
+            </div>
+          </div>
+
+          <NuxtLink to="/features" class="m-btn-secondary" style="margin-top: 1.75rem;">
             {{ t('index_philosophy_cta') }}
           </NuxtLink>
         </div>
 
-        <div class="comparison-list">
-          <div v-for="item in comparisons" :key="item.title" class="comparison-row">
-            <h3 class="comparison-title">{{ item.title }}</h3>
-            <p class="comparison-body">{{ item.body }}</p>
+        <div class="philosophy-badges">
+          <div class="badge-card badge-plain">
+            <h3 class="badge-title">{{ t('badge_preset_title') }}</h3>
+            <p class="badge-body">{{ t('badge_preset_body') }}</p>
+          </div>
+          <div class="badge-card badge-dark">
+            <h3 class="badge-title">{{ t('badge_style_title') }}</h3>
+            <p class="badge-body">{{ t('badge_style_body') }}</p>
+          </div>
+          <div class="badge-card badge-brand">
+            <h3 class="badge-title">{{ t('badge_role_title') }}</h3>
+            <p class="badge-body">{{ t('badge_role_body') }}</p>
+          </div>
+          <div class="badge-card badge-outline">
+            <h3 class="badge-title">{{ t('badge_theme_title') }}</h3>
+            <p class="badge-body">{{ t('badge_theme_body') }}</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Hairline-Ruled Preset Directory Across Industries -->
+    <!-- ── Preset Directory Across Industries (Additive) ──────── -->
     <section class="directory-section">
-      <div class="m-inner">
+      <div class="section-inner">
         <div class="directory-header">
+          <p class="m-overline">{{ t('index_industry_overline') }}</p>
           <h2 class="m-heading">{{ t('index_directory_heading') }}</h2>
           <p class="m-sub">{{ t('index_directory_sub') }}</p>
         </div>
@@ -744,27 +938,16 @@ const directoryRows = computed(() => [
       </div>
     </section>
 
-    <!-- Solid Dark Closing Band -->
-    <section class="m-cta-strip-dark">
-      <div class="m-cta-inner dark-cta-layout">
-        <div>
-          <h2 class="m-cta-heading-light">
-            {{ t('index_cta_heading') }}
-          </h2>
-          <p class="m-cta-sub-light" style="margin-bottom: 0;">
-            {{ t('index_cta_sub') }}
-          </p>
-        </div>
+    <!-- ── Bottom CTA ────────────────────────────────────────── -->
+    <section class="m-cta-strip">
+      <div class="m-cta-inner">
+        <h2 class="m-cta-heading">{{ t('index_cta_heading') }}</h2>
+        <p class="m-cta-sub">{{ t('index_cta_sub') }}</p>
         <div class="m-cta-btns">
-          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">
-            {{ t('index_dashboard_cta') }}
-          </NuxtLink>
-          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">
-            {{ t('index_cta_btn1') }}
-          </NuxtLink>
-          <NuxtLink to="/pricing" class="m-btn-ghost on-dark">
-            {{ t('index_cta_btn2') }}
-          </NuxtLink>
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
+          <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
+          <NuxtLink to="/features" class="m-btn-ghost">{{ t('nav_features') }} →</NuxtLink>
         </div>
       </div>
     </section>
@@ -772,74 +955,348 @@ const directoryRows = computed(() => [
 </template>
 
 <style scoped>
-/* Hero */
-.hero-section {
-  background: transparent;
-  padding: clamp(3rem, 7vw, 5.5rem) 0 clamp(2.5rem, 5vw, 4rem);
+/* ── Shared ─────────────────────────────────────────── */
+.section-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 2rem;
 }
 
-.hero-grid {
+/* ── Hero ─────────────────────────────────────────────── */
+.hero {
+  position: relative;
   display: grid;
-  grid-template-columns: 5fr 7fr;
-  gap: clamp(2rem, 5vw, 4.5rem);
-  align-items: start;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 5.5rem 2rem 5rem;
+  overflow: visible;
 }
 
-.hero-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding-top: 0.35rem;
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1.5px solid rgba(255, 87, 118, 0.28);
+  background: rgba(255, 87, 118, 0.07);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #FF5776;
+  letter-spacing: 0.03em;
+  margin-bottom: 1.5rem;
 }
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FF5776;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+.hero-headline {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-weight: 400;
+  line-height: 1.12;
+  color: #68293A;
+  margin: 0 0 1.2rem;
+  text-decoration: none;
+}
+.hero-headline em { font-style: italic; color: #FF5776; text-decoration: none; }
 
 .hero-sub {
   font-size: 1rem;
-  line-height: 1.65;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  margin: 0;
+  line-height: 1.72;
+  color: rgba(104, 41, 58, 0.65);
+  max-width: 480px;
+  margin: 0 0 2rem;
+}
+
+.hero-inner { position: relative; z-index: 1; }
+
+.hero-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
 }
 
 .hero-facts {
   list-style: none;
   padding: 1.25rem 0 0;
-  margin: 0;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  margin: 1rem 0 0;
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--k-ink, #68293A);
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.84rem;
+  color: rgba(104, 41, 58, 0.72);
   font-weight: 500;
 }
 
 .hero-facts li {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
+  gap: 0.45rem;
 }
 
 .hero-facts li::before {
   content: '—';
-  color: var(--k-accent, #FF5776);
+  color: #FF5776;
   font-weight: 600;
 }
 
-.hero-headline {
-  margin-bottom: 2rem;
+/* ── Hero preview cards ───────────────────────────────── */
+.hero-preview {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
 }
 
-.hero-cta {
+.preview-card {
+  background: #FFFFFF;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(104, 41, 58, 0.09);
+  box-shadow: 0 6px 24px rgba(104, 41, 58, 0.08), 0 1px 4px rgba(104, 41, 58, 0.05);
+  overflow: visible;
+}
+
+.preview-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding-bottom: 10px;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid rgba(104, 41, 58, 0.07);
+  background: #F6E6D7;
+  border-radius: 0.75rem 0.75rem 0 0;
 }
 
-/* Interactive Explorer */
-.explorer-section {
+.preview-dots { display: flex; align-items: center; gap: 0.32rem; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot-red    { background: #FF5F56; }
+.dot-yellow { background: #FFBD2E; }
+.dot-green  { background: #27C93F; }
+
+.preview-title {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgba(104, 41, 58, 0.55);
+  margin-left: 0.2rem;
+}
+
+/* Preset table */
+.preview-table { padding: 0.6rem; display: flex; flex-direction: column; }
+
+.table-head {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr 0.7fr;
+  gap: 0.5rem;
+  padding: 0 0.6rem 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(104, 41, 58, 0.42);
+  border-bottom: 1px solid rgba(104, 41, 58, 0.08);
+  margin-bottom: 0.2rem;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr 0.7fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.36rem 0.6rem;
+  border-radius: 0.35rem;
+  font-size: 0.78rem;
+  color: rgba(104, 41, 58, 0.75);
+}
+.row-alt { background: #F6E6D7; }
+
+.col-name { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; }
+
+.type-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  background: rgba(255, 87, 118, 0.1);
+  color: #FF5776;
+  border-radius: 3px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  width: fit-content;
+}
+
+.key-badge {
+  display: inline-block;
+  padding: 0.1rem 0.38rem;
+  border-radius: 3px;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  width: fit-content;
+}
+.key-badge.pk { background: rgba(104, 41, 58, 0.1); color: #68293A; }
+.key-badge.fk { background: transparent; color: rgba(104, 41, 58, 0.55); border: 1px solid rgba(104, 41, 58, 0.18); }
+
+/* Workspace preview */
+.terminal-mock { padding: 0.85rem 0.85rem 1.15rem; }
+.terminal-items { display: flex; flex-direction: column; margin-bottom: 0.7rem; gap: 0.15rem; }
+
+.t-item {
+  width: 100%;
+  border: none;
   background: transparent;
-  padding: clamp(3rem, 6vw, 5rem) 0;
+  display: flex;
+  justify-content: space-between;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: rgba(104, 41, 58, 0.75);
+  padding: 0.36rem 0.55rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.12s ease;
+}
+.t-item:hover { background: rgba(255, 87, 118, 0.08); }
+.t-alt { background: #F6E6D7; }
+.t-qty { font-weight: 700; color: #FF5776; margin-left: 0.25rem; }
+
+.terminal-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0.55rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: #68293A;
+  border-top: 1px solid rgba(104, 41, 58, 0.1);
+  margin-bottom: 0.7rem;
+}
+.total-val { font-family: 'DM Serif Display', serif; font-size: 1rem; }
+
+.terminal-charge {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: none;
+  font-family: inherit;
+  text-align: center;
+  padding: 0.55rem;
+  background: #68293A;
+  color: #F6E6D7;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  overflow: visible;
+  transition: opacity 0.15s;
+}
+.terminal-charge:hover { opacity: 0.88; }
+
+/* ── Industries ───────────────────────────────────────── */
+.section-industries {
+  padding: 1rem 0 3rem;
+  text-align: center;
+}
+.section-industries .section-inner { display: flex; flex-direction: column; align-items: center; }
+
+.industry-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.industry-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.95rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.1);
+  border-radius: 0.45rem;
+  font-size: 0.855rem;
+  font-weight: 500;
+  color: #68293A;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.industry-chip:hover { border-color: rgba(255, 87, 118, 0.3); transform: translateY(-1px); }
+
+.chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  color: rgba(104, 41, 58, 0.55);
+  flex-shrink: 0;
+}
+.chip-icon svg { width: 1.1rem; height: 1.1rem; }
+
+/* ── Pillars ──────────────────────────────────────────── */
+.section-pillars {
+  padding: 4.5rem 0;
+}
+
+.pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.1rem;
+}
+
+.pillar-card {
+  padding: 1.5rem;
+  background: #FFFFFF;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(104, 41, 58, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.pillar-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(104, 41, 58, 0.09);
+}
+
+.pillar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 87, 118, 0.1);
+  color: #FF5776;
+  flex-shrink: 0;
+}
+.pillar-icon svg { width: 1.1rem; height: 1.1rem; }
+
+.pillar-title { font-weight: 700; font-size: 0.98rem; color: #68293A; margin: 0; }
+.pillar-body  { font-size: 0.845rem; color: rgba(104, 41, 58, 0.62); line-height: 1.6; flex: 1; margin: 0; }
+.pillar-link  { font-size: 0.79rem; font-weight: 600; color: #FF5776; text-decoration: none; margin-top: 0.3rem; }
+.pillar-link:hover { text-decoration: underline; }
+
+/* ── Interactive Explorer ─────────────────────────────── */
+.explorer-section {
+  padding: 4.5rem 0;
+  background: #FDFAF7;
+  border-top: 1px solid rgba(104, 41, 58, 0.07);
+  border-bottom: 1px solid rgba(104, 41, 58, 0.07);
 }
 
 .explorer-header {
@@ -851,11 +1308,11 @@ const directoryRows = computed(() => [
 }
 
 .rollout-box {
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  background: var(--k-surface, #FFFFFF);
+  border: 1px solid rgba(104, 41, 58, 0.12);
+  background: #FFFFFF;
   padding: 1rem 1.15rem;
-  border-radius: var(--k-radius, 0.75rem);
-  box-shadow: var(--k-shadow, 0 6px 24px rgba(104, 41, 58, 0.08));
+  border-radius: 0.75rem;
+  box-shadow: 0 6px 24px rgba(104, 41, 58, 0.06);
 }
 
 .rollout-top {
@@ -869,7 +1326,7 @@ const directoryRows = computed(() => [
 .rollout-label {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
 
 .rollout-switch {
@@ -877,55 +1334,50 @@ const directoryRows = computed(() => [
   align-items: center;
   gap: 0.5rem;
   padding: 0.3rem 0.6rem 0.3rem 0.35rem;
-  background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.16);
+  border-radius: 0.5rem;
   cursor: pointer;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   font-size: 0.78rem;
   font-weight: 600;
 }
 
 .rollout-switch.active {
-  border-color: var(--k-accent, #FF5776);
-}
-
-.rollout-switch:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 2px;
+  border-color: #FF5776;
 }
 
 .rollout-thumb {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--k-border, rgba(104, 41, 58, 0.14));
+  background: rgba(104, 41, 58, 0.2);
   transition: background-color 0.15s ease;
 }
 
 .rollout-switch.active .rollout-thumb {
-  background: var(--k-accent, #FF5776);
+  background: #FF5776;
 }
 
 .rollout-note {
   margin: 0.55rem 0 0;
   font-size: 0.8125rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.65);
   line-height: 1.45;
 }
 
 .explorer-shell {
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  background: var(--k-surface-alt, #FBF4ED);
-  border-radius: var(--k-radius-lg, 0.9rem);
+  border: 1px solid rgba(104, 41, 58, 0.12);
+  background: #FBF4ED;
+  border-radius: 0.75rem;
   overflow: hidden;
-  box-shadow: var(--k-shadow-lg, 0 12px 36px rgba(104, 41, 58, 0.1));
+  box-shadow: 0 12px 36px rgba(104, 41, 58, 0.09);
 }
 
 .preset-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid rgba(104, 41, 58, 0.12);
 }
 
 .preset-tab {
@@ -934,64 +1386,49 @@ const directoryRows = computed(() => [
   align-items: flex-start;
   gap: 0.2rem;
   padding: 0.95rem 1.1rem;
-  background: var(--k-surface-alt, #FBF4ED);
+  background: #FBF4ED;
   border: none;
-  border-right: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-right: 1px solid rgba(104, 41, 58, 0.12);
   border-bottom: 2px solid transparent;
   text-align: left;
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-.preset-tab:last-child {
-  border-right: none;
-}
-
-.preset-tab:hover {
-  background: var(--k-cream, #F6E6D7);
-}
-
+.preset-tab:last-child { border-right: none; }
+.preset-tab:hover { background: #F6E6D7; }
 .preset-tab.active {
-  background: var(--k-surface, #FFFFFF);
-  border-bottom-color: var(--k-accent, #FF5776);
-}
-
-.preset-tab:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: -2px;
+  background: #FFFFFF;
+  border-bottom-color: #FF5776;
 }
 
 .preset-tab-code {
   font-size: 0.72rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.65);
 }
-
-.preset-tab.active .preset-tab-code {
-  color: var(--k-accent, #FF5776);
-}
+.preset-tab.active .preset-tab-code { color: #FF5776; }
 
 .preset-tab-name {
   font-size: 0.92rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
 
 .preset-tab-role {
   font-size: 0.8rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.65);
 }
 
-.terminal-window {
-  background: var(--k-surface, #FFFFFF);
-}
+.terminal-window { background: #FFFFFF; }
 
 .terminal-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.85rem 1.25rem;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(104, 41, 58, 0.1);
+  background: #F6E6D7;
   flex-wrap: wrap;
 }
 
@@ -999,44 +1436,42 @@ const directoryRows = computed(() => [
 .terminal-meta-group {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .terminal-code {
   font-size: 0.78rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.65);
 }
 
 .terminal-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
 
 .terminal-sync {
   font-size: 0.8rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.68);
 }
 
 .terminal-version {
   padding: 0.18rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border: 1px solid rgba(104, 41, 58, 0.15);
   border-radius: 0.4rem;
-  color: var(--k-ink, #68293A);
-  background: var(--k-surface-alt, #FBF4ED);
+  color: #68293A;
+  background: #FFFFFF;
 }
 
 .terminal-version.upgraded {
-  border-color: var(--k-accent, #FF5776);
-  background: var(--k-accent, #FF5776);
-  color: var(--k-on-accent, #FFFFFF);
+  border-color: #FF5776;
+  background: #FF5776;
+  color: #FFFFFF;
 }
 
-.terminal-body {
-  padding: 1.25rem;
-}
+.terminal-body { padding: 1.35rem 1.35rem 1.65rem; }
 
 .pos-grid {
   display: grid;
@@ -1062,7 +1497,7 @@ const directoryRows = computed(() => [
 .pane-heading {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   margin: 0;
 }
 
@@ -1079,22 +1514,17 @@ const directoryRows = computed(() => [
   justify-content: space-between;
   gap: 0.45rem;
   padding: 0.85rem;
-  background: var(--k-surface-alt, #FBF4ED);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
+  background: #FBF4ED;
+  border: 1px solid rgba(104, 41, 58, 0.12);
+  border-radius: 0.5rem;
   cursor: pointer;
   text-align: left;
   transition: border-color 0.12s ease, background-color 0.12s ease;
 }
 
 .pos-item-btn:hover {
-  border-color: var(--k-ink, #68293A);
-  background: var(--k-cream, #F6E6D7);
-}
-
-.pos-item-btn:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 2px;
+  border-color: #68293A;
+  background: #F6E6D7;
 }
 
 .pos-item-main {
@@ -1105,25 +1535,25 @@ const directoryRows = computed(() => [
 
 .pos-item-sku {
   font-size: 0.72rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.65);
 }
 
 .pos-item-name {
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
 
 .pos-item-price {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
 
 .payment-selector {
   display: inline-flex;
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
+  border: 1px solid rgba(104, 41, 58, 0.14);
+  border-radius: 0.5rem;
   overflow: hidden;
 }
 
@@ -1131,34 +1561,31 @@ const directoryRows = computed(() => [
   padding: 0.3rem 0.65rem;
   font-size: 0.78rem;
   font-weight: 500;
-  background: var(--k-surface, #FFFFFF);
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  background: #FFFFFF;
+  color: rgba(104, 41, 58, 0.72);
   border: none;
-  border-right: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-right: 1px solid rgba(104, 41, 58, 0.14);
   cursor: pointer;
 }
-
-.pay-btn:last-child {
-  border-right: none;
-}
-
+.pay-btn:last-child { border-right: none; }
 .pay-btn.active {
-  background: var(--k-ink, #68293A);
-  color: var(--k-surface, #FFFFFF);
+  background: #68293A;
+  color: #F6E6D7;
 }
 
 .empty-ticket {
   padding: 1.5rem 1rem;
-  border: 1px dashed var(--k-border, rgba(104, 41, 58, 0.14));
+  border: 1px dashed rgba(104, 41, 58, 0.2);
+  border-radius: 0.5rem;
   text-align: center;
   font-size: 0.85rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.65);
 }
 
 .ticket-lines {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
 }
 
 .ticket-row {
@@ -1167,12 +1594,12 @@ const directoryRows = computed(() => [
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid rgba(104, 41, 58, 0.12);
   font-size: 0.86rem;
 }
 
 .ticket-name {
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   font-weight: 500;
   min-width: 0;
   overflow: hidden;
@@ -1192,16 +1619,12 @@ const directoryRows = computed(() => [
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--k-surface-alt, #FBF4ED);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  background: #FBF4ED;
+  border: 1px solid rgba(104, 41, 58, 0.14);
   border-radius: 0.4rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   cursor: pointer;
-}
-
-.qty-btn:hover {
-  border-color: var(--k-ink, #68293A);
 }
 
 .qty-val {
@@ -1212,7 +1635,7 @@ const directoryRows = computed(() => [
 
 .ticket-amount {
   font-weight: 600;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   min-width: 3.75rem;
   text-align: right;
 }
@@ -1223,7 +1646,7 @@ const directoryRows = computed(() => [
   justify-content: space-between;
   gap: 0.75rem;
   font-size: 0.82rem;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
 
 .discount-check {
@@ -1234,7 +1657,7 @@ const directoryRows = computed(() => [
 }
 
 .discount-val {
-  color: var(--k-accent, #FF5776);
+  color: #FF5776;
   font-weight: 600;
 }
 
@@ -1244,6 +1667,7 @@ const directoryRows = computed(() => [
   justify-content: space-between;
   gap: 1rem;
   padding-top: 0.35rem;
+  padding-bottom: 10px;
   flex-wrap: wrap;
 }
 
@@ -1252,100 +1676,85 @@ const directoryRows = computed(() => [
   align-items: baseline;
   gap: 0.65rem;
   font-size: 0.9rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.72);
 }
 
 .ticket-total-val {
+  font-family: 'DM Serif Display', serif;
   font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--k-ink, #68293A);
+  font-weight: 400;
+  color: #68293A;
 }
 
 .terminal-action-btn {
-  padding: 0.62rem 1.2rem;
-  background: var(--k-dark, #68293A);
-  color: var(--k-on-dark, #F6E6D7);
-  border: 1px solid var(--k-dark, #68293A);
-  border-radius: 0.55rem;
+  position: relative;
+  overflow: visible;
+  padding: 0.62rem 1.25rem;
+  background: #68293A;
+  color: #F6E6D7;
+  border: 1px solid #68293A;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 3px 12px rgba(104, 41, 58, 0.2);
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
-
-.terminal-action-btn:hover:not(:disabled) {
-  background: var(--k-dark-deep, #4A1A27);
-}
-
-.terminal-action-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.terminal-action-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.terminal-action-btn:hover:not(:disabled) { opacity: 0.88; }
+.terminal-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .receipt-strip {
   padding: 0.5rem 0.7rem;
-  background: var(--k-surface-alt, #FBF4ED);
-  border-left: 2px solid var(--k-accent, #FF5776);
+  background: #FBF4ED;
+  border-left: 2px solid #FF5776;
   font-size: 0.76rem;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
 
 .v24-note {
   margin: 0.75rem 0 0;
   padding-top: 0.65rem;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
   font-size: 0.8125rem;
-  color: var(--k-accent, #FF5776);
+  color: #FF5776;
   font-weight: 500;
 }
 
-/* Dispatch, Stock, Appt ledgers */
 .inline-entry {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  padding-bottom: 10px;
 }
 
 .inline-input {
   padding: 0.42rem 0.7rem;
   font-size: 0.84rem;
-  background: var(--k-surface-alt, #FBF4ED);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
-  color: var(--k-ink, #68293A);
+  background: #FBF4ED;
+  border: 1px solid rgba(104, 41, 58, 0.15);
+  border-radius: 0.5rem;
+  color: #68293A;
   min-width: 170px;
 }
 
-.inline-input:focus {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 1px;
-}
-
 .inline-submit {
+  position: relative;
+  overflow: visible;
   padding: 0.44rem 0.85rem;
   font-size: 0.82rem;
   font-weight: 600;
-  background: var(--k-ink, #68293A);
-  color: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-ink, #68293A);
-  border-radius: 0.55rem;
+  background: #68293A;
+  color: #F6E6D7;
+  border: 1px solid #68293A;
+  border-radius: 0.5rem;
   cursor: pointer;
 }
-
-.inline-submit:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.inline-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .ledger-table {
   margin-top: 0.9rem;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
 }
 
 .ledger-row {
@@ -1353,7 +1762,7 @@ const directoryRows = computed(() => [
   align-items: center;
   gap: 0.75rem;
   padding: 0.7rem 0;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid rgba(104, 41, 58, 0.12);
   font-size: 0.86rem;
 }
 
@@ -1366,74 +1775,31 @@ const directoryRows = computed(() => [
   grid-template-columns: 88px 1.3fr 1fr auto auto;
 }
 
-.ledger-code {
-  font-size: 0.78rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-}
-
-.ledger-primary {
-  font-weight: 600;
-  color: var(--k-ink, #68293A);
-}
-
+.ledger-code { font-size: 0.78rem; color: rgba(104, 41, 58, 0.65); }
+.ledger-primary { font-weight: 600; color: #68293A; }
 .ledger-secondary,
-.ledger-reorder {
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  font-size: 0.82rem;
-}
-
-.ledger-eta {
-  font-size: 0.76rem;
-  color: var(--k-ink, #68293A);
-}
-
-.ledger-qty {
-  font-weight: 600;
-  color: var(--k-ink, #68293A);
-}
-
-.ledger-status {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-}
-
+.ledger-reorder { color: rgba(104, 41, 58, 0.65); font-size: 0.82rem; }
+.ledger-eta { font-size: 0.76rem; color: #68293A; }
+.ledger-qty { font-weight: 600; color: #68293A; }
+.ledger-status { font-size: 0.82rem; font-weight: 600; color: rgba(104, 41, 58, 0.68); }
 .ledger-status.accent,
-.ledger-status.alert {
-  color: var(--k-accent, #FF5776);
-}
+.ledger-status.alert { color: #FF5776; }
 
-.stock-btns {
-  display: inline-flex;
-  gap: 0.4rem;
-}
-
-.stock-po-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.stock-alert-text {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--k-accent, #FF5776);
-}
+.stock-btns { display: inline-flex; gap: 0.4rem; }
+.stock-po-bar { display: flex; align-items: center; gap: 0.75rem; padding-bottom: 10px; }
+.stock-alert-text { font-size: 0.82rem; font-weight: 600; color: #FF5776; }
 
 .row-action-btn {
   padding: 0.34rem 0.65rem;
   font-size: 0.78rem;
   font-weight: 600;
-  background: var(--k-surface-alt, #FBF4ED);
-  color: var(--k-ink, #68293A);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
+  background: #FBF4ED;
+  color: #68293A;
+  border: 1px solid rgba(104, 41, 58, 0.15);
+  border-radius: 0.45rem;
   cursor: pointer;
 }
-
-.row-action-btn:hover {
-  border-color: var(--k-ink, #68293A);
-}
+.row-action-btn:hover { border-color: #68293A; }
 
 .terminal-audit-bar {
   display: flex;
@@ -1441,63 +1807,76 @@ const directoryRows = computed(() => [
   justify-content: space-between;
   gap: 1rem;
   padding: 0.7rem 1.25rem;
-  background: var(--k-surface-alt, #FBF4ED);
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  background: #FBF4ED;
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
   font-size: 0.78rem;
   flex-wrap: wrap;
 }
+.audit-label { font-weight: 600; color: rgba(104, 41, 58, 0.68); }
+.audit-msg { color: #68293A; }
 
-.audit-label {
-  font-weight: 600;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-}
+/* ── Philosophy ───────────────────────────────────────── */
+.section-philosophy { padding: 5rem 0; }
 
-.audit-msg {
-  color: var(--k-ink, #68293A);
-}
-
-/* Philosophy / Agency Comparison */
-.philosophy-section {
-  background: var(--k-cream, #F6E6D7);
-  padding: clamp(3rem, 6vw, 5rem) 0;
-}
-
-.philosophy-grid {
+.philosophy-inner {
   display: grid;
-  grid-template-columns: 5fr 7fr;
-  gap: clamp(2rem, 5vw, 4.5rem);
-  align-items: start;
+  grid-template-columns: 1fr 1fr;
+  gap: 4.5rem;
+  align-items: center;
 }
 
 .comparison-list {
-  border-top: 1px solid var(--k-blush, #E3C7B9);
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(104, 41, 58, 0.1);
 }
 
 .comparison-row {
-  padding: 1.35rem 0;
-  border-bottom: 1px solid var(--k-blush, #E3C7B9);
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(104, 41, 58, 0.1);
 }
 
 .comparison-title {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: 1.3rem;
-  font-weight: 400;
-  line-height: 1.2;
-  color: var(--k-ink, #68293A);
-  margin: 0 0 0.45rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #68293A;
+  margin: 0 0 0.25rem;
 }
 
 .comparison-body {
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: rgba(104, 41, 58, 0.62);
   margin: 0;
 }
 
-/* Industry Preset Directory */
+.philosophy-badges {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.badge-card {
+  border-radius: 0.75rem;
+  padding: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.badge-plain   { background: #FFFFFF; border: 1px solid rgba(104, 41, 58, 0.09); box-shadow: 0 4px 16px rgba(104, 41, 58, 0.04); }
+.badge-dark    { background: #68293A; color: #F6E6D7; }
+.badge-brand   { background: #FF5776; color: #FFFFFF; }
+.badge-outline { background: transparent; border: 1.5px solid rgba(104, 41, 58, 0.14); }
+
+.badge-title { font-weight: 700; font-size: 0.92rem; margin: 0; }
+.badge-body  { font-size: 0.82rem; line-height: 1.55; margin: 0; opacity: 0.78; }
+.badge-dark .badge-body, .badge-brand .badge-body { opacity: 0.86; }
+
+/* ── Industry Preset Directory ────────────────────────── */
 .directory-section {
-  background: var(--k-surface, #FFFFFF);
-  padding: clamp(3rem, 6vw, 5rem) 0;
+  background: #FDFAF7;
+  border-top: 1px solid rgba(104, 41, 58, 0.07);
+  padding: 4.5rem 0;
 }
 
 .directory-header {
@@ -1506,7 +1885,11 @@ const directoryRows = computed(() => [
 }
 
 .directory-table {
-  border-top: 2px solid var(--k-ink, #68293A);
+  border-top: 2px solid #68293A;
+  background: #FFFFFF;
+  border-radius: 0 0 0.75rem 0.75rem;
+  padding: 0 1rem;
+  box-shadow: 0 4px 18px rgba(104, 41, 58, 0.05);
 }
 
 .directory-head,
@@ -1516,113 +1899,70 @@ const directoryRows = computed(() => [
   gap: 1.25rem;
   align-items: baseline;
   padding: 1rem 0.5rem;
-  border-bottom: 1px solid var(--k-blush, #E3C7B9);
+  border-bottom: 1px solid rgba(104, 41, 58, 0.1);
 }
 
-.directory-row {
-  transition: background-color 0.15s ease;
-}
-
-.directory-row:hover {
-  background: var(--k-strawberry-soft, #FFEBEF);
-}
+.directory-row:last-child { border-bottom: none; }
+.directory-row:hover { background: #FFF8FA; }
 
 .directory-head {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(104, 41, 58, 0.55);
 }
 
 .dir-industry {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: 1.15rem;
-  font-weight: 400;
-  color: var(--k-ink, #68293A);
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.12rem;
+  color: #68293A;
 }
 
 .dir-presets {
-  font-size: 0.9rem;
-  color: var(--k-ink, #68293A);
+  font-size: 0.88rem;
+  color: #68293A;
   line-height: 1.45;
 }
 
 .dir-tables {
-  font-size: 0.8rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  font-size: 0.78rem;
+  color: rgba(104, 41, 58, 0.68);
 }
 
-/* Closing dark CTA layout */
-.dark-cta-layout {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-
-/* Responsive */
+/* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero-grid,
+  .hero { grid-template-columns: 1fr; gap: 2.5rem; padding: 3.5rem 1.25rem 4rem; }
+  .pillar-grid { grid-template-columns: 1fr 1fr; }
   .explorer-header,
-  .philosophy-grid {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  .hero-intro {
-    order: 2;
-    padding-top: 0;
-  }
-
-  .hero-lead {
-    order: 1;
-  }
-
-  .preset-tabs {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .preset-tab {
-    border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  }
-
-  .pos-grid {
-    grid-template-columns: 1fr;
-  }
-
+  .philosophy-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+  .preset-tabs { grid-template-columns: repeat(2, 1fr); }
+  .preset-tab { border-bottom: 1px solid rgba(104, 41, 58, 0.12); }
+  .pos-grid { grid-template-columns: 1fr; }
   .dispatch-row,
   .appt-row,
   .stock-row {
     grid-template-columns: 1fr 1fr;
     gap: 0.4rem 0.75rem;
   }
-
-  .directory-head {
-    display: none;
-  }
-
+  .directory-head { display: none; }
   .directory-row {
     grid-template-columns: 1fr;
     gap: 0.35rem;
   }
 }
 
-@media (max-width: 520px) {
-  .preset-tabs {
+@media (max-width: 600px) {
+  .section-inner { padding: 0 1.25rem; }
+  .pillar-grid,
+  .philosophy-badges,
+  .preset-tabs,
+  .pos-menu-list,
+  .dispatch-row,
+  .appt-row,
+  .stock-row {
     grid-template-columns: 1fr;
   }
-
-  .preset-tab {
-    border-right: none;
-  }
-
-  .pos-menu-list {
-    grid-template-columns: 1fr;
-  }
-
-  .inline-input {
-    min-width: 0;
-    width: 100%;
-  }
+  .preset-tab { border-right: none; }
 }
 </style>

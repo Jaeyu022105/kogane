@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, Check } from 'lucide-vue-next';
+import { Monitor, ShieldCheck, WifiOff, Users, ArrowRight, CheckCircle2, Check } from 'lucide-vue-next';
 
 definePageMeta({ layout: 'marketing' });
 
@@ -77,11 +77,38 @@ const plans = computed(() => {
   ];
 });
 
-const whyRows = computed(() => [
-  { title: t('pricing_why_1_title'), body: t('pricing_why_1_body') },
-  { title: t('pricing_why_2_title'), body: t('pricing_why_2_body') },
-  { title: t('pricing_why_3_title'), body: t('pricing_why_3_body') },
-]);
+const workstationModels = [
+  {
+    name: 'Cashier Register',
+    badge: 'Front Counter',
+    description: 'Fast counter sales, order entry, custom ticket totals, receipt generation, and payment processing.',
+    details: ['Table & queue management', 'Payment method logging', 'Instant receipt printing'],
+  },
+  {
+    name: 'Inventory Manager',
+    badge: 'Stock Operations',
+    description: 'Stock level tracking, catalog synchronisation, inbound supply shipments, and receiving records.',
+    details: ['Inbound stock logs', 'Reorder threshold alerts', 'Direct inventory ledger'],
+  },
+  {
+    name: 'Kitchen Display',
+    badge: 'Prep Line',
+    description: 'Live order board and ticket queues for kitchen and prep staff to coordinate food & drink preparation.',
+    details: ['Real-time status updates', 'Order fulfill actions', 'Dedicated pass-through display'],
+  },
+  {
+    name: 'Catalog Registrar',
+    badge: 'Product Desk',
+    description: 'Dedicated catalog maintenance terminal for item descriptions, pricing, and category setup.',
+    details: ['Item catalog registry', 'Price configuration', 'Category categorization'],
+  },
+  {
+    name: 'Reports & Analytics',
+    badge: 'Back Office',
+    description: 'Full business sales ledgers, compliance records, tax audit views, and operational performance trends.',
+    details: ['Audit logs & daily ledger', 'Sales forecast schedules', 'Tax compliance exports'],
+  },
+];
 
 const comparisonRows = computed(() => {
   const annual = billingCycle.value === 'annual';
@@ -243,46 +270,53 @@ usePageSeo({
 
 <template>
   <div class="pricing-page">
-    <!-- Hero & Billing Cycle -->
+    <!-- ── Hero Section (Restored main .pricing-hero + Billing Toggle) ── -->
     <section class="pricing-hero">
-      <div class="p-container hero-grid">
-        <div class="hero-intro">
-          <p class="hero-kicker">{{ t('pricing_hero_overline') }}</p>
-          <h1 class="hero-title">{{ t('pricing_hero_heading') }}</h1>
+      <div class="m-inner pricing-hero-inner">
+        <p class="m-overline">{{ t('pricing_hero_overline') }}</p>
+        <h1 class="m-heading-lg">{{ t('pricing_hero_heading') }}</h1>
+        <p class="m-sub" style="margin: 0 auto; max-width: 680px;">
+          {{ t('pricing_hero_sub') }}
+        </p>
+
+        <div class="hero-cta-wrap">
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">
+            {{ t('pricing_cta_dashboard') }} <ArrowRight class="w-4 h-4 ml-1" aria-hidden="true" />
+          </NuxtLink>
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">
+            {{ t('pricing_cta_btn1') }} <ArrowRight class="w-4 h-4 ml-1" aria-hidden="true" />
+          </NuxtLink>
         </div>
 
-        <div class="hero-aside">
-          <p class="hero-sub">{{ t('pricing_hero_sub') }}</p>
-          <div class="billing-row">
-            <div class="billing-control" role="group" :aria-label="t('pricing_billing_label')">
-              <button
-                type="button"
-                class="billing-btn"
-                :class="{ active: billingCycle === 'monthly' }"
-                :aria-pressed="billingCycle === 'monthly'"
-                @click="billingCycle = 'monthly'"
-              >
-                {{ t('pricing_billing_monthly') }}
-              </button>
-              <button
-                type="button"
-                class="billing-btn"
-                :class="{ active: billingCycle === 'annual' }"
-                :aria-pressed="billingCycle === 'annual'"
-                @click="billingCycle = 'annual'"
-              >
-                <span>{{ t('pricing_billing_annual') }}</span>
-                <span class="billing-save">{{ t('pricing_billing_save') }}</span>
-              </button>
-            </div>
+        <div class="billing-row">
+          <div class="billing-control" role="group" :aria-label="t('pricing_billing_label')">
+            <button
+              type="button"
+              class="billing-btn"
+              :class="{ active: billingCycle === 'monthly' }"
+              :aria-pressed="billingCycle === 'monthly'"
+              @click="billingCycle = 'monthly'"
+            >
+              {{ t('pricing_billing_monthly') }}
+            </button>
+            <button
+              type="button"
+              class="billing-btn"
+              :class="{ active: billingCycle === 'annual' }"
+              :aria-pressed="billingCycle === 'annual'"
+              @click="billingCycle = 'annual'"
+            >
+              <span>{{ t('pricing_billing_annual') }}</span>
+              <span class="billing-save">{{ t('pricing_billing_save') }}</span>
+            </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Pricing Plans -->
+    <!-- ── SaaS Pricing Plans Grid (Additive) ─────────────────── -->
     <section class="plans-section">
-      <div class="p-container">
+      <div class="m-inner">
         <h2 class="sr-only">{{ t('pricing_plans_heading') }}</h2>
 
         <div class="plans-grid">
@@ -311,7 +345,7 @@ usePageSeo({
             <NuxtLink
               :to="plan.ctaTo"
               class="plan-btn"
-              :class="[`plan-btn--${plan.buttonVariant}`, { ribbon: plan.featured }]"
+              :class="[`plan-btn--${plan.buttonVariant}`, { ribbon: plan.featured || plan.buttonVariant === 'dark' }]"
             >
               <span>{{ plan.ctaLabel }}</span>
               <ArrowRight class="plan-btn-icon" aria-hidden="true" />
@@ -330,28 +364,93 @@ usePageSeo({
       </div>
     </section>
 
-    <!-- Why SaaS Beats One-Off Agency Software -->
-    <section class="why-section">
-      <div class="p-container">
-        <div class="section-intro">
-          <h2 class="section-title">{{ t('pricing_why_heading') }}</h2>
-          <p class="section-sub">{{ t('pricing_why_sub') }}</p>
+    <!-- ── Core Pillars (Restored from main) ──────────────────── -->
+    <section class="section-pillars">
+      <div class="m-inner">
+        <div class="section-header text-center">
+          <p class="m-overline">{{ t('index_pillars_overline') }}</p>
+          <h2 class="m-heading-md">{{ t('pricing_why_heading') }}</h2>
+          <p class="m-sub" style="margin: 0 auto; max-width: 580px;">
+            {{ t('pricing_why_sub') }}
+          </p>
         </div>
 
-        <div class="why-list">
-          <div v-for="row in whyRows" :key="row.title" class="why-row">
-            <h3 class="why-row-title">{{ row.title }}</h3>
-            <p class="why-row-body">{{ row.body }}</p>
+        <div class="pillars-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap" aria-hidden="true">
+              <ShieldCheck class="w-6 h-6 text-[#FF5776]" />
+            </div>
+            <h3 class="pillar-title">{{ t('pricing_why_1_title') }}</h3>
+            <p class="pillar-text">
+              {{ t('pricing_why_1_body') }}
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap" aria-hidden="true">
+              <WifiOff class="w-6 h-6 text-[#FF5776]" />
+            </div>
+            <h3 class="pillar-title">Cloud Sync &amp; Local Ready</h3>
+            <p class="pillar-text">
+              {{ t('pricing_why_2_body') }}
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap" aria-hidden="true">
+              <Users class="w-6 h-6 text-[#FF5776]" />
+            </div>
+            <h3 class="pillar-title">Scalable Workstations</h3>
+            <p class="pillar-text">
+              {{ t('pricing_why_3_body') }}
+            </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Hairline-Ruled Feature Comparison Table -->
+    <!-- ── Included Workstations (Restored 5 Station Cards from main) ── -->
+    <section class="section-workstations">
+      <div class="m-inner">
+        <div class="section-header text-center">
+          <p class="m-overline">Included Workstations</p>
+          <h2 class="m-heading-md">Equip Your Entire Floor</h2>
+          <p class="m-sub" style="margin: 0 auto; max-width: 580px;">
+            Every standard workspace includes full configuration for all 5 official workstation roles.
+          </p>
+        </div>
+
+        <div class="workstations-grid">
+          <div
+            v-for="station in workstationModels"
+            :key="station.name"
+            class="station-card"
+          >
+            <div class="station-header">
+              <div class="station-icon" aria-hidden="true">
+                <Monitor class="w-5 h-5 text-[#68293A]" />
+              </div>
+              <span class="station-badge">{{ station.badge }}</span>
+            </div>
+            <h3 class="station-name">{{ station.name }}</h3>
+            <p class="station-desc">{{ station.description }}</p>
+            <ul class="station-details">
+              <li v-for="d in station.details" :key="d" class="station-detail-item">
+                <CheckCircle2 class="w-4 h-4 text-[#FF5776] shrink-0" aria-hidden="true" />
+                <span>{{ d }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Feature Comparison Table (Additive) ────────────────── -->
     <section class="compare-section">
-      <div class="p-container">
-        <div class="section-intro">
-          <h2 class="section-title">{{ t('pricing_compare_heading') }}</h2>
+      <div class="m-inner">
+        <div class="section-header text-center">
+          <p class="m-overline">{{ t('pricing_hero_overline') }}</p>
+          <h2 class="m-heading-md">{{ t('pricing_compare_heading') }}</h2>
         </div>
 
         <div class="table-scroll">
@@ -378,12 +477,12 @@ usePageSeo({
       </div>
     </section>
 
-    <!-- FAQ -->
+    <!-- ── FAQ Section ────────────────────────────────────────── -->
     <section class="faq-section">
-      <div class="p-container faq-layout">
+      <div class="m-inner faq-layout">
         <div class="faq-header">
-          <p class="section-kicker">{{ t('pricing_faq_overline') }}</p>
-          <h2 class="section-title">{{ t('pricing_faq_heading') }}</h2>
+          <p class="m-overline">{{ t('pricing_faq_overline') }}</p>
+          <h2 class="m-heading-md">{{ t('pricing_faq_heading') }}</h2>
         </div>
 
         <div class="faq-list">
@@ -398,20 +497,22 @@ usePageSeo({
       </div>
     </section>
 
-    <!-- Bottom CTA -->
-    <section class="m-cta-strip-dark">
+    <!-- ── Bottom CTA ─────────────────────────────────────────── -->
+    <section class="m-cta-strip">
       <div class="m-cta-inner">
-        <h2 class="m-cta-heading-light">{{ t('pricing_cta_heading') }}</h2>
-        <p class="m-cta-sub-light">{{ t('pricing_cta_sub') }}</p>
+        <h2 class="m-cta-heading">{{ t('pricing_cta_heading') }}</h2>
+        <p class="m-cta-sub">
+          {{ t('pricing_cta_sub') }}
+        </p>
         <div class="m-cta-btns">
-          <NuxtLink v-if="isLoggedIn" to="/dashboard/terminals" class="m-btn-primary ribbon pricing-cta-primary">
+          <NuxtLink v-if="isLoggedIn" to="/dashboard/terminals" class="m-btn-primary ribbon">
             {{ t('pricing_cta_terminals') }}
           </NuxtLink>
-          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon pricing-cta-primary">
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">
             {{ t('pricing_cta_btn1') }}
           </NuxtLink>
-          <NuxtLink to="/features" class="m-btn-ghost on-dark pricing-cta-secondary">
-            {{ t('pricing_cta_btn2') }}
+          <NuxtLink to="/features" class="m-btn-ghost">
+            {{ t('pricing_cta_btn2') }} →
           </NuxtLink>
         </div>
       </div>
@@ -421,71 +522,34 @@ usePageSeo({
 
 <style scoped>
 .pricing-page {
-  background: var(--k-bg, #FFFDFB);
-  color: var(--k-ink, #68293A);
-  font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  color: #68293A;
 }
 
-.p-container {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-/* ── Hero (Vanilla Cream Band) ──────────────────────────── */
+/* ── Hero ─────────────────────────────────────────────── */
 .pricing-hero {
-  background: var(--k-cream, #F6E6D7);
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  padding: 4.5rem 0 3.5rem;
+  padding: 5.5rem 0 3.5rem;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 20%, rgba(255, 87, 118, 0.08) 0%, transparent 70%);
 }
 
-.hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 3rem;
-  align-items: end;
-}
-
-.hero-kicker {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #B8294B;
-  margin: 0 0 0.75rem;
-}
-
-.hero-title {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: clamp(2.15rem, 4.2vw, 3.25rem);
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
-  color: var(--k-ink, #68293A);
-  margin: 0;
-}
-
-.hero-aside {
+.hero-cta-wrap {
+  margin-top: 2rem;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.hero-sub {
-  font-size: 1rem;
-  line-height: 1.65;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  margin: 0;
+  justify-content: center;
+  padding-bottom: 12px;
 }
 
 .billing-row {
+  margin-top: 2rem;
   display: flex;
-  align-items: center;
+  justify-content: center;
 }
 
 .billing-control {
   display: inline-flex;
   flex-wrap: wrap;
-  background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-blush, #E3C7B9);
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.14);
   border-radius: 0.6rem;
   padding: 4px;
   gap: 4px;
@@ -501,7 +565,7 @@ usePageSeo({
   border: none;
   border-radius: 0.45rem;
   background: transparent;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.72);
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 600;
@@ -509,14 +573,10 @@ usePageSeo({
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-
-.billing-btn:hover {
-  color: var(--k-ink, #68293A);
-}
-
+.billing-btn:hover { color: #68293A; }
 .billing-btn.active {
-  background: var(--k-dark, #68293A);
-  color: var(--k-cream, #F6E6D7);
+  background: #68293A;
+  color: #F6E6D7;
 }
 
 .billing-save {
@@ -525,15 +585,11 @@ usePageSeo({
   color: #B8294B;
   font-variant-numeric: tabular-nums;
 }
+.billing-btn.active .billing-save { color: #FFA3B5; }
 
-.billing-btn.active .billing-save {
-  color: #FFA3B5;
-}
-
-/* ── Pricing Plans Grid ─────────────────────────────────── */
+/* ── Pricing Plans Grid ───────────────────────────────── */
 .plans-section {
-  background: var(--k-bg, #FFFDFB);
-  padding: 3.75rem 0 4.25rem;
+  padding: 2rem 0 4rem;
 }
 
 .plans-grid {
@@ -548,22 +604,20 @@ usePageSeo({
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.75rem;
-  box-shadow: 0 8px 28px rgba(104, 41, 58, 0.06);
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 6px 24px rgba(104, 41, 58, 0.05);
 }
 
 .plan-col--featured {
-  background: var(--k-dark, #68293A);
-  border-color: var(--k-dark, #68293A);
-  color: var(--k-cream, #F6E6D7);
-  box-shadow: 0 16px 40px rgba(104, 41, 58, 0.18), inset 0 4px 0 0 var(--k-accent, #FF5776);
+  background: #68293A;
+  border-color: #68293A;
+  color: #F6E6D7;
+  box-shadow: 0 16px 40px rgba(104, 41, 58, 0.18), inset 0 4px 0 0 #FF5776;
 }
 
-.plan-top {
-  margin-bottom: 1.5rem;
-}
+.plan-top { margin-bottom: 1.5rem; }
 
 .plan-name-row {
   display: flex;
@@ -574,49 +628,42 @@ usePageSeo({
 }
 
 .plan-name {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-family: 'DM Serif Display', serif;
   font-size: 1.45rem;
   font-weight: 400;
   line-height: 1.2;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   margin: 0;
 }
-
-.plan-col--featured .plan-name {
-  color: var(--k-cream, #F6E6D7);
-}
+.plan-col--featured .plan-name { color: #F6E6D7; }
 
 .plan-marker {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: #FFD6DE;
   background: rgba(255, 87, 118, 0.22);
   border: 1px solid rgba(255, 163, 181, 0.42);
-  border-radius: 0.4rem;
-  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  padding: 0.15rem 0.6rem;
   white-space: nowrap;
 }
 
 .plan-tagline {
-  font-size: 0.925rem;
+  font-size: 0.9rem;
   line-height: 1.55;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.68);
   margin: 0;
   min-height: 2.9em;
 }
-
-.plan-col--featured .plan-tagline {
-  color: rgba(246, 230, 215, 0.82);
-}
+.plan-col--featured .plan-tagline { color: rgba(246, 230, 215, 0.82); }
 
 .plan-price-block {
   padding: 1.25rem 0;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
+  border-bottom: 1px solid rgba(104, 41, 58, 0.12);
   margin-bottom: 1.5rem;
   font-variant-numeric: tabular-nums;
 }
-
 .plan-col--featured .plan-price-block {
   border-top-color: rgba(246, 230, 215, 0.2);
   border-bottom-color: rgba(246, 230, 215, 0.2);
@@ -629,39 +676,30 @@ usePageSeo({
 }
 
 .plan-price {
-  font-size: 2.35rem;
-  font-weight: 700;
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.4rem;
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: -0.025em;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   font-variant-numeric: tabular-nums;
 }
-
-.plan-col--featured .plan-price {
-  color: var(--k-cream, #F6E6D7);
-}
+.plan-col--featured .plan-price { color: #F6E6D7; }
 
 .plan-period {
-  font-size: 0.925rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.68);
 }
-
-.plan-col--featured .plan-period {
-  color: rgba(246, 230, 215, 0.8);
-}
+.plan-col--featured .plan-period { color: rgba(246, 230, 215, 0.8); }
 
 .plan-billing-note {
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.68);
   margin: 0.5rem 0 0;
   font-variant-numeric: tabular-nums;
 }
-
-.plan-col--featured .plan-billing-note {
-  color: rgba(246, 230, 215, 0.78);
-}
+.plan-col--featured .plan-billing-note { color: rgba(246, 230, 215, 0.78); }
 
 .plan-btn {
   position: relative;
@@ -677,16 +715,10 @@ usePageSeo({
   text-decoration: none;
   margin-bottom: 1.75rem;
   overflow: visible;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
-
-.plan-btn:active {
-  transform: scale(0.985);
-}
-
-.plan-btn.ribbon {
-  margin-bottom: 2rem;
-}
+.plan-btn:active { transform: scale(0.985); }
+.plan-btn.ribbon { margin-bottom: 2rem; }
 
 .plan-btn.ribbon::after {
   content: '';
@@ -695,53 +727,39 @@ usePageSeo({
   right: 16px;
   width: 24px;
   height: 11px;
-  background: var(--ribbon-color, var(--k-accent, #FF5776));
+  background: var(--ribbon-color, #FF5776);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 52%, 0 100%);
   pointer-events: none;
   z-index: 1;
-  transition: background-color 0.15s ease;
 }
 
-.plan-btn-icon {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
+.plan-btn-icon { width: 1rem; height: 1rem; flex-shrink: 0; }
 
 .plan-btn--accent {
-  background: var(--k-accent, #FF5776);
-  color: var(--k-on-accent, #FFFFFF);
-  border: 1px solid var(--k-accent, #FF5776);
-  --ribbon-color: var(--k-accent, #FF5776);
+  background: #FF5776;
+  color: #FFFFFF;
+  border: 1px solid #FF5776;
+  --ribbon-color: #FF5776;
   box-shadow: 0 4px 16px rgba(255, 87, 118, 0.28);
 }
-
-.plan-btn--accent:hover {
-  background: var(--k-accent-hover, #E84362);
-  border-color: var(--k-accent-hover, #E84362);
-  --ribbon-color: var(--k-accent-hover, #E84362);
-}
+.plan-btn--accent:hover { opacity: 0.9; }
 
 .plan-btn--dark {
-  background: var(--k-dark, #68293A);
-  color: var(--k-cream, #F6E6D7);
-  border: 1px solid var(--k-dark, #68293A);
+  background: #68293A;
+  color: #F6E6D7;
+  border: 1px solid #68293A;
+  --ribbon-color: #68293A;
 }
-
-.plan-btn--dark:hover {
-  background: #521F2D;
-  border-color: #521F2D;
-}
+.plan-btn--dark:hover { opacity: 0.9; }
 
 .plan-btn--secondary {
-  background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #68293A);
-  border: 1.5px solid rgba(104, 41, 58, 0.26);
+  background: #FFFFFF;
+  color: #68293A;
+  border: 1.5px solid rgba(104, 41, 58, 0.25);
 }
-
 .plan-btn--secondary:hover {
-  background: var(--k-cream, #F6E6D7);
-  border-color: var(--k-ink, #68293A);
+  background: #F6E6D7;
+  border-color: #68293A;
 }
 
 .plan-features {
@@ -759,100 +777,172 @@ usePageSeo({
   gap: 0.65rem;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   font-variant-numeric: tabular-nums;
 }
-
-.plan-col--featured .plan-feature-item {
-  color: var(--k-cream, #F6E6D7);
-}
+.plan-col--featured .plan-feature-item { color: #F6E6D7; }
 
 .plan-check-icon {
   width: 1rem;
   height: 1rem;
-  color: var(--k-accent, #FF5776);
+  color: #FF5776;
   flex-shrink: 0;
   margin-top: 0.18rem;
 }
 
 .plans-footnote {
   margin: 1.5rem 0 0;
+  text-align: center;
   font-size: 0.85rem;
   line-height: 1.55;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.65);
 }
 
-/* ── Shared Section Headers ─────────────────────────────── */
-.section-intro {
-  margin-bottom: 2.25rem;
-  max-width: 660px;
+/* ── Core Pillars (Restored from main) ────────────────── */
+.section-pillars {
+  padding: 3.5rem 0 4rem;
+  background: #FDFAF7;
+  border-top: 1px solid rgba(104, 41, 58, 0.07);
+  border-bottom: 1px solid rgba(104, 41, 58, 0.07);
 }
 
-.section-kicker {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #B8294B;
+.section-header {
+  margin-bottom: 3rem;
+}
+
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.pillar-card {
+  padding: 2rem;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(61, 24, 32, 0.08);
+  box-shadow: 0 4px 16px rgba(61, 24, 32, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pillar-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(61, 24, 32, 0.06);
+}
+
+.pillar-icon-wrap {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 87, 118, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.pillar-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: #68293A;
   margin: 0 0 0.5rem;
 }
 
-.section-title {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: clamp(1.75rem, 3vw, 2.35rem);
-  font-weight: 400;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-  color: var(--k-ink, #68293A);
+.pillar-text {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: rgba(61, 24, 32, 0.68);
   margin: 0;
 }
 
-.section-sub {
-  font-size: 1rem;
-  line-height: 1.65;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  margin: 0.75rem 0 0;
-}
-
-/* ── Why SaaS Breakdown (Soft Cream Alt Band) ───────────── */
-.why-section {
-  background: var(--k-surface-alt, #FBF4ED);
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+/* ── Workstations Section (Restored from main) ────────── */
+.section-workstations {
   padding: 4.5rem 0;
 }
 
-.why-list {
-  border-top: 1px solid var(--k-blush, #E3C7B9);
-}
-
-.why-row {
+.workstations-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-  gap: 2.5rem;
-  padding: 1.75rem 0;
-  border-bottom: 1px solid var(--k-blush, #E3C7B9);
-  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
 }
 
-.why-row-title {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+.station-card {
+  padding: 1.75rem;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(61, 24, 32, 0.08);
+  box-shadow: 0 4px 12px rgba(61, 24, 32, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.station-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.station-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  background: rgba(104, 41, 58, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.station-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 99px;
+  background: rgba(104, 41, 58, 0.06);
+  color: #68293A;
+}
+
+.station-name {
+  font-family: 'DM Serif Display', serif;
   font-size: 1.25rem;
   font-weight: 400;
-  line-height: 1.3;
-  color: var(--k-ink, #68293A);
-  margin: 0;
+  color: #68293A;
+  margin: 0 0 0.5rem;
 }
 
-.why-row-body {
-  font-size: 0.95rem;
-  line-height: 1.65;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  margin: 0;
-  font-variant-numeric: tabular-nums;
+.station-desc {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgba(61, 24, 32, 0.65);
+  margin: 0 0 1.25rem;
+  flex-grow: 1;
 }
 
-/* ── ONBOX-style Feature Comparison Table (White Band) ──── */
+.station-details {
+  list-style: none;
+  padding: 1rem 0 0;
+  margin: 0;
+  border-top: 1px solid rgba(61, 24, 32, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.station-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.84rem;
+  color: rgba(61, 24, 32, 0.78);
+}
+
+/* ── Feature Comparison Table ─────────────────────────── */
 .compare-section {
-  background: var(--k-surface, #FFFFFF);
+  background: #FDFAF7;
+  border-top: 1px solid rgba(104, 41, 58, 0.07);
   padding: 4.5rem 0;
 }
 
@@ -861,8 +951,8 @@ usePageSeo({
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.12);
   border-radius: 0.75rem;
   box-shadow: 0 8px 28px rgba(104, 41, 58, 0.05);
 }
@@ -878,7 +968,7 @@ usePageSeo({
 .compare-table th,
 .compare-table td {
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid rgba(104, 41, 58, 0.12);
   font-size: 0.875rem;
   line-height: 1.45;
   vertical-align: top;
@@ -887,19 +977,19 @@ usePageSeo({
 .compare-table thead th {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--k-ink, #68293A);
-  background: var(--k-surface, #FFFFFF);
-  border-bottom: 1.5px solid var(--k-blush, #E3C7B9);
+  color: #68293A;
+  background: #FFFFFF;
+  border-bottom: 1.5px solid #E3C7B9;
 }
 
 .compare-table tbody th.row-label {
   font-weight: 500;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
   width: 34%;
 }
 
 .compare-table tbody td {
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  color: rgba(104, 41, 58, 0.72);
   width: 22%;
 }
 
@@ -909,19 +999,18 @@ usePageSeo({
 }
 
 .compare-table .col-business {
-  background: var(--k-surface-alt, #FBF4ED);
-  color: var(--k-ink, #68293A);
+  background: #FBF4ED;
+  color: #68293A;
 }
 
 .compare-table thead th.col-business {
-  color: var(--k-ink, #68293A);
-  box-shadow: inset 0 3px 0 0 var(--k-accent, #FF5776);
+  box-shadow: inset 0 3px 0 0 #FF5776;
 }
 
-/* ── FAQ (Vanilla Cream Band) ───────────────────────────── */
+/* ── FAQ Section ──────────────────────────────────────── */
 .faq-section {
-  background: var(--k-cream, #F6E6D7);
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  background: #F6E6D7;
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
   padding: 4.5rem 0;
 }
 
@@ -933,20 +1022,17 @@ usePageSeo({
 }
 
 .faq-list {
-  background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  background: #FFFFFF;
+  border: 1px solid rgba(104, 41, 58, 0.12);
   border-radius: 0.75rem;
   padding: 0.35rem 1.75rem;
   box-shadow: 0 8px 28px rgba(104, 41, 58, 0.06);
 }
 
 .faq-item {
-  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid rgba(104, 41, 58, 0.12);
 }
-
-.faq-item:last-child {
-  border-bottom: none;
-}
+.faq-item:last-child { border-bottom: none; }
 
 .faq-summary {
   list-style: none;
@@ -959,25 +1045,18 @@ usePageSeo({
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.4;
-  color: var(--k-ink, #68293A);
+  color: #68293A;
 }
-
-.faq-summary::-webkit-details-marker {
-  display: none;
-}
-
-.faq-summary:hover {
-  color: #B8294B;
-}
+.faq-summary::-webkit-details-marker { display: none; }
+.faq-summary:hover { color: #B8294B; }
 
 .faq-indicator {
   position: relative;
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: var(--k-accent, #FF5776);
+  color: #FF5776;
 }
-
 .faq-indicator::before,
 .faq-indicator::after {
   content: '';
@@ -988,191 +1067,32 @@ usePageSeo({
   transform: translate(-50%, -50%);
   transition: opacity 0.15s ease;
 }
-
-.faq-indicator::before {
-  width: 12px;
-  height: 1.5px;
-}
-
-.faq-indicator::after {
-  width: 1.5px;
-  height: 12px;
-}
-
-.faq-item[open] .faq-indicator::after {
-  opacity: 0;
-}
+.faq-indicator::before { width: 12px; height: 1.5px; }
+.faq-indicator::after { width: 1.5px; height: 12px; }
+.faq-item[open] .faq-indicator::after { opacity: 0; }
 
 .faq-answer {
   margin: 0 0 1.25rem;
   padding-right: 2rem;
   font-size: 0.9375rem;
   line-height: 1.65;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  font-variant-numeric: tabular-nums;
+  color: rgba(104, 41, 58, 0.72);
 }
 
-/* ── Bottom Chocolate CTA Band ──────────────────────────── */
-.m-cta-strip-dark {
-  background: var(--k-dark, #68293A);
-  padding: 5.25rem 0;
-  text-align: center;
-}
-
-.m-cta-inner {
-  max-width: 620px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-.m-cta-heading-light {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: clamp(1.85rem, 3.6vw, 2.6rem);
-  font-weight: 400;
-  color: var(--k-cream, #F6E6D7);
-  line-height: 1.15;
-  margin: 0 0 0.85rem;
-}
-
-.m-cta-sub-light {
-  font-size: 1rem;
-  color: rgba(246, 230, 215, 0.82);
-  line-height: 1.65;
-  margin: 0 0 2rem;
-}
-
-.m-cta-btns {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.m-cta-strip-dark .pricing-cta-primary {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.78rem 1.65rem;
-  background: var(--k-accent, #FF5776);
-  color: var(--k-on-accent, #FFFFFF);
-  --ribbon-color: var(--k-accent, #FF5776);
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.925rem;
-  text-decoration: none;
-  overflow: visible;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
-  transition: background-color 0.15s ease, transform 0.1s ease;
-}
-
-.m-cta-strip-dark .pricing-cta-primary:hover {
-  background: var(--k-accent-hover, #E84362);
-  --ribbon-color: var(--k-accent-hover, #E84362);
-  opacity: 1;
-}
-
-.m-cta-strip-dark .pricing-cta-primary.ribbon::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  right: 14px;
-  width: 24px;
-  height: 11px;
-  background: var(--ribbon-color, var(--k-accent, #FF5776));
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 52%, 0 100%);
-  pointer-events: none;
-  z-index: 1;
-  transition: background-color 0.15s ease;
-}
-
-.m-cta-strip-dark .pricing-cta-secondary {
-  color: var(--k-cream, #F6E6D7);
-  border-radius: 0.5rem;
-}
-
-/* ── Responsive Breakpoints (Mobile-safe down to 320px) ─── */
-.billing-btn:focus-visible,
-.plan-btn:focus-visible,
-.faq-summary:focus-visible,
-.pricing-cta-primary:focus-visible,
-.pricing-cta-secondary:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 2px;
-}
-
+/* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 960px) {
-  .hero-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.75rem;
-  }
-
-  .plans-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.25rem;
-  }
-
-  .plan-tagline {
-    min-height: 0;
-  }
-
+  .plans-grid,
   .faq-layout {
     grid-template-columns: minmax(0, 1fr);
-    gap: 2rem;
+    gap: 1.5rem;
   }
-}
-
-@media (max-width: 768px) {
-  .why-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.65rem;
-  }
+  .plan-tagline { min-height: 0; }
 }
 
 @media (max-width: 640px) {
-  .p-container {
-    padding: 0 1rem;
-  }
-
-  .pricing-hero {
-    padding: 3rem 0 2.5rem;
-  }
-
-  .plans-section {
-    padding: 2.5rem 0 3rem;
-  }
-
-  .plan-col {
-    padding: 1.5rem 1.25rem;
-  }
-
-  .why-section,
-  .compare-section,
-  .faq-section {
-    padding: 3rem 0;
-  }
-
-  .faq-list {
-    padding: 0.25rem 1.25rem;
-  }
-
-  .billing-btn {
-    padding: 0.45rem 0.7rem;
-    font-size: 0.8125rem;
-  }
-
-  .compare-table th,
-  .compare-table td {
-    padding: 0.8rem 0.85rem;
-    font-size: 0.8125rem;
-  }
-
-  .faq-answer {
-    padding-right: 0;
-  }
-
-  .m-cta-strip-dark {
-    padding: 3.75rem 0;
-  }
+  .pricing-hero { padding: 3.5rem 0 2.5rem; }
+  .plan-col { padding: 1.5rem 1.25rem; }
+  .faq-list { padding: 0.25rem 1.25rem; }
+  .faq-answer { padding-right: 0; }
 }
 </style>

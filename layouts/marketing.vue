@@ -32,9 +32,7 @@ watch(
 onMounted(() => {
   loadLocale();
   void hydrateSession();
-  const handler = () => {
-    scrolled.value = window.scrollY > 12;
-  };
+  const handler = () => { scrolled.value = window.scrollY > 24; };
   window.addEventListener('scroll', handler, { passive: true });
   onUnmounted(() => window.removeEventListener('scroll', handler));
 });
@@ -42,7 +40,7 @@ onMounted(() => {
 
 <template>
   <div class="marketing-shell">
-    <!-- Header Navigation -->
+    <!-- ── Navbar ─────────────────────────────────────────── -->
     <header class="marketing-nav" :class="{ scrolled }">
       <div class="nav-inner">
         <NuxtLink to="/" class="nav-logo" @click="closeMobileMenu">
@@ -50,12 +48,7 @@ onMounted(() => {
           <span class="logo-dot" aria-hidden="true" />
         </NuxtLink>
 
-        <nav
-          id="marketing-menu"
-          class="nav-links"
-          :class="{ 'mobile-open': mobileMenuOpen }"
-          aria-label="Main navigation"
-        >
+        <nav id="marketing-menu" class="nav-links" :class="{ 'mobile-open': mobileMenuOpen }" aria-label="Main navigation">
           <NuxtLink
             v-for="link in navLinks"
             :key="link.to"
@@ -66,66 +59,41 @@ onMounted(() => {
           >
             {{ link.label }}
           </NuxtLink>
-
-          <div class="mobile-drawer-actions">
-            <NuxtLink
-              v-if="isLoggedIn"
-              to="/dashboard"
-              class="nav-link"
-              @click="closeMobileMenu"
-            >
-              {{ t('nav_dashboard') }}
-            </NuxtLink>
-            <template v-else>
-              <NuxtLink to="/login" class="nav-link" @click="closeMobileMenu">
-                {{ t('nav_signin') }}
-              </NuxtLink>
-              <NuxtLink to="/login?mode=signup" class="nav-link nav-link-accent" @click="closeMobileMenu">
-                {{ t('nav_getstarted') }}
-              </NuxtLink>
-            </template>
-          </div>
         </nav>
 
         <div class="nav-actions">
-          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="nav-btn-primary">
-            {{ t('nav_dashboard') }}
-          </NuxtLink>
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="btn-ghost-sm">{{ t('nav_dashboard') }}</NuxtLink>
           <template v-else>
-            <NuxtLink to="/login" class="nav-btn-ghost">
-              {{ t('nav_signin') }}
-            </NuxtLink>
-            <NuxtLink to="/login?mode=signup" class="nav-btn-primary">
-              {{ t('nav_getstarted') }}
-            </NuxtLink>
+            <NuxtLink to="/login" class="btn-ghost-sm">{{ t('nav_signin') }}</NuxtLink>
+            <NuxtLink to="/login?mode=signup" class="btn-maroon-sm btn-ribbon" style="--ribbon-color: #68293A;">{{ t('nav_getstarted') }}</NuxtLink>
           </template>
-
-          <button
-            type="button"
-            class="mobile-menu-toggle"
-            :aria-expanded="mobileMenuOpen"
-            aria-controls="marketing-menu"
-            :aria-label="mobileMenuOpen ? 'Close menu' : 'Open menu'"
-            @click="mobileMenuOpen = !mobileMenuOpen"
-          >
-            <X v-if="mobileMenuOpen" class="w-4 h-4" aria-hidden="true" />
-            <Menu v-else class="w-4 h-4" aria-hidden="true" />
-          </button>
         </div>
+
+        <button
+          type="button"
+          class="mobile-menu-toggle"
+          :aria-expanded="mobileMenuOpen"
+          aria-controls="marketing-menu"
+          :aria-label="mobileMenuOpen ? 'Close menu' : 'Open menu'"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+        >
+          <X v-if="mobileMenuOpen" class="w-5 h-5" aria-hidden="true" />
+          <Menu v-else class="w-5 h-5" aria-hidden="true" />
+        </button>
       </div>
     </header>
 
-    <!-- Page Content -->
+    <!-- ── Page content ───────────────────────────────────── -->
     <main class="marketing-main">
       <slot />
     </main>
 
-    <!-- Footer -->
+    <!-- ── Footer ─────────────────────────────────────────── -->
     <footer class="marketing-footer">
       <div class="footer-inner">
         <div class="footer-brand">
-          <NuxtLink to="/" class="nav-logo footer-brand-link">
-            <span class="logo-wordmark">Kogane</span>
+          <NuxtLink to="/" class="nav-logo">
+            <span class="logo-wordmark footer-logo">Kogane</span>
             <span class="logo-dot" aria-hidden="true" />
           </NuxtLink>
           <p class="footer-tagline">{{ t('footer_tagline') }}</p>
@@ -177,12 +145,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Shell */
+/* ── Shell ──────────────────────────────────────────── */
 .marketing-shell {
   min-height: 100dvh;
-  background: linear-gradient(180deg, var(--k-cream, #F6E6D7) 0%, var(--k-surface, #FFFFFF) 18%);
-  color: var(--k-ink, #68293A);
-  font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);
+  color: #68293A;
   display: flex;
   flex-direction: column;
 }
@@ -191,63 +158,54 @@ onMounted(() => {
   flex: 1;
 }
 
-/* Navbar */
+/* ── Navbar ─────────────────────────────────────────── */
 .marketing-nav {
   position: sticky;
   top: 0;
   z-index: 100;
+  padding: 0 2rem;
+  transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   background: transparent;
   border-bottom: 1px solid transparent;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-
 .marketing-nav.scrolled {
-  background: rgba(255, 253, 251, 0.97);
-  border-bottom-color: var(--k-border, rgba(104, 41, 58, 0.14));
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: rgba(104, 41, 58, 0.1);
   box-shadow: 0 1px 12px rgba(104, 41, 58, 0.06);
 }
 
 .nav-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 2.5rem);
   height: 64px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 2rem;
 }
 
 .nav-logo {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--k-ink, #68293A);
   text-decoration: none;
   flex-shrink: 0;
 }
-
-.nav-logo:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 4px;
-}
-
 .logo-wordmark {
-  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
-  font-size: 1.4rem;
-  font-weight: 400;
-  line-height: 1;
-  color: var(--k-ink, #68293A);
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.35rem;
+  color: #68293A;
   letter-spacing: -0.01em;
 }
+.footer-logo { font-size: 1.5rem; }
 
 .logo-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--k-accent, #FF5776);
-  margin-bottom: 9px;
-  flex-shrink: 0;
+  background: #FF5776;
+  margin-bottom: 8px;
 }
 
 .nav-links {
@@ -257,293 +215,173 @@ onMounted(() => {
   flex: 1;
 }
 
-.mobile-drawer-actions {
-  display: none;
-}
-
-.nav-link {
-  position: relative;
-  padding: 0.4rem 0.85rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.nav-link:hover {
-  color: var(--k-ink, #68293A);
-  background: rgba(104, 41, 58, 0.06);
-}
-
-.nav-link.active {
-  color: var(--k-ink, #68293A);
-  font-weight: 600;
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  left: 0.85rem;
-  right: 0.85rem;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--k-accent, #FF5776);
-}
-
-.nav-link:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 3px;
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-shrink: 0;
-}
-
-.nav-btn-ghost {
-  padding: 0.48rem 0.9rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--k-ink, #68293A);
-  background: transparent;
-  border: 1.5px solid rgba(104, 41, 58, 0.2);
-  border-radius: 0.55rem;
-  text-decoration: none;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-  white-space: nowrap;
-}
-
-.nav-btn-ghost:hover {
-  border-color: var(--k-ink, #68293A);
-  background: var(--k-surface, #FFFFFF);
-}
-
-.nav-btn-primary {
-  padding: 0.48rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--k-on-dark, #F6E6D7);
-  background: var(--k-dark, #68293A);
-  border: 1px solid var(--k-dark, #68293A);
-  border-radius: 0.55rem;
-  text-decoration: none;
-  box-shadow: 0 2px 10px rgba(104, 41, 58, 0.18);
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-  white-space: nowrap;
-}
-
-.nav-btn-primary:hover {
-  background: var(--k-dark-deep, #4A1A27);
-  border-color: var(--k-dark-deep, #4A1A27);
-}
-
-.nav-btn-primary:active {
-  transform: scale(0.97);
-}
-
-.nav-btn-ghost:focus-visible,
-.nav-btn-primary:focus-visible,
-.mobile-menu-toggle:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 2px;
-}
-
 .mobile-menu-toggle {
   display: none;
   align-items: center;
   justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
-  color: var(--k-ink, #68293A);
-  background: var(--k-surface, #FFFFFF);
+  border: 1px solid rgba(104, 41, 58, 0.18);
+  border-radius: 0.5rem;
+  color: #68293A;
+  background: rgba(255, 255, 255, 0.72);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-/* Footer */
+.nav-link {
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(104, 41, 58, 0.65);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: #68293A; background: rgba(104, 41, 58, 0.07); }
+.nav-link.active { color: #68293A; font-weight: 600; }
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.btn-ghost-sm {
+  padding: 0.42rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #68293A;
+  text-decoration: none;
+  border: 1.5px solid rgba(104, 41, 58, 0.2);
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.btn-ghost-sm:hover { border-color: rgba(104, 41, 58, 0.45); background: rgba(104, 41, 58, 0.05); }
+
+.btn-maroon-sm {
+  position: relative;
+  overflow: visible;
+  padding: 0.42rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #F6E6D7;
+  background: #68293A;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.btn-maroon-sm:hover  { opacity: 0.88; }
+.btn-maroon-sm:active { transform: scale(0.97); }
+
+/* ── Footer ─────────────────────────────────────────── */
 .marketing-footer {
   margin-top: auto;
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  background: var(--k-surface, #FFFFFF);
-  color: var(--k-ink, #68293A);
+  border-top: 1px solid rgba(104, 41, 58, 0.1);
+  background: #FFFFFF;
 }
 
 .footer-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: clamp(2.5rem, 5vw, 3.75rem) clamp(1.25rem, 4vw, 2.5rem);
+  padding: 3rem 2rem;
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 2.5rem;
 }
 
-.footer-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
+.footer-brand { display: flex; flex-direction: column; gap: 0.5rem; }
 .footer-tagline {
   font-size: 0.875rem;
+  color: rgba(104, 41, 58, 0.6);
+  margin: 0.25rem 0 0;
+  max-width: 260px;
   line-height: 1.55;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
-  margin: 0;
-  max-width: 30ch;
 }
 
 .footer-locale {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  margin-top: 0.35rem;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 .footer-locale-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(104, 41, 58, 0.55);
 }
 
 .footer-locale-select {
-  padding: 0.32rem 0.6rem;
-  font-family: var(--k-font-sans, 'Inter', sans-serif);
-  font-size: 0.8125rem;
-  color: var(--k-ink, #68293A);
-  background: var(--k-surface-alt, #FBF4ED);
-  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  border-radius: 0.55rem;
+  padding: 0.3rem 0.6rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: #68293A;
+  background: #FDFAF7;
+  border: 1px solid rgba(104, 41, 58, 0.15);
+  border-radius: 0.45rem;
   cursor: pointer;
 }
 
-.footer-locale-select:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 2px;
-}
-
-.footer-links-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
+.footer-links-group { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .footer-col-title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--k-ink, #68293A);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(104, 41, 58, 0.45);
   margin: 0 0 0.25rem;
 }
 
 .footer-link {
-  font-size: 0.875rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  font-size: 0.9rem;
+  color: rgba(104, 41, 58, 0.65);
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: color 0.15s;
 }
-
-.footer-link:hover {
-  color: var(--k-accent, #FF5776);
-}
-
-.footer-link:focus-visible {
-  outline: 2px solid var(--k-accent, #FF5776);
-  outline-offset: 2px;
-}
+.footer-link:hover { color: #68293A; }
 
 .footer-bottom {
-  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-top: 1px solid rgba(104, 41, 58, 0.07);
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.25rem clamp(1.25rem, 4vw, 2.5rem);
-  font-size: 0.8125rem;
-  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+  padding: 1.25rem 2rem;
+  font-size: 0.8rem;
+  color: rgba(104, 41, 58, 0.45);
 }
 
 @media (max-width: 768px) {
-  .nav-inner {
-    gap: 0.75rem;
-    position: relative;
-  }
-
-  .mobile-menu-toggle {
-    display: inline-flex;
-  }
-
+  .marketing-nav { padding: 0 1rem; }
+  .footer-inner { grid-template-columns: 1fr 1fr; padding: 2.5rem 1.25rem; }
+  .footer-bottom { padding: 1.25rem; }
+  .nav-inner { position: relative; gap: 0.75rem; justify-content: space-between; }
+  .mobile-menu-toggle { display: inline-flex; }
   .nav-links {
     display: none;
     position: absolute;
     top: 64px;
-    left: 0;
-    right: 0;
+    left: -1rem;
+    right: -1rem;
     flex-direction: column;
     align-items: stretch;
-    gap: 0;
-    padding: 0.5rem clamp(1.25rem, 4vw, 2.5rem) 1rem;
-    background: var(--k-surface, #FFFFFF);
-    border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+    gap: 0.25rem;
+    padding: 0.75rem 1rem 1rem;
+    background: rgba(255,255,255,0.98);
+    border-bottom: 1px solid rgba(104, 41, 58, 0.1);
     box-shadow: 0 10px 20px rgba(104, 41, 58, 0.08);
   }
-
-  .nav-links.mobile-open {
-    display: flex;
-  }
-
-  .nav-link {
-    padding: 0.75rem 0.25rem;
-    border-radius: 0;
-    border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
-  }
-
-  .nav-link.active::after {
-    display: none;
-  }
-
-  .mobile-drawer-actions {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .mobile-drawer-actions .nav-link:last-child {
-    border-bottom: none;
-  }
-
-  .nav-link-accent {
-    color: var(--k-accent, #FF5776);
-    font-weight: 600;
-  }
-
-  .footer-inner {
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-  }
-
-  .footer-brand {
-    grid-column: span 2;
-  }
+  .nav-links.mobile-open { display: flex; }
+  .nav-link { padding: 0.7rem 0.85rem; }
+  .nav-actions { gap: 0.35rem; margin-left: auto; }
+  .btn-ghost-sm,
+  .btn-maroon-sm { padding: 0.38rem 0.62rem; font-size: 0.75rem; }
 }
 
-@media (max-width: 540px) {
-  .nav-btn-ghost {
-    display: none;
-  }
-
-  .nav-btn-primary {
-    padding: 0.42rem 0.75rem;
-    font-size: 0.8125rem;
-  }
-
-  .footer-inner {
-    grid-template-columns: 1fr;
-  }
-
-  .footer-brand {
-    grid-column: span 1;
-  }
+@media (max-width: 480px) {
+  .footer-inner { grid-template-columns: 1fr; }
 }
 </style>
