@@ -281,11 +281,17 @@ export interface ModalLayerDef {
   id: string;
   name: string;
   presentation: ModalPresentation;
+  width?: number;
+  height?: number;
   elements: ElementDef[];
 }
 
 export interface UiLayout {
   version: number;
+  presetId?: string;
+  presetVersion?: number;
+  brandConfig?: Record<string, unknown>;
+  stationConfig?: Record<string, unknown>;
   resolution: { width: number; height: number };
   theme: UiLayoutTheme;
   elements: ElementDef[];
@@ -535,6 +541,9 @@ function normalizeElement(raw: unknown): ElementDef | null {
         headerBackgroundColor: typeof source.headerBackgroundColor === 'string' ? source.headerBackgroundColor : undefined,
         textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
         striped: typeof source.striped === 'boolean' ? source.striped : undefined,
+        currencySymbol: typeof source.currencySymbol === 'string' ? source.currencySymbol : undefined,
+        currency: typeof source.currency === 'string' ? source.currency : undefined,
+        country: typeof source.country === 'string' ? source.country : undefined,
       } as TableViewElementDef;
     case 'input-field':
       return {
@@ -547,6 +556,7 @@ function normalizeElement(raw: unknown): ElementDef | null {
             ? source.placeholder
             : undefined,
         inputType: source.inputType ?? 'text',
+        maxLength: source.maxLength != null ? Number(source.maxLength) : undefined,
         options: Array.isArray(source.options) ? source.options.map(String) : undefined,
         submitGroup: typeof source.submitGroup === 'string' ? source.submitGroup : undefined,
         defaultValue: typeof source.defaultValue === 'string' ? source.defaultValue : undefined,
@@ -617,6 +627,9 @@ function normalizeElement(raw: unknown): ElementDef | null {
         accentColor: typeof source.accentColor === 'string' ? source.accentColor : undefined,
         borderColor: typeof source.borderColor === 'string' ? source.borderColor : undefined,
         radius: source.radius != null ? Number(source.radius) : undefined,
+        currencySymbol: typeof source.currencySymbol === 'string' ? source.currencySymbol : undefined,
+        currency: typeof source.currency === 'string' ? source.currency : undefined,
+        country: typeof source.country === 'string' ? source.country : undefined,
       } as CartWidgetElementDef;
     case 'scan-field':
       return {
@@ -624,6 +637,7 @@ function normalizeElement(raw: unknown): ElementDef | null {
         type: 'scan-field',
         fieldName: String(source.fieldName ?? 'scan_value'),
         placeholder: typeof source.placeholder === 'string' ? source.placeholder : undefined,
+        maxLength: source.maxLength != null ? Number(source.maxLength) : undefined,
         burstThresholdMs: source.burstThresholdMs != null ? Number(source.burstThresholdMs) : undefined,
         backgroundColor: typeof source.backgroundColor === 'string' ? source.backgroundColor : undefined,
         textColor: typeof source.textColor === 'string' ? source.textColor : undefined,
@@ -643,6 +657,8 @@ function normalizeModal(raw: unknown): ModalLayerDef | null {
     id: String(source.id ?? crypto.randomUUID()),
     name: String(source.name ?? 'Modal'),
     presentation: source.presentation ?? 'custom',
+    width: source.width != null ? Number(source.width) : undefined,
+    height: source.height != null ? Number(source.height) : undefined,
     elements: Array.isArray(source.elements)
       ? source.elements.map(normalizeElement).filter((item): item is ElementDef => Boolean(item))
       : [],
@@ -650,10 +666,20 @@ function normalizeModal(raw: unknown): ModalLayerDef | null {
 }
 
 export function normalizeLayout(layout?: Partial<UiLayout> | null): UiLayout {
-  const source = layout && typeof layout === 'object' ? layout : {};
+  const source = layout && typeof layout === 'object' ? (layout as Record<string, any>) : {};
 
   return {
     version: Number(source.version ?? DEFAULT_LAYOUT.version),
+    ...(typeof source.presetId === 'string' && source.presetId ? { presetId: source.presetId } : {}),
+    ...(source.presetVersion != null && Number.isFinite(Number(source.presetVersion))
+      ? { presetVersion: Number(source.presetVersion) }
+      : {}),
+    ...(source.brandConfig && typeof source.brandConfig === 'object'
+      ? { brandConfig: source.brandConfig as Record<string, unknown> }
+      : {}),
+    ...(source.stationConfig && typeof source.stationConfig === 'object'
+      ? { stationConfig: source.stationConfig as Record<string, unknown> }
+      : {}),
     resolution: {
       width: Number(source.resolution?.width ?? DEFAULT_LAYOUT.resolution.width),
       height: Number(source.resolution?.height ?? DEFAULT_LAYOUT.resolution.height),

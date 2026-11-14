@@ -4,7 +4,16 @@
  * must import from here, never from db-sqlite, db-firebase, or db-supabase directly.
  */
 
-import { isFirebaseConfigured } from './firebaseAdmin';
+function hasFirebaseEnvConfig(): boolean {
+  return Boolean(
+    process.env.DB_PROVIDER === 'firebase'
+    || process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    || (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY)
+    || process.env.FIREBASE_CONFIG
+    || process.env.GCLOUD_PROJECT
+    || process.env.GOOGLE_CLOUD_PROJECT,
+  );
+}
 
 export type DbProvider = 'sqlite' | 'firebase' | 'supabase';
 
@@ -47,7 +56,7 @@ export function getDbProvider(): DbProvider {
 
   if (process.env.DEV_MODE === 'true') return 'sqlite';
 
-  if (isFirebaseConfigured()) return 'firebase';
+  if (hasFirebaseEnvConfig()) return 'firebase';
 
   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) return 'supabase';
 

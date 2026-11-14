@@ -4,6 +4,7 @@ import type {
   ElementDef,
   ElementEventBinding,
   EventTrigger,
+  ModalPresentation,
   QuerySource,
   RuntimeActionDefinition,
 } from '~/lib/uiTypes';
@@ -11,6 +12,7 @@ import { TRIGGERS_BY_ELEMENT_TYPE } from '~/lib/uiTypes';
 
 const {
   layout,
+  activeLayer,
   activeElements,
   selectedElement,
   selectedId,
@@ -19,6 +21,9 @@ const {
   bringForward,
   sendBackward,
   selectElement,
+  setActiveLayer,
+  updateModal,
+  removeModal,
   updateResolution,
   updateTheme,
   updateAllElements,
@@ -48,16 +53,137 @@ function updateEvents(nextEvents: ElementEventBinding[]) {
   patch({ events: nextEvents } as any);
 }
 
-function parseJsonPayload(value: string) {
+const jsonDrafts = ref<Record<string, string>>({});
+const jsonErrors = ref<Record<string, string>>({});
+
+watch(selectedId, () => {
+  jsonDrafts.value = {};
+  jsonErrors.value = {};
+});
+
+function jsonFieldKey(binding: ElementEventBinding, index: number, field: string) {
+  return `${selectedId.value ?? 'none'}:${binding.id ?? index}:${field}`;
+}
+
+function getJsonDraft(
+  binding: ElementEventBinding,
+  index: number,
+  field: 'columns' | 'where' | 'payload' | 'onSuccess' | 'onFailure',
+  value: unknown,
+) {
+  const key = jsonFieldKey(binding, index, field);
+  if (key in jsonDrafts.value) return jsonDrafts.value[key];
+  if ((field === 'onSuccess' || field === 'onFailure') && value == null) return '';
+  return JSON.stringify(value ?? (field === 'columns' ? [] : {}), null, 2);
+}
+
+function onJsonInput(
+  binding: ElementEventBinding,
+  index: number,
+  field: 'columns' | 'where' | 'payload' | 'onSuccess' | 'onFailure',
+  raw: string,
+) {
+  const key = jsonFieldKey(binding, index, field);
+  jsonDrafts.value[key] = raw;
+  const trimmed = raw.trim();
+
+  if (!trimmed) {
+    delete jsonErrors.value[key];
+    if (field === 'onSuccess' || field === 'onFailure') {
+      updateEventAction(index, { [field]: undefined });
+    } else if (field === 'columns') {
+      updateEventAction(index, { columns: [] });
+    } else {
+      updateEventAction(index, { [field]: undefined });
+    }
+    return;
+  }
+
   try {
-    return JSON.parse(value || '{}');
-  } catch {
-    return {};
+    const parsed = JSON.parse(raw);
+    if (field === 'columns' && !Array.isArray(parsed)) {
+      jsonErrors.value[key] = 'Expected a JSON array of column names.';
+      return;
+    }
+    if (field !== 'columns' && (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))) {
+      jsonErrors.value[key] = 'Expected a JSON object.';
+      return;
+    }
+    delete jsonErrors.value[key];
+    updateEventAction(index, { [field]: parsed });
+  } catch (err: any) {
+    jsonErrors.value[key] = err?.message || 'Invalid JSON syntax';
   }
 }
 
-function stringifyJson(value: unknown) {
-  return JSON.stringify(value ?? {}, null, 2);
+function onJsonBlur(
+  binding: ElementEventBinding,
+  index: number,
+  field: 'columns' | 'where' | 'payload' | 'onSuccess' | 'onFailure',
+) {
+  const key = jsonFieldKey(binding, index, field);
+  if (!jsonErrors.value[key]) {
+    delete jsonDrafts.value[key];
+  }
+}
+
+const allCanvasAndModalElements = computed(() => {
+  const mainItems = layout.value.elements.map((element) => ({
+    ...element,
+    layerLabel: 'Main',
+  }));
+  const modalItems = (layout.value.modals ?? []).flatMap((modal) =>
+    modal.elements.map((element) => ({
+      ...element,
+      layerLabel: modal.name,
+    })),
+  );
+  return [...mainItems, ...modalItems];
+});
+
+const inputBindableElements = computed(() =>
+  allCanvasAndModalElements.value.filter(
+    (element) => element.type === 'input-field' || element.type === 'scan-field',
+  ),
+);
+
+const uploadBindableElements = computed(() =>
+  allCanvasAndModalElements.value.filter((element) => element.type === 'upload'),
+);
+
+const targetableWidgets = computed(() =>
+  allCanvasAndModalElements.value.filter(
+    (element) => element.type === 'table-view' || element.type === 'chart' || element.type === 'cart-widget',
+  ),
+);
+
+function insertBindingIntoActionJson(
+  binding: ElementEventBinding,
+  index: number,
+  field: 'payload' | 'where',
+  token: string,
+) {
+  if (!token) return;
+  const currentRaw = (binding.action[field] as Record<string, unknown> | undefined) ?? {};
+  const matchedInput = inputBindableElements.value.find((el) => token === `$$input.${el.id}`);
+  const keyName = matchedInput
+    ? ((matchedInput as any).fieldName || 'value')
+    : token.startsWith('$$row.')
+      ? token.slice('$$row.'.length)
+      : token.startsWith('$$upload.')
+        ? 'asset_url'
+        : token === '$$cart'
+          ? 'items'
+          : 'value';
+
+  const updated = {
+    ...currentRaw,
+    [keyName]: token,
+  };
+  const key = jsonFieldKey(binding, index, field);
+  delete jsonDrafts.value[key];
+  delete jsonErrors.value[key];
+  updateEventAction(index, { [field]: updated });
 }
 
 function parseCsv(value: string): string[] {
@@ -273,6 +399,12 @@ function applyThemeToCurrentWidgets() {
     </div>
 
     <div v-if="activeTab === 'layers'" class="flex-1 overflow-y-auto p-2 space-y-1">
+      <div v-if="activeLayer" class="px-2 py-1.5 mb-1 rounded-lg bg-black/5 flex items-center justify-between text-xs">
+        <span class="font-semibold truncate">Modal: {{ activeLayer.name }}</span>
+        <button class="text-[11px] font-medium text-brand-primary hover:underline" @click="setActiveLayer('main')">
+          Main Canvas
+        </button>
+      </div>
       <div v-if="activeElements.length === 0" class="text-center py-8 text-xs text-gray-400">No elements yet</div>
       <button
         v-for="element in [...activeElements].sort((left, right) => right.position.zIndex - left.position.zIndex)"
@@ -287,6 +419,67 @@ function applyThemeToCurrentWidgets() {
     </div>
 
     <template v-else>
+      <section v-if="activeLayer" class="px-4 py-3 space-y-2.5 bg-amber-50/40" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs font-bold uppercase tracking-widest" style="color: rgba(61,24,32,0.45);">Active Modal</p>
+          <div class="flex items-center gap-1.5">
+            <button
+              class="text-[11px] px-2 py-0.5 rounded-full font-medium"
+              style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar));"
+              @click="setActiveLayer('main')"
+            >
+              Main
+            </button>
+            <button
+              class="text-[11px] px-2 py-0.5 rounded-full font-medium text-red-600 bg-red-50 border border-red-200"
+              @click="removeModal(activeLayer.id)"
+            >
+              Delete Modal
+            </button>
+          </div>
+        </div>
+        <input
+          :value="activeLayer.name"
+          class="input-warm w-full px-3 py-1.5 text-sm"
+          placeholder="Modal name"
+          @input="updateModal(activeLayer.id, { name: ($event.target as HTMLInputElement).value })"
+        />
+        <select
+          :value="activeLayer.presentation"
+          class="input-warm w-full px-3 py-1.5 text-sm"
+          @change="updateModal(activeLayer.id, { presentation: ($event.target as HTMLSelectElement).value as ModalPresentation })"
+        >
+          <option value="custom">Centered Dialog (Custom)</option>
+          <option value="drawer">Side Drawer</option>
+          <option value="fullscreen">Fullscreen Overlay</option>
+        </select>
+        <div v-if="activeLayer.presentation === 'custom'" class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[10px] text-gray-400 mb-0.5 block">Dialog Width</label>
+            <input
+              type="number"
+              min="280"
+              max="1200"
+              :value="activeLayer.width ?? 480"
+              class="input-warm w-full px-2 py-1 text-sm"
+              @input="updateModal(activeLayer.id, { width: Number(($event.target as HTMLInputElement).value) || undefined })"
+            />
+          </div>
+          <div>
+            <label class="text-[10px] text-gray-400 mb-0.5 block">Dialog Height</label>
+            <input
+              type="number"
+              min="180"
+              max="960"
+              :value="activeLayer.height ?? ''"
+              placeholder="Auto"
+              class="input-warm w-full px-2 py-1 text-sm"
+              @input="updateModal(activeLayer.id, { height: Number(($event.target as HTMLInputElement).value) || undefined })"
+            />
+          </div>
+        </div>
+      </section>
+
       <section class="px-4 py-3 space-y-3" style="border-bottom: 1px solid rgba(61,24,32,0.07);">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -631,6 +824,18 @@ function applyThemeToCurrentWidgets() {
               <option value="scan">Scan (hardware scanner)</option>
             </select>
             <input :value="(selectedElement as any).defaultValue ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Default value" @input="patch({ defaultValue: ($event.target as HTMLInputElement).value || undefined } as any)" />
+            <div>
+              <label class="text-[10px] text-gray-400 mb-0.5 block">Max length</label>
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                :value="(selectedElement as any).maxLength ?? ''"
+                class="input-warm w-full px-3 py-1.5 text-sm"
+                placeholder="Unlimited"
+                @input="patch({ maxLength: ($event.target as HTMLInputElement).value ? Math.max(1, Number(($event.target as HTMLInputElement).value)) : undefined } as any)"
+              />
+            </div>
             <input
               v-if="(selectedElement as any).inputType === 'select'"
               :value="stringifyCsv((selectedElement as any).options)"
@@ -733,9 +938,23 @@ function applyThemeToCurrentWidgets() {
           <template v-else-if="selectedElement.type === 'scan-field'">
             <input :value="(selectedElement as any).fieldName" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Field name (e.g. barcode)" @input="patch({ fieldName: ($event.target as HTMLInputElement).value } as any)" />
             <input :value="(selectedElement as any).placeholder ?? ''" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="Placeholder text" @input="patch({ placeholder: ($event.target as HTMLInputElement).value || undefined } as any)" />
-            <div>
-              <label class="text-[10px] text-gray-400 mb-0.5 block">Burst threshold (ms)</label>
-              <input type="number" :value="(selectedElement as any).burstThresholdMs ?? 40" min="10" max="200" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="40" @input="patch({ burstThresholdMs: Number(($event.target as HTMLInputElement).value) } as any)" />
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-400 mb-0.5 block">Burst threshold (ms)</label>
+                <input type="number" :value="(selectedElement as any).burstThresholdMs ?? 40" min="10" max="200" class="input-warm w-full px-3 py-1.5 text-sm" placeholder="40" @input="patch({ burstThresholdMs: Number(($event.target as HTMLInputElement).value) } as any)" />
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-400 mb-0.5 block">Max length</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="2000"
+                  :value="(selectedElement as any).maxLength ?? ''"
+                  class="input-warm w-full px-3 py-1.5 text-sm"
+                  placeholder="Unlimited"
+                  @input="patch({ maxLength: ($event.target as HTMLInputElement).value ? Math.max(1, Number(($event.target as HTMLInputElement).value)) : undefined } as any)"
+                />
+              </div>
             </div>
             <p class="text-[11px] leading-relaxed" style="color: rgba(61,24,32,0.4);">Keystrokes faster than this threshold (ms) are treated as scanner input and auto-committed. Increase if your scanner is slow.</p>
           </template>
@@ -1132,27 +1351,124 @@ function applyThemeToCurrentWidgets() {
               @input="updateEventAction(index, { table: ($event.target as HTMLInputElement).value || undefined })"
             />
 
-            <textarea
-              v-if="eventBinding.action.type === 'query'"
-              :value="stringifyJson(eventBinding.action.columns ?? [])"
-              rows="3"
-              class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
-              placeholder='["created_at","action_type"]'
-              @input="updateEventAction(index, { columns: parseJsonPayload(($event.target as HTMLTextAreaElement).value) as string[] })"
-            />
+            <div v-if="eventBinding.action.type === 'query'">
+              <label class="text-[10px] text-gray-400 mb-0.5 block">Target Widget (optional)</label>
+              <select
+                :value="eventBinding.action.targetElementId ?? ''"
+                class="input-warm w-full px-2 py-1.5 text-xs"
+                @change="updateEventAction(index, { targetElementId: ($event.target as HTMLSelectElement).value || undefined })"
+              >
+                <option value="">This widget (self)</option>
+                <option
+                  v-for="target in targetableWidgets"
+                  :key="target.id"
+                  :value="target.id"
+                >
+                  {{ target.label || (target as any).title || target.type }} ({{ target.layerLabel }})
+                </option>
+              </select>
+            </div>
 
-            <textarea
-              v-if="eventBinding.action.type === 'query'"
-              :value="stringifyJson(eventBinding.action.where ?? {})"
-              rows="3"
-              class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
-              placeholder='{"action_type":"insert"}'
-              @input="updateEventAction(index, { where: parseJsonPayload(($event.target as HTMLTextAreaElement).value) as Record<string, string> })"
-            />
+            <div v-if="eventBinding.action.type === 'update' || eventBinding.action.type === 'delete'" class="space-y-1">
+              <label class="text-[10px] text-gray-400 block">Row ID / Binding</label>
+              <div class="flex gap-1.5">
+                <input
+                  :value="eventBinding.action.rowId ?? ''"
+                  class="input-warm flex-1 px-2 py-1.5 text-xs font-mono"
+                  placeholder="$$row.id or $$input.<id>"
+                  @input="updateEventAction(index, { rowId: ($event.target as HTMLInputElement).value || undefined })"
+                />
+                <select
+                  class="input-warm w-24 px-1.5 py-1.5 text-[11px]"
+                  @change="($event.target as HTMLSelectElement).value && (updateEventAction(index, { rowId: ($event.target as HTMLSelectElement).value }), (($event.target as HTMLSelectElement).value = ''))"
+                >
+                  <option value="">Bind...</option>
+                  <option value="$$row.id">$$row.id</option>
+                  <option v-for="inp in inputBindableElements" :key="inp.id" :value="`$$input.${inp.id}`">
+                    {{ inp.label || (inp as any).fieldName }}
+                  </option>
+                </select>
+              </div>
+            </div>
 
-            <input v-if="eventBinding.action.type === 'emit'" :value="eventBinding.action.event ?? ''" class="input-warm w-full px-2 py-1.5 text-xs" placeholder="event name" @input="updateEventAction(index, { event: ($event.target as HTMLInputElement).value || undefined })" />
+            <div v-if="eventBinding.action.type === 'query'" class="space-y-1">
+              <label class="text-[10px] text-gray-400 block">Columns JSON</label>
+              <textarea
+                :value="getJsonDraft(eventBinding, index, 'columns', eventBinding.action.columns ?? [])"
+                rows="2"
+                class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
+                placeholder='["created_at","action_type"]'
+                @input="onJsonInput(eventBinding, index, 'columns', ($event.target as HTMLTextAreaElement).value)"
+                @blur="onJsonBlur(eventBinding, index, 'columns')"
+              />
+              <p v-if="jsonErrors[jsonFieldKey(eventBinding, index, 'columns')]" class="text-[10px] text-red-600">
+                {{ jsonErrors[jsonFieldKey(eventBinding, index, 'columns')] }}
+              </p>
+            </div>
+
+            <div v-if="eventBinding.action.type === 'query'" class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-[10px] text-gray-400 block">Where Filter JSON</label>
+                <select
+                  class="input-warm max-w-[130px] px-1.5 py-0.5 text-[10px]"
+                  @change="($event.target as HTMLSelectElement).value && (insertBindingIntoActionJson(eventBinding, index, 'where', ($event.target as HTMLSelectElement).value), (($event.target as HTMLSelectElement).value = ''))"
+                >
+                  <option value="">+ Bind input...</option>
+                  <option v-for="inp in inputBindableElements" :key="inp.id" :value="`$$input.${inp.id}`">
+                    {{ inp.label || (inp as any).fieldName }} ({{ inp.layerLabel }})
+                  </option>
+                  <option value="$$row.id">$$row.id</option>
+                </select>
+              </div>
+              <textarea
+                :value="getJsonDraft(eventBinding, index, 'where', eventBinding.action.where ?? {})"
+                rows="3"
+                class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
+                placeholder='{"action_type":"insert"}'
+                @input="onJsonInput(eventBinding, index, 'where', ($event.target as HTMLTextAreaElement).value)"
+                @blur="onJsonBlur(eventBinding, index, 'where')"
+              />
+              <p v-if="jsonErrors[jsonFieldKey(eventBinding, index, 'where')]" class="text-[10px] text-red-600">
+                {{ jsonErrors[jsonFieldKey(eventBinding, index, 'where')] }}
+              </p>
+            </div>
+
+            <input v-if="eventBinding.action.type === 'emit'" :value="eventBinding.action.event ?? ''" class="input-warm w-full px-2 py-1.5 text-xs" placeholder="event name (e.g. modal:open)" @input="updateEventAction(index, { event: ($event.target as HTMLInputElement).value || undefined })" />
             <input v-if="eventBinding.action.type === 'navigate'" :value="eventBinding.action.url ?? ''" class="input-warm w-full px-2 py-1.5 text-xs" placeholder="https://..." @input="updateEventAction(index, { url: ($event.target as HTMLInputElement).value || undefined })" />
-            <textarea v-if="['insert','update','emit'].includes(eventBinding.action.type)" :value="stringifyJson(eventBinding.action.payload ?? {})" rows="4" class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none" @input="updateEventAction(index, { payload: parseJsonPayload(($event.target as HTMLTextAreaElement).value) })" />
+
+            <div v-if="['insert','update','emit'].includes(eventBinding.action.type)" class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-[10px] text-gray-400 block">Payload JSON</label>
+                <select
+                  class="input-warm max-w-[140px] px-1.5 py-0.5 text-[10px]"
+                  @change="($event.target as HTMLSelectElement).value && (insertBindingIntoActionJson(eventBinding, index, 'payload', ($event.target as HTMLSelectElement).value), (($event.target as HTMLSelectElement).value = ''))"
+                >
+                  <option value="">+ Bind field...</option>
+                  <option v-for="inp in inputBindableElements" :key="inp.id" :value="`$$input.${inp.id}`">
+                    Input: {{ inp.label || (inp as any).fieldName }}
+                  </option>
+                  <option v-for="up in uploadBindableElements" :key="up.id" :value="`$$upload.${up.id}`">
+                    Upload: {{ up.label || up.id }}
+                  </option>
+                  <option value="$$row.id">Row ID ($$row.id)</option>
+                  <option value="$$row.name">Row Name ($$row.name)</option>
+                  <option value="$$row.status">Row Status ($$row.status)</option>
+                  <option value="$$cart">Cart Items ($$cart)</option>
+                  <option value="$$session.terminalName">Terminal Name ($$session.terminalName)</option>
+                </select>
+              </div>
+              <textarea
+                :value="getJsonDraft(eventBinding, index, 'payload', eventBinding.action.payload ?? {})"
+                rows="4"
+                class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
+                @input="onJsonInput(eventBinding, index, 'payload', ($event.target as HTMLTextAreaElement).value)"
+                @blur="onJsonBlur(eventBinding, index, 'payload')"
+              />
+              <p v-if="jsonErrors[jsonFieldKey(eventBinding, index, 'payload')]" class="text-[10px] text-red-600">
+                {{ jsonErrors[jsonFieldKey(eventBinding, index, 'payload')] }}
+              </p>
+            </div>
+
             <input v-if="eventBinding.action.type === 'upload'" :value="eventBinding.action.path ?? ''" class="input-warm w-full px-2 py-1.5 text-xs font-mono" placeholder="assets/logo.png" @input="updateEventAction(index, { path: ($event.target as HTMLInputElement).value || undefined })" />
 
             <div class="pt-2 border-t mt-2" style="border-color: rgba(61,24,32,0.08);">
@@ -1164,27 +1480,35 @@ function applyThemeToCurrentWidgets() {
                 @input="updateEventAction(index, { condition: ($event.target as HTMLInputElement).value || undefined })"
               />
             </div>
-            
+
             <div>
               <label class="text-[10px] text-gray-400 mb-0.5 block">On Success (Action JSON)</label>
               <textarea
-                :value="stringifyJson(eventBinding.action.onSuccess ?? {})"
+                :value="getJsonDraft(eventBinding, index, 'onSuccess', eventBinding.action.onSuccess)"
                 rows="2"
                 class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
                 placeholder='{"type":"navigate","url":"..."}'
-                @input="updateEventAction(index, { onSuccess: parseJsonPayload(($event.target as HTMLTextAreaElement).value) })"
+                @input="onJsonInput(eventBinding, index, 'onSuccess', ($event.target as HTMLTextAreaElement).value)"
+                @blur="onJsonBlur(eventBinding, index, 'onSuccess')"
               />
+              <p v-if="jsonErrors[jsonFieldKey(eventBinding, index, 'onSuccess')]" class="text-[10px] text-red-600">
+                {{ jsonErrors[jsonFieldKey(eventBinding, index, 'onSuccess')] }}
+              </p>
             </div>
-            
+
             <div>
               <label class="text-[10px] text-gray-400 mb-0.5 block">On Failure (Action JSON)</label>
               <textarea
-                :value="stringifyJson(eventBinding.action.onFailure ?? {})"
+                :value="getJsonDraft(eventBinding, index, 'onFailure', eventBinding.action.onFailure)"
                 rows="2"
                 class="input-warm w-full px-2 py-1.5 text-xs font-mono resize-none"
                 placeholder='{"type":"emit","event":"error"}'
-                @input="updateEventAction(index, { onFailure: parseJsonPayload(($event.target as HTMLTextAreaElement).value) })"
+                @input="onJsonInput(eventBinding, index, 'onFailure', ($event.target as HTMLTextAreaElement).value)"
+                @blur="onJsonBlur(eventBinding, index, 'onFailure')"
               />
+              <p v-if="jsonErrors[jsonFieldKey(eventBinding, index, 'onFailure')]" class="text-[10px] text-red-600">
+                {{ jsonErrors[jsonFieldKey(eventBinding, index, 'onFailure')] }}
+              </p>
             </div>
           </div>
         </section>

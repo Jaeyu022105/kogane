@@ -13,6 +13,7 @@ import type { SchemaDef } from '~/lib/schemaUtils';
 import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/managedTerminals';
 import { findCountry } from '~/lib/currency';
 import { sanitizeImageSrc, sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
+import { writeAuditLog } from '~/server/utils/audit';
 import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
@@ -68,8 +69,15 @@ export default defineEventHandler(async (event) => {
     return { error: 'Too many tables in schema definition (maximum 50)', business: null };
   }
 
-  const { data: existing } = await db.queryOne<{ id: string; schema_name: string }>(
-    'SELECT id, schema_name FROM businesses WHERE admin_user_id = ?',
+  const { data: existing } = await db.queryOne<{
+    id: string;
+    name?: string;
+    schema_name: string;
+    country?: string | null;
+    currency?: string | null;
+    currency_symbol?: string | null;
+  }>(
+    'SELECT id, name, schema_name, country, currency, currency_symbol FROM businesses WHERE admin_user_id = ?',
     [userId],
   );
 
@@ -176,6 +184,8 @@ export default defineEventHandler(async (event) => {
         }))
       : inferStarterTerminals(cleanBusinessType, cleanFeatures);
 
+    const createdTerminals: Array<{ id: string | null; displayName: string; presetKey: string }> = [];
+
     for (const terminal of starterTerminals) {
       const created = await createManagedTerminal({
         businessId: business.id,
@@ -190,8 +200,51 @@ export default defineEventHandler(async (event) => {
 
       if (created.error) {
         tableErrors.push(`${terminal.displayName}: ${created.error}`);
+      } else {
+        createdTerminals.push({
+          id: (created.terminal as any)?.id ?? null,
+          displayName: terminal.displayName,
+          presetKey: terminal.presetKey,
+        });
       }
     }
+
+    await writeAuditLog({
+      businessId: business.id,
+      actorId: userId,
+      actorType: 'admin',
+      actorName: 'Admin',
+      actionType: existing ? 'update' : 'insert',
+      targetTable: 'business',
+      targetId: business.id,
+      payloadBefore: existing ? {
+        id: existing.id,
+        name: existing.name ?? null,
+        schema_name: existing.schema_name,
+        country: existing.country ?? null,
+        currency: existing.currency ?? null,
+        currency_symbol: existing.currency_symbol ?? null,
+      } : null,
+      payloadAfter: {
+        id: business.id,
+        name: cleanBusinessName,
+        business_type: cleanBusinessType || null,
+        schema_name: schemaName,
+        country: countryCode,
+        currency: currencyCode,
+        currency_symbol: currencySymbol,
+        features: cleanFeatures,
+        tables: (body.schemaDef?.tables ?? []).map((t) => t?.name).filter(Boolean),
+        terminals: createdTerminals,
+      },
+      metadata: {
+        event: 'business:onboard',
+        override: Boolean(existing && body.override),
+        business_type: cleanBusinessType || null,
+        terminal_count: createdTerminals.length,
+        table_errors: tableErrors.length ? tableErrors : null,
+      },
+    });
   }
 
   return {

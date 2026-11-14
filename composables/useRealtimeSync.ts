@@ -99,8 +99,20 @@ export function useRealtimeSync() {
 
           if (payload?.type === 'connected') {
             markConnected();
-          } else if (payload?.type === 'table-mutation' || payload?.table) {
-            notify(payload as RealtimeTableMutation);
+          } else if (
+            payload?.type === 'table-mutation'
+            || payload?.type === 'terminal:updated'
+            || payload?.type === 'terminal:layout'
+            || payload?.table
+          ) {
+            notify({
+              type: 'table-mutation',
+              table: payload.table ?? 'terminals',
+              action: payload.action ?? 'update',
+              recordId: payload.recordId ?? payload.terminalId ?? null,
+              data: payload.data ?? (payload.type !== 'table-mutation' ? payload : null),
+              timestamp: payload.timestamp ?? new Date().toISOString(),
+            });
           }
         } catch {
           // ignore non-json messages

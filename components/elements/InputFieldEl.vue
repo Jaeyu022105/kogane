@@ -27,12 +27,11 @@ const MAX_INPUT_LENGTH = computed(() => {
 });
 
 const model = computed({
-  get: () => String(
-    props.runtime?.state?.value?.inputs?.[props.element.id]
-    ?? (props.element.fieldName ? props.runtime?.state?.value?.inputs?.[props.element.fieldName] : undefined)
-    ?? props.element.defaultValue
-    ?? ''
-  ),
+  get: () => {
+    const raw = props.runtime?.state?.value?.inputs?.[props.element.id];
+    if (raw !== undefined && raw !== null) return String(raw);
+    return props.element.defaultValue ?? '';
+  },
   set: (value: string) => {
     const clean = sanitizeTextInput(value, MAX_INPUT_LENGTH.value, false);
     props.runtime?.setInputValue?.(props.element.id, clean, props.element.fieldName);

@@ -1,12 +1,12 @@
-/* ── Google Fonts ──────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Google Fonts (Inter + JetBrains Mono + DM Serif Display for dashboard reports) */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import './marketing.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Shell tokens (fixed, not business-themed) ───────────────── */
+/* Shell tokens (fixed, not business-themed) */
 :root {
   --shell-bg:           255 255 255;  /* white */
   --shell-sidebar:      104 41  58;    /* dark #68293A */
@@ -26,10 +26,10 @@
 
   /* Scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,87,118,0.35) transparent;
+  scrollbar-color: rgba(20, 20, 20, 0.25) transparent;
 }
 
-/* ── Base resets ─────────────────────────────────────────────── */
+/* Base resets */
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {
@@ -37,7 +37,7 @@ html, body {
   padding: 0;
   background: rgb(var(--shell-bg));
   color: rgb(var(--shell-sidebar));
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   min-height: 100dvh;
@@ -50,12 +50,12 @@ body.dashboard-viewport-lock {
   overscroll-behavior: none;
 }
 
-/* ── Scrollbar ───────────────────────────────────────────────── */
+/* Scrollbar */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: rgba(255,87,118,0.4); border-radius: 99px; }
+::-webkit-scrollbar-thumb  { background: rgba(20, 20, 20, 0.25); border-radius: 99px; }
 
-/* ── Utility layers ──────────────────────────────────────────── */
+/* Utility layers (dashboard and terminal builder components) */
 @layer components {
   /* White card with soft warm shadow */
   .card {
@@ -133,9 +133,8 @@ body.dashboard-viewport-lock {
   .btn-pink:active { transform: scale(0.97); }
 
   /*
-   * Ribbon bookmark tail — confirm/accept/important buttons ONLY.
+   * Ribbon bookmark tail — used on dashboard action buttons.
    * Usage: class="btn-primary btn-ribbon"
-   * Set --ribbon-color inline to match the button background.
    */
   .btn-ribbon {
     position: relative;
@@ -181,7 +180,7 @@ body.dashboard-viewport-lock {
   }
 }
 
-/* ── Transition helpers ──────────────────────────────────────── */
+/* Transition helpers */
 .v-enter-active, .v-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
 .v-enter-from,  .v-leave-to      { opacity: 0; transform: translateY(4px); }
 

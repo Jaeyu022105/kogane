@@ -17,7 +17,6 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
-import QRCode from 'qrcode';
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 let warnedMissingSecret = false;
@@ -224,6 +223,8 @@ export function buildOtpAuthUri(options: {
 
 /** Generates a real scannable QR code Data URL (PNG) for an otpauth URI. */
 export async function generateQrDataUrl(text: string): Promise<string> {
+  const qrcodeMod = await import('qrcode');
+  const QRCode = (qrcodeMod as unknown as { default?: typeof qrcodeMod }).default ?? qrcodeMod;
   return QRCode.toDataURL(text, {
     width: 220,
     margin: 2,
