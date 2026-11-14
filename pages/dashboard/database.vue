@@ -243,7 +243,7 @@ const editingPresetId       = ref<string | null>(null);
 const editPresetName        = ref('');
 const savingPresetEdit      = ref(false);
 const { authHeaders }       = useAuth();
-const { confirm }           = useModal();
+const { confirm: confirmModal } = useModal();
 
 async function loadPresets() {
   if (!businessId.value) return;
@@ -358,7 +358,7 @@ async function syncLinkedTerminals(preset: ApiPresetRecord) {
 }
 
 async function removeCustomPreset(preset: ApiPresetRecord) {
-  const approved = await confirm({
+  const approved = await confirmModal({
     title: `Delete "${preset.name}"?`,
     description: 'This removes the saved business preset. Existing tables and terminals will remain intact.',
     confirmLabel: 'Delete preset',
