@@ -91,7 +91,7 @@ Every composable in `composables/` must be named `use<Domain>.ts` in `camelCase`
 
 ### C. `components/` — Reusable UI & Canvas Elements
 
-- **Top-Level Components (`components/*.vue`)**: Named in `PascalCase` (`Canvas.vue`, `ElementRenderer.vue`, `EmptyState.vue`, `ModalHost.vue`, `OnboardingModal.vue`, `PageHeader.vue`, `PropertiesPanel.vue`, `SalesDiagrams.vue`, `Spinner.vue`, `TerminalCard.vue`, `TerminalThumbnail.vue`).
+- **Top-Level Components (`components/*.vue`)**: Named in `PascalCase` (`Canvas.vue`, `ElementRenderer.vue`, `EmptyState.vue`, `HomeExplorerPosPanel.vue`, `HomeHeroCollage.vue`, `HomePresetExplorer.vue`, `ModalHost.vue`, `OnboardingModal.vue`, `PageHeader.vue`, `PropertiesPanel.vue`, `SalesDiagrams.vue`, `Spinner.vue`, `TerminalCard.vue`, `TerminalThumbnail.vue`).
 - **Canvas Element Primitives (`components/elements/*El.vue`)**: Every canvas widget component must reside in `components/elements/` and end with the `El.vue` suffix (`ButtonEl.vue`, `CartWidgetEl.vue`, `ChartEl.vue`, `ImageEl.vue`, `InputFieldEl.vue`, `ScanFieldEl.vue`, `TableViewEl.vue`, `TextEl.vue`, `UploadEl.vue`).
 
 ### D. `pages/` — Nuxt File-Based Routing

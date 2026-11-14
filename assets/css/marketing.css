@@ -386,6 +386,71 @@
   padding-bottom: 10px;
 }
 
+/* ── Home page editorial primitives (pages/index.vue and its Home* components) ── */
+.home {
+  --home-rule: rgba(104, 41, 58, 0.22);
+  --home-split: 5fr 7fr;
+  --home-gap: 3rem;
+}
+
+.home .section-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Hairline + mono overline that opens every home section */
+.home .section-rule {
+  border-top: 1px solid var(--home-rule);
+  padding-top: 0.85rem;
+}
+
+.home .m-overline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-family: var(--k-font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #68293A;
+}
+
+.home .m-overline::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FF5776;
+  flex-shrink: 0;
+}
+
+.home .m-heading {
+  font-size: clamp(1.9rem, 3.1vw, 2.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.home .m-sub {
+  color: rgba(104, 41, 58, 0.78);
+  max-width: 34rem;
+}
+
+/* Window dots shared by the hero preview cards and the explorer terminal bar */
+.preview-dots { display: flex; align-items: center; gap: 0.32rem; }
+.preview-dots .dot { width: 8px; height: 8px; border-radius: 50%; }
+.preview-dots .dot-red    { background: #FF5F56; }
+.preview-dots .dot-yellow { background: #FFBD2E; }
+.preview-dots .dot-green  { background: #27C93F; }
+
+@media (max-width: 600px) {
+  .home .section-inner {
+    padding: 0 1.25rem;
+  }
+}
+
 @media (max-width: 640px) {
   .m-inner {
     padding: 0 1.25rem;
