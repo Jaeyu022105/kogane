@@ -311,7 +311,7 @@ usePageSeo({
             <NuxtLink
               :to="plan.ctaTo"
               class="plan-btn"
-              :class="`plan-btn--${plan.buttonVariant}`"
+              :class="[`plan-btn--${plan.buttonVariant}`, { ribbon: plan.featured }]"
             >
               <span>{{ plan.ctaLabel }}</span>
               <ArrowRight class="plan-btn-icon" aria-hidden="true" />
@@ -404,13 +404,13 @@ usePageSeo({
         <h2 class="m-cta-heading-light">{{ t('pricing_cta_heading') }}</h2>
         <p class="m-cta-sub-light">{{ t('pricing_cta_sub') }}</p>
         <div class="m-cta-btns">
-          <NuxtLink v-if="isLoggedIn" to="/dashboard/terminals" class="m-btn-primary">
+          <NuxtLink v-if="isLoggedIn" to="/dashboard/terminals" class="m-btn-primary ribbon pricing-cta-primary">
             {{ t('pricing_cta_terminals') }}
           </NuxtLink>
-          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary">
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon pricing-cta-primary">
             {{ t('pricing_cta_btn1') }}
           </NuxtLink>
-          <NuxtLink to="/features" class="m-btn-ghost on-dark">
+          <NuxtLink to="/features" class="m-btn-ghost on-dark pricing-cta-secondary">
             {{ t('pricing_cta_btn2') }}
           </NuxtLink>
         </div>
@@ -421,8 +421,8 @@ usePageSeo({
 
 <style scoped>
 .pricing-page {
-  background: var(--k-bg, #F4F3EF);
-  color: var(--k-ink, #141414);
+  background: var(--k-bg, #FFFDFB);
+  color: var(--k-ink, #68293A);
   font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
@@ -432,11 +432,11 @@ usePageSeo({
   padding: 0 2rem;
 }
 
-/* ── Hero ───────────────────────────────────────────────── */
+/* ── Hero (Vanilla Cream Band) ──────────────────────────── */
 .pricing-hero {
-  background: var(--k-bg, #F4F3EF);
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
-  padding: 4.5rem 0 3.25rem;
+  background: var(--k-cream, #F6E6D7);
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  padding: 4.5rem 0 3.5rem;
 }
 
 .hero-grid {
@@ -447,19 +447,19 @@ usePageSeo({
 }
 
 .hero-kicker {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--k-muted, #52524E);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #B8294B;
   margin: 0 0 0.75rem;
 }
 
 .hero-title {
-  font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
-  font-size: clamp(2.1rem, 4vw, 3.25rem);
-  font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.025em;
-  color: var(--k-ink, #141414);
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: clamp(2.15rem, 4.2vw, 3.25rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--k-ink, #68293A);
   margin: 0;
 }
 
@@ -472,7 +472,7 @@ usePageSeo({
 .hero-sub {
   font-size: 1rem;
   line-height: 1.65;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
 }
 
@@ -485,22 +485,23 @@ usePageSeo({
   display: inline-flex;
   flex-wrap: wrap;
   background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, #DCDAD3);
-  border-radius: 2px;
-  padding: 3px;
-  gap: 2px;
+  border: 1px solid var(--k-blush, #E3C7B9);
+  border-radius: 0.6rem;
+  padding: 4px;
+  gap: 4px;
   max-width: 100%;
+  box-shadow: 0 4px 16px rgba(104, 41, 58, 0.06);
 }
 
 .billing-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.5rem 0.9rem;
+  padding: 0.55rem 0.95rem;
   border: none;
-  border-radius: 2px;
+  border-radius: 0.45rem;
   background: transparent;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 600;
@@ -510,36 +511,36 @@ usePageSeo({
 }
 
 .billing-btn:hover {
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .billing-btn.active {
-  background: var(--k-ink, #141414);
-  color: var(--k-surface, #FFFFFF);
+  background: var(--k-dark, #68293A);
+  color: var(--k-cream, #F6E6D7);
 }
 
 .billing-save {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--k-accent-hover, #CC3B1B);
+  color: #B8294B;
   font-variant-numeric: tabular-nums;
 }
 
 .billing-btn.active .billing-save {
-  color: #FF8E73;
+  color: #FFA3B5;
 }
 
 /* ── Pricing Plans Grid ─────────────────────────────────── */
 .plans-section {
-  background: var(--k-bg, #F4F3EF);
-  padding: 3.25rem 0 4rem;
+  background: var(--k-bg, #FFFDFB);
+  padding: 3.75rem 0 4.25rem;
 }
 
 .plans-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, #DCDAD3);
+  gap: 1.5rem;
+  align-items: stretch;
 }
 
 .plan-col {
@@ -547,15 +548,17 @@ usePageSeo({
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--k-border, #DCDAD3);
-}
-
-.plan-col:last-child {
-  border-right: none;
+  background: var(--k-surface, #FFFFFF);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 28px rgba(104, 41, 58, 0.06);
 }
 
 .plan-col--featured {
-  box-shadow: inset 0 3px 0 0 var(--k-accent, #E84A27);
+  background: var(--k-dark, #68293A);
+  border-color: var(--k-dark, #68293A);
+  color: var(--k-cream, #F6E6D7);
+  box-shadow: 0 16px 40px rgba(104, 41, 58, 0.18), inset 0 4px 0 0 var(--k-accent, #FF5776);
 }
 
 .plan-top {
@@ -571,34 +574,52 @@ usePageSeo({
 }
 
 .plan-name {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: var(--k-ink, #141414);
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--k-ink, #68293A);
   margin: 0;
 }
 
+.plan-col--featured .plan-name {
+  color: var(--k-cream, #F6E6D7);
+}
+
 .plan-marker {
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--k-accent-hover, #CC3B1B);
+  color: #FFD6DE;
+  background: rgba(255, 87, 118, 0.22);
+  border: 1px solid rgba(255, 163, 181, 0.42);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.55rem;
   white-space: nowrap;
 }
 
 .plan-tagline {
   font-size: 0.925rem;
   line-height: 1.55;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
   min-height: 2.9em;
 }
 
+.plan-col--featured .plan-tagline {
+  color: rgba(246, 230, 215, 0.82);
+}
+
 .plan-price-block {
   padding: 1.25rem 0;
-  border-top: 1px solid var(--k-border, #DCDAD3);
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   margin-bottom: 1.5rem;
   font-variant-numeric: tabular-nums;
+}
+
+.plan-col--featured .plan-price-block {
+  border-top-color: rgba(246, 230, 215, 0.2);
+  border-bottom-color: rgba(246, 230, 215, 0.2);
 }
 
 .plan-price-line {
@@ -612,37 +633,73 @@ usePageSeo({
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.025em;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   font-variant-numeric: tabular-nums;
+}
+
+.plan-col--featured .plan-price {
+  color: var(--k-cream, #F6E6D7);
 }
 
 .plan-period {
   font-size: 0.925rem;
   font-weight: 500;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
+}
+
+.plan-col--featured .plan-period {
+  color: rgba(246, 230, 215, 0.8);
 }
 
 .plan-billing-note {
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0.5rem 0 0;
   font-variant-numeric: tabular-nums;
 }
 
+.plan-col--featured .plan-billing-note {
+  color: rgba(246, 230, 215, 0.78);
+}
+
 .plan-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.78rem 1.25rem;
-  border-radius: 2px;
+  padding: 0.82rem 1.25rem;
+  border-radius: 0.5rem;
   font-size: 0.925rem;
   font-weight: 600;
   text-decoration: none;
   margin-bottom: 1.75rem;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  overflow: visible;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.plan-btn:active {
+  transform: scale(0.985);
+}
+
+.plan-btn.ribbon {
+  margin-bottom: 2rem;
+}
+
+.plan-btn.ribbon::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 16px;
+  width: 24px;
+  height: 11px;
+  background: var(--ribbon-color, var(--k-accent, #FF5776));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 52%, 0 100%);
+  pointer-events: none;
+  z-index: 1;
+  transition: background-color 0.15s ease;
 }
 
 .plan-btn-icon {
@@ -652,35 +709,39 @@ usePageSeo({
 }
 
 .plan-btn--accent {
-  background: var(--k-accent, #E84A27);
+  background: var(--k-accent, #FF5776);
   color: var(--k-on-accent, #FFFFFF);
-  border: 1px solid var(--k-accent, #E84A27);
+  border: 1px solid var(--k-accent, #FF5776);
+  --ribbon-color: var(--k-accent, #FF5776);
+  box-shadow: 0 4px 16px rgba(255, 87, 118, 0.28);
 }
 
 .plan-btn--accent:hover {
-  background: var(--k-accent-hover, #CC3B1B);
-  border-color: var(--k-accent-hover, #CC3B1B);
+  background: var(--k-accent-hover, #E84362);
+  border-color: var(--k-accent-hover, #E84362);
+  --ribbon-color: var(--k-accent-hover, #E84362);
 }
 
 .plan-btn--dark {
-  background: var(--k-ink, #141414);
-  color: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-ink, #141414);
+  background: var(--k-dark, #68293A);
+  color: var(--k-cream, #F6E6D7);
+  border: 1px solid var(--k-dark, #68293A);
 }
 
 .plan-btn--dark:hover {
-  background: #2B2B28;
-  border-color: #2B2B28;
+  background: #521F2D;
+  border-color: #521F2D;
 }
 
 .plan-btn--secondary {
-  background: transparent;
-  color: var(--k-ink, #141414);
-  border: 1px solid var(--k-ink, #141414);
+  background: var(--k-surface, #FFFFFF);
+  color: var(--k-ink, #68293A);
+  border: 1.5px solid rgba(104, 41, 58, 0.26);
 }
 
 .plan-btn--secondary:hover {
-  background: var(--k-bg, #F4F3EF);
+  background: var(--k-cream, #F6E6D7);
+  border-color: var(--k-ink, #68293A);
 }
 
 .plan-features {
@@ -698,23 +759,27 @@ usePageSeo({
   gap: 0.65rem;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   font-variant-numeric: tabular-nums;
+}
+
+.plan-col--featured .plan-feature-item {
+  color: var(--k-cream, #F6E6D7);
 }
 
 .plan-check-icon {
   width: 1rem;
   height: 1rem;
-  color: var(--k-accent-hover, #CC3B1B);
+  color: var(--k-accent, #FF5776);
   flex-shrink: 0;
   margin-top: 0.18rem;
 }
 
 .plans-footnote {
-  margin: 1.25rem 0 0;
-  font-size: 0.84rem;
+  margin: 1.5rem 0 0;
+  font-size: 0.85rem;
   line-height: 1.55;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
 }
 
 /* ── Shared Section Headers ─────────────────────────────── */
@@ -724,39 +789,39 @@ usePageSeo({
 }
 
 .section-kicker {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--k-muted, #52524E);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #B8294B;
   margin: 0 0 0.5rem;
 }
 
 .section-title {
-  font-family: var(--k-font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
-  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
-  font-weight: 600;
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  font-weight: 400;
   line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: var(--k-ink, #141414);
+  letter-spacing: -0.015em;
+  color: var(--k-ink, #68293A);
   margin: 0;
 }
 
 .section-sub {
   font-size: 1rem;
-  line-height: 1.6;
-  color: var(--k-muted, #52524E);
+  line-height: 1.65;
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0.75rem 0 0;
 }
 
-/* ── Why SaaS Breakdown ─────────────────────────────────── */
+/* ── Why SaaS Breakdown (Soft Cream Alt Band) ───────────── */
 .why-section {
-  background: var(--k-surface, #FFFFFF);
-  border-top: 1px solid var(--k-border, #DCDAD3);
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  background: var(--k-surface-alt, #FBF4ED);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   padding: 4.5rem 0;
 }
 
 .why-list {
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  border-top: 1px solid var(--k-blush, #E3C7B9);
 }
 
 .why-row {
@@ -764,29 +829,30 @@ usePageSeo({
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
   gap: 2.5rem;
   padding: 1.75rem 0;
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  border-bottom: 1px solid var(--k-blush, #E3C7B9);
   align-items: start;
 }
 
 .why-row-title {
-  font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--k-ink, #141414);
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--k-ink, #68293A);
   margin: 0;
 }
 
 .why-row-body {
   font-size: 0.95rem;
   line-height: 1.65;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── ONBOX-style Feature Comparison Table ───────────────── */
+/* ── ONBOX-style Feature Comparison Table (White Band) ──── */
 .compare-section {
-  background: var(--k-bg, #F4F3EF);
+  background: var(--k-surface, #FFFFFF);
   padding: 4.5rem 0;
 }
 
@@ -796,7 +862,9 @@ usePageSeo({
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--k-surface, #FFFFFF);
-  border: 1px solid var(--k-border, #DCDAD3);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 28px rgba(104, 41, 58, 0.05);
 }
 
 .compare-table {
@@ -810,28 +878,28 @@ usePageSeo({
 .compare-table th,
 .compare-table td {
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   font-size: 0.875rem;
   line-height: 1.45;
   vertical-align: top;
 }
 
 .compare-table thead th {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   background: var(--k-surface, #FFFFFF);
-  border-bottom: 1px solid var(--k-ink, #141414);
+  border-bottom: 1.5px solid var(--k-blush, #E3C7B9);
 }
 
 .compare-table tbody th.row-label {
   font-weight: 500;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
   width: 34%;
 }
 
 .compare-table tbody td {
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   width: 22%;
 }
 
@@ -841,18 +909,19 @@ usePageSeo({
 }
 
 .compare-table .col-business {
-  background: #FAF9F6;
-  color: var(--k-ink, #141414);
+  background: var(--k-surface-alt, #FBF4ED);
+  color: var(--k-ink, #68293A);
 }
 
 .compare-table thead th.col-business {
-  color: var(--k-accent-hover, #CC3B1B);
+  color: var(--k-ink, #68293A);
+  box-shadow: inset 0 3px 0 0 var(--k-accent, #FF5776);
 }
 
-/* ── FAQ ────────────────────────────────────────────────── */
+/* ── FAQ (Vanilla Cream Band) ───────────────────────────── */
 .faq-section {
-  background: var(--k-surface, #FFFFFF);
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  background: var(--k-cream, #F6E6D7);
+  border-top: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
   padding: 4.5rem 0;
 }
 
@@ -864,11 +933,19 @@ usePageSeo({
 }
 
 .faq-list {
-  border-top: 1px solid var(--k-border, #DCDAD3);
+  background: var(--k-surface, #FFFFFF);
+  border: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+  border-radius: 0.75rem;
+  padding: 0.35rem 1.75rem;
+  box-shadow: 0 8px 28px rgba(104, 41, 58, 0.06);
 }
 
 .faq-item {
-  border-bottom: 1px solid var(--k-border, #DCDAD3);
+  border-bottom: 1px solid var(--k-border, rgba(104, 41, 58, 0.14));
+}
+
+.faq-item:last-child {
+  border-bottom: none;
 }
 
 .faq-summary {
@@ -882,7 +959,7 @@ usePageSeo({
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.4;
-  color: var(--k-ink, #141414);
+  color: var(--k-ink, #68293A);
 }
 
 .faq-summary::-webkit-details-marker {
@@ -890,7 +967,7 @@ usePageSeo({
 }
 
 .faq-summary:hover {
-  color: var(--k-accent-hover, #CC3B1B);
+  color: #B8294B;
 }
 
 .faq-indicator {
@@ -898,6 +975,7 @@ usePageSeo({
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+  color: var(--k-accent, #FF5776);
 }
 
 .faq-indicator::before,
@@ -930,15 +1008,96 @@ usePageSeo({
   padding-right: 2rem;
   font-size: 0.9375rem;
   line-height: 1.65;
-  color: var(--k-muted, #52524E);
+  color: var(--k-muted, rgba(104, 41, 58, 0.72));
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Bottom Chocolate CTA Band ──────────────────────────── */
+.m-cta-strip-dark {
+  background: var(--k-dark, #68293A);
+  padding: 5.25rem 0;
+  text-align: center;
+}
+
+.m-cta-inner {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.m-cta-heading-light {
+  font-family: var(--k-font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: clamp(1.85rem, 3.6vw, 2.6rem);
+  font-weight: 400;
+  color: var(--k-cream, #F6E6D7);
+  line-height: 1.15;
+  margin: 0 0 0.85rem;
+}
+
+.m-cta-sub-light {
+  font-size: 1rem;
+  color: rgba(246, 230, 215, 0.82);
+  line-height: 1.65;
+  margin: 0 0 2rem;
+}
+
+.m-cta-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.m-cta-strip-dark .pricing-cta-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.78rem 1.65rem;
+  background: var(--k-accent, #FF5776);
+  color: var(--k-on-accent, #FFFFFF);
+  --ribbon-color: var(--k-accent, #FF5776);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.925rem;
+  text-decoration: none;
+  overflow: visible;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.m-cta-strip-dark .pricing-cta-primary:hover {
+  background: var(--k-accent-hover, #E84362);
+  --ribbon-color: var(--k-accent-hover, #E84362);
+  opacity: 1;
+}
+
+.m-cta-strip-dark .pricing-cta-primary.ribbon::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 14px;
+  width: 24px;
+  height: 11px;
+  background: var(--ribbon-color, var(--k-accent, #FF5776));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 52%, 0 100%);
+  pointer-events: none;
+  z-index: 1;
+  transition: background-color 0.15s ease;
+}
+
+.m-cta-strip-dark .pricing-cta-secondary {
+  color: var(--k-cream, #F6E6D7);
+  border-radius: 0.5rem;
 }
 
 /* ── Responsive Breakpoints (Mobile-safe down to 320px) ─── */
 .billing-btn:focus-visible,
 .plan-btn:focus-visible,
-.faq-summary:focus-visible {
-  outline: 2px solid var(--k-accent, #E84A27);
+.faq-summary:focus-visible,
+.pricing-cta-primary:focus-visible,
+.pricing-cta-secondary:focus-visible {
+  outline: 2px solid var(--k-accent, #FF5776);
   outline-offset: 2px;
 }
 
@@ -950,15 +1109,7 @@ usePageSeo({
 
   .plans-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .plan-col {
-    border-right: none;
-    border-bottom: 1px solid var(--k-border, #DCDAD3);
-  }
-
-  .plan-col:last-child {
-    border-bottom: none;
+    gap: 1.25rem;
   }
 
   .plan-tagline {
@@ -988,7 +1139,7 @@ usePageSeo({
   }
 
   .plans-section {
-    padding: 2.25rem 0 3rem;
+    padding: 2.5rem 0 3rem;
   }
 
   .plan-col {
@@ -999,6 +1150,10 @@ usePageSeo({
   .compare-section,
   .faq-section {
     padding: 3rem 0;
+  }
+
+  .faq-list {
+    padding: 0.25rem 1.25rem;
   }
 
   .billing-btn {
@@ -1014,6 +1169,10 @@ usePageSeo({
 
   .faq-answer {
     padding-right: 0;
+  }
+
+  .m-cta-strip-dark {
+    padding: 3.75rem 0;
   }
 }
 </style>
