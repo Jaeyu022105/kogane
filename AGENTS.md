@@ -66,3 +66,22 @@ You can view the `.agents/rules/` folder for code rules and review purposes.
   - `bun run build` (`bun --bun nuxt build` for full SSR and Nitro server bundle verification)
 - Name all commits using conventional commit format: `feat(scope):`, `fix(scope):`, `docs(scope):`, `refactor(scope):`, `perf(scope):`, `test(scope):`, `chore(scope):`.
 - Stage only files belonging to that checkpoint; preserve unrelated user edits.
+
+### 5. Branch Naming
+
+- Whenever you create a branch, give it a conventional prefix so branches are easy to separate and categorize at a glance. Use the format `<prefix>/<short-kebab-case-description>` (for example `feat/preset-version-history`, `fix/kitchen-display-modal`, `experiment/home-editorial-redesign`).
+- Pick the prefix that matches the purpose of the work:
+
+  | Prefix | Purpose |
+  | :--- | :--- |
+  | `feat/` | New features |
+  | `fix/` | Bug fixes |
+  | `refactor/` | Code restructuring with no behavior change |
+  | `design/` | UI/UX changes |
+  | `style/` | Visual or styling changes |
+  | `experiment/` | Experimental ideas that may not be merged |
+  | `chore/` | Maintenance tasks |
+  | `docs/` | Documentation |
+
+- Keep one purpose per branch. If the work outgrows its prefix (an `experiment/` that is ready to ship), open a new branch with the right prefix instead of renaming history.
+- The long-lived `main` and `dev` branches are the only branches without a prefix.
