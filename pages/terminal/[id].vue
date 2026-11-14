@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, Circle, Delete, Power, Eye, EyeOff } from 'lucide-vue-next';
+import { AlertTriangle, ArrowLeft, ArrowRight, Circle, Delete, Power, Eye, EyeOff, X } from 'lucide-vue-next';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
@@ -85,15 +85,34 @@ const canvasScale = computed(() => {
   return Math.min(1, Math.max(scaleY, 0.75));
 });
 
+const stationConfig = computed(() => session.value?.uiLayout?.stationConfig ?? null);
+const dismissedWelcome = ref(false);
+watch(() => stationConfig.value?.welcomeMessage, () => {
+  dismissedWelcome.value = false;
+});
+
 useHead(() => ({
-  title: `${serverDisplayName.value || 'Terminal'} - Kogane`,
+  title: `${session.value?.displayName || serverDisplayName.value || 'Terminal'} - Kogane`,
+  htmlAttrs: {
+    lang: (typeof stationConfig.value?.language === 'string' && stationConfig.value.language)
+      ? stationConfig.value.language
+      : 'en',
+  },
 }));
+
+useSeoMeta({
+  robots: 'noindex, nofollow',
+});
 
 const activeModal = computed(() =>
   session.value?.uiLayout?.modals?.find((modal) => modal.id === runtime.state.value.activeModalId) ?? null,
 );
 const activeTheme = computed(() => session.value?.uiLayout?.theme ?? terminalTheme.value ?? DEFAULT_LAYOUT_THEME);
 const surfaceRadius = computed(() => activeTheme.value.surfaceStyle === 'square' ? '18px' : '28px');
+
+function closeActiveModal() {
+  runtime.emitLocal('modal:close');
+}
 
 function adminReturnLocation() {
   return `/dashboard/terminals/${terminalId.value}`;
@@ -201,6 +220,12 @@ function configureRuntime(currentSession: TerminalRuntimeSession) {
   if (currentSession.businessId) {
     businessId.value = currentSession.businessId;
   }
+  const cfg = currentSession.uiLayout?.stationConfig;
+  const resolvedCurrencySymbol =
+    typeof cfg?.currencySymbol === 'string' && cfg.currencySymbol.trim()
+      ? cfg.currencySymbol.trim()
+      : (currentSession.currencySymbol ?? serverCurrencySymbol.value);
+
   runtime.configure({
     terminalId: currentSession.terminalId,
     businessId: effectiveBusinessId,
@@ -212,9 +237,59 @@ function configureRuntime(currentSession: TerminalRuntimeSession) {
       terminalRole: currentSession.role,
       country: currentSession.country ?? serverCountry.value,
       currency: currentSession.currency ?? serverCurrency.value,
-      currencySymbol: currentSession.currencySymbol ?? serverCurrencySymbol.value,
+      currencySymbol: resolvedCurrencySymbol,
+      language: typeof cfg?.language === 'string' && cfg.language ? cfg.language : 'en',
+      welcomeMessage: typeof cfg?.welcomeMessage === 'string' ? cfg.welcomeMessage : '',
+      showReceipt: cfg?.showReceipt !== false,
+      menuItems: typeof cfg?.menuItems === 'string' ? cfg.menuItems : '',
     },
   });
+}
+
+let refreshingSession = false;
+async function refreshTerminalSession(evt?: Record<string, unknown>) {
+  if (!session.value || refreshingSession) return;
+  if (evt?.terminalId && String(evt.terminalId) !== terminalId.value) return;
+
+  refreshingSession = true;
+  try {
+    const sessionRes = await $fetch<{
+      session: TerminalRuntimeSession | null;
+      token?: string | null;
+      error: string | null;
+    }>(`/api/terminals/${terminalId.value}/session`, {
+      headers: terminalRequestHeaders(),
+    });
+    if (!sessionRes?.session) return;
+
+    if (sessionRes.token && typeof window !== 'undefined') {
+      sessionStorage.setItem(`kogane_term_token_${terminalId.value}`, sessionRes.token);
+    }
+
+    const nextLayout = normalizeLayout(sessionRes.session.uiLayout);
+    const prevSnapshot = JSON.stringify({
+      displayName: session.value.displayName,
+      permissions: session.value.permissions,
+      uiLayout: session.value.uiLayout,
+    });
+    const nextSnapshot = JSON.stringify({
+      displayName: sessionRes.session.displayName,
+      permissions: sessionRes.session.permissions,
+      uiLayout: nextLayout,
+    });
+
+    if (prevSnapshot !== nextSnapshot) {
+      session.value = {
+        ...sessionRes.session,
+        uiLayout: nextLayout,
+      };
+      configureRuntime(session.value);
+    }
+  } catch {
+    // Keep existing active terminal session on transient refresh failure
+  } finally {
+    refreshingSession = false;
+  }
 }
 
 async function login() {
@@ -365,8 +440,21 @@ function leaveLoginPage() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    if (showLogoutPrompt.value) {
+      closeLogoutPrompt();
+      e.preventDefault();
+      return;
+    }
+    if (runtime.state.value.activeModalId) {
+      closeActiveModal();
+      e.preventDefault();
+      return;
+    }
+  }
+
   const activeEl = document.activeElement;
-  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
     if (!showLogoutPrompt.value) return;
   }
 
@@ -383,24 +471,27 @@ function handleKeydown(e: KeyboardEvent) {
       login();
     }
     e.preventDefault();
-  } else if (e.key === 'Escape') {
-    if (showLogoutPrompt.value) {
-      closeLogoutPrompt();
-      e.preventDefault();
-    }
   }
 }
+
+let offTerminalUpdated: (() => void) | null = null;
 
 onMounted(() => {
   bootstrap();
   updateViewport();
   window.addEventListener('resize', updateViewport);
   window.addEventListener('keydown', handleKeydown);
+  offTerminalUpdated = runtime.on('terminal:updated', (payload) => {
+    refreshTerminalSession(payload as Record<string, unknown> | undefined);
+  });
 });
 
 onUnmounted(() => {
+  offTerminalUpdated?.();
+  offTerminalUpdated = null;
   window.removeEventListener('resize', updateViewport);
   window.removeEventListener('keydown', handleKeydown);
+  runtime.reset();
 });
 </script>
 
@@ -439,6 +530,39 @@ onUnmounted(() => {
       </button>
       <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
         <ArrowRight class="h-3.5 w-3.5" />
+      </button>
+    </div>
+
+    <div
+      v-if="stationConfig?.welcomeMessage && !dismissedWelcome"
+      class="fixed top-12 left-1/2 z-[65] -translate-x-1/2 max-w-md flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium shadow-md backdrop-blur-md border"
+      :style="{ background: activeTheme.topBarBackground, color: activeTheme.topBarText, borderColor: activeTheme.panelBorder }"
+    >
+      <span class="truncate">{{ stationConfig.welcomeMessage }}</span>
+      <button
+        type="button"
+        aria-label="Dismiss welcome message"
+        class="p-0.5 rounded-full hover:opacity-75 shrink-0"
+        @click="dismissedWelcome = true"
+      >
+        <X class="w-3.5 h-3.5" />
+      </button>
+    </div>
+
+    <div
+      v-if="runtime.state.value.lastError"
+      role="alert"
+      class="fixed top-12 right-4 z-[80] max-w-sm flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-xs font-medium shadow-lg border bg-red-600/95 text-white border-red-400/50"
+    >
+      <AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" />
+      <span class="flex-1 leading-snug">{{ runtime.state.value.lastError }}</span>
+      <button
+        type="button"
+        aria-label="Dismiss runtime error"
+        class="p-0.5 rounded-full hover:bg-white/20 shrink-0"
+        @click="runtime.clearError()"
+      >
+        <X class="w-3.5 h-3.5" />
       </button>
     </div>
 
@@ -490,15 +614,18 @@ onUnmounted(() => {
 
         <div
           v-if="activeModal"
+          role="dialog"
+          aria-modal="true"
           class="absolute inset-0 z-[60] flex items-center justify-center bg-black/45"
+          @click.self="closeActiveModal"
         >
           <div
             class="relative overflow-hidden border shadow-2xl"
             :style="activeModal.presentation === 'fullscreen'
               ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
               : activeModal.presentation === 'drawer'
-                ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
-                : `width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`"
+                ? `width: ${Math.min(activeModal.width ?? 460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
+                : `width: ${activeModal.width ?? 640}px; max-width: calc(100% - 48px); height: ${activeModal.height ?? 420}px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`"
           >
             <ElementRenderer
               v-for="el in activeModal.elements"

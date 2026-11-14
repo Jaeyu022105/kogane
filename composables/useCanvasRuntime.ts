@@ -22,11 +22,13 @@ interface RuntimeState {
   inputs: Record<string, unknown>;
   queryResults: Record<string, Record<string, unknown>[]>;
   queryTables: Record<string, string>;
+  targetedQueries: Record<string, { table?: string; timestamp: number }>;
   cart: unknown[];
   uploads: Record<string, string>;
   permissions: TerminalPermissions;
   activeModalId: string | null;
   sessionVars: Record<string, unknown>;
+  lastError: { title: string; description: string } | null;
 }
 
 interface RuntimeContext {
@@ -45,16 +47,46 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
 }
 
+function getAllLayoutElements(targetLayout: UiLayout | null | undefined): ElementDef[] {
+  if (!targetLayout) return [];
+  return [
+    ...(targetLayout.elements ?? []),
+    ...((targetLayout.modals ?? []).flatMap((modal) => modal.elements ?? [])),
+  ];
+}
+
+function collectReferencedInputKeys(value: unknown, keys = new Set<string>()): string[] {
+  if (typeof value === 'string') {
+    const matches = value.matchAll(/\$\$inputs?\.([A-Za-z0-9_.:-]+)/g);
+    for (const match of matches) {
+      if (match[1]) keys.add(match[1]);
+    }
+    return Array.from(keys);
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectReferencedInputKeys(item, keys);
+    return Array.from(keys);
+  }
+  if (value && typeof value === 'object') {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      collectReferencedInputKeys(item, keys);
+    }
+  }
+  return Array.from(keys);
+}
+
 export function useCanvasRuntime() {
   const runtimeState = useState<RuntimeState>('kogane:runtime:state', () => ({
     inputs: {},
     queryResults: {},
     queryTables: {},
+    targetedQueries: {},
     cart: [],
     uploads: {},
     permissions: normalizePermissions(),
     activeModalId: null,
     sessionVars: {},
+    lastError: null,
   }));
   const context = useState<RuntimeContext>('kogane:runtime:context', () => ({
     terminalId: '',
@@ -73,14 +105,36 @@ export function useCanvasRuntime() {
       inputs: {},
       queryResults: {},
       queryTables: {},
+      targetedQueries: {},
       cart: [],
       uploads: {},
       permissions: normalizePermissions(),
       activeModalId: null,
       sessionVars: {},
+      lastError: null,
     };
     loadedElements.clear();
     listeners.clear();
+  }
+
+  function clearError() {
+    runtimeState.value.lastError = null;
+  }
+
+  async function clearTargetQuery(elementId: string) {
+    delete runtimeState.value.targetedQueries[elementId];
+    const target = getAllLayoutElements(context.value.layout).find((el) => el.id === elementId);
+    if (target) {
+      await reloadElement(target);
+    }
+  }
+
+  function getEffectiveRole() {
+    return (runtimeState.value.sessionVars?.terminalRole as string)
+      || (runtimeState.value.sessionVars?.role as string)
+      || (context.value.sessionVars?.terminalRole as string)
+      || (context.value.sessionVars?.role as string)
+      || undefined;
   }
 
   function configure(options: {
@@ -102,29 +156,48 @@ export function useCanvasRuntime() {
     runtimeState.value.permissions = normalizePermissions(options.permissions, effectiveRole);
     runtimeState.value.sessionVars = options.sessionVars ?? {};
     runtimeState.value.activeModalId = null;
+    runtimeState.value.targetedQueries = {};
+    runtimeState.value.lastError = null;
     loadedElements.clear();
+
+    const matchesTable = (tName: string | undefined, mutTable: string) => {
+      if (!tName || !mutTable) return false;
+      return tName === mutTable || tName.endsWith(`_${mutTable}`) || mutTable.endsWith(`_${tName}`);
+    };
 
     if (options.businessId) {
       realtimeSync.connect({
         businessId: options.businessId,
         terminalId: options.terminalId,
         onMutation: async (mutation) => {
+          if (
+            mutation.table === 'terminals'
+            && (!mutation.recordId || String(mutation.recordId) === String(options.terminalId) || mutation.data?.terminalId === options.terminalId)
+          ) {
+            emitLocal('terminal:updated', mutation.data ?? mutation);
+          }
+
           emitLocal('realtime:table-update', mutation);
 
-          if (context.value.layout?.elements) {
-            const matchesTable = (tName: string | undefined, mutTable: string) => {
-              if (!tName || !mutTable) return false;
-              return tName === mutTable || tName.endsWith(`_${mutTable}`) || mutTable.endsWith(`_${tName}`);
-            };
+          for (const el of getAllLayoutElements(context.value.layout)) {
+            if (el.type === 'table-view' && runtimeState.value.targetedQueries[el.id]) continue;
+            if (el.type === 'table-view' && matchesTable((el as any).tableName, mutation.table)) {
+              await reloadElement(el);
+            } else if (el.type === 'chart' && matchesTable((el as any).tableName, mutation.table)) {
+              await reloadElement(el);
+            } else if (el.type === 'cart-widget' && matchesTable((el as any).productTable ?? 'products', mutation.table)) {
+              await reloadElement(el);
+            }
+          }
+        },
+        onReconnect: async () => {
+          emitLocal('realtime:reconnected');
+          emitLocal('terminal:updated', { reason: 'reconnect', terminalId: context.value.terminalId });
 
-            for (const el of context.value.layout.elements) {
-              if (el.type === 'table-view' && matchesTable((el as any).tableName, mutation.table)) {
-                await reloadElement(el);
-              } else if (el.type === 'chart' && matchesTable((el as any).tableName, mutation.table)) {
-                await reloadElement(el);
-              } else if (el.type === 'cart-widget' && matchesTable((el as any).productTable ?? 'products', mutation.table)) {
-                await reloadElement(el);
-              }
+          for (const el of getAllLayoutElements(context.value.layout)) {
+            if (el.type === 'table-view' && runtimeState.value.targetedQueries[el.id]) continue;
+            if (el.type === 'table-view' || el.type === 'chart' || el.type === 'cart-widget') {
+              await reloadElement(el);
             }
           }
         },
@@ -132,12 +205,19 @@ export function useCanvasRuntime() {
     }
   }
 
+  function isSharedFieldName(fieldName: string, elementId: string) {
+    const matches = getAllLayoutElements(context.value.layout).filter(
+      (el) => (el.type === 'input-field' || el.type === 'scan-field') && (el as any).fieldName === fieldName,
+    );
+    return matches.some((el) => el.id !== elementId);
+  }
+
   function setInputValue(elementId: string, value: unknown, fieldName?: string) {
     const sanitized = typeof value === 'string'
       ? sanitizeTextInput(value, 2000, false)
       : value;
     runtimeState.value.inputs[elementId] = sanitized;
-    if (fieldName) {
+    if (fieldName && !isSharedFieldName(fieldName, elementId)) {
       runtimeState.value.inputs[fieldName] = sanitized;
     }
   }
@@ -299,9 +379,9 @@ export function useCanvasRuntime() {
     return runtimeState.value.queryResults[targetElementId];
   }
 
-  async function reloadElement(element: ElementDef) {
+  async function reloadElement(element: ElementDef, queryOverrides?: { offset?: number; limit?: number }) {
     loadedElements.delete(element.id);
-    return loadElement(element);
+    return loadElement(element, queryOverrides);
   }
 
   async function pickFile(accept?: string[]) {
@@ -361,12 +441,10 @@ export function useCanvasRuntime() {
         targetElementIds.add(elementId);
       }
     }
-    if (context.value.layout?.elements) {
-      for (const el of context.value.layout.elements) {
-        const elTable = (el as any).tableName;
-        if (elTable === action.table || elTable?.endsWith(`_${action.table}`) || Boolean(action.table?.endsWith(`_${elTable}`))) {
-          targetElementIds.add(el.id);
-        }
+    for (const el of getAllLayoutElements(context.value.layout)) {
+      const elTable = (el as any).tableName;
+      if (elTable === action.table || elTable?.endsWith(`_${action.table}`) || Boolean(action.table?.endsWith(`_${elTable}`))) {
+        targetElementIds.add(el.id);
       }
     }
 
@@ -418,13 +496,14 @@ export function useCanvasRuntime() {
     };
   }
 
-  function resolverContext(elementId?: string): import('~/lib/runtime').RuntimeResolverContext {
+  function resolverContext(elementId?: string, row?: Record<string, unknown>): import('~/lib/runtime').RuntimeResolverContext {
     return {
       cart: runtimeState.value.cart,
       inputs: runtimeState.value.inputs,
       uploads: runtimeState.value.uploads,
       session: runtimeState.value.sessionVars,
       elementId,
+      row,
     };
   }
 
@@ -460,12 +539,9 @@ export function useCanvasRuntime() {
   async function dispatch(action: RuntimeActionDefinition, options: {
     element: ElementDef;
     trigger: EventTrigger;
+    row?: Record<string, unknown>;
   }) {
-    const effectiveRole = (runtimeState.value.sessionVars?.terminalRole as string)
-      || (runtimeState.value.sessionVars?.role as string)
-      || (context.value.sessionVars?.terminalRole as string)
-      || (context.value.sessionVars?.role as string)
-      || undefined;
+    const effectiveRole = getEffectiveRole();
     if (!isActionAllowed(runtimeState.value.permissions, action, effectiveRole)) {
       await alert({
         title: 'Permission required',
@@ -489,7 +565,10 @@ export function useCanvasRuntime() {
     }
 
     if (action.type === 'emit') {
-      emitLocal(action.event ?? 'runtime:event', action.payload);
+      const resolvedEmitPayload = action.payload !== undefined
+        ? resolveRuntimePayload(action.payload as any, resolverContext(options.element.id, options.row))
+        : undefined;
+      emitLocal(action.event ?? 'runtime:event', resolvedEmitPayload);
 
       if (action.onSuccess) await dispatch(action.onSuccess, options);
       return null;
@@ -515,35 +594,67 @@ export function useCanvasRuntime() {
 
     if (action.type === 'upload') {
       try {
+        runtimeState.value.lastError = null;
         const result = await runUploadAction(options.element, action);
-        if (action.onSuccess) await dispatch(action.onSuccess, options);
+        if (result && action.onSuccess) await dispatch(action.onSuccess, options);
         return result;
-      } catch {
-        if (action.onFailure) await dispatch(action.onFailure, options);
+      } catch (err: any) {
+        const description = err?.data?.error || err?.message || 'File upload failed. Please try again.';
+        runtimeState.value.lastError = { title: 'Upload failed', description };
+        emitLocal('runtime:error', runtimeState.value.lastError);
+        if (action.onFailure) {
+          await dispatch(action.onFailure, options);
+        } else {
+          await alert({
+            title: 'Upload failed',
+            description,
+            confirmLabel: 'Dismiss',
+          });
+        }
         return null;
       }
     }
 
     if (action.type === 'query') {
+      const ctx = resolverContext(options.element.id, options.row);
       const resolvedWhere = action.where
-        ? resolveRuntimePayload(action.where, resolverContext(options.element.id)) as Record<string, unknown>
+        ? resolveRuntimePayload(action.where, ctx) as Record<string, unknown>
         : undefined;
 
       try {
+        runtimeState.value.lastError = null;
         const result = await runQueryAction(options.element.id, {
           ...action,
           where: resolvedWhere as any,
         }, options.trigger);
 
+        if (action.targetElementId && action.targetElementId !== options.element.id) {
+          runtimeState.value.targetedQueries[action.targetElementId] = {
+            table: action.table,
+            timestamp: Date.now(),
+          };
+        }
+
         if (action.onSuccess) await dispatch(action.onSuccess, options);
         return result;
-      } catch {
-        if (action.onFailure) await dispatch(action.onFailure, options);
+      } catch (err: any) {
+        const description = err?.data?.error || err?.message || 'Unable to query records from this table.';
+        runtimeState.value.lastError = { title: 'Query failed', description };
+        emitLocal('runtime:error', runtimeState.value.lastError);
+        if (action.onFailure) {
+          await dispatch(action.onFailure, options);
+        } else if (options.trigger !== 'load') {
+          await alert({
+            title: 'Query failed',
+            description,
+            confirmLabel: 'Dismiss',
+          });
+        }
         return null;
       }
     }
 
-    const ctx = resolverContext(options.element.id);
+    const ctx = resolverContext(options.element.id, options.row);
     const resolvedPayload = resolveRuntimePayload(action.payload, ctx);
     const resolvedRowId = resolveRuntimePayload(action.rowId, ctx);
     const resolvedWhere = action.where
@@ -581,31 +692,22 @@ export function useCanvasRuntime() {
     try {
       const result = await enqueue(envelope, rollback);
 
-      if (action.type === 'insert' && resolvedPayload && typeof resolvedPayload === 'object') {
-        for (const key of Object.keys(resolvedPayload)) {
-          delete runtimeState.value.inputs[key];
-        }
-        if (action.payload && typeof action.payload === 'object') {
-          for (const val of Object.values(action.payload)) {
-            if (typeof val === 'string') {
-              if (val.startsWith('$$input.')) {
-                delete runtimeState.value.inputs[val.replace('$$input.', '')];
-              } else if (val.startsWith('$$inputs.')) {
-                delete runtimeState.value.inputs[val.replace('$$inputs.', '')];
-              }
-            }
-          }
+      if (action.type === 'insert') {
+        const referencedInputs = collectReferencedInputKeys(action.payload);
+        for (const key of referencedInputs) {
+          runtimeState.value.inputs[key] = '';
         }
       }
 
-      if ((action.type === 'insert' || action.type === 'update' || action.type === 'delete') && context.value.layout?.elements && action.table) {
+      if ((action.type === 'insert' || action.type === 'update' || action.type === 'delete') && action.table) {
         const actionTable = action.table;
         const matchesActionTable = (tName: string | undefined, actTable: string) => {
           if (!tName || !actTable) return false;
           return tName === actTable || tName.endsWith(`_${actTable}`) || actTable.endsWith(`_${tName}`);
         };
 
-        for (const el of context.value.layout.elements) {
+        for (const el of getAllLayoutElements(context.value.layout)) {
+          if (el.type === 'table-view' && runtimeState.value.targetedQueries[el.id]) continue;
           if (el.type === 'table-view' && matchesActionTable((el as any).tableName, actionTable)) {
             reloadElement(el).catch(() => {});
           } else if (el.type === 'cart-widget' && matchesActionTable((el as any).productTable ?? 'products', actionTable)) {
@@ -625,14 +727,18 @@ export function useCanvasRuntime() {
     }
   }
 
-  async function triggerElement(element: ElementDef, trigger: EventTrigger) {
+  async function triggerElement(
+    element: ElementDef,
+    trigger: EventTrigger,
+    options?: { row?: Record<string, unknown> },
+  ) {
     const events = getElementEvents(element).filter((binding) => binding.trigger === trigger);
     for (const binding of events) {
-      await dispatch(binding.action, { element, trigger });
+      await dispatch(binding.action, { element, trigger, row: options?.row });
     }
   }
 
-  async function loadElement(element: ElementDef) {
+  async function loadElement(element: ElementDef, queryOverrides?: { offset?: number; limit?: number }) {
     if (loadedElements.has(element.id)) return;
     loadedElements.add(element.id);
 
@@ -657,7 +763,8 @@ export function useCanvasRuntime() {
         orderBy: element.orderBy,
         descending: element.descending,
         targetElementId: element.id,
-        limit: element.pageSize ?? 20,
+        limit: queryOverrides?.limit ?? element.pageSize ?? 20,
+        offset: queryOverrides?.offset ?? 0,
         where: element.filters,
       }, 'load');
     }
@@ -670,7 +777,8 @@ export function useCanvasRuntime() {
           ? element.columns
           : ['created_at', 'actor_name', 'action_type', 'target_table'],
         targetElementId: element.id,
-        limit: element.pageSize ?? 20,
+        limit: queryOverrides?.limit ?? element.pageSize ?? 20,
+        offset: queryOverrides?.offset ?? 0,
         where: element.filters,
       }, 'load');
     }
@@ -687,7 +795,8 @@ export function useCanvasRuntime() {
           ? Array.from(new Set([...defaultColumns, 'created_at']))
           : ['created_at'],
         targetElementId: element.id,
-        limit: 100,
+        limit: queryOverrides?.limit ?? 100,
+        offset: queryOverrides?.offset ?? 0,
         where: element.filters,
       }, 'load');
     }
@@ -701,7 +810,8 @@ export function useCanvasRuntime() {
           table: cartElement.productTable,
           columns: ['*'],
           targetElementId: element.id,
-          limit: 100,
+          limit: queryOverrides?.limit ?? 100,
+          offset: queryOverrides?.offset ?? 0,
         }, 'load');
       }
     }
@@ -710,7 +820,8 @@ export function useCanvasRuntime() {
   function isElementDisabled(element: ElementDef) {
     const events = getElementEvents(element);
     if (events.length === 0) return false;
-    return events.some((binding) => !isActionAllowed(runtimeState.value.permissions, binding.action));
+    const effectiveRole = getEffectiveRole();
+    return events.some((binding) => !isActionAllowed(runtimeState.value.permissions, binding.action, effectiveRole));
   }
 
   function formatCurrency(amount: unknown) {
@@ -739,6 +850,8 @@ export function useCanvasRuntime() {
     formatCurrency,
     configure,
     reset,
+    clearError,
+    clearTargetQuery,
     on,
     emitLocal,
     setInputValue,

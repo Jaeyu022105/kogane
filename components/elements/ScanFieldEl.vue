@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { LockKeyhole } from 'lucide-vue-next';
 import type { ScanFieldElementDef } from '~/lib/uiTypes';
 import { isLightColor } from '~/lib/workspaceBranding';
 import { hasUnsafeControlChars, sanitizeTextInput } from '~/lib/securityClient';
@@ -12,6 +13,9 @@ import { hasUnsafeControlChars, sanitizeTextInput } from '~/lib/securityClient';
  */
 
 const props = defineProps<{ element: ScanFieldElementDef; runtime?: any; builderMode?: boolean }>();
+
+const disabled = computed(() => Boolean(props.builderMode || props.runtime?.isElementDisabled?.(props.element)));
+const permissionDisabled = computed(() => Boolean(!props.builderMode && props.runtime?.isElementDisabled?.(props.element)));
 
 const BURST_THRESHOLD_MS = computed(() => props.element.burstThresholdMs ?? 40);
 const BURST_COMMIT_DELAY_MS = 120;
@@ -32,6 +36,7 @@ const effectiveText = computed(() => props.element.textColor ?? (isLight.value ?
 const effectiveBorder = computed(() => props.element.borderColor ?? (isLight.value ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'));
 
 function commitValue(value: string) {
+  if (disabled.value) return;
   if (burstTimer) {
     clearTimeout(burstTimer);
     burstTimer = null;
@@ -52,7 +57,7 @@ function commitValue(value: string) {
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if (props.builderMode) return;
+  if (disabled.value) return;
 
   const now = Date.now();
   const gap = now - lastKeyTime;
@@ -100,6 +105,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 function onInput(event: Event) {
+  if (disabled.value) return;
   const target = event.target as HTMLInputElement;
   const clean = sanitizeTextInput(target.value, MAX_SCAN_LENGTH.value, false);
   if (target.value !== clean) {
@@ -109,6 +115,7 @@ function onInput(event: Event) {
 }
 
 function onBlur() {
+  if (disabled.value) return;
   if (displayValue.value.trim()) commitValue(displayValue.value);
 }
 
@@ -126,7 +133,7 @@ onUnmounted(() => {
       :maxlength="MAX_SCAN_LENGTH"
       autocomplete="off"
       :class="[
-        'w-full h-full px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary',
+        'w-full h-full px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-45',
         isLight ? 'placeholder-neutral-400' : 'placeholder-white/30',
       ]"
       :style="{
@@ -135,7 +142,7 @@ onUnmounted(() => {
         border: `1px solid ${effectiveBorder}`,
         borderRadius: `${element.radius ?? 12}px`,
       }"
-      :disabled="builderMode"
+      :disabled="disabled"
       @input="onInput"
       @keydown="onKeydown"
       @blur="onBlur"
@@ -144,8 +151,9 @@ onUnmounted(() => {
       class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
       :style="{ color: isLight ? 'rgba(0,0,0,0.3)' : (element.textColor ? `${element.textColor}60` : 'rgba(255,255,255,0.25)') }"
     >
+      <LockKeyhole v-if="permissionDisabled" class="w-4 h-4 opacity-70" />
       <!-- barcode icon -->
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3 9V5a2 2 0 012-2h2M3 15v4a2 2 0 002 2h2m10-18h2a2 2 0 012 2v4M19 15v4a2 2 0 01-2 2h-2M7 8v8M10 6v12M13 8v8M16 6v12" />
       </svg>
     </div>

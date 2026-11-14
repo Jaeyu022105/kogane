@@ -22,6 +22,7 @@ const {
   cameraX,
   cameraY,
   selectElement,
+  captureSnapshot,
   moveElement,
   updateElement,
   setCamera,
@@ -41,12 +42,14 @@ const drag = ref<{
   startY:  number;
   origX:   number;
   origY:   number;
+  hasSnapshotted: boolean;
 } | null>(null);
 
 function onMousedownEl(ev: MouseEvent, el: ElementDef) {
   ev.stopPropagation();
   if (editingTextId.value && editingTextId.value !== el.id) {
     editingTextId.value = null;
+    inlineTextSnapshotted.value = false;
   }
   selectElement(el.id);
 
@@ -56,6 +59,7 @@ function onMousedownEl(ev: MouseEvent, el: ElementDef) {
     startY: ev.clientY,
     origX:  el.position.x,
     origY:  el.position.y,
+    hasSnapshotted: false,
   };
 
   window.addEventListener('mousemove', onMousemove);
@@ -63,17 +67,32 @@ function onMousedownEl(ev: MouseEvent, el: ElementDef) {
 }
 
 const editingTextId = ref<string | null>(null);
+const inlineTextSnapshotted = ref(false);
 
 function onDblclickEl(ev: MouseEvent, el: ElementDef) {
   ev.stopPropagation();
   if (el.type === 'text') {
     editingTextId.value = el.id;
+    inlineTextSnapshotted.value = false;
     // small delay to let vue render the textarea then focus it
     setTimeout(() => {
       const ta = document.getElementById(`edit-${el.id}`) as HTMLTextAreaElement;
       if (ta) ta.focus();
     }, 10);
   }
+}
+
+function onInlineTextInput(id: string, value: string) {
+  if (!inlineTextSnapshotted.value) {
+    captureSnapshot();
+    inlineTextSnapshotted.value = true;
+  }
+  updateElement(id, { content: value } as any, { recordHistory: false });
+}
+
+function onInlineTextBlur() {
+  editingTextId.value = null;
+  inlineTextSnapshotted.value = false;
 }
 
 function snap(v: number): number {
@@ -85,11 +104,20 @@ function onMousemove(ev: MouseEvent) {
 
   const dx = (ev.clientX - drag.value.startX) / zoom.value;
   const dy = (ev.clientY - drag.value.startY) / zoom.value;
+  const nextX = snap(drag.value.origX + dx);
+  const nextY = snap(drag.value.origY + dy);
 
-  moveElement(drag.value.elId, {
-    x: snap(drag.value.origX + dx),
-    y: snap(drag.value.origY + dy),
-  });
+  if (!drag.value.hasSnapshotted) {
+    if (nextX === drag.value.origX && nextY === drag.value.origY) return;
+    captureSnapshot();
+    drag.value.hasSnapshotted = true;
+  }
+
+  moveElement(
+    drag.value.elId,
+    { x: nextX, y: nextY },
+    { recordHistory: false },
+  );
 }
 
 function onMouseup() {
@@ -149,6 +177,7 @@ const resize = ref<{
   origY:   number;
   origW:   number;
   origH:   number;
+  hasSnapshotted: boolean;
 } | null>(null);
 
 function onMousedownResize(ev: MouseEvent, el: ElementDef, handle: ResizeHandle) {
@@ -163,6 +192,7 @@ function onMousedownResize(ev: MouseEvent, el: ElementDef, handle: ResizeHandle)
     origY:  el.position.y,
     origW:  el.position.width,
     origH:  el.position.height,
+    hasSnapshotted: false,
   };
 
   window.addEventListener('mousemove', onResizeMove);
@@ -202,21 +232,45 @@ function onResizeMove(ev: MouseEvent) {
     nextH = origH - clampedDy;
   }
 
-  updateElement(resize.value.elId, {
-    position: {
-      ...activeElements.value.find(e => e.id === resize.value!.elId)!.position,
-      x:      snap(nextX),
-      y:      snap(nextY),
-      width:  snap(nextW),
-      height: snap(nextH),
+  const snappedX = snap(nextX);
+  const snappedY = snap(nextY);
+  const snappedW = snap(nextW);
+  const snappedH = snap(nextH);
+
+  if (!resize.value.hasSnapshotted) {
+    if (snappedX === origX && snappedY === origY && snappedW === origW && snappedH === origH) return;
+    captureSnapshot();
+    resize.value.hasSnapshotted = true;
+  }
+
+  updateElement(
+    resize.value.elId,
+    {
+      position: {
+        ...activeElements.value.find(e => e.id === resize.value!.elId)!.position,
+        x:      snappedX,
+        y:      snappedY,
+        width:  snappedW,
+        height: snappedH,
+      },
     },
-  });
+    { recordHistory: false },
+  );
 }
 
 function onResizeUp() {
   resize.value = null;
   window.removeEventListener('mousemove', onResizeMove);
 }
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mousemove', onMousemove);
+  window.removeEventListener('mouseup', onMouseup);
+  window.removeEventListener('mousemove', onResizeMove);
+  window.removeEventListener('mouseup', onResizeUp);
+  window.removeEventListener('mousemove', onPanMove);
+  window.removeEventListener('mouseup', onPanUp);
+});
 </script>
 
 <template>
@@ -328,8 +382,8 @@ function onResizeUp() {
                     color: (el as any).color ?? '#000',
                     textAlign: (el as any).align ?? 'left',
                   }"
-                  @input="updateElement(el.id, { content: ($event.target as HTMLTextAreaElement).value } as any)"
-                  @blur="editingTextId = null"
+                  @input="onInlineTextInput(el.id, ($event.target as HTMLTextAreaElement).value)"
+                  @blur="onInlineTextBlur"
                   @mousedown.stop
                 />
               </template>

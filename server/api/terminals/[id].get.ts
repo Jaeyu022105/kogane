@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
   return {
     terminal: {
       ...terminal,
-      permissions: normalizePermissions(terminal.permissions),
+      permissions: normalizePermissions(terminal.permissions, terminal.role),
       ui_layout: normalizeLayout(
         terminal.ui_layout
           ? JSON.parse(terminal.ui_layout)
