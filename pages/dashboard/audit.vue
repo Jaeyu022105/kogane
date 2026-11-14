@@ -355,9 +355,11 @@ function formatDiffValue(value: unknown): string {
 
 function formatRawPayload(raw: unknown): string {
   if (raw == null || raw === '') return 'null';
-  const parsed = parseAuditJson(raw);
-  if (parsed !== null) {
-    return JSON.stringify(redactAuditPayload(parsed), null, 2);
+  if (typeof raw === 'string' || typeof raw === 'object') {
+    const parsed = parseAuditJson(raw);
+    if (parsed !== null) {
+      return JSON.stringify(redactAuditPayload(parsed), null, 2);
+    }
   }
   return String(raw);
 }

@@ -755,8 +755,16 @@ async function syncPresetUpdate() {
   }
 }
 
-const previewActiveModal = computed(() =>
-  layout.value.modals?.find((m) => m.id === previewRuntime.state.value.activeModalId) ?? null,
+const previewActiveModal = computed<NonNullable<UiLayout['modals']>[number] | null>(() =>
+  (layout.value as unknown as UiLayout).modals?.find((m) => m.id === previewRuntime.state.value.activeModalId) ?? null,
+);
+
+const previewElements = computed<ElementDef[]>(
+  () => (layout.value as unknown as UiLayout).elements,
+);
+
+const previewActiveModalElements = computed<ElementDef[]>(
+  () => ((previewActiveModal.value as unknown as { elements?: ElementDef[] } | null)?.elements ?? []),
 );
 
 const previewScale = computed(() => {
@@ -775,7 +783,7 @@ function enterInteractivePreview() {
   previewRuntime.configure({
     terminalId: selectedTerminal.value,
     businessId: business.value?.id ?? '',
-    layout: normalizeLayout(cloneLayout(layout.value)),
+    layout: normalizeLayout(cloneLayout(layout.value as UiLayout)),
     permissions: selectedTerminalPermissions.value,
     sessionVars: {
       businessName: business.value?.name,
@@ -1403,7 +1411,7 @@ onUnmounted(() => {
               }"
             >
               <ElementRenderer
-                v-for="el in layout.elements"
+                v-for="el in previewElements"
                 :key="el.id"
                 :element="el"
                 :business-id="business?.id ?? ''"
@@ -1424,7 +1432,7 @@ onUnmounted(() => {
                       : `width: ${previewActiveModal.width ?? 640}px; max-width: calc(100% - 48px); height: ${previewActiveModal.height ?? 420}px; max-height: calc(100% - 48px); background: ${currentTheme.panelBackground}; border-color: ${currentTheme.panelBorder}; border-radius: 24px;`"
                 >
                   <ElementRenderer
-                    v-for="el in previewActiveModal.elements"
+                    v-for="el in previewActiveModalElements"
                     :key="el.id"
                     :element="el"
                     :business-id="business?.id ?? ''"

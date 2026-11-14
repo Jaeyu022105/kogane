@@ -8,7 +8,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { DbAdapter, QueryResult, SingleResult } from './db';
-import { getFirestoreDb } from './firebaseAdmin';
 import { stripUnsafeControlChars } from './securityClient';
 
 export interface FirestoreDocRecord {
@@ -25,16 +24,29 @@ export interface FirestoreStore {
   clearCollection(collectionName: string): Promise<void>;
 }
 
-/** Real Cloud Firestore store backed by firebase-admin. */
+/** Real Cloud Firestore store backed by firebase-admin (lazy-loaded on first use). */
 class RealFirestoreStore implements FirestoreStore {
-  private firestore: Firestore;
+  private firestore: Firestore | null;
+  private firestorePromise: Promise<Firestore> | null = null;
 
   constructor(firestore?: Firestore) {
-    this.firestore = firestore ?? getFirestoreDb();
+    this.firestore = firestore ?? null;
+  }
+
+  private async getFirestore(): Promise<Firestore> {
+    if (this.firestore) return this.firestore;
+    if (!this.firestorePromise) {
+      this.firestorePromise = import('./firebaseAdmin').then(({ getFirestoreDb }) => {
+        this.firestore = getFirestoreDb();
+        return this.firestore;
+      });
+    }
+    return this.firestorePromise;
   }
 
   async getAll(collectionName: string): Promise<FirestoreDocRecord[]> {
-    const snap = await this.firestore.collection(collectionName).get();
+    const firestore = await this.getFirestore();
+    const snap = await firestore.collection(collectionName).get();
     return snap.docs.map((doc) => ({
       ...doc.data(),
       id: String(doc.data().id ?? doc.id),
@@ -42,28 +54,33 @@ class RealFirestoreStore implements FirestoreStore {
   }
 
   async getById(collectionName: string, id: string): Promise<FirestoreDocRecord | null> {
-    const doc = await this.firestore.collection(collectionName).doc(id).get();
+    const firestore = await this.getFirestore();
+    const doc = await firestore.collection(collectionName).doc(id).get();
     if (!doc.exists) return null;
     const data = doc.data() ?? {};
     return { ...data, id: String(data.id ?? doc.id) };
   }
 
   async set(collectionName: string, id: string, data: Record<string, unknown>): Promise<void> {
-    await this.firestore.collection(collectionName).doc(id).set({ ...data, id });
+    const firestore = await this.getFirestore();
+    await firestore.collection(collectionName).doc(id).set({ ...data, id });
   }
 
   async update(collectionName: string, id: string, data: Record<string, unknown>): Promise<void> {
-    await this.firestore.collection(collectionName).doc(id).set(data, { merge: true });
+    const firestore = await this.getFirestore();
+    await firestore.collection(collectionName).doc(id).set(data, { merge: true });
   }
 
   async delete(collectionName: string, id: string): Promise<void> {
-    await this.firestore.collection(collectionName).doc(id).delete();
+    const firestore = await this.getFirestore();
+    await firestore.collection(collectionName).doc(id).delete();
   }
 
   async clearCollection(collectionName: string): Promise<void> {
-    const snap = await this.firestore.collection(collectionName).get();
+    const firestore = await this.getFirestore();
+    const snap = await firestore.collection(collectionName).get();
     if (snap.empty) return;
-    const batch = this.firestore.batch();
+    const batch = firestore.batch();
     for (const doc of snap.docs) {
       batch.delete(doc.ref);
     }

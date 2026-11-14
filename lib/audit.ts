@@ -193,9 +193,7 @@ export function serializeAuditJson(value: unknown): string | null {
   return JSON.stringify(value);
 }
 
-export function parseAuditJson<T = unknown>(
-  value: string | Record<string, unknown> | unknown[] | null | undefined,
-): T | null {
+export function parseAuditJson<T = unknown>(value: unknown): T | null {
   if (value == null || value === '') return null;
   if (typeof value === 'object') return value as T;
   if (typeof value !== 'string') return null;

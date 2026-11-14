@@ -1,6 +1,6 @@
 import { defineEventHandler, getRequestURL, setResponseHeader, type H3Event } from 'h3';
 
-const NOINDEX_PREFIXES = ['/dashboard', '/api', '/terminal', '/t', '/signup'];
+const NOINDEX_PREFIXES = ['/dashboard', '/api', '/terminal', '/t', '/signup', '/login'];
 const PRODUCTION_FALLBACK_ORIGIN = 'https://kogane.app';
 
 export function isLocalHostname(hostname: string): boolean {

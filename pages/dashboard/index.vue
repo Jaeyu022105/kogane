@@ -146,7 +146,7 @@ watch(() => business.value?.id, loadTerminals);
             {{ now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) }}
           </p>
           <h1 class="font-serif font-normal leading-tight" style="font-size: clamp(2.5rem, 4vw, 3.5rem); color: rgb(var(--shell-sidebar));">
-            {{ greeting }}, <span style="font-weight: 500;">{{ firstName }}</span><span style="color: rgb(var(--shell-pink));">.</span>
+            {{ greeting }}, <span style="font-weight: 500;">{{ firstName }}</span>
           </h1>
           <p class="mt-4 text-[1.05rem] leading-relaxed" style="color: rgba(61,24,32,0.6); max-width: 600px;">
             {{ t('dashboard_welcome_prefix') }} <strong style="color: rgb(var(--shell-sidebar)); font-weight: 600;">{{ business?.name ?? t('dashboard_workspace_fallback') }}</strong>. {{ t('dashboard_welcome_suffix') }}
@@ -158,9 +158,9 @@ watch(() => business.value?.id, loadTerminals);
     <!-- ── Module Grid ────────────────────────────────────────────── -->
     <div class="dashboard-content px-10 py-10">
       <div class="flex items-center justify-between mb-8">
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
+        <h2 class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
           {{ t('dashboard_platform_modules') }}
-        </p>
+        </h2>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
