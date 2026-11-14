@@ -7,6 +7,7 @@ import type {
   ModalPresentation,
   QuerySource,
   RuntimeActionDefinition,
+  UiLayout,
 } from '~/lib/uiTypes';
 import { TRIGGERS_BY_ELEMENT_TYPE } from '~/lib/uiTypes';
 
@@ -127,18 +128,38 @@ function onJsonBlur(
   }
 }
 
-const allCanvasAndModalElements = computed(() => {
-  const mainItems = layout.value.elements.map((element) => ({
-    ...element,
+interface LayeredElementOption {
+  id: string;
+  type: ElementDef['type'];
+  label?: string;
+  title?: string;
+  layerLabel: string;
+}
+
+const allCanvasAndModalElements = computed<LayeredElementOption[]>(() => {
+  const current = layout.value as UiLayout;
+  const mainItems: LayeredElementOption[] = current.elements.map((element) => ({
+    id: element.id,
+    type: element.type,
+    label: element.label,
+    title: (element as { title?: string }).title,
     layerLabel: 'Main',
   }));
-  const modalItems = (layout.value.modals ?? []).flatMap((modal) =>
+  const modalItems: LayeredElementOption[] = (current.modals ?? []).flatMap((modal) =>
     modal.elements.map((element) => ({
-      ...element,
+      id: element.id,
+      type: element.type,
+      label: element.label,
+      title: (element as { title?: string }).title,
       layerLabel: modal.name,
     })),
   );
   return [...mainItems, ...modalItems];
+});
+
+const selectedElementEvents = computed<ElementEventBinding[]>(() => {
+  const events = (selectedElement.value as { events?: ElementEventBinding[] } | null)?.events;
+  return Array.isArray(events) ? events : [];
 });
 
 const inputBindableElements = computed(() =>
@@ -1311,12 +1332,12 @@ function applyThemeToCurrentWidgets() {
             This widget handles its own behavior and does not expose custom events yet.
           </div>
 
-          <div v-else-if="((selectedElement as any).events ?? []).length === 0" class="text-xs px-3 py-2 rounded-xl" style="background: rgba(61,24,32,0.04); color: rgba(61,24,32,0.45);">
+          <div v-else-if="selectedElementEvents.length === 0" class="text-xs px-3 py-2 rounded-xl" style="background: rgba(61,24,32,0.04); color: rgba(61,24,32,0.45);">
             No events yet for this widget.
           </div>
 
           <div
-            v-for="(eventBinding, index) in ((selectedElement as any).events ?? [])"
+            v-for="(eventBinding, index) in selectedElementEvents"
             :key="eventBinding.id ?? index"
             class="rounded-2xl border p-3 space-y-2"
             style="border-color: rgba(61,24,32,0.08);"
@@ -1364,7 +1385,7 @@ function applyThemeToCurrentWidgets() {
                   :key="target.id"
                   :value="target.id"
                 >
-                  {{ target.label || (target as any).title || target.type }} ({{ target.layerLabel }})
+                  {{ target.label || target.title || target.type }} ({{ target.layerLabel }})
                 </option>
               </select>
             </div>
