@@ -18,7 +18,7 @@ export default defineNuxtConfig({
           name: 'description',
           content: 'Managed business terminals configured from presets and updated automatically.',
         },
-        { name: 'theme-color', content: '#F4F3EF' },
+        { name: 'theme-color', content: '#68293A' },
         { name: 'application-name', content: 'Kogane' },
         { name: 'apple-mobile-web-app-title', content: 'Kogane' },
         { name: 'mobile-web-app-capable', content: 'yes' },
