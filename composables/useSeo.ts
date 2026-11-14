@@ -179,12 +179,14 @@ export function usePageSeo(options: PageSeoOptions): void {
     }
 
     return {
-      link: [
-        {
-          rel: 'canonical',
-          href: canonicalUrl.value,
-        },
-      ],
+      link: options.noindex
+        ? []
+        : [
+            {
+              rel: 'canonical',
+              href: canonicalUrl.value,
+            },
+          ],
       script: scripts,
     };
   });
