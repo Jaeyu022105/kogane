@@ -72,6 +72,13 @@ function triggerHeroCharge() {
   }
 }
 
+const collageTiles = computed(() => [
+  { id: 'restaurant', label: t('ind_restaurant_label') },
+  { id: 'retail', label: t('ind_retail_label') },
+  { id: 'clinic', label: t('ind_clinic_label') },
+  { id: 'logistics', label: t('ind_logistics_label') },
+]);
+
 /* ── Original SVG path strings for industry chips ─────────── */
 const industryIcons: Record<string, string> = {
   restaurant: 'M18 8h1a4 4 0 0 1 0 8h-1 M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z M6 1v3 M10 1v3 M14 1v3',
@@ -396,20 +403,105 @@ const directoryRows = computed(() => [
 </script>
 
 <template>
-  <div>
-    <!-- ── Hero ─────────────────────────────────────────────── -->
+  <div class="home">
+    <!-- Hero: Neapolitan collage band with live previews, then the editorial headline split -->
     <section class="hero">
+      <div class="hero-collage">
+        <div class="collage-art" aria-hidden="true">
+          <span class="collage-field field-strawberry" />
+          <span class="collage-field field-chocolate" />
+          <span
+            v-for="tile in collageTiles"
+            :key="tile.id"
+            class="collage-tile"
+            :class="`tile-${tile.id}`"
+          >
+            <span class="tile-tag">{{ tile.label }}</span>
+          </span>
+        </div>
+
+        <div class="hero-preview">
+          <!-- Preview Card 1: Preset Setup Table -->
+          <div class="preview-card card-setup">
+            <div class="preview-header">
+              <div class="preview-dots" aria-hidden="true">
+                <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
+              </div>
+              <span class="preview-title">{{ t('index_preview_setup') }}</span>
+            </div>
+            <div class="preview-table">
+              <div class="table-head">
+                <span>{{ t('index_table_workflow') }}</span>
+                <span>{{ t('index_table_preset') }}</span>
+                <span>{{ t('index_table_status') }}</span>
+              </div>
+              <div v-for="(row, i) in tableRows" :key="row.col" class="table-row" :class="{ 'row-alt': i % 2 !== 0 }">
+                <span class="col-name">{{ row.col }}</span>
+                <span class="type-badge">{{ row.type }}</span>
+                <span v-if="row.key" :class="['key-badge', row.keyClass]">{{ row.key }}</span>
+                <span v-else />
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Card 2: POS Workspace with Hanging Bookmark Charge Button -->
+          <div class="preview-card card-pos">
+            <div class="preview-header">
+              <div class="preview-dots" aria-hidden="true">
+                <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
+              </div>
+              <span class="preview-title">{{ t('index_preview_pos') }}</span>
+            </div>
+            <div class="terminal-mock">
+              <div class="terminal-items">
+                <button
+                  v-for="item in heroPosItems"
+                  :key="item.idx"
+                  type="button"
+                  class="t-item"
+                  :class="{ 't-alt': item.alt }"
+                  @click="bumpHeroPosItem(item.idx)"
+                >
+                  <span>{{ item.label }} <span v-if="item.qty > 1" class="t-qty">×{{ item.qty }}</span></span>
+                  <span class="m-tabular">${{ (item.unitPrice * item.qty).toFixed(2) }}</span>
+                </button>
+              </div>
+              <div class="terminal-total">
+                <span>{{ t('index_mock_total') }}</span>
+                <span class="total-val m-tabular">${{ heroPosTotal.toFixed(2) }}</span>
+              </div>
+              <button
+                type="button"
+                class="terminal-charge btn-ribbon"
+                style="--ribbon-color: #68293A;"
+                @click="triggerHeroCharge"
+              >
+                {{ heroPosCharged ? `✓ ${t('index_mock_charge')} ($${heroPosTotal.toFixed(2)})` : t('index_mock_charge') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="hero-inner">
-        <div class="hero-badge">
-          <span class="badge-dot" aria-hidden="true" />
-          {{ t('index_hero_badge') }}
+        <div class="hero-lede">
+          <div class="hero-badge">
+            <span class="badge-dot" aria-hidden="true" />
+            {{ t('index_hero_badge') }}
+          </div>
+
+          <p class="hero-sub">
+            {{ t('index_hero_sub') }}
+          </p>
         </div>
 
         <h1 class="hero-headline">{{ t('index_hero_headline') }}</h1>
 
-        <p class="hero-sub">
-          {{ t('index_hero_sub') }}
-        </p>
+        <ul class="hero-facts">
+          <li>{{ t('index_hero_fact1') }}</li>
+          <li>{{ t('index_hero_fact2') }}</li>
+          <li>{{ t('index_hero_fact3') }}</li>
+        </ul>
 
         <div class="hero-cta">
           <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
@@ -417,81 +509,15 @@ const directoryRows = computed(() => [
           <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
           <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
         </div>
-
-        <ul class="hero-facts">
-          <li>{{ t('index_hero_fact1') }}</li>
-          <li>{{ t('index_hero_fact2') }}</li>
-          <li>{{ t('index_hero_fact3') }}</li>
-        </ul>
-      </div>
-
-      <div class="hero-preview">
-        <!-- Preview Card 1: Preset Setup Table -->
-        <div class="preview-card">
-          <div class="preview-header">
-            <div class="preview-dots" aria-hidden="true">
-              <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
-            </div>
-            <span class="preview-title">{{ t('index_preview_setup') }}</span>
-          </div>
-          <div class="preview-table">
-            <div class="table-head">
-              <span>{{ t('index_table_workflow') }}</span>
-              <span>{{ t('index_table_preset') }}</span>
-              <span>{{ t('index_table_status') }}</span>
-            </div>
-            <div v-for="(row, i) in tableRows" :key="row.col" class="table-row" :class="{ 'row-alt': i % 2 !== 0 }">
-              <span class="col-name">{{ row.col }}</span>
-              <span class="type-badge">{{ row.type }}</span>
-              <span v-if="row.key" :class="['key-badge', row.keyClass]">{{ row.key }}</span>
-              <span v-else />
-            </div>
-          </div>
-        </div>
-
-        <!-- Preview Card 2: POS Workspace with Hanging Bookmark Charge Button -->
-        <div class="preview-card">
-          <div class="preview-header">
-            <div class="preview-dots" aria-hidden="true">
-              <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
-            </div>
-            <span class="preview-title">{{ t('index_preview_pos') }}</span>
-          </div>
-          <div class="terminal-mock">
-            <div class="terminal-items">
-              <button
-                v-for="item in heroPosItems"
-                :key="item.idx"
-                type="button"
-                class="t-item"
-                :class="{ 't-alt': item.alt }"
-                @click="bumpHeroPosItem(item.idx)"
-              >
-                <span>{{ item.label }} <span v-if="item.qty > 1" class="t-qty">×{{ item.qty }}</span></span>
-                <span class="m-tabular">${{ (item.unitPrice * item.qty).toFixed(2) }}</span>
-              </button>
-            </div>
-            <div class="terminal-total">
-              <span>{{ t('index_mock_total') }}</span>
-              <span class="total-val m-tabular">${{ heroPosTotal.toFixed(2) }}</span>
-            </div>
-            <button
-              type="button"
-              class="terminal-charge btn-ribbon"
-              style="--ribbon-color: #68293A;"
-              @click="triggerHeroCharge"
-            >
-              {{ heroPosCharged ? `✓ ${t('index_mock_charge')} ($${heroPosTotal.toFixed(2)})` : t('index_mock_charge') }}
-            </button>
-          </div>
-        </div>
       </div>
     </section>
 
-    <!-- ── Industry strip ────────────────────────────────────── -->
-    <section class="section-industries">
+    <!-- Industry strip -->
+    <section class="section-industries industries-strip">
       <div class="section-inner">
-        <p class="m-overline">{{ t('index_industry_overline') }}</p>
+        <div class="section-rule">
+          <p class="m-overline">{{ t('index_industry_overline') }}</p>
+        </div>
         <div class="industry-grid">
           <div v-for="ind in industries" :key="ind.name" class="industry-chip">
             <span class="chip-icon" aria-hidden="true">
@@ -505,21 +531,26 @@ const directoryRows = computed(() => [
       </div>
     </section>
 
-    <!-- ── Pillars ───────────────────────────────────────────── -->
+    <!-- Pillars -->
     <section class="section-pillars">
       <div class="section-inner">
-        <div class="m-label-block">
+        <div class="section-rule">
           <p class="m-overline">{{ t('index_pillars_overline') }}</p>
+        </div>
+        <div class="m-label-block">
           <h2 class="m-heading">{{ t('index_pillars_heading') }}</h2>
           <p class="m-sub">{{ t('index_pillars_sub') }}</p>
         </div>
         <div class="pillar-grid">
-          <div v-for="p in pillars" :key="p.title" class="pillar-card">
-            <span class="pillar-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path :d="pillarIcons[p.iconKey]" />
-              </svg>
-            </span>
+          <div v-for="(p, pillarIndex) in pillars" :key="p.title" class="pillar-card">
+            <div class="pillar-top">
+              <span class="pillar-number m-mono m-tabular">{{ String(pillarIndex + 1).padStart(2, '0') }}</span>
+              <span class="pillar-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path :d="pillarIcons[p.iconKey]" />
+                </svg>
+              </span>
+            </div>
             <h3 class="pillar-title">{{ p.title }}</h3>
             <p class="pillar-body">{{ p.body }}</p>
             <NuxtLink to="/features" class="pillar-link">{{ t('index_pillars_learn_more') }}</NuxtLink>
@@ -531,9 +562,11 @@ const directoryRows = computed(() => [
     <!-- ── Interactive Terminal Preset Explorer (Additive) ────── -->
     <section class="explorer-section" aria-labelledby="explorer-heading">
       <div class="section-inner">
+        <div class="section-rule">
+          <p class="m-overline">{{ t('index_explorer_title') }}</p>
+        </div>
         <div class="explorer-header">
           <div class="explorer-heading-col">
-            <p class="m-overline">{{ t('index_explorer_title') }}</p>
             <h2 id="explorer-heading" class="m-heading">
               {{ t('index_explorer_heading') }}
             </h2>
@@ -871,15 +904,24 @@ const directoryRows = computed(() => [
       </div>
     </section>
 
-    <!-- ── Philosophy (Restored 2x2 Badges + SaaS Comparison) ── -->
+    <!-- Philosophy: statement and comparison list, then the 2x2 flavour cards -->
     <section class="section-philosophy">
-      <div class="section-inner philosophy-inner">
-        <div class="philosophy-text">
+      <div class="section-inner">
+        <div class="section-rule">
           <p class="m-overline">{{ t('index_philosophy_overline') }}</p>
-          <h2 class="m-heading">{{ t('index_philosophy_heading') }}</h2>
-          <p class="m-sub">
-            {{ t('index_philosophy_sub') }}
-          </p>
+        </div>
+
+        <div class="philosophy-inner">
+          <div class="philosophy-text">
+            <h2 class="m-heading">{{ t('index_philosophy_heading') }}</h2>
+            <p class="m-sub">
+              {{ t('index_philosophy_sub') }}
+            </p>
+
+            <NuxtLink to="/features" class="m-btn-secondary philosophy-cta">
+              {{ t('index_philosophy_cta') }}
+            </NuxtLink>
+          </div>
 
           <div class="comparison-list">
             <div v-for="item in comparisons" :key="item.title" class="comparison-row">
@@ -887,10 +929,6 @@ const directoryRows = computed(() => [
               <p class="comparison-body">{{ item.body }}</p>
             </div>
           </div>
-
-          <NuxtLink to="/features" class="m-btn-secondary" style="margin-top: 1.75rem;">
-            {{ t('index_philosophy_cta') }}
-          </NuxtLink>
         </div>
 
         <div class="philosophy-badges">
@@ -917,8 +955,10 @@ const directoryRows = computed(() => [
     <!-- ── Preset Directory Across Industries (Additive) ──────── -->
     <section class="directory-section">
       <div class="section-inner">
-        <div class="directory-header">
+        <div class="section-rule">
           <p class="m-overline">{{ t('index_industry_overline') }}</p>
+        </div>
+        <div class="directory-header">
           <h2 class="m-heading">{{ t('index_directory_heading') }}</h2>
           <p class="m-sub">{{ t('index_directory_sub') }}</p>
         </div>
@@ -951,28 +991,138 @@ const directoryRows = computed(() => [
         </div>
       </div>
     </section>
+
+    <!-- Closing wordmark: the name returns at full width on a chocolate field -->
+    <div class="closing-wordmark" aria-hidden="true">
+      <span class="closing-word">Kogane</span><span class="closing-dot" />
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* ── Shared ─────────────────────────────────────────── */
+.home {
+  --home-rule: rgba(104, 41, 58, 0.22);
+  --home-split: 5fr 7fr;
+  --home-gap: 3rem;
+}
+
 .section-inner {
-  max-width: 1160px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 0 2rem;
+}
+
+/* Hairline + mono overline that opens every section */
+.section-rule {
+  border-top: 1px solid var(--home-rule);
+  padding-top: 0.85rem;
+}
+
+.home .m-overline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-family: var(--k-font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #68293A;
+}
+
+.home .m-overline::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FF5776;
+  flex-shrink: 0;
+}
+
+.home .m-heading {
+  font-size: clamp(1.9rem, 3.1vw, 2.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.home .m-sub {
+  color: rgba(104, 41, 58, 0.78);
+  max-width: 34rem;
 }
 
 /* ── Hero ─────────────────────────────────────────────── */
 .hero {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  align-items: center;
-  max-width: 1160px;
+}
+
+/* Collage band: strawberry, vanilla and chocolate fields with flat tiles and live previews */
+.hero-collage {
+  position: relative;
+  height: clamp(380px, 31vw, 460px);
+  background: #F6E6D7;
+  overflow: hidden;
+}
+
+.collage-art {
+  position: absolute;
+  inset: 0;
+}
+
+.collage-field {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.field-strawberry { left: 0; width: 36%; background: #FF5776; }
+.field-chocolate  { right: 0; width: 30%; background: #68293A; }
+
+.collage-tile {
+  position: absolute;
+}
+
+.tile-restaurant { left: 4%; bottom: 0; width: 22%; height: 56%; background: #E3C7B9; }
+.tile-retail     { left: 13%; top: 0; width: 13%; height: 36%; background: #68293A; }
+.tile-clinic     { left: 47%; top: 0; width: 24%; height: 52%; background: #FF5776; }
+.tile-logistics  { right: 5%; bottom: 0; width: 17%; height: 46%; background: #F6E6D7; }
+
+.tile-tag {
+  position: absolute;
+  right: -0.6rem;
+  bottom: 0.9rem;
+  padding: 0.28rem 0.5rem;
+  background: #FFFDFB;
+  font-family: var(--k-font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #68293A;
+  white-space: nowrap;
+}
+
+.tile-restaurant .tile-tag { right: auto; left: 0.9rem; bottom: 0.9rem; }
+.tile-retail .tile-tag     { right: auto; left: -0.6rem; bottom: 0.9rem; }
+.tile-clinic .tile-tag     { bottom: auto; top: 0.9rem; }
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 5.5rem 2rem 5rem;
-  overflow: visible;
+  padding: 2.25rem 2rem 0;
+  display: grid;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 3rem;
+  align-items: start;
+}
+
+.hero-lede {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .hero-badge {
@@ -1005,24 +1155,23 @@ const directoryRows = computed(() => [
 
 .hero-headline {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-size: clamp(2.4rem, 4.4vw, 3.9rem);
   font-weight: 400;
-  line-height: 1.12;
+  line-height: 1.02;
+  letter-spacing: -0.015em;
   color: #68293A;
-  margin: 0 0 1.2rem;
+  margin: 0;
   text-decoration: none;
 }
 .hero-headline em { font-style: italic; color: #FF5776; text-decoration: none; }
 
 .hero-sub {
-  font-size: 1rem;
-  line-height: 1.72;
-  color: rgba(104, 41, 58, 0.65);
-  max-width: 480px;
-  margin: 0 0 2rem;
+  font-size: 1.02rem;
+  line-height: 1.62;
+  color: rgba(104, 41, 58, 0.8);
+  max-width: 27rem;
+  margin: 0;
 }
-
-.hero-inner { position: relative; z-index: 1; }
 
 .hero-cta {
   display: flex;
@@ -1034,21 +1183,23 @@ const directoryRows = computed(() => [
 
 .hero-facts {
   list-style: none;
-  padding: 1.25rem 0 0;
-  margin: 1rem 0 0;
-  border-top: 1px solid rgba(104, 41, 58, 0.12);
+  padding: 0;
+  margin: 0;
+  align-self: end;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  font-size: 0.84rem;
-  color: rgba(104, 41, 58, 0.72);
-  font-weight: 500;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--k-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #68293A;
 }
 
 .hero-facts li {
   display: flex;
   align-items: baseline;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .hero-facts li::before {
@@ -1059,11 +1210,10 @@ const directoryRows = computed(() => [
 
 /* ── Hero preview cards ───────────────────────────────── */
 .hero-preview {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1.15rem;
+  pointer-events: none;
 }
 
 .preview-card {
@@ -1073,6 +1223,15 @@ const directoryRows = computed(() => [
   box-shadow: 0 6px 24px rgba(104, 41, 58, 0.08), 0 1px 4px rgba(104, 41, 58, 0.05);
   overflow: visible;
 }
+
+.hero-preview .preview-card {
+  position: absolute;
+  width: clamp(290px, 26vw, 370px);
+  pointer-events: auto;
+}
+
+.card-setup { left: 24%; top: 13%; }
+.card-pos   { left: 58%; top: 27%; }
 
 .preview-header {
   display: flex;
@@ -1209,68 +1368,83 @@ const directoryRows = computed(() => [
 
 /* ── Industries ───────────────────────────────────────── */
 .section-industries {
-  padding: 1rem 0 3rem;
-  text-align: center;
+  padding: 4.5rem 0 0;
 }
-.section-industries .section-inner { display: flex; flex-direction: column; align-items: center; }
 
+/* Business types set in a row like a partner strip */
 .industry-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem 1.5rem;
+  margin-top: 2.25rem;
 }
 
 .industry-chip {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.42rem 0.95rem;
-  background: #FFFFFF;
-  border: 1px solid rgba(104, 41, 58, 0.1);
-  border-radius: 0.45rem;
-  font-size: 0.855rem;
-  font-weight: 500;
+  gap: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
   color: #68293A;
-  transition: border-color 0.15s, transform 0.15s;
 }
-.industry-chip:hover { border-color: rgba(255, 87, 118, 0.3); transform: translateY(-1px); }
 
 .chip-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.3rem;
-  height: 1.3rem;
-  color: rgba(104, 41, 58, 0.55);
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #FF5776;
   flex-shrink: 0;
 }
-.chip-icon svg { width: 1.1rem; height: 1.1rem; }
+.chip-icon svg { width: 1.35rem; height: 1.35rem; }
 
 /* ── Pillars ──────────────────────────────────────────── */
 .section-pillars {
-  padding: 4.5rem 0;
+  padding: 5.5rem 0 6.5rem;
+}
+
+.home .m-label-block {
+  display: grid;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 1rem;
+  align-items: end;
+  max-width: none;
+  margin: 2.25rem 0 3.5rem;
+  text-align: left;
+}
+
+.home .m-label-block .m-sub {
+  margin: 0;
 }
 
 .pillar-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.1rem;
+  gap: 2rem;
 }
 
 .pillar-card {
-  padding: 1.5rem;
-  background: #FFFFFF;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(104, 41, 58, 0.08);
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--home-rule);
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 0.5rem;
 }
-.pillar-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(104, 41, 58, 0.09);
+
+.pillar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.pillar-number {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #68293A;
 }
 
 .pillar-icon {
@@ -1280,23 +1454,28 @@ const directoryRows = computed(() => [
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 0.55rem;
-  background: rgba(255, 87, 118, 0.1);
+  background: #FFEBEF;
   color: #FF5776;
   flex-shrink: 0;
 }
 .pillar-icon svg { width: 1.1rem; height: 1.1rem; }
 
-.pillar-title { font-weight: 700; font-size: 0.98rem; color: #68293A; margin: 0; }
-.pillar-body  { font-size: 0.845rem; color: rgba(104, 41, 58, 0.62); line-height: 1.6; flex: 1; margin: 0; }
-.pillar-link  { font-size: 0.79rem; font-weight: 600; color: #FF5776; text-decoration: none; margin-top: 0.3rem; }
-.pillar-link:hover { text-decoration: underline; }
+.pillar-title {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  color: #68293A;
+  margin: 0;
+}
+.pillar-body  { font-size: 0.95rem; color: rgba(104, 41, 58, 0.8); line-height: 1.6; flex: 1; margin: 0; }
+.pillar-link  { font-size: 0.85rem; font-weight: 600; color: #68293A; text-decoration: underline; text-decoration-color: #FF5776; text-underline-offset: 0.25em; margin-top: 0.5rem; }
+.pillar-link:hover { color: #FF5776; }
 
 /* ── Interactive Explorer ─────────────────────────────── */
 .explorer-section {
-  padding: 4.5rem 0;
-  background: #FDFAF7;
-  border-top: 1px solid rgba(104, 41, 58, 0.07);
-  border-bottom: 1px solid rgba(104, 41, 58, 0.07);
+  padding: 5.5rem 0 6.5rem;
+  background: #F6E6D7;
 }
 
 .explorer-header {
@@ -1304,7 +1483,11 @@ const directoryRows = computed(() => [
   grid-template-columns: 7fr 5fr;
   gap: 2rem;
   align-items: end;
-  margin-bottom: 2rem;
+  margin: 2.25rem 0 2.5rem;
+}
+
+.explorer-heading-col .m-heading {
+  margin-bottom: 1rem;
 }
 
 .rollout-box {
@@ -1816,80 +1999,101 @@ const directoryRows = computed(() => [
 .audit-msg { color: #68293A; }
 
 /* ── Philosophy ───────────────────────────────────────── */
-.section-philosophy { padding: 5rem 0; }
+.section-philosophy { padding: 5.5rem 0 6.5rem; }
 
+/* Statement on the left, hairline comparison list on the right */
 .philosophy-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4.5rem;
-  align-items: center;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 2.5rem;
+  align-items: start;
+  margin-top: 2.25rem;
+}
+
+.philosophy-text .m-heading {
+  margin-bottom: 1.25rem;
+}
+
+.philosophy-cta {
+  margin-top: 1.75rem;
 }
 
 .comparison-list {
-  margin-top: 1.5rem;
-  border-top: 1px solid rgba(104, 41, 58, 0.1);
+  border-top: 1px solid var(--home-rule);
 }
 
 .comparison-row {
-  padding: 0.85rem 0;
-  border-bottom: 1px solid rgba(104, 41, 58, 0.1);
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 1.5rem;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--home-rule);
 }
 
 .comparison-title {
-  font-weight: 700;
-  font-size: 0.92rem;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.35;
   color: #68293A;
-  margin: 0 0 0.25rem;
-}
-
-.comparison-body {
-  font-size: 0.84rem;
-  line-height: 1.55;
-  color: rgba(104, 41, 58, 0.62);
   margin: 0;
 }
 
+.comparison-body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(104, 41, 58, 0.8);
+  margin: 0;
+}
+
+/* 2x2 flavour cards */
 .philosophy-badges {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
+  gap: 1rem;
+  margin-top: 4.5rem;
 }
 
 .badge-card {
   border-radius: 0.75rem;
-  padding: 1.35rem;
+  padding: 1.75rem;
+  min-height: 13.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
-.badge-plain   { background: #FFFFFF; border: 1px solid rgba(104, 41, 58, 0.09); box-shadow: 0 4px 16px rgba(104, 41, 58, 0.04); }
+.badge-plain   { background: #F6E6D7; color: #68293A; }
 .badge-dark    { background: #68293A; color: #F6E6D7; }
-.badge-brand   { background: #FF5776; color: #FFFFFF; }
-.badge-outline { background: transparent; border: 1.5px solid rgba(104, 41, 58, 0.14); }
+.badge-brand   { background: #FF5776; color: #4A1A27; }
+.badge-outline { background: transparent; border: 1.5px solid #E3C7B9; color: #68293A; }
 
-.badge-title { font-weight: 700; font-size: 0.92rem; margin: 0; }
-.badge-body  { font-size: 0.82rem; line-height: 1.55; margin: 0; opacity: 0.78; }
-.badge-dark .badge-body, .badge-brand .badge-body { opacity: 0.86; }
+.badge-title {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: clamp(1.7rem, 2.7vw, 2.3rem);
+  line-height: 1.05;
+  margin: 0;
+}
+.badge-body  { font-size: 0.95rem; line-height: 1.55; margin: 0; max-width: 24rem; }
 
 /* ── Industry Preset Directory ────────────────────────── */
 .directory-section {
-  background: #FDFAF7;
-  border-top: 1px solid rgba(104, 41, 58, 0.07);
-  padding: 4.5rem 0;
+  padding: 0 0 6.5rem;
 }
 
 .directory-header {
-  max-width: 680px;
-  margin-bottom: 2.25rem;
+  display: grid;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 1rem;
+  align-items: end;
+  margin: 2.25rem 0 3rem;
 }
 
 .directory-table {
   border-top: 2px solid #68293A;
-  background: #FFFFFF;
-  border-radius: 0 0 0.75rem 0.75rem;
-  padding: 0 1rem;
-  box-shadow: 0 4px 18px rgba(104, 41, 58, 0.05);
 }
 
 .directory-head,
@@ -1930,9 +2134,58 @@ const directoryRows = computed(() => [
   color: rgba(104, 41, 58, 0.68);
 }
 
+/* ── Closing wordmark ─────────────────────────────────── */
+.closing-wordmark {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding: 1rem 2rem min(5.5vw, 5rem);
+  background: #68293A;
+  overflow: hidden;
+}
+
+.closing-word {
+  font-family: 'DM Serif Display', serif;
+  font-size: min(27vw, 26rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #F6E6D7;
+}
+
+.closing-dot {
+  width: min(2.6vw, 2.5rem);
+  height: min(2.6vw, 2.5rem);
+  border-radius: 50%;
+  background: #FF5776;
+  flex-shrink: 0;
+  margin-left: 0.4vw;
+}
+
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; gap: 2.5rem; padding: 3.5rem 1.25rem 4rem; }
+  .hero { display: flex; flex-direction: column-reverse; }
+  .hero-inner { display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem 2rem 3rem; }
+  .hero-lede { display: contents; }
+  .hero-badge { order: 1; margin-bottom: 0; }
+  .hero-headline { order: 2; }
+  .hero-sub { order: 3; max-width: 34rem; }
+  .hero-cta { order: 4; }
+  .hero-facts { order: 5; align-self: start; }
+  .hero-collage { height: auto; }
+  .hero-preview {
+    position: relative;
+    inset: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+    padding: 2.5rem 2rem 3rem;
+  }
+  .hero-preview .preview-card { position: static; width: auto; }
+  .tile-tag { display: none; }
+  .industry-grid { grid-template-columns: repeat(3, 1fr); }
+  .home .m-label-block,
+  .directory-header { grid-template-columns: 1fr; }
   .pillar-grid { grid-template-columns: 1fr 1fr; }
   .explorer-header,
   .philosophy-inner { grid-template-columns: 1fr; gap: 2.5rem; }
@@ -1954,6 +2207,12 @@ const directoryRows = computed(() => [
 
 @media (max-width: 600px) {
   .section-inner { padding: 0 1.25rem; }
+  .hero-inner { padding: 2rem 1.25rem 2.5rem; }
+  .hero-preview { grid-template-columns: 1fr; padding: 2rem 1.25rem 2.5rem; }
+  .industry-grid { grid-template-columns: 1fr 1fr; }
+  .comparison-row { grid-template-columns: 1fr; gap: 0.35rem; }
+  .badge-card { min-height: 11rem; }
+  .closing-wordmark { padding: 0.5rem 1.25rem 6vw; }
   .pillar-grid,
   .philosophy-badges,
   .preset-tabs,
