@@ -45,31 +45,31 @@ function triggerHeroCharge() {
     <!-- Backdrop built in three passes: flavour arcs, blur, then an embossed waffle texture -->
     <div class="collage-art" aria-hidden="true">
       <div class="collage-arcs" />
-      <svg class="collage-waffle" xmlns="http://www.w3.org/2000/svg" focusable="false">
+      <svg
+        class="collage-waffle"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 1600 560"
+        preserveAspectRatio="xMidYMin slice"
+        focusable="false"
+      >
         <defs>
-          <linearGradient id="home-waffle-raised" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.6" />
-            <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0" />
-            <stop offset="1" stop-color="#000000" stop-opacity="0.35" />
-          </linearGradient>
-          <linearGradient id="home-waffle-sunk" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#000000" stop-opacity="0.32" />
-            <stop offset="0.5" stop-color="#000000" stop-opacity="0" />
-            <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.6" />
-          </linearGradient>
-          <pattern id="home-waffle-cells" width="128" height="128" patternUnits="userSpaceOnUse">
-            <rect x="3" y="3" width="58" height="58" rx="14" fill="url(#home-waffle-raised)" />
-            <rect x="67" y="3" width="58" height="58" rx="14" fill="url(#home-waffle-sunk)" />
-            <rect x="3" y="67" width="58" height="58" rx="14" fill="url(#home-waffle-sunk)" />
-            <rect x="67" y="67" width="58" height="58" rx="14" fill="url(#home-waffle-raised)" />
+          <pattern id="home-waffle-cells" width="64" height="64" patternUnits="userSpaceOnUse">
+            <rect x="5" y="5" width="54" height="54" rx="13" fill="#FFFFFF" />
           </pattern>
+          <!-- Emboss: the cells become a height map, pressed in (negative surfaceScale) and lit by one point light above the top centre -->
+          <filter id="home-waffle-emboss" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="height" />
+            <feDiffuseLighting in="height" surfaceScale="-16" diffuseConstant="0.82" lighting-color="#FFFFFF">
+              <fePointLight x="800" y="-120" z="600" />
+            </feDiffuseLighting>
+          </filter>
           <filter id="home-waffle-grain" x="0" y="0" width="100%" height="100%">
             <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
             <feColorMatrix type="matrix" values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0 1" />
           </filter>
         </defs>
-        <rect width="100%" height="100%" fill="url(#home-waffle-cells)" />
-        <rect class="waffle-grain" width="100%" height="100%" filter="url(#home-waffle-grain)" />
+        <rect width="1600" height="560" fill="url(#home-waffle-cells)" filter="url(#home-waffle-emboss)" />
+        <rect class="waffle-grain" width="1600" height="560" filter="url(#home-waffle-grain)" />
       </svg>
     </div>
 
@@ -165,7 +165,7 @@ function triggerHeroCharge() {
   filter: blur(42px);
 }
 
-/* Texture: flat embossed waffle cells that fade out into the cream */
+/* Texture: pressed-in waffle cells, lit from the top centre, that fade out into the cream */
 .collage-waffle {
   position: absolute;
   inset: 0;
