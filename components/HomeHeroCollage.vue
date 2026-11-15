@@ -38,28 +38,39 @@ function triggerHeroCharge() {
     heroPosCharged.value = true;
   }
 }
-
-const collageTiles = computed(() => [
-  { id: 'restaurant', label: t('ind_restaurant_label') },
-  { id: 'retail', label: t('ind_retail_label') },
-  { id: 'clinic', label: t('ind_clinic_label') },
-  { id: 'logistics', label: t('ind_logistics_label') },
-]);
 </script>
 
 <template>
   <div class="hero-collage">
+    <!-- Backdrop built in three passes: flavour arcs, blur, then an embossed waffle texture -->
     <div class="collage-art" aria-hidden="true">
-      <span class="collage-field field-strawberry" />
-      <span class="collage-field field-chocolate" />
-      <span
-        v-for="tile in collageTiles"
-        :key="tile.id"
-        class="collage-tile"
-        :class="`tile-${tile.id}`"
-      >
-        <span class="tile-tag">{{ tile.label }}</span>
-      </span>
+      <div class="collage-arcs" />
+      <svg class="collage-waffle" xmlns="http://www.w3.org/2000/svg" focusable="false">
+        <defs>
+          <linearGradient id="home-waffle-raised" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.6" />
+            <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0" />
+            <stop offset="1" stop-color="#000000" stop-opacity="0.35" />
+          </linearGradient>
+          <linearGradient id="home-waffle-sunk" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#000000" stop-opacity="0.32" />
+            <stop offset="0.5" stop-color="#000000" stop-opacity="0" />
+            <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.6" />
+          </linearGradient>
+          <pattern id="home-waffle-cells" width="128" height="128" patternUnits="userSpaceOnUse">
+            <rect x="3" y="3" width="58" height="58" rx="14" fill="url(#home-waffle-raised)" />
+            <rect x="67" y="3" width="58" height="58" rx="14" fill="url(#home-waffle-sunk)" />
+            <rect x="3" y="67" width="58" height="58" rx="14" fill="url(#home-waffle-sunk)" />
+            <rect x="67" y="67" width="58" height="58" rx="14" fill="url(#home-waffle-raised)" />
+          </pattern>
+          <filter id="home-waffle-grain" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0 1" />
+          </filter>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#home-waffle-cells)" />
+        <rect class="waffle-grain" width="100%" height="100%" filter="url(#home-waffle-grain)" />
+      </svg>
     </div>
 
     <div class="hero-preview">
@@ -127,54 +138,47 @@ const collageTiles = computed(() => [
 </template>
 
 <style scoped>
-/* Collage band: strawberry, vanilla and chocolate fields with flat tiles and live previews */
+/* Collage band: a Neapolitan backdrop (strawberry, vanilla, chocolate) behind the live previews */
 .hero-collage {
   position: relative;
   height: clamp(380px, 31vw, 460px);
-  background: #F6E6D7;
   overflow: hidden;
 }
 
 .collage-art {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent);
+  mask-image: linear-gradient(180deg, #000 78%, transparent);
 }
 
-.collage-field {
+/* Shapes then blur: concentric flavour arcs, drawn oversized so the blur never shows an edge */
+.collage-arcs {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  inset: -14%;
+  background: radial-gradient(
+    90% 135% at 50% -32%,
+    #FF5776 0 64%,
+    #F6E6D7 64%
+  );
+  filter: blur(42px);
 }
 
-.field-strawberry { left: 0; width: 36%; background: #FF5776; }
-.field-chocolate  { right: 0; width: 30%; background: #68293A; }
-
-.collage-tile {
+/* Texture: flat embossed waffle cells that fade out into the cream */
+.collage-waffle {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: soft-light;
+  -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 82%);
+  mask-image: linear-gradient(180deg, #000 35%, transparent 82%);
 }
 
-.tile-restaurant { left: 4%; bottom: 0; width: 22%; height: 56%; background: #E3C7B9; }
-.tile-retail     { left: 13%; top: 0; width: 13%; height: 36%; background: #68293A; }
-.tile-clinic     { left: 47%; top: 0; width: 24%; height: 52%; background: #FF5776; }
-.tile-logistics  { right: 5%; bottom: 0; width: 17%; height: 46%; background: #F6E6D7; }
-
-.tile-tag {
-  position: absolute;
-  right: -0.6rem;
-  bottom: 0.9rem;
-  padding: 0.28rem 0.5rem;
-  background: #FFFDFB;
-  font-family: var(--k-font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #68293A;
-  white-space: nowrap;
+.waffle-grain {
+  opacity: 0.22;
 }
-
-.tile-restaurant .tile-tag { right: auto; left: 0.9rem; bottom: 0.9rem; }
-.tile-retail .tile-tag     { right: auto; left: -0.6rem; bottom: 0.9rem; }
-.tile-clinic .tile-tag     { bottom: auto; top: 0.9rem; }
 
 /* Hero preview cards */
 .hero-preview {
@@ -341,7 +345,6 @@ const collageTiles = computed(() => [
     padding: 2.5rem 2rem 3rem;
   }
   .hero-preview .preview-card { position: static; width: auto; }
-  .tile-tag { display: none; }
 }
 
 @media (max-width: 600px) {
