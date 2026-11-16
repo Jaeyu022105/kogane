@@ -33,7 +33,7 @@ import {
 } from '../server/utils/businessTable';
 import { validateReadOnlySql } from '../lib/sql';
 import { db } from '../lib/db';
-import { createAdminSessionToken, createTerminalSessionToken } from '../lib/authUtils';
+import { createTestAdminToken, createTestTerminalToken } from './helpers/sessions';
 import { ensureStarterBusinessTables } from '../server/utils/starterTables';
 import { FirestoreAdapter, InMemoryFirestoreStore } from '../lib/db-firebase';
 
@@ -378,13 +378,13 @@ describe('Database Rows & Endpoints Hardening', () => {
     expect(term.error).toBeNull();
     terminalId = term.data!.id;
 
-    adminToken = await createAdminSessionToken({
+    adminToken = await createTestAdminToken({
       userId: adminId,
       email: `harden-${suffix}@example.com`,
       role: 'admin',
     });
 
-    terminalToken = await createTerminalSessionToken({
+    terminalToken = await createTestTerminalToken({
       terminalId,
       businessId,
       displayName: 'Cashier Station',
@@ -623,7 +623,7 @@ describe('Database Rows & Endpoints Hardening', () => {
       full_name: 'Onboard User',
       password_hash: 'hash_123',
     });
-    const newAdminToken = await createAdminSessionToken({
+    const newAdminToken = await createTestAdminToken({
       userId: newOwner.data!.id,
       email: `onboard-${suffixOnboard}@example.com`,
       role: 'admin',

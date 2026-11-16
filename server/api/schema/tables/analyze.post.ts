@@ -5,13 +5,15 @@
  */
 
 import { defineEventHandler, readBody } from 'h3';
+import { verifyAdmin } from '~/lib/authUtils';
 import { analyzeNormalization } from '~/lib/schemaUtils';
 import type { TableDef } from '~/lib/schemaUtils';
 
 export default defineEventHandler(async (event) => {
+  await verifyAdmin(event);
   const body = await readBody<{ table: TableDef }>(event);
 
-  if (!body.table) return { error: 'Missing table definition', hints: null };
+  if (!body?.table) return { error: 'Missing table definition', hints: null };
 
   const hints = analyzeNormalization(body.table);
 

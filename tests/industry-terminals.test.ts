@@ -26,7 +26,8 @@ import {
 } from '../server/utils/starterTables';
 import { buildCreateTableSql } from '../lib/schemaUtils';
 import { createManagedTerminal } from '../server/utils/managedTerminals';
-import { createAdminSessionToken, createTerminalSessionToken } from '../lib/authUtils';
+import { createAdminSessionToken } from '../lib/authUtils';
+import { createTestAdminToken, createTestTerminalToken } from './helpers/sessions';
 import { db } from '../lib/db';
 import eventHandler from '../server/api/runtime/event.post';
 import onboardHandler from '../server/api/businesses/onboard.post';
@@ -320,7 +321,7 @@ describe('Specialized Terminals for All 8 Industries', () => {
     const dirTerm = dirRes.terminal as { id: string; role: string };
 
     // 1. Dispatch terminal inserts a waybill and advances status
-    const dispatchToken = await createTerminalSessionToken({
+    const dispatchToken = await createTestTerminalToken({
       terminalId: dispatchTerm.id,
       businessId,
       role: dispatchTerm.role,
@@ -375,7 +376,7 @@ describe('Specialized Terminals for All 8 Industries', () => {
     expect((deliverUpdate.results[0].data as { status: string }).status).toBe('delivered');
 
     // 2. Billing terminal inserts invoice + expense and marks invoice paid
-    const billingToken = await createTerminalSessionToken({
+    const billingToken = await createTestTerminalToken({
       terminalId: billingTerm.id,
       businessId,
       role: billingTerm.role,
@@ -420,7 +421,7 @@ describe('Specialized Terminals for All 8 Industries', () => {
     expect(expResp.results[0].ok).toBe(true);
 
     // 3. Appointment terminal books a patient/session and updates check-in
-    const clinicToken = await createTerminalSessionToken({
+    const clinicToken = await createTestTerminalToken({
       terminalId: clinicTerm.id,
       businessId,
       role: clinicTerm.role,
@@ -448,7 +449,7 @@ describe('Specialized Terminals for All 8 Industries', () => {
     expect(apptResp.results[0].ok).toBe(true);
 
     // 4. Directory terminal adds student/client + staff
-    const dirToken = await createTerminalSessionToken({
+    const dirToken = await createTestTerminalToken({
       terminalId: dirTerm.id,
       businessId,
       role: dirTerm.role,
@@ -492,7 +493,7 @@ describe('Specialized Terminals for All 8 Industries', () => {
       password_hash: 'hash',
     });
     expect(adminRes.error).toBeNull();
-    const token = await createAdminSessionToken({
+    const token = await createTestAdminToken({
       userId: adminRes.data!.id,
       email: `onboard-clinic-${suffix}@example.com`,
       role: 'admin',

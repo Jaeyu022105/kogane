@@ -4,17 +4,39 @@
  * stateful session creation, HttpOnly cookie issuance, and 2FA challenge support.
  */
 
+import { randomUUID } from 'node:crypto';
 import { defineEventHandler, readBody, setResponseStatus } from 'h3';
 import { db } from '~/lib/db';
 import {
+  hashPasswordSync,
   issueStatefulAdminSession,
   verifyPasswordSync,
 } from '~/lib/authUtils';
 import { mapUserRecordToDto, normalizeEmail } from '~/lib/mappers';
-import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
+import {
+  checkRateLimit,
+  clearRateLimit,
+  consumeRateLimit,
+  getClientIp,
+  recordRateLimitAttempt,
+  setRetryAfter,
+  type RateLimitResult,
+} from '~/lib/rateLimit';
 import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type LoginBody = { email?: string; password?: string };
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const CLIENT_MAX_ATTEMPTS = 10;
+const ACCOUNT_MAX_FAILURES = 30;
+const IP_MAX_FAILURES = 100;
+
+// A real PBKDF2 hash of a random value, checked when the email is unknown. Built on first use.
+let timingDummyHash: string | null = null;
+function getTimingDummyHash(): string {
+  timingDummyHash ??= hashPasswordSync(randomUUID());
+  return timingDummyHash;
+}
 
 export default defineEventHandler(async (event) => {
   const body: LoginBody = (await readBody<LoginBody>(event).catch((): LoginBody => ({}))) ?? {};
@@ -35,21 +57,38 @@ export default defineEventHandler(async (event) => {
     return { error: 'Email and password are required', session: null };
   }
 
-  const rate = enforceRateLimit(event, {
-    scope: 'admin_login',
-    identifier: email,
-    maxAttempts: 10,
-    windowMs: 15 * 60 * 1000,
-  });
-  if (!rate.allowed) {
+  // Three limits: this IP on this account (counted up front, so parallel requests can't slip
+  // past), this account from any IP (credential stuffing), and this IP across all accounts
+  // (password spraying). The last two count failures only.
+  const ip = getClientIp(event);
+  const rateKey = `admin_login:${ip}:${email}`;
+  const accountKey = `admin_login_account:${email}`;
+  const ipKey = `admin_login_ip:${ip}`;
+  let blocked: RateLimitResult | undefined;
+  for (const limit of [
+    () => checkRateLimit(accountKey, ACCOUNT_MAX_FAILURES, LOGIN_WINDOW_MS),
+    () => checkRateLimit(ipKey, IP_MAX_FAILURES, LOGIN_WINDOW_MS),
+    () => consumeRateLimit(rateKey, CLIENT_MAX_ATTEMPTS, LOGIN_WINDOW_MS),
+  ]) {
+    const result = limit();
+    if (!result.allowed) {
+      blocked = result;
+      break;
+    }
+  }
+  if (blocked) {
+    setRetryAfter(event, blocked.retryAfterSeconds);
     setResponseStatus(event, 429);
     return {
-      error: `Too many login attempts. Try again in ${rate.retryAfterSeconds} seconds.`,
+      error: `Too many login attempts. Try again in ${blocked.retryAfterSeconds} seconds.`,
       session: null,
     };
   }
 
-  const rateKey = `admin_login:${getClientIp(event)}:${email}`;
+  const recordFailure = () => {
+    recordRateLimitAttempt(accountKey, LOGIN_WINDOW_MS);
+    recordRateLimitAttempt(ipKey, LOGIN_WINDOW_MS);
+  };
 
   const { data: user, error: dbError } = await db.queryOne<{
     id: string;
@@ -66,18 +105,15 @@ export default defineEventHandler(async (event) => {
     [email],
   );
 
-  if (dbError || !user) {
-    recordRateLimitAttempt(rateKey, 15 * 60 * 1000);
-    return { error: 'Invalid email or password', session: null };
-  }
-
-  const isValid = verifyPasswordSync(password, user.password_hash);
-  if (!isValid) {
-    recordRateLimitAttempt(rateKey, 15 * 60 * 1000);
+  // Unknown accounts still pay for a password hash, so response time doesn't reveal which emails exist.
+  const isValid = verifyPasswordSync(password, user?.password_hash ?? getTimingDummyHash());
+  if (dbError || !user || !isValid) {
+    recordFailure();
     return { error: 'Invalid email or password', session: null };
   }
 
   clearRateLimit(rateKey);
+  clearRateLimit(accountKey);
 
   const has2fa = Boolean(
     (user.two_factor_enabled === 1 || user.two_factor_enabled === true)

@@ -9,6 +9,7 @@ import {
   verifyTerminalSession,
 } from '../lib/authUtils';
 import { applyBrandingToLayout, buildLayoutTheme, isLightColor } from '../lib/workspaceBranding';
+import { createTestTerminalToken } from './helpers/sessions';
 import { ensureStarterBusinessTable } from '../server/utils/starterTables';
 import { insertBusinessRow, queryBusinessRows } from '../server/utils/businessTable';
 
@@ -158,7 +159,7 @@ describe('Terminal Session Management & Grace Period', () => {
   test('auto-renews token expired within 90-day grace period', async () => {
     // 8 days expired (well within 90 days)
     const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: 'term-grace',
       businessId: 'biz-grace',
       displayName: 'Grace Term',
@@ -192,41 +193,43 @@ describe('Terminal Session Management & Grace Period', () => {
     expect(new Date(session.expiresAt).getTime()).toBeGreaterThan(Date.now());
   });
 
-  test('multi-terminal session auto-adaptation for terminals belonging to same business', async () => {
-    process.env.DEV_MODE = 'true';
-    const terminals = await db.query<any>('SELECT id, business_id, display_name, role FROM terminals LIMIT 2');
-    if (terminals.data && terminals.data.length >= 2) {
-      const termA = terminals.data[0];
-      const termB = terminals.data[1];
+  test('a terminal session cannot act as a different terminal, even in the same business', async () => {
+    const terminals = await db.query<any>(
+      `SELECT a.id as a_id, a.business_id, a.display_name, a.role, b.id as b_id
+         FROM terminals a JOIN terminals b ON b.business_id = a.business_id AND b.id <> a.id
+        LIMIT 1`,
+    );
+    const pair = terminals.data?.[0];
+    expect(pair).toBeDefined();
 
-      // Session was issued for Terminal A
-      const tokenA = await createTerminalSessionToken({
-        terminalId: termA.id,
-        businessId: termA.business_id,
-        displayName: termA.display_name,
-        role: termA.role,
-      });
+    // Session issued for Terminal A (e.g. a public kiosk link or a cashier tablet)
+    const tokenA = await createTestTerminalToken({
+      terminalId: pair.a_id,
+      businessId: pair.business_id,
+      displayName: pair.display_name,
+      role: pair.role,
+    });
 
-      const mockEvent = {
-        node: {
-          req: {
-            headers: {
-              cookie: `kogane_terminal_session=${tokenA}`,
-            },
-          },
-          res: {
-            setHeader: () => {},
-            getHeader: () => undefined,
+    const mockEvent = {
+      node: {
+        req: {
+          headers: {
+            cookie: `kogane_terminal_session=${tokenA}`,
           },
         },
-      } as any;
+        res: {
+          setHeader: () => {},
+          getHeader: () => undefined,
+        },
+      },
+    } as any;
 
-      // Accessing Terminal B with Terminal A's token auto-adapts to Terminal B
-      const adaptedSession = await verifyTerminalSession(mockEvent, termB.id);
-      expect(adaptedSession).toBeDefined();
-      expect(adaptedSession.terminalId).toBe(termB.id);
-      expect(adaptedSession.role).toBe(termB.role);
-    }
+    // It still works for Terminal A...
+    const ownSession = await verifyTerminalSession(mockEvent, pair.a_id);
+    expect(ownSession.terminalId).toBe(pair.a_id);
+
+    // ...but Terminal B needs its own PIN login.
+    await expect(verifyTerminalSession(mockEvent, pair.b_id)).rejects.toMatchObject({ statusCode: 401 });
   });
 
   test('admin session passthrough grants terminal access without prior terminal session', async () => {

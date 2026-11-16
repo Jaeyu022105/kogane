@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { db } from '../lib/db';
 import { normalizePermissions, isActionAllowed, resolveTablePermissions } from '../lib/permissions';
-import { createTerminalSessionToken } from '../lib/authUtils';
+import { createTestTerminalToken } from './helpers/sessions';
 import eventHandler from '../server/api/runtime/event.post';
 import { insertBusinessRow, queryBusinessRows, updateBusinessRow, fetchRowById } from '../server/utils/businessTable';
 import { ensureStarterBusinessTable } from '../server/utils/starterTables';
@@ -71,7 +71,7 @@ describe('Break kitchen served - Links 1 to 12', () => {
     // envelope: { action: { ... }, payload: { status: 'fulfilled' } }
     
     // Test what happens with token for this kitchen terminal
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: kitchenTerm.data.id,
       businessId: biz.data.id,
       displayName: kitchenTerm.data.display_name,

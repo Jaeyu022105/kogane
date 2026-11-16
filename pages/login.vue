@@ -5,8 +5,9 @@ definePageMeta({ layout: 'default' });
 
 const router = useRouter();
 const route = useRoute();
-const runtimeConfig = useRuntimeConfig();
-const isDevMode = computed(() => Boolean(runtimeConfig.public?.devMode));
+// The demo-admin shortcut exists only on the `nuxt dev` server; production builds compile it out
+// (DEV_MODE alone is not enough: the launcher runs production builds with DEV_MODE=true on the LAN).
+const showDemoAutofill = import.meta.dev;
 const { isLoggedIn, setSession, hydrateSession, authHeaders, session } = useAuth();
 const { openOnboarding } = useOnboarding();
 const { t, locale, detectedLocale, setLocale, loadLocale, availableLocales, translateFor } = useLocale();
@@ -781,7 +782,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
               </button>
 
               <button
-                v-if="isDevMode"
+                v-if="showDemoAutofill"
                 type="button"
                 class="dev-autofill-btn"
                 @click="fillDemoAdmin"

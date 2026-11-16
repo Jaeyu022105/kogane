@@ -24,6 +24,9 @@ services:
         value: firestore
       - key: COOKIE_SECURE
         value: "true"
+      # Render's proxy appends the visitor's IP to X-Forwarded-For (used for login rate limits).
+      - key: TRUST_PROXY
+        value: "1"
       - key: FIREBASE_PROJECT_ID
         value: kogane-e7f2b
       - key: FIREBASE_REGION

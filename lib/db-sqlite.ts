@@ -27,6 +27,10 @@ export function resolveSqliteDbPath(): string {
 }
 const DB_PATH = resolveSqliteDbPath();
 
+function shouldSeedDemoData(): boolean {
+  return process.env.KOGANE_SEED_DEMO === 'true' || process.env.NODE_ENV !== 'production';
+}
+
 export class SqliteAdapter implements DbAdapter {
   private db: Database;
 
@@ -212,6 +216,11 @@ export class SqliteAdapter implements DbAdapter {
     try {
       this.db.run('CREATE INDEX IF NOT EXISTS idx_presets_business_id ON presets(business_id)');
     } catch (e) { }
+    // Demo admin (admin@kogane.dev / admin123), demo business and a PIN-1234 terminal.
+    // Development and tests only: a production server never creates known credentials
+    // unless KOGANE_SEED_DEMO=true is set deliberately.
+    if (!shouldSeedDemoData()) return;
+
     try {
       const existingUser = this.db.query("SELECT id FROM users WHERE email = 'admin@kogane.dev'").get();
       if (!existingUser) {

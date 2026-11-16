@@ -4,6 +4,7 @@
 dev.db
 dev.db-shm
 dev.db-wal
+.kogane-secret
 node_modules/
 .nuxt/
 .output/

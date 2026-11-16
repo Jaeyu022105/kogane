@@ -195,10 +195,10 @@ describe('Catalog Product Insertion & Permissions', () => {
   test('call event.post handler with valid terminal session cookie', async () => {
     process.env.DEV_MODE = 'true';
     const { default: eventHandler } = await import('../server/api/runtime/event.post');
-    const { createTerminalSessionToken } = await import('../lib/authUtils');
+    const { createTestTerminalToken } = await import('./helpers/sessions');
 
     const catalogTerm = await db.queryOne<any>("SELECT * FROM terminals WHERE id = 'd047d7294f03036a4f3fe94fa3be66d0'");
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: catalogTerm.data.id,
       businessId: catalogTerm.data.business_id,
       displayName: catalogTerm.data.display_name,

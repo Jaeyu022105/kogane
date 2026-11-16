@@ -17,35 +17,121 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve as resolvePath } from 'node:path';
 import { deflateSync } from 'node:zlib';
+import { getDbProvider } from './backend';
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-let warnedMissingSecret = false;
+
+// ── Secrets ──────────────────────────────────────────────────────────────────
+
+const MIN_SECRET_LENGTH = 32;
+// The .env.example placeholders and the old hard-coded fallback are public, so never usable.
+const PUBLIC_SECRET_PATTERN = /change[-_ ]?this|placeholder|your[-_ ]?(session|encryption)?[-_ ]?(secret|key)|kogane-dev-secret/i;
+
+/** A secret is usable when it is long enough and not a published placeholder. */
+export function isStrongSecret(value: string | undefined | null): value is string {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length >= MIN_SECRET_LENGTH && !PUBLIC_SECRET_PATTERN.test(trimmed);
+}
 
 /**
- * Returns the HMAC session secret.
- * In production, prefers SESSION_SECRET / NUXT_SESSION_SECRET and warns if using a fallback.
+ * Online (Firebase) production servers can run several instances on throwaway disks, so they
+ * must share configured secrets. Local / single-server installs can fall back to a generated one.
  */
-export function getSessionSecret(): string {
-  const configured = process.env.SESSION_SECRET || process.env.NUXT_SESSION_SECRET;
-  if (configured && configured.trim().length > 0) {
-    return configured.trim();
-  }
+function requiresConfiguredSecrets(): boolean {
+  return process.env.NODE_ENV === 'production' && getDbProvider() === 'firebase';
+}
 
-  if (process.env.NODE_ENV === 'production' && !warnedMissingSecret) {
-    warnedMissingSecret = true;
-    console.warn(
-      '[kogane/security] SESSION_SECRET is not set in production. Set SESSION_SECRET in your Firebase/server environment.',
+function configuredSessionSecret(): string {
+  return (process.env.SESSION_SECRET || process.env.NUXT_SESSION_SECRET || '').trim();
+}
+
+/** Where a local install keeps its generated secret: next to the SQLite database. */
+function localSecretFilePath(): string {
+  if (process.env.KOGANE_SECRET_FILE) return process.env.KOGANE_SECRET_FILE;
+  const dbPath = process.env.SQLITE_DB_PATH || process.env.DATABASE_URL?.replace(/^sqlite:\/\//, '');
+  return join(dbPath ? dirname(resolvePath(dbPath)) : process.cwd(), '.kogane-secret');
+}
+
+let generatedSecret: string | null = null;
+
+/** A random secret created on first run and kept on disk, so sessions survive restarts. */
+function localGeneratedSecret(): string {
+  if (generatedSecret) return generatedSecret;
+  const file = localSecretFilePath();
+  try {
+    if (existsSync(file)) {
+      const stored = readFileSync(file, 'utf8').trim();
+      if (isStrongSecret(stored)) {
+        generatedSecret = stored;
+        return stored;
+      }
+    }
+    const fresh = randomBytes(48).toString('base64url');
+    writeFileSync(file, `${fresh}\n`, { mode: 0o600 });
+    console.warn(`[kogane/security] SESSION_SECRET is not set; generated a random one in ${file}. Keep that file private.`);
+    generatedSecret = fresh;
+  } catch {
+    // Read-only disk: still never fall back to a known value. Sessions reset on restart.
+    generatedSecret = randomBytes(48).toString('base64url');
+    console.warn('[kogane/security] SESSION_SECRET is not set and the generated secret could not be saved; sessions will reset when the server restarts.');
+  }
+  return generatedSecret;
+}
+
+/** Returns the HMAC session secret, or throws when an online production server has none configured. */
+export function getSessionSecret(): string {
+  const configured = configuredSessionSecret();
+  if (isStrongSecret(configured)) return configured;
+
+  if (requiresConfiguredSecrets()) {
+    throw new Error(
+      `[kogane/security] SESSION_SECRET must be a random value of at least ${MIN_SECRET_LENGTH} characters (not the .env.example placeholder). Refusing to sign sessions with a weak or missing secret.`,
     );
   }
+  return localGeneratedSecret();
+}
 
-  return process.env.FIREBASE_PRIVATE_KEY || 'kogane-dev-secret';
+function encryptionKeyMaterial(): string {
+  const configured = process.env.ENCRYPTION_KEY?.trim();
+  if (isStrongSecret(configured)) return configured;
+  if (configured && requiresConfiguredSecrets()) {
+    throw new Error(
+      `[kogane/security] ENCRYPTION_KEY must be a random value of at least ${MIN_SECRET_LENGTH} characters (not the .env.example placeholder), or left unset to use SESSION_SECRET.`,
+    );
+  }
+  return getSessionSecret();
+}
+
+/** Fails fast at server start when an online production server lacks strong secrets. */
+export function assertProductionSecrets(): void {
+  getSessionSecret();
+  encryptionKeyMaterial();
+}
+
+function deriveEncryptionKey(material: string): Buffer {
+  return createHash('sha256').update(`kogane-aes-v1:${material}`).digest();
 }
 
 /** Derives a 32-byte AES-256 key from ENCRYPTION_KEY or SESSION_SECRET. */
 function getEncryptionKey(): Buffer {
-  const raw = process.env.ENCRYPTION_KEY || getSessionSecret();
-  return createHash('sha256').update(`kogane-aes-v1:${raw}`).digest();
+  return deriveEncryptionKey(encryptionKeyMaterial());
+}
+
+/**
+ * Keys older installs may have encrypted 2FA secrets with (weak or placeholder values that are
+ * no longer accepted for new data). Decryption still tries them so nobody loses 2FA access.
+ */
+function legacyEncryptionKeys(): Buffer[] {
+  const candidates = [
+    process.env.ENCRYPTION_KEY?.trim(),
+    configuredSessionSecret(),
+    process.env.FIREBASE_PRIVATE_KEY,
+    'kogane-dev-secret',
+  ].filter((value): value is string => Boolean(value));
+  return [...new Set(candidates)].map(deriveEncryptionKey);
 }
 
 /** Constant-time string equality check. */
@@ -84,18 +170,20 @@ export function decryptSecret(ciphertext: string | null | undefined): string | n
   if (parts.length !== 5) return null;
   const [, , ivHex, tagHex, dataHex] = parts;
 
-  try {
-    const key = getEncryptionKey();
-    const iv = Buffer.from(ivHex, 'hex');
-    const tag = Buffer.from(tagHex, 'hex');
-    const encrypted = Buffer.from(dataHex, 'hex');
-    const decipher = createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(tag);
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-    return decrypted.toString('utf8');
-  } catch {
-    return null;
+  const iv = Buffer.from(ivHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+  const encrypted = Buffer.from(dataHex, 'hex');
+
+  for (const key of [getEncryptionKey(), ...legacyEncryptionKeys()]) {
+    try {
+      const decipher = createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(tag);
+      return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+    } catch {
+      // Wrong key or tampered data: try the next key.
+    }
   }
+  return null;
 }
 
 /** RFC 4648 Base32 encoding (without padding). */

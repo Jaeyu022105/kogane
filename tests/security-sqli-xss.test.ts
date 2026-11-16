@@ -20,7 +20,7 @@ import { normalizeLayout } from '../lib/uiTypes';
 import { FirestoreAdapter, InMemoryFirestoreStore } from '../lib/db-firebase';
 import { SqliteAdapter } from '../lib/db-sqlite';
 import { db } from '../lib/db';
-import { createAdminSessionToken } from '../lib/authUtils';
+import { createTestAdminToken } from './helpers/sessions';
 import { ensureStarterBusinessTables } from '../server/utils/starterTables';
 import rowsHandler from '../server/api/schema/tables/rows.get';
 import customReportHandler from '../server/api/reports/custom.post';
@@ -248,7 +248,7 @@ describe('SQL Injection (SQLi) Prevention', () => {
     await db.insert('orders', { items: 'Tenant A order', total: 100, status: 'pending' }, schemaA);
     await db.insert('orders', { items: 'Tenant B secret order', total: 999, status: 'pending' }, schemaB);
 
-    const token = await createAdminSessionToken({ userId: owner.data!.id, email: `sec-owner-${suffix}@example.com`, role: 'admin' });
+    const token = await createTestAdminToken({ userId: owner.data!.id, email: `sec-owner-${suffix}@example.com`, role: 'admin' });
 
     // 1. rows.get.ts rejects malicious tableName
     const sqliRowsRes = await rowsHandler(
@@ -493,7 +493,7 @@ describe('XSS & Script Injection Prevention', () => {
     await ensureStarterBusinessTables(schema, ['orders']);
     await db.insert('orders', { items: 'Latte', total: 120, status: 'pending' }, schema);
 
-    const token = await createAdminSessionToken({
+    const token = await createTestAdminToken({
       userId: owner.data!.id,
       email: `sec-adv-${suffix}@example.com`,
       role: 'admin',
