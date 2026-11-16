@@ -1,5 +1,18 @@
 <script setup lang="ts">
-import { ArrowLeft, Trash2, Link2, KeyRound, Palette, Sliders, Globe, Sparkles, Check, RefreshCw, Eye, EyeOff, Shield, Plus } from 'lucide-vue-next';
+import ArrowLeftIcon from 'reicon-vue/icons/ArrowLeft';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import Link2Icon from 'reicon-vue/icons/Link2';
+import KeyIcon from 'reicon-vue/icons/Key';
+import PaletteIcon from 'reicon-vue/icons/Palette';
+import SlidersIcon from 'reicon-vue/icons/Sliders';
+import GlobeIcon from 'reicon-vue/icons/Globe';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
+import CheckIcon from 'reicon-vue/icons/Check';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import ShieldIcon from 'reicon-vue/icons/Shield';
+import PlusIcon from 'reicon-vue/icons/Plus';
 import { UI_LAYOUT_BUNDLES, type LayoutBundleKey } from '~/lib/workspaceBranding';
 import {
   ALL_TERMINAL_PERMISSION_PRESETS,
@@ -484,7 +497,7 @@ onMounted(async () => {
           style="color: rgba(61,24,32,0.5);"
           @click="router.push('/dashboard/terminals')"
         >
-          <ArrowLeft class="w-4 h-4" />
+          <ArrowLeftIcon class="w-4 h-4" />
         </button>
         <div>
           <p class="text-[10px] font-bold uppercase tracking-[0.18em] mb-0.5" style="color: rgba(61,24,32,0.4);">
@@ -506,7 +519,7 @@ onMounted(async () => {
       >
         <div class="flex items-center gap-2">
           <div v-if="deleting" class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          <Trash2 v-else class="w-3.5 h-3.5" />
+          <TrashIcon v-else class="w-3.5 h-3.5" />
           {{ deleting ? 'Deleting…' : 'Delete' }}
         </div>
       </button>
@@ -563,8 +576,8 @@ onMounted(async () => {
                     :aria-label="pinVisible ? 'Hide PIN' : 'Show PIN'"
                     @click="pinVisible = !pinVisible"
                   >
-                    <EyeOff v-if="pinVisible" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
+                    <EyeOffIcon v-if="pinVisible" class="w-4 h-4" />
+                    <EyeIcon v-else class="w-4 h-4" />
                   </button>
                 </div>
                 <p id="terminal-pin-help" class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Takes effect on the next sign-in.</p>
@@ -579,8 +592,8 @@ onMounted(async () => {
                   @click="copyTerminalLink"
                 >
                   <div class="flex items-center justify-center gap-1.5">
-                    <Check v-if="copiedLink" class="w-3.5 h-3.5 text-green-500" />
-                    <Link2 v-else class="w-3.5 h-3.5" />
+                    <CheckIcon v-if="copiedLink" class="w-3.5 h-3.5 text-green-500" />
+                    <Link2Icon v-else class="w-3.5 h-3.5" />
                     {{ copiedLink ? 'Copied' : 'Copy Link' }}
                   </div>
                 </button>
@@ -593,8 +606,8 @@ onMounted(async () => {
                   @click="copyTerminalPin"
                 >
                   <div class="flex items-center justify-center gap-1.5">
-                    <Check v-if="copiedPin" class="w-3.5 h-3.5 text-green-500" />
-                    <KeyRound v-else class="w-3.5 h-3.5" />
+                    <CheckIcon v-if="copiedPin" class="w-3.5 h-3.5 text-green-500" />
+                    <KeyIcon v-else class="w-3.5 h-3.5" />
                     {{ copiedPin ? 'Copied' : 'Copy PIN' }}
                   </div>
                 </button>
@@ -610,7 +623,7 @@ onMounted(async () => {
             >
               <div class="flex items-center justify-center gap-2">
                 <div v-if="savingBasic" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <Sparkles v-else class="w-4 h-4" />
+                <SparklesIcon v-else class="w-4 h-4" />
                 {{ savingBasic ? 'Saving…' : 'Save General' }}
               </div>
             </button>
@@ -662,7 +675,7 @@ onMounted(async () => {
             >
               <div class="flex items-center justify-center gap-2">
                 <div v-if="savingPublic" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <Globe v-else class="w-4 h-4" />
+                <GlobeIcon v-else class="w-4 h-4" />
                 {{ savingPublic ? 'Saving…' : 'Save Access' }}
               </div>
             </button>
@@ -674,7 +687,7 @@ onMounted(async () => {
         <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-6">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.6);">
-              <Palette class="w-4 h-4" />
+              <PaletteIcon class="w-4 h-4" />
             </div>
             <div>
               <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Appearance</h2>
@@ -713,7 +726,7 @@ onMounted(async () => {
                   class="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
                   style="background: rgb(var(--shell-sidebar));"
                 >
-                  <Check class="w-3 h-3 text-white" />
+                  <CheckIcon class="w-3 h-3 text-white" />
                 </div>
               </button>
             </div>
@@ -745,7 +758,7 @@ onMounted(async () => {
           >
             <div class="flex items-center justify-center gap-2">
               <div v-if="savingStyle" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <RefreshCw v-else class="w-4 h-4" />
+              <RefreshIcon v-else class="w-4 h-4" />
               {{ savingStyle ? 'Applying…' : 'Apply Appearance' }}
             </div>
           </button>
@@ -755,7 +768,7 @@ onMounted(async () => {
         <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-6">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.6);">
-              <Sliders class="w-4 h-4" />
+              <SlidersIcon class="w-4 h-4" />
             </div>
             <div>
               <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Terminal content</h2>
@@ -834,7 +847,7 @@ onMounted(async () => {
           >
             <div class="flex items-center justify-center gap-2">
               <div v-if="savingStyle" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <Sparkles v-else class="w-4 h-4" />
+              <SparklesIcon v-else class="w-4 h-4" />
               {{ savingStyle ? 'Saving…' : 'Save Terminal Content' }}
             </div>
           </button>
@@ -845,7 +858,7 @@ onMounted(async () => {
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.6);">
-                <Shield class="w-4 h-4" />
+                <ShieldIcon class="w-4 h-4" />
               </div>
               <div>
                 <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Role &amp; Table Permissions</h2>
@@ -1004,7 +1017,7 @@ onMounted(async () => {
               style="color: rgb(var(--shell-sidebar));"
               @click="addCustomPermissionTable"
             >
-              <Plus class="w-3.5 h-3.5" /> Add rule
+              <PlusIcon class="w-3.5 h-3.5" /> Add rule
             </button>
           </div>
 
@@ -1017,7 +1030,7 @@ onMounted(async () => {
             >
               <div class="flex items-center justify-center gap-2">
                 <div v-if="savingPermissions" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <Shield v-else class="w-4 h-4" />
+                <ShieldIcon v-else class="w-4 h-4" />
                 {{ savingPermissions ? 'Saving Permissions…' : 'Save Permissions' }}
               </div>
             </button>
@@ -1025,7 +1038,7 @@ onMounted(async () => {
               v-if="permissionsSaved"
               class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"
             >
-              <Check class="w-3.5 h-3.5" /> Saved
+              <CheckIcon class="w-3.5 h-3.5" /> Saved
             </span>
           </div>
         </div>

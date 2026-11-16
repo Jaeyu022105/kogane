@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import BoltIcon from 'reicon-vue/icons/Bolt';
+import CheckIcon from 'reicon-vue/icons/Check';
+import DatabaseIcon from 'reicon-vue/icons/Database';
+import DocumentTextIcon from 'reicon-vue/icons/DocumentText';
+import LinkIcon from 'reicon-vue/icons/Link';
+import ListCheckIcon from 'reicon-vue/icons/ListCheck';
+import LockIcon from 'reicon-vue/icons/Lock';
+import MobileIcon from 'reicon-vue/icons/Mobile';
+import PaletteIcon from 'reicon-vue/icons/Palette';
+import StarIcon from 'reicon-vue/icons/Star';
+import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
+
 const { t } = useLocale();
 const { isLoggedIn } = useAuth();
 definePageMeta({ layout: 'marketing' });
@@ -15,21 +27,21 @@ usePageSeo({
   }),
 });
 
-/* SVG path data for module icons — from main */
+/* Module icons (Reicon outline) */
 const icons = {
-  onboarding: 'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7 M9 12h6 M9 16h4',
-  schema:     'M4 7h16 M4 12h16 M4 17h10 M16 17l2 2 4-4',
-  builder:    'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z',
-  terminal:   'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z M8 10l2 2-2 2 M12 14h4',
+  onboarding: DocumentTextIcon,
+  schema:     ListCheckIcon,
+  builder:    StarIcon,
+  terminal:   TerminalSquareIcon,
 };
 
 const extraIcons = {
-  lock:      'M12 2C9.24 2 7 4.24 7 7v3H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3z',
-  palette:   'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z M8 14s.67 1 2 1 2-1 2-1 M15 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M9 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
-  mobile:    'M17 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z M12 18h.01',
-  zap:       'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
-  database:  'M20 8c0 2.21-3.58 4-8 4S4 10.21 4 8s3.58-4 8-4 8 1.79 8 4z M4 8v8c0 2.21 3.58 4 8 4s8-1.79 8-4V8',
-  link:      'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+  lock:      LockIcon,
+  palette:   PaletteIcon,
+  mobile:    MobileIcon,
+  zap:       BoltIcon,
+  database:  DatabaseIcon,
+  link:      LinkIcon,
 };
 
 const modules = computed(() => [
@@ -181,9 +193,7 @@ const extras = computed(() => [
 
             <!-- icon chip -->
             <div class="module-icon-wrap" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <path :d="icons[mod.iconKey]" />
-              </svg>
+              <component :is="icons[mod.iconKey]" />
             </div>
 
             <h2 class="module-title">{{ mod.title }}</h2>
@@ -193,9 +203,7 @@ const extras = computed(() => [
               <li v-for="pt in mod.points" :key="pt">
                 <!-- check icon -->
                 <span class="module-check" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <CheckIcon />
                 </span>
                 {{ pt }}
               </li>
@@ -312,9 +320,7 @@ const extras = computed(() => [
         <div class="extras-grid">
           <div v-for="ex in extras" :key="ex.title" class="extra-card">
             <span class="extra-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path :d="extraIcons[ex.iconKey as keyof typeof extraIcons]" />
-              </svg>
+              <component :is="extraIcons[ex.iconKey as keyof typeof extraIcons]" />
             </span>
             <h3 class="extra-title">{{ ex.title }}</h3>
             <p class="extra-body">{{ ex.body }}</p>

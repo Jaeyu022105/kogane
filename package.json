@@ -27,9 +27,9 @@
     "@nuxtjs/i18n": "^10.3.0",
     "@supabase/supabase-js": "^2.49.4",
     "firebase-admin": "^14.5.1",
-    "lucide-vue-next": "^1.0.0",
     "nuxt": "^3.16.2",
     "qrcode": "^1.5.4",
+    "reicon-vue": "^1.1.104",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },

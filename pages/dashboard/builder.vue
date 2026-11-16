@@ -1,28 +1,26 @@
 <script setup lang="ts">
 import { computed, ref, onBeforeUnmount } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
-import {
-  BarChart2,
-  Check,
-  Copy,
-  Database,
-  Eye,
-  Hexagon,
-  Image as ImageIcon,
-  Layers,
-  MousePointer2,
-  Plus,
-  QrCode,
-  RectangleHorizontal,
-  RefreshCw,
-  ShoppingCart,
-  Sparkles,
-  Trash2,
-  Type,
-  Undo2,
-  Upload,
-  X,
-} from 'lucide-vue-next';
+import ChartIcon from 'reicon-vue/icons/Chart';
+import CheckIcon from 'reicon-vue/icons/Check';
+import CopyIcon from 'reicon-vue/icons/Copy';
+import DatabaseIcon from 'reicon-vue/icons/Database';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import ElementIcon from 'reicon-vue/icons/Element';
+import ImageIcon from 'reicon-vue/icons/Image';
+import LayersIcon from 'reicon-vue/icons/Layers';
+import CursorIcon from 'reicon-vue/icons/Cursor';
+import PlusIcon from 'reicon-vue/icons/Plus';
+import QrIcon from 'reicon-vue/icons/Qr';
+import TextInputIcon from 'reicon-vue/icons/TextInput';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import ShoppingCartIcon from 'reicon-vue/icons/ShoppingCart';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import TextIcon from 'reicon-vue/icons/Text';
+import UndoIcon from 'reicon-vue/icons/Undo';
+import UploadIcon from 'reicon-vue/icons/Upload';
+import XIcon from 'reicon-vue/icons/X';
 import Canvas from '~/components/Canvas.vue';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import PropertiesPanel from '~/components/PropertiesPanel.vue';
@@ -123,22 +121,22 @@ const selectedStationKey = computed(() => selectedStationPreset.value?.key ?? nu
 const currentTheme = computed(() => layout.value.theme ?? DEFAULT_LAYOUT_THEME);
 
 const STATION_OBJECT_ICON_MAP = {
-  layers: Layers,
-  database: Database,
-  chart: BarChart2,
-  sparkles: Sparkles,
+  layers: LayersIcon,
+  database: DatabaseIcon,
+  chart: ChartIcon,
+  sparkles: SparklesIcon,
 } as const;
 
 const PALETTE_ITEMS: BuilderPaletteItem[] = [
-  { id: 'button', type: 'button', label: 'Button', description: 'Generic action button.', icon: Hexagon, defaults: { text: 'Button', variant: 'primary', radius: 16 } as any, defaultWidth: 220, defaultHeight: 64 },
-  { id: 'text', type: 'text', label: 'Text', description: 'Headings, labels, and helper text.', icon: Type, defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any, defaultWidth: 260, defaultHeight: 80 },
+  { id: 'button', type: 'button', label: 'Button', description: 'Generic action button.', icon: ElementIcon, defaults: { text: 'Button', variant: 'primary', radius: 16 } as any, defaultWidth: 220, defaultHeight: 64 },
+  { id: 'text', type: 'text', label: 'Text', description: 'Headings, labels, and helper text.', icon: TextIcon, defaults: { content: 'Text', fontSize: 16, fontWeight: 'normal' } as any, defaultWidth: 260, defaultHeight: 80 },
   { id: 'image', type: 'image', label: 'Image', description: 'Images, branding, or signage.', icon: ImageIcon, defaults: { src: '', fit: 'cover' } as any, defaultWidth: 240, defaultHeight: 180 },
-  { id: 'table-view', type: 'table-view', label: 'List View', description: 'Flexible list of business information.', icon: Database, defaults: { source: 'business-table', title: 'List', tableName: '', columns: [], pageSize: 20, striped: true } as any, defaultWidth: 520, defaultHeight: 320 },
-  { id: 'input-field', type: 'input-field', label: 'Input', description: 'Single form field.', icon: RectangleHorizontal, defaults: { fieldName: 'field', inputType: 'text', radius: 16 } as any, defaultWidth: 260, defaultHeight: 56 },
-  { id: 'chart', type: 'chart', label: 'Chart', description: 'A simple chart for business activity.', icon: BarChart2, defaults: { source: 'business-table', title: 'Activity', chartType: 'bar', aggregation: 'sum', tableName: '', labelColumn: '', valueColumn: '' } as any, defaultWidth: 460, defaultHeight: 300 },
-  { id: 'upload', type: 'upload', label: 'Upload', description: 'File or asset uploader.', icon: Upload, defaults: { bucket: 'assets', buttonLabel: 'Upload file', radius: 18 } as any, defaultWidth: 260, defaultHeight: 88 },
-  { id: 'cart-widget', type: 'cart-widget', label: 'Cart Widget', description: 'Product picker, cart, and order checkout.', icon: ShoppingCart, defaults: { title: 'Cart Register', productTable: 'products', displayColumns: ['name', 'category'], priceColumn: 'price', orderTable: 'orders', submitLabel: 'Submit Order', paymentMethods: ['cash', 'card'], defaultPaymentMethod: 'cash', radius: 24 } as any, defaultWidth: 520, defaultHeight: 420 },
-  { id: 'scan-field', type: 'scan-field', label: 'Scan Field', description: 'Hardware barcode or QR scanner input.', icon: QrCode, defaults: { fieldName: 'barcode', placeholder: 'Scan barcode or QR code…', burstThresholdMs: 40, radius: 12 } as any, defaultWidth: 320, defaultHeight: 52 },
+  { id: 'table-view', type: 'table-view', label: 'List View', description: 'Flexible list of business information.', icon: DatabaseIcon, defaults: { source: 'business-table', title: 'List', tableName: '', columns: [], pageSize: 20, striped: true } as any, defaultWidth: 520, defaultHeight: 320 },
+  { id: 'input-field', type: 'input-field', label: 'Input', description: 'Single form field.', icon: TextInputIcon, defaults: { fieldName: 'field', inputType: 'text', radius: 16 } as any, defaultWidth: 260, defaultHeight: 56 },
+  { id: 'chart', type: 'chart', label: 'Chart', description: 'A simple chart for business activity.', icon: ChartIcon, defaults: { source: 'business-table', title: 'Activity', chartType: 'bar', aggregation: 'sum', tableName: '', labelColumn: '', valueColumn: '' } as any, defaultWidth: 460, defaultHeight: 300 },
+  { id: 'upload', type: 'upload', label: 'Upload', description: 'File or asset uploader.', icon: UploadIcon, defaults: { bucket: 'assets', buttonLabel: 'Upload file', radius: 18 } as any, defaultWidth: 260, defaultHeight: 88 },
+  { id: 'cart-widget', type: 'cart-widget', label: 'Cart Widget', description: 'Product picker, cart, and order checkout.', icon: ShoppingCartIcon, defaults: { title: 'Cart Register', productTable: 'products', displayColumns: ['name', 'category'], priceColumn: 'price', orderTable: 'orders', submitLabel: 'Submit Order', paymentMethods: ['cash', 'card'], defaultPaymentMethod: 'cash', radius: 24 } as any, defaultWidth: 520, defaultHeight: 420 },
+  { id: 'scan-field', type: 'scan-field', label: 'Scan Field', description: 'Hardware barcode or QR scanner input.', icon: QrIcon, defaults: { fieldName: 'barcode', placeholder: 'Scan barcode or QR code…', burstThresholdMs: 40, radius: 12 } as any, defaultWidth: 320, defaultHeight: 52 },
 ];
 
 const stationObjectItems = computed<BuilderPaletteItem[]>(() =>
@@ -1030,10 +1028,10 @@ onUnmounted(() => {
       <div class="flex items-center justify-self-end gap-2 min-w-0 flex-wrap">
         <template v-if="!interactivePreview">
           <button :disabled="!canUndo" class="text-xs font-medium px-3 py-2 rounded-xl transition-all disabled:opacity-30 hover:bg-black/5 flex items-center gap-1.5" style="color: rgba(61,24,32,0.7);" @click="undo">
-            <Undo2 class="w-4 h-4" /> Undo
+            <UndoIcon class="w-4 h-4" /> Undo
           </button>
           <button :disabled="!canRedo" class="text-xs font-medium px-3 py-2 rounded-xl transition-all disabled:opacity-30 hover:bg-black/5 flex items-center gap-1.5" style="color: rgba(61,24,32,0.7);" @click="redo">
-            Redo <Undo2 class="w-4 h-4 scale-x-[-1]" />
+            Redo <UndoIcon class="w-4 h-4 scale-x-[-1]" />
           </button>
           <button
             v-if="selectedTerminal"
@@ -1041,7 +1039,7 @@ onUnmounted(() => {
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="createModalLayer"
           >
-            <Plus class="w-3.5 h-3.5" /> New Modal
+            <PlusIcon class="w-3.5 h-3.5" /> New Modal
           </button>
           <button
             v-if="selectedTerminal && presetUpdateVersion"
@@ -1050,7 +1048,7 @@ onUnmounted(() => {
             title="A newer version of this preset is available"
             @click="syncPresetUpdate"
           >
-            <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': syncingPreset }" />
+            <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncingPreset }" />
             Sync Update v{{ presetUpdateVersion }}
           </button>
           <button
@@ -1058,7 +1056,7 @@ onUnmounted(() => {
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="showPresetsPanel = !showPresetsPanel; if (showPresetsPanel) loadPresets();"
           >
-            <Sparkles class="w-3.5 h-3.5" /> Presets
+            <SparklesIcon class="w-3.5 h-3.5" :weight="showPresetsPanel ? 'Filled' : 'Outline'" /> Presets
           </button>
           <button
             v-if="selectedTerminal"
@@ -1066,7 +1064,7 @@ onUnmounted(() => {
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="openSavePresetModal"
           >
-            <Plus class="w-3.5 h-3.5" /> Save Preset
+            <PlusIcon class="w-3.5 h-3.5" /> Save Preset
           </button>
           <button
             v-if="selectedTerminal"
@@ -1074,14 +1072,14 @@ onUnmounted(() => {
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="enterInteractivePreview"
           >
-            <Eye class="w-3.5 h-3.5" /> Preview
+            <EyeIcon class="w-3.5 h-3.5" /> Preview
           </button>
           <button
             class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="showStudioPanel = !showStudioPanel"
           >
-            <Layers class="w-3.5 h-3.5" /> {{ showStudioPanel ? 'Hide Studio' : 'Studio' }}
+            <LayersIcon class="w-3.5 h-3.5" :weight="showStudioPanel ? 'Filled' : 'Outline'" /> {{ showStudioPanel ? 'Hide Studio' : 'Studio' }}
           </button>
           <button
             :disabled="!isDirty || !selectedTerminal || saving"
@@ -1091,7 +1089,7 @@ onUnmounted(() => {
           >
             <div class="flex items-center justify-center gap-2">
               <template v-if="saving">Saving...</template>
-              <template v-else-if="isDirty">Publish Changes <Sparkles class="w-4 h-4" /></template>
+              <template v-else-if="isDirty">Publish Changes <SparklesIcon class="w-4 h-4" /></template>
               <template v-else>Up to date</template>
             </div>
           </button>
@@ -1102,14 +1100,14 @@ onUnmounted(() => {
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="resetInteractivePreview"
           >
-            <RefreshCw class="w-3.5 h-3.5" /> Reset State
+            <RefreshIcon class="w-3.5 h-3.5" /> Reset State
           </button>
           <button
             class="text-xs font-semibold px-4 py-2 rounded-xl transition-all inline-flex items-center gap-1.5"
             style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
             @click="exitInteractivePreview"
           >
-            <X class="w-3.5 h-3.5" /> Exit Preview
+            <XIcon class="w-3.5 h-3.5" /> Exit Preview
           </button>
         </template>
       </div>
@@ -1123,7 +1121,7 @@ onUnmounted(() => {
           :style="!pendingDrop ? 'background: rgba(232,116,138,0.1);' : 'hover:background: rgba(245,237,228,0.5);'"
           @click="pendingDrop = null"
         >
-          <MousePointer2 class="w-5 h-5" :style="!pendingDrop ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.5);'" />
+          <CursorIcon class="w-5 h-5" :weight="!pendingDrop ? 'Filled' : 'Outline'" :style="!pendingDrop ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.5);'" />
           <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
             Select
           </div>
@@ -1143,6 +1141,7 @@ onUnmounted(() => {
         >
           <component
             :is="item.icon"
+            :weight="pendingDrop?.id === item.id ? 'Filled' : 'Outline'"
             class="w-5 h-5 transition-transform group-hover:scale-110"
             :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.78);'"
           />
@@ -1165,6 +1164,7 @@ onUnmounted(() => {
         >
           <component
             :is="item.icon"
+            :weight="pendingDrop?.id === item.id ? 'Filled' : 'Outline'"
             class="w-5 h-5 transition-transform group-hover:scale-110"
             :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.78);'"
           />
@@ -1188,6 +1188,7 @@ onUnmounted(() => {
           >
             <component
               :is="item.icon"
+              :weight="pendingDrop?.id === item.id ? 'Filled' : 'Outline'"
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
             />
@@ -1212,6 +1213,7 @@ onUnmounted(() => {
           >
             <component
               :is="item.icon"
+              :weight="pendingDrop?.id === item.id ? 'Filled' : 'Outline'"
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.58);'"
             />
@@ -1236,6 +1238,7 @@ onUnmounted(() => {
           >
             <component
               :is="item.icon"
+              :weight="pendingDrop?.id === item.id ? 'Filled' : 'Outline'"
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
             />
@@ -1259,6 +1262,7 @@ onUnmounted(() => {
           >
             <component
               :is="item.icon"
+              :weight="pendingDrop?.id === item.id ? 'Filled' : 'Outline'"
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.58);'"
             />
@@ -1285,7 +1289,7 @@ onUnmounted(() => {
               class="px-4 py-2 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-lg"
               style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
             >
-              <MousePointer2 class="w-3.5 h-3.5" />
+              <CursorIcon class="w-3.5 h-3.5" />
               Click canvas to place · Esc to cancel
             </div>
           </div>
@@ -1320,10 +1324,10 @@ onUnmounted(() => {
         <div class="absolute inset-0 bg-[radial-gradient(#d5cdc4_1px,transparent_1px)] [background-size:16px_16px] opacity-50 pointer-events-none"></div>
 
         <div v-if="builderNotice" class="pointer-events-auto absolute top-4 right-4 z-50 flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-xs font-medium shadow-lg" :class="builderNotice.kind === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-800'">
-          <Check v-if="builderNotice.kind === 'success'" class="w-3.5 h-3.5 shrink-0" />
+          <CheckIcon v-if="builderNotice.kind === 'success'" class="w-3.5 h-3.5 shrink-0" />
           <span>{{ builderNotice.text }}</span>
           <button type="button" class="opacity-60 hover:opacity-100" @click="builderNotice = null">
-            <X class="w-3.5 h-3.5" />
+            <XIcon class="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -1358,17 +1362,17 @@ onUnmounted(() => {
             </template>
 
             <button class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition-colors hover:bg-[#f7f1eb]" style="color: rgba(61,24,32,0.72);" @click="duplicateElement()">
-              <Copy class="w-3.5 h-3.5" /> Duplicate
+              <CopyIcon class="w-3.5 h-3.5" /> Duplicate
             </button>
             <button class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition-colors hover:bg-red-50" style="color: #b42318;" @click="removeElement(selectedElement.id)">
-              <Trash2 class="w-3.5 h-3.5" /> Delete
+              <TrashIcon class="w-3.5 h-3.5" /> Delete
             </button>
           </div>
         </div>
 
         <div v-if="!selectedTerminal" class="absolute inset-0 flex items-center justify-center">
           <div class="z-10 bg-white p-8 rounded-3xl shadow-xl border text-center pointer-events-auto" style="color: rgba(61,24,32,0.6); border-color: rgba(61,24,32,0.1);">
-            <Sparkles class="w-12 h-12 mx-auto mb-4" style="color: rgb(var(--shell-sidebar));" />
+            <SparklesIcon class="w-12 h-12 mx-auto mb-4" style="color: rgb(var(--shell-sidebar));" />
             <h2 class="text-lg font-semibold mb-1" style="color: rgb(var(--shell-sidebar));">No Terminal Selected</h2>
             <p class="text-sm">Choose a terminal from the top bar to start designing its interface.</p>
           </div>
@@ -1386,7 +1390,7 @@ onUnmounted(() => {
             <span class="font-semibold">{{ previewRuntime.state.value.lastError.title }}:</span>
             <span>{{ previewRuntime.state.value.lastError.description }}</span>
             <button type="button" class="opacity-70 hover:opacity-100" @click="previewRuntime.clearError">
-              <X class="w-3.5 h-3.5" />
+              <XIcon class="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -1489,7 +1493,7 @@ onUnmounted(() => {
               <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Apply a ready-made layout to get started fast</p>
             </div>
             <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showPresetsPanel = false">
-              <Sparkles class="w-4 h-4" />
+              <SparklesIcon class="w-4 h-4" />
             </button>
           </div>
 
@@ -1553,7 +1557,7 @@ onUnmounted(() => {
               <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.5);">Reuse this layout and permissions across terminals</p>
             </div>
             <button type="button" class="p-1 rounded-lg hover:bg-black/5" @click="showSavePresetModal = false">
-              <X class="w-4 h-4" />
+              <XIcon class="w-4 h-4" />
             </button>
           </div>
           <div class="space-y-3">

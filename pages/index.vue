@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import type { Component } from 'vue';
+import BoltIcon from 'reicon-vue/icons/Bolt';
+import CoffeeIcon from 'reicon-vue/icons/Coffee';
+import DocumentTextIcon from 'reicon-vue/icons/DocumentText';
+import DollarCircleIcon from 'reicon-vue/icons/DollarCircle';
+import HeartPulseIcon from 'reicon-vue/icons/HeartPulse';
+import HomeIcon from 'reicon-vue/icons/Home';
+import ListCheckIcon from 'reicon-vue/icons/ListCheck';
+import PackageIcon from 'reicon-vue/icons/Package';
+import ShoppingBagIcon from 'reicon-vue/icons/ShoppingBag';
+import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
+
 const { t } = useLocale();
 const { isLoggedIn, hydrateSession } = useAuth();
 definePageMeta({ layout: 'marketing' });
@@ -34,14 +46,14 @@ onMounted(() => {
   void hydrateSession();
 });
 
-/* ── Original SVG path strings for industry chips ─────────── */
-const industryIcons: Record<string, string> = {
-  restaurant: 'M18 8h1a4 4 0 0 1 0 8h-1 M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z M6 1v3 M10 1v3 M14 1v3',
-  logistics:  'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
-  retail:     'M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0',
-  healthcare: 'M22 12h-4l-3 9L9 3l-3 9H2',
-  construct:  'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
-  finance:    'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+/* ── Industry chip icons (Reicon outline) ─────────────────── */
+const industryIcons: Record<string, Component> = {
+  restaurant: CoffeeIcon,
+  logistics:  PackageIcon,
+  retail:     ShoppingBagIcon,
+  healthcare: HeartPulseIcon,
+  construct:  HomeIcon,
+  finance:    DollarCircleIcon,
 };
 
 const industries = computed(() => [
@@ -53,12 +65,12 @@ const industries = computed(() => [
   { iconKey: 'finance',    name: t('ind_finance')    },
 ]);
 
-/* ── Original SVG path strings for pillar cards ───────────── */
-const pillarIcons: Record<string, string> = {
-  schema:   'M4 7h16 M4 12h16 M4 17h10 M16 17l2 2 4-4',
-  builder:  'M12 2L3 14h9l-1 8 10-12h-9l1-8z',
-  terminal: 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z M8 10l2 2-2 2 M12 14h4',
-  onboard:  'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7 M9 12h6 M9 16h4',
+/* ── Pillar card icons (Reicon outline) ───────────────────── */
+const pillarIcons: Record<string, Component> = {
+  schema:   ListCheckIcon,
+  builder:  BoltIcon,
+  terminal: TerminalSquareIcon,
+  onboard:  DocumentTextIcon,
 };
 
 const pillars = computed(() => [
@@ -162,9 +174,7 @@ const directoryRows = computed(() => [
         <div class="industry-grid">
           <div v-for="ind in industries" :key="ind.name" class="industry-chip">
             <span class="chip-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path :d="industryIcons[ind.iconKey]" />
-              </svg>
+              <component :is="industryIcons[ind.iconKey]" />
             </span>
             <span>{{ ind.name }}</span>
           </div>
@@ -187,9 +197,7 @@ const directoryRows = computed(() => [
             <div class="pillar-top">
               <span class="pillar-number m-mono m-tabular">{{ String(pillarIndex + 1).padStart(2, '0') }}</span>
               <span class="pillar-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <path :d="pillarIcons[p.iconKey]" />
-                </svg>
+                <component :is="pillarIcons[p.iconKey]" />
               </span>
             </div>
             <h3 class="pillar-title">{{ p.title }}</h3>

@@ -1,6 +1,19 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, watch } from 'vue';
-import { Building2, Terminal as TerminalIcon, Plus, ArrowRight, Eye, EyeOff, Check, Copy, Sparkles, RefreshCw, Layers, Pencil, Trash2, X } from 'lucide-vue-next';
+import BuildingIcon from 'reicon-vue/icons/Building';
+import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
+import PlusIcon from 'reicon-vue/icons/Plus';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import CheckIcon from 'reicon-vue/icons/Check';
+import CopyIcon from 'reicon-vue/icons/Copy';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import LayersIcon from 'reicon-vue/icons/Layers';
+import PenIcon from 'reicon-vue/icons/Pen';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import XIcon from 'reicon-vue/icons/X';
 import { getTerminalPresetStatus, type ApiPresetRecord } from '~/lib/builderPresets';
 import { ALL_TERMINAL_PERMISSION_PRESETS, presetsForIndustry } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, layoutVariantsForPreset } from '~/lib/starterWorkstations';
@@ -483,7 +496,7 @@ watch(() => route.query.create, (nextPreset) => {
           :disabled="!business"
           @click="openSavePresetModal()"
         >
-          <Layers class="w-3.5 h-3.5" />
+          <LayersIcon class="w-3.5 h-3.5" />
           Save as Preset
         </button>
 
@@ -494,7 +507,7 @@ watch(() => route.query.create, (nextPreset) => {
           :title="!business ? 'Please create a business in Settings first' : 'Create new workstation'"
           @click="openCreateModal()"
         >
-          <Plus class="w-4 h-4" />
+          <PlusIcon class="w-4 h-4" />
           New Workstation
         </button>
       </div>
@@ -524,7 +537,7 @@ watch(() => route.query.create, (nextPreset) => {
         v-else-if="!business"
         class="flex flex-col items-center justify-center py-24 text-center"
       >
-        <Building2 class="w-12 h-12 mb-4" style="color: rgba(61,24,32,0.1);" />
+        <BuildingIcon class="w-12 h-12 mb-4" style="color: rgba(61,24,32,0.1);" />
         <p class="text-base font-semibold" style="color: rgba(61,24,32,0.35);">No business configured</p>
         <p class="text-sm mt-1 mb-4" style="color: rgba(61,24,32,0.25);">You need to set up your business before creating terminals.</p>
         <NuxtLink
@@ -533,7 +546,7 @@ watch(() => route.query.create, (nextPreset) => {
           style="background: rgba(61,24,32,0.06); color: rgba(61,24,32,0.65); text-decoration: none;"
         >
           <div class="flex items-center justify-center gap-1.5">
-            Go to Settings <ArrowRight class="w-3.5 h-3.5" />
+            Go to Settings <ArrowRightIcon class="w-3.5 h-3.5" />
           </div>
         </NuxtLink>
       </div>
@@ -544,7 +557,7 @@ watch(() => route.query.create, (nextPreset) => {
         class="flex flex-col items-center justify-center py-16 text-center max-w-2xl mx-auto"
       >
         <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background: rgba(255, 87, 118, 0.1); color: rgb(var(--shell-pink));">
-          <TerminalIcon class="w-7 h-7" />
+          <TerminalSquareIcon class="w-7 h-7" />
         </div>
         <h2 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">No workstations yet</h2>
         <p class="text-sm mt-1 mb-6" style="color: rgba(61,24,32,0.5);">Choose a workstation preset below to provision it with starter layout and tables immediately:</p>
@@ -561,7 +574,7 @@ watch(() => route.query.create, (nextPreset) => {
           >
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-[#68293A]">{{ preset.label }}</span>
-              <Plus class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
+              <PlusIcon class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
             </div>
             <p class="text-[11px] leading-relaxed m-0 text-[rgba(61,24,32,0.6)]">{{ preset.description }}</p>
           </button>
@@ -576,7 +589,7 @@ watch(() => route.query.create, (nextPreset) => {
           style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3);"
         >
           <div class="flex items-center gap-2 text-xs font-semibold" style="color: #92400e;">
-            <RefreshCw class="w-4 h-4" />
+            <RefreshIcon class="w-4 h-4" />
             <span>{{ outdatedTerminalIds.length }} workstation(s) are behind their linked preset template version.</span>
           </div>
           <button
@@ -597,7 +610,7 @@ watch(() => route.query.create, (nextPreset) => {
         >
           <span>{{ presetActionNotice }}</span>
           <button type="button" class="border-none bg-transparent cursor-pointer text-current" @click="presetActionNotice = null">
-            <X class="w-3.5 h-3.5" />
+            <XIcon class="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -608,7 +621,7 @@ watch(() => route.query.create, (nextPreset) => {
         >
           <span>{{ presetActionError }}</span>
           <button type="button" class="border-none bg-transparent cursor-pointer text-current" @click="presetActionError = null">
-            <X class="w-3.5 h-3.5" />
+            <XIcon class="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -639,7 +652,7 @@ watch(() => route.query.create, (nextPreset) => {
               style="border-color: rgba(61,24,32,0.14); color: rgb(var(--shell-sidebar));"
               @click="openSavePresetModal()"
             >
-              <Plus class="w-3.5 h-3.5" /> Save Terminal as Preset
+              <PlusIcon class="w-3.5 h-3.5" /> Save Terminal as Preset
             </button>
           </div>
 
@@ -684,7 +697,7 @@ watch(() => route.query.create, (nextPreset) => {
                       title="Edit custom preset"
                       @click="openEditPresetModal(preset)"
                     >
-                      <Pencil class="w-3.5 h-3.5" />
+                      <PenIcon class="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
@@ -694,7 +707,7 @@ watch(() => route.query.create, (nextPreset) => {
                       title="Delete custom preset"
                       @click="deleteCustomPreset(preset)"
                     >
-                      <Trash2 class="w-3.5 h-3.5" />
+                      <TrashIcon class="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -719,7 +732,7 @@ watch(() => route.query.create, (nextPreset) => {
                     style="border-color: rgba(61,24,32,0.14); color: rgb(var(--shell-sidebar));"
                     @click="syncPresetToLinked(preset)"
                   >
-                    <RefreshCw class="w-3 h-3" :class="{ 'animate-spin': syncingPresetId === preset.id }" />
+                    <RefreshIcon class="w-3 h-3" :class="{ 'animate-spin': syncingPresetId === preset.id }" />
                     Sync Linked
                   </button>
                 </div>
@@ -828,13 +841,8 @@ watch(() => route.query.create, (nextPreset) => {
                     :aria-label="pinCopied ? 'PIN copied' : 'Copy PIN'"
                     @click="copyPin"
                   >
-                    <svg v-if="!pinCopied" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #22c55e;">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
+                    <CopyIcon v-if="!pinCopied" :size="14" />
+                    <CheckIcon v-else :size="14" style="color: #22c55e;" />
                   </button>
                   <button
                     type="button"
@@ -844,8 +852,8 @@ watch(() => route.query.create, (nextPreset) => {
                     :aria-label="pinVisible ? 'Hide PIN' : 'Show PIN'"
                     @click="pinVisible = !pinVisible"
                   >
-                    <EyeOff v-if="pinVisible" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
+                    <EyeOffIcon v-if="pinVisible" class="w-4 h-4" />
+                    <EyeIcon v-else class="w-4 h-4" />
                   </button>
                 </div>
               </div>

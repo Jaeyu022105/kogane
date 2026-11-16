@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { LockKeyhole } from 'lucide-vue-next';
+import LockKeyholeIcon from 'reicon-vue/icons/LockKeyhole';
+import ScanBarcodeIcon from 'reicon-vue/icons/ScanBarcode';
 import type { ScanFieldElementDef } from '~/lib/uiTypes';
 import { isLightColor } from '~/lib/workspaceBranding';
 import { hasUnsafeControlChars, sanitizeTextInput } from '~/lib/securityClient';
@@ -151,11 +152,9 @@ onUnmounted(() => {
       class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
       :style="{ color: isLight ? 'rgba(0,0,0,0.3)' : (element.textColor ? `${element.textColor}60` : 'rgba(255,255,255,0.25)') }"
     >
-      <LockKeyhole v-if="permissionDisabled" class="w-4 h-4 opacity-70" />
+      <LockKeyholeIcon v-if="permissionDisabled" class="w-4 h-4 opacity-70" />
       <!-- barcode icon -->
-      <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9V5a2 2 0 012-2h2M3 15v4a2 2 0 002 2h2m10-18h2a2 2 0 012 2v4M19 15v4a2 2 0 01-2 2h-2M7 8v8M10 6v12M13 8v8M16 6v12" />
-      </svg>
+      <ScanBarcodeIcon v-else class="w-4 h-4" />
     </div>
   </div>
 </template>

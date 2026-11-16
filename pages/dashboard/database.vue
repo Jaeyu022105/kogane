@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import type { TableDef, ColumnDef, ColumnType, NormalizationHint } from '~/lib/schemaUtils';
 import type { ApiPresetRecord } from '~/lib/builderPresets';
-import { Database, Hexagon, RefreshCw, Plus, ArrowLeft, ArrowRight, X, Trash2, Pencil, Check } from 'lucide-vue-next';
+import DatabaseIcon from 'reicon-vue/icons/Database';
+import ElementIcon from 'reicon-vue/icons/Element';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import PlusIcon from 'reicon-vue/icons/Plus';
+import ArrowLeftIcon from 'reicon-vue/icons/ArrowLeft';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import XIcon from 'reicon-vue/icons/X';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import PenIcon from 'reicon-vue/icons/Pen';
+import CheckIcon from 'reicon-vue/icons/Check';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -594,7 +603,7 @@ function getTablePositionSafe(name: string) {
           @click="showNewTable = true"
         >
           <div class="flex items-center gap-1">
-            <Plus class="w-3 h-3" /> New
+            <PlusIcon class="w-3 h-3" /> New
           </div>
         </button>
       </div>
@@ -621,7 +630,7 @@ function getTablePositionSafe(name: string) {
           @mouseenter="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = 'rgba(245,237,228,0.05)'; }"
           @mouseleave="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = ''; }"
         >
-          <Database class="w-3 h-3 opacity-50" />
+          <DatabaseIcon class="w-3 h-3 opacity-50" :weight="selectedTable === table ? 'Filled' : 'Outline'" />
           <span class="font-mono truncate">{{ table }}</span>
         </button>
 
@@ -640,7 +649,7 @@ function getTablePositionSafe(name: string) {
           @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.4)'"
         >
           <div class="flex items-center justify-center gap-1.5">
-            <Hexagon class="w-3.5 h-3.5" /> Presets
+            <ElementIcon class="w-3.5 h-3.5" /> Presets
           </div>
         </button>
       </div>
@@ -699,7 +708,7 @@ function getTablePositionSafe(name: string) {
             @click="openAddRowModal"
           >
             <div class="flex items-center gap-1.5">
-              <Plus class="w-3.5 h-3.5" /> Add Row
+              <PlusIcon class="w-3.5 h-3.5" /> Add Row
             </div>
           </button>
 
@@ -717,7 +726,7 @@ function getTablePositionSafe(name: string) {
             @click="loadRows"
           >
             <div class="flex items-center gap-1.5">
-              <RefreshCw class="w-3.5 h-3.5" /> Refresh
+              <RefreshIcon class="w-3.5 h-3.5" /> Refresh
             </div>
           </button>
         </div>
@@ -728,14 +737,14 @@ function getTablePositionSafe(name: string) {
         <!-- Empty state: no table selected -->
         <div v-if="!selectedTable" class="flex items-center justify-center h-full">
           <div class="text-center space-y-2">
-            <Database class="w-12 h-12 mx-auto" style="color: rgba(61,24,32,0.12);" />
+            <DatabaseIcon class="w-12 h-12 mx-auto" style="color: rgba(61,24,32,0.12);" />
             <p class="text-sm" style="color: rgba(61,24,32,0.3);">Pick a table from the sidebar</p>
             <button
               class="mt-2 text-xs font-semibold px-4 py-2 rounded-full transition-all btn-primary btn-ribbon"
               @click="showNewTable = true"
             >
               <div class="flex items-center justify-center gap-1.5">
-                <Plus class="w-3.5 h-3.5" /> New Table
+                <PlusIcon class="w-3.5 h-3.5" /> New Table
               </div>
             </button>
           </div>
@@ -809,7 +818,7 @@ function getTablePositionSafe(name: string) {
                 style="borderColor: rgba(61,24,32,0.1);"
                 @mousedown="onTableMousedown($event, table.name)"
               >
-                <Database class="w-4 h-4 opacity-50" />
+                <DatabaseIcon class="w-4 h-4 opacity-50" />
                 <span class="font-mono font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">{{ table.name }}</span>
               </div>
               <div class="flex flex-col py-2">
@@ -922,7 +931,7 @@ function getTablePositionSafe(name: string) {
             @click="rowsPage--; loadRows()"
           >
             <div class="flex items-center gap-1">
-              <ArrowLeft class="w-3.5 h-3.5" /> Prev
+              <ArrowLeftIcon class="w-3.5 h-3.5" /> Prev
             </div>
           </button>
           <button
@@ -932,7 +941,7 @@ function getTablePositionSafe(name: string) {
             @click="rowsPage++; loadRows()"
           >
             <div class="flex items-center gap-1">
-              Next <ArrowRight class="w-3.5 h-3.5" />
+              Next <ArrowRightIcon class="w-3.5 h-3.5" />
             </div>
           </button>
         </div>
@@ -952,7 +961,7 @@ function getTablePositionSafe(name: string) {
             <p class="text-[11px]" style="color: rgba(61,24,32,0.45);">Apply schema templates or save custom packs</p>
           </div>
           <button class="text-xs transition-colors" style="color: rgba(61,24,32,0.3);" @click="showPresets = false">
-            <X class="w-4 h-4" />
+            <XIcon class="w-4 h-4" />
           </button>
         </div>
 
@@ -1026,14 +1035,14 @@ function getTablePositionSafe(name: string) {
                   class="p-1 rounded bg-emerald-600 text-white border-none cursor-pointer"
                   @click="savePresetRename(preset)"
                 >
-                  <Check class="w-3.5 h-3.5" />
+                  <CheckIcon class="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
                   class="p-1 rounded bg-white text-gray-500 border cursor-pointer"
                   @click="editingPresetId = null"
                 >
-                  <X class="w-3.5 h-3.5" />
+                  <XIcon class="w-3.5 h-3.5" />
                 </button>
               </div>
               <div v-else class="min-w-0 flex-1">
@@ -1065,7 +1074,7 @@ function getTablePositionSafe(name: string) {
                   title="Rename preset"
                   @click="startPresetRename(preset)"
                 >
-                  <Pencil class="w-3.5 h-3.5" />
+                  <PenIcon class="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
@@ -1075,7 +1084,7 @@ function getTablePositionSafe(name: string) {
                   title="Delete custom preset"
                   @click="removeCustomPreset(preset)"
                 >
-                  <Trash2 class="w-3.5 h-3.5" />
+                  <TrashIcon class="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -1099,7 +1108,7 @@ function getTablePositionSafe(name: string) {
                 title="Sync updates to linked terminals"
                 @click="syncLinkedTerminals(preset)"
               >
-                <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': syncingPresetId === preset.id }" />
+                <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncingPresetId === preset.id }" />
               </button>
             </div>
           </div>
@@ -1121,7 +1130,7 @@ function getTablePositionSafe(name: string) {
           <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
             <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Table</h2>
             <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showNewTable = false">
-              <X class="w-5 h-5" />
+              <XIcon class="w-5 h-5" />
             </button>
           </div>
 
@@ -1158,7 +1167,7 @@ function getTablePositionSafe(name: string) {
                 <label class="text-xs font-bold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">Columns</label>
                 <button class="text-xs font-semibold transition-colors" style="color: rgb(var(--shell-pink));" @click="addColumn">
                   <div class="flex items-center gap-1">
-                    <Plus class="w-3.5 h-3.5" /> Add
+                    <PlusIcon class="w-3.5 h-3.5" /> Add
                   </div>
                 </button>
               </div>
@@ -1186,7 +1195,7 @@ function getTablePositionSafe(name: string) {
                       @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = '#dc2626'"
                       @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.25)'"
                     >
-                      <X class="w-4 h-4" />
+                      <XIcon class="w-4 h-4" />
                     </button>
                   </div>
 
@@ -1258,7 +1267,7 @@ function getTablePositionSafe(name: string) {
               <p class="text-xs font-mono mt-0.5" style="color: rgba(61,24,32,0.4);">{{ selectedTable }}</p>
             </div>
             <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showAddRow = false">
-              <X class="w-5 h-5" />
+              <XIcon class="w-5 h-5" />
             </button>
           </div>
 

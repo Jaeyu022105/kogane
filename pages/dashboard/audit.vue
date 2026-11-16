@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  FileSpreadsheet,
-  Filter,
-  RefreshCw,
-  Search,
-  Shield,
-  X,
-} from 'lucide-vue-next';
+import ChevronDownIcon from 'reicon-vue/icons/ChevronDown';
+import ChevronLeftIcon from 'reicon-vue/icons/ChevronLeft';
+import ChevronRightIcon from 'reicon-vue/icons/ChevronRight';
+import DownloadIcon from 'reicon-vue/icons/Download';
+import DocumentTextIcon from 'reicon-vue/icons/DocumentText';
+import FilterIcon from 'reicon-vue/icons/Filter';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import SearchIcon from 'reicon-vue/icons/Search';
+import ShieldIcon from 'reicon-vue/icons/Shield';
+import XIcon from 'reicon-vue/icons/X';
 import {
   parseAuditJson,
   parseAuditTimestamp,
@@ -422,7 +420,7 @@ function clearSearch() {
     <div class="px-10 pt-10 pb-8 flex flex-wrap items-end justify-between gap-4" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
       <div>
         <div class="flex items-center gap-3 mb-1">
-          <Shield class="w-4 h-4" style="color: rgba(61,24,32,0.35);" />
+          <ShieldIcon class="w-4 h-4" style="color: rgba(61,24,32,0.35);" />
           <p class="text-[10px] font-mono uppercase tracking-[0.18em]" style="color: rgba(61,24,32,0.35);">Audit Log</p>
         </div>
         <h1 class="font-serif font-normal text-2xl" style="color: rgb(var(--shell-sidebar));">Activity trail</h1>
@@ -436,7 +434,7 @@ function clearSearch() {
           :disabled="loading"
           @click="loadEntries"
         >
-          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
+          <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
           Refresh
         </button>
 
@@ -446,7 +444,7 @@ function clearSearch() {
           :disabled="exporting !== null"
           @click="exportEntries('csv')"
         >
-          <FileSpreadsheet class="w-3.5 h-3.5" />
+          <DocumentTextIcon class="w-3.5 h-3.5" />
           {{ exporting === 'csv' ? 'Exporting…' : 'Export CSV' }}
         </button>
 
@@ -456,7 +454,7 @@ function clearSearch() {
           :disabled="exporting !== null"
           @click="exportEntries('json')"
         >
-          <Download class="w-3.5 h-3.5" />
+          <DownloadIcon class="w-3.5 h-3.5" />
           {{ exporting === 'json' ? 'Exporting…' : 'Export JSON' }}
         </button>
       </div>
@@ -467,13 +465,13 @@ function clearSearch() {
       <!-- ── Filter bar ─────────────────────────────────────────── -->
       <div class="relative flex flex-wrap items-end gap-3">
         <div class="flex items-center gap-1.5 shrink-0 pb-2" style="color: rgba(61,24,32,0.35);">
-          <Filter class="w-3.5 h-3.5" />
+          <FilterIcon class="w-3.5 h-3.5" />
           <span class="text-[10px] font-mono uppercase tracking-widest">Filters</span>
         </div>
 
         <div class="relative flex-1 min-w-[210px] max-w-xs">
           <label for="audit-search" class="sr-only">Search audit logs</label>
-          <Search class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color: rgba(61,24,32,0.45);" />
+          <SearchIcon class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color: rgba(61,24,32,0.45);" />
           <input
             id="audit-search"
             v-model="searchQuery"
@@ -489,7 +487,7 @@ function clearSearch() {
             class="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/5"
             @click="clearSearch"
           >
-            <X class="w-3 h-3" />
+            <XIcon class="w-3 h-3" />
           </button>
         </div>
 
@@ -638,7 +636,7 @@ function clearSearch() {
 
               <!-- Expand Chevron -->
               <div class="audit-chevron-cell flex justify-end pt-0.5" style="color: rgba(61,24,32,0.45);">
-                <ChevronDown
+                <ChevronDownIcon
                   class="w-4 h-4 transition-transform duration-150"
                   :class="{ 'rotate-180': isExpanded(entry.id) }"
                 />
@@ -840,7 +838,7 @@ function clearSearch() {
             :disabled="page <= 1 || loading"
             @click="page--; loadEntries()"
           >
-            <ChevronLeft class="w-3 h-3" /> Prev
+            <ChevronLeftIcon class="w-3 h-3" /> Prev
           </button>
 
           <span class="text-[10px] font-mono" style="color: rgba(61,24,32,0.55);">
@@ -853,7 +851,7 @@ function clearSearch() {
             :disabled="page * perPage >= total || loading"
             @click="page++; loadEntries()"
           >
-            Next <ChevronRight class="w-3 h-3" />
+            Next <ChevronRightIcon class="w-3 h-3" />
           </button>
         </div>
       </div>

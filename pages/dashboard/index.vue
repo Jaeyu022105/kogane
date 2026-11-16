@@ -8,7 +8,13 @@ const { isEnterprise } = useEnterpriseAccess();
 const { t } = useLocale();
 
 
-import { Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Plus } from 'lucide-vue-next';
+import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
+import SettingsIcon from 'reicon-vue/icons/Settings';
+import ShieldIcon from 'reicon-vue/icons/Shield';
+import ChartBarIcon from 'reicon-vue/icons/ChartBar';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
+import PlusIcon from 'reicon-vue/icons/Plus';
 import TerminalCard from '~/components/TerminalCard.vue';
 import { presetsForIndustry } from '~/lib/permissions';
 
@@ -50,31 +56,31 @@ const quickActions = computed<QuickAction[]>(() => {
     {
       label: t('dashboard_action_preset_label'),
       body: t('dashboard_action_preset_body'),
-      icon: Sparkles,
+      icon: SparklesIcon,
       action: 'onboarding',
     },
     {
       label: t('dashboard_action_terminals_label'),
       body: t('dashboard_action_terminals_body'),
-      icon: Terminal,
+      icon: TerminalSquareIcon,
       to: '/dashboard/terminals',
     },
     {
       label: t('dashboard_action_reports_label'),
       body: t('dashboard_action_reports_body'),
-      icon: BarChart3,
+      icon: ChartBarIcon,
       to: '/dashboard/reports',
     },
     {
       label: t('dashboard_action_audit_label'),
       body: t('dashboard_action_audit_body'),
-      icon: Shield,
+      icon: ShieldIcon,
       to: '/dashboard/audit',
     },
     {
       label: t('dashboard_action_settings_label'),
       body: t('dashboard_action_settings_body'),
-      icon: Settings,
+      icon: SettingsIcon,
       to: '/dashboard/settings',
     },
   ];
@@ -183,7 +189,7 @@ watch(() => business.value?.id, loadTerminals);
               <p class="text-sm leading-relaxed" style="color: rgba(61,24,32,0.55);">{{ action.body }}</p>
             </div>
             <div class="card-arrow">
-              {{ t('dashboard_open_module') }} <ArrowRight class="w-3.5 h-3.5 stroke-[2.5]" />
+              {{ t('dashboard_open_module') }} <ArrowRightIcon class="w-3.5 h-3.5 stroke-[2.5]" />
             </div>
           </NuxtLink>
 
@@ -206,7 +212,7 @@ watch(() => business.value?.id, loadTerminals);
               <p class="text-sm leading-relaxed" style="color: rgba(61,24,32,0.55);">{{ action.body }}</p>
             </div>
             <div class="card-arrow">
-              {{ t('dashboard_open_setup') }} <ArrowRight class="w-3.5 h-3.5 stroke-[2.5]" />
+              {{ t('dashboard_open_setup') }} <ArrowRightIcon class="w-3.5 h-3.5 stroke-[2.5]" />
             </div>
           </button>
         </template>
@@ -231,10 +237,10 @@ watch(() => business.value?.id, loadTerminals);
               class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-white hover:opacity-90 transition-opacity flex items-center gap-1.5 no-underline shadow-sm"
               style="background: rgb(var(--shell-sidebar));"
             >
-              <Plus class="w-3.5 h-3.5" /> New Workstation
+              <PlusIcon class="w-3.5 h-3.5" /> New Workstation
             </NuxtLink>
             <NuxtLink to="/dashboard/terminals" class="terminal-link">
-              {{ t('dashboard_terminal_manager_link') }} <ArrowRight class="w-3.5 h-3.5" />
+              {{ t('dashboard_terminal_manager_link') }} <ArrowRightIcon class="w-3.5 h-3.5" />
             </NuxtLink>
           </div>
         </div>
@@ -252,7 +258,7 @@ watch(() => business.value?.id, loadTerminals);
 
         <div v-else-if="terminals.length === 0" class="space-y-6">
           <div class="terminal-empty">
-            <Terminal class="w-10 h-10" />
+            <TerminalSquareIcon class="w-10 h-10" />
             <div>
               <p>{{ t('dashboard_terminal_empty_title') }}</p>
               <span>{{ t('dashboard_terminal_empty_body') }}</span>
@@ -262,7 +268,7 @@ watch(() => business.value?.id, loadTerminals);
               class="mt-3 px-4 py-2 text-xs font-semibold rounded-lg text-white hover:opacity-90 transition-opacity inline-flex items-center gap-1.5 no-underline"
               style="background: rgb(var(--shell-pink));"
             >
-              <Plus class="w-3.5 h-3.5" /> New Workstation
+              <PlusIcon class="w-3.5 h-3.5" /> New Workstation
             </NuxtLink>
           </div>
 
@@ -284,13 +290,13 @@ watch(() => business.value?.id, loadTerminals);
                 <div>
                   <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-bold text-[#68293A]">{{ preset.label }}</span>
-                    <Plus class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <PlusIcon class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <p class="text-[11px] leading-relaxed m-0 text-[rgba(61,24,32,0.6)]">{{ preset.description }}</p>
                 </div>
                 <div class="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-[11px] font-semibold text-[#FF5776]">
                   <span>Create station</span>
-                  <ArrowRight class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRightIcon class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </NuxtLink>
             </div>
@@ -307,7 +313,7 @@ watch(() => business.value?.id, loadTerminals);
               :to="`/dashboard/terminals?create=${preset.key}`"
               class="px-2.5 py-1 rounded-md bg-white border border-[rgba(61,24,32,0.08)] hover:border-[#FF5776] hover:text-[#FF5776] text-[rgba(61,24,32,0.7)] text-[11px] font-medium no-underline shrink-0 transition-colors flex items-center gap-1"
             >
-              <Plus class="w-3 h-3" /> {{ preset.label }}
+              <PlusIcon class="w-3 h-3" /> {{ preset.label }}
             </NuxtLink>
           </div>
 

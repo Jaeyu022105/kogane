@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import {
-  BarChart3,
-  Download,
-  FileSpreadsheet,
-  Play,
-  Receipt,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Sparkles,
-} from 'lucide-vue-next';
+import ChartBarIcon from 'reicon-vue/icons/ChartBar';
+import DownloadIcon from 'reicon-vue/icons/Download';
+import DocumentTextIcon from 'reicon-vue/icons/DocumentText';
+import PlayIcon from 'reicon-vue/icons/Play';
+import ReceiptIcon from 'reicon-vue/icons/Receipt';
+import ArrowUpRightIcon from 'reicon-vue/icons/ArrowUpRight';
+import ArrowDownRightIcon from 'reicon-vue/icons/ArrowDownRight';
+import MinusIcon from 'reicon-vue/icons/Minus';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
 import SalesDiagrams from '~/components/SalesDiagrams.vue';
 import { isSalesMutationTable, type TrendInputPoint } from '~/lib/reportDiagrams';
 
@@ -465,7 +463,7 @@ onUnmounted(() => {
     <div class="px-10 pt-10 pb-8 flex flex-wrap items-end justify-between gap-4" style="border-bottom: 1px solid rgba(104, 41, 58, 0.1);">
       <div>
         <div class="flex items-center gap-2 mb-1.5">
-          <BarChart3 class="w-4 h-4" style="color: rgb(var(--shell-pink));" />
+          <ChartBarIcon class="w-4 h-4" style="color: rgb(var(--shell-pink));" />
           <p class="text-xs font-bold uppercase tracking-[0.16em] m-0" style="color: #B8294B;">
             Reports &amp; Analytics
           </p>
@@ -487,7 +485,7 @@ onUnmounted(() => {
           :disabled="exporting"
           @click="exportSalesExcel()"
         >
-          <FileSpreadsheet class="w-4 h-4 text-emerald-700" />
+          <DocumentTextIcon class="w-4 h-4 text-emerald-700" />
           <span>Export Sales (.xlsx)</span>
         </button>
 
@@ -498,7 +496,7 @@ onUnmounted(() => {
           :disabled="exporting"
           @click="exportTaxExcel()"
         >
-          <Receipt class="w-4 h-4 text-amber-700" />
+          <ReceiptIcon class="w-4 h-4 text-amber-700" />
           <span>Export Tax (.xlsx)</span>
         </button>
 
@@ -508,7 +506,7 @@ onUnmounted(() => {
           :disabled="exporting"
           @click="exportCsv"
         >
-          <Download class="w-4 h-4" />
+          <DownloadIcon class="w-4 h-4" />
           <span>CSV</span>
         </button>
       </div>
@@ -593,7 +591,7 @@ onUnmounted(() => {
           class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all active:scale-[0.97] btn-primary btn-ribbon cursor-pointer"
           @click="loadReport()"
         >
-          <Play class="w-4 h-4" /> Run Report
+          <PlayIcon class="w-4 h-4" /> Run Report
         </button>
       </div>
 
@@ -745,9 +743,9 @@ onUnmounted(() => {
                       ? 'bg-amber-50 text-amber-800 border border-amber-200'
                       : 'bg-stone-100 text-stone-800 border border-stone-200'"
                 >
-                  <ArrowUpRight v-if="performanceData.forecasts.trendStatus === 'growing'" class="w-4 h-4" />
-                  <ArrowDownRight v-else-if="performanceData.forecasts.trendStatus === 'declining'" class="w-4 h-4" />
-                  <Minus v-else class="w-4 h-4" />
+                  <ArrowUpRightIcon v-if="performanceData.forecasts.trendStatus === 'growing'" class="w-4 h-4" />
+                  <ArrowDownRightIcon v-else-if="performanceData.forecasts.trendStatus === 'declining'" class="w-4 h-4" />
+                  <MinusIcon v-else class="w-4 h-4" />
                   {{ performanceData.forecasts.trendStatus }}
                 </span>
               </div>
@@ -780,7 +778,7 @@ onUnmounted(() => {
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider" style="color: #B8294B;">
-                  <Sparkles class="w-4 h-4 text-amber-600" />
+                  <SparklesIcon class="w-4 h-4 text-amber-600" />
                   <span>Next Period Demand &amp; Sales Projections</span>
                 </div>
                 <p class="text-lg font-serif mt-1 mb-0" style="color: rgb(var(--shell-sidebar));">

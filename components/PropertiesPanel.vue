@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { Layers, PenTool, Plus, Trash2 } from 'lucide-vue-next';
+import LayersIcon from 'reicon-vue/icons/Layers';
+import PenToolIcon from 'reicon-vue/icons/PenTool';
+import PlusIcon from 'reicon-vue/icons/Plus';
+import TrashIcon from 'reicon-vue/icons/Trash';
 import type {
   ElementDef,
   ElementEventBinding,
@@ -408,14 +411,14 @@ function applyThemeToCurrentWidgets() {
         :class="activeTab === 'design' ? 'bg-black/5 text-brand-primary' : 'text-gray-400 hover:text-gray-600'"
         @click="activeTab = 'design'"
       >
-        <PenTool class="w-3.5 h-3.5" /> Design
+        <PenToolIcon class="w-3.5 h-3.5" :weight="activeTab === 'design' ? 'Filled' : 'Outline'" /> Design
       </button>
       <button
         class="flex-1 py-2 text-xs font-semibold tracking-wide transition-colors flex items-center justify-center gap-1.5"
         :class="activeTab === 'layers' ? 'bg-black/5 text-brand-primary' : 'text-gray-400 hover:text-gray-600'"
         @click="activeTab = 'layers'"
       >
-        <Layers class="w-3.5 h-3.5" /> Layers
+        <LayersIcon class="w-3.5 h-3.5" :weight="activeTab === 'layers' ? 'Filled' : 'Outline'" /> Layers
       </button>
     </div>
 
@@ -1324,7 +1327,7 @@ function applyThemeToCurrentWidgets() {
           <div class="flex items-center justify-between">
             <p class="text-xs font-bold uppercase tracking-widest" style="color: rgba(61,24,32,0.35);">Events</p>
             <button v-if="supportedTriggers.length > 0" class="inline-flex items-center gap-1 text-xs font-semibold" style="color: rgb(var(--shell-pink));" @click="addEvent">
-              <Plus class="w-3.5 h-3.5" /> Add
+              <PlusIcon class="w-3.5 h-3.5" /> Add
             </button>
           </div>
 
@@ -1347,7 +1350,7 @@ function applyThemeToCurrentWidgets() {
                 <option v-for="trigger in TRIGGERS_BY_ELEMENT_TYPE[selectedElement.type]" :key="trigger" :value="trigger">{{ trigger }}</option>
               </select>
               <button class="p-1.5 rounded-lg text-red-500 hover:bg-red-50" @click="removeEvent(index)">
-                <Trash2 class="w-3.5 h-3.5" />
+                <TrashIcon class="w-3.5 h-3.5" />
               </button>
             </div>
 

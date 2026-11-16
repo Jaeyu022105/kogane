@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Eye, EyeOff } from 'lucide-vue-next';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
 import type { InputFieldElementDef } from '~/lib/uiTypes';
 import { isLightColor } from '~/lib/workspaceBranding';
 import { sanitizeTextInput } from '~/lib/securityClient';
@@ -135,8 +136,8 @@ onMounted(() => {
           :aria-label="showPassword ? 'Hide password' : 'Show password'"
           @click="showPassword = !showPassword"
         >
-          <EyeOff v-if="showPassword" class="w-4 h-4" />
-          <Eye v-else class="w-4 h-4" />
+          <EyeOffIcon v-if="showPassword" class="w-4 h-4" />
+          <EyeIcon v-else class="w-4 h-4" />
         </button>
       </div>
     </template>
