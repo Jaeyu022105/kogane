@@ -42,7 +42,7 @@ function triggerHeroCharge() {
 
 <template>
   <div class="hero-collage">
-    <!-- Backdrop built in three passes: flavour arcs, blur, then an embossed waffle texture -->
+    <!-- Faded backdrop built in three passes: flavour arcs, blur, then an embossed waffle texture. It sits behind the hero copy. -->
     <div class="collage-art" aria-hidden="true">
       <div class="collage-arcs" />
       <svg
@@ -73,6 +73,10 @@ function triggerHeroCharge() {
       </svg>
     </div>
 
+    <!-- Hero copy (headline, lede, calls to action) sits on top of the backdrop -->
+    <slot />
+
+    <!-- Live previews: a staggered pair of windows under the copy -->
     <div class="hero-preview">
       <!-- Preview Card 1: Preset Setup Table -->
       <div class="preview-card card-setup">
@@ -138,54 +142,62 @@ function triggerHeroCharge() {
 </template>
 
 <style scoped>
-/* Collage band: a Neapolitan backdrop (strawberry, vanilla, chocolate) behind the live previews */
+/* Hero band: a faded Neapolitan backdrop (strawberry, vanilla) behind the copy and the live previews */
 .hero-collage {
   position: relative;
-  height: clamp(380px, 31vw, 460px);
-  overflow: hidden;
 }
 
+/* Only the top of the band carries the backdrop; it fades out before the previews end */
 .collage-art {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto;
+  height: min(100%, 720px);
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent);
-  mask-image: linear-gradient(180deg, #000 78%, transparent);
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent);
+  mask-image: linear-gradient(180deg, #000 45%, transparent);
 }
 
-/* Shapes then blur: concentric flavour arcs, drawn oversized so the blur never shows an edge */
+/* Shapes then blur: a soft strawberry arc that meets the navbar's faded pink at the top edge.
+   Drawn oversized so the blur never shows an edge. */
 .collage-arcs {
   position: absolute;
   inset: -14%;
   background: radial-gradient(
     90% 135% at 50% -32%,
-    #FF5776 0 64%,
+    var(--k-strawberry-soft) 0 64%,
     #F6E6D7 64%
   );
   filter: blur(42px);
 }
 
-/* Texture: pressed-in waffle cells, lit from the top centre, that fade out into the cream */
+/* Texture: pressed-in waffle cells, lit from the top centre, kept faint so the copy reads over it */
 .collage-waffle {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   mix-blend-mode: soft-light;
-  -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 82%);
-  mask-image: linear-gradient(180deg, #000 35%, transparent 82%);
+  opacity: 0.55;
+  -webkit-mask-image: linear-gradient(180deg, #000 20%, transparent 75%);
+  mask-image: linear-gradient(180deg, #000 20%, transparent 75%);
 }
 
 .waffle-grain {
-  opacity: 0.22;
+  opacity: 0.16;
 }
 
-/* Hero preview cards */
+/* Hero preview cards: a staggered pair under the copy, the POS window dropped half a step */
 .hero-preview {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 1;
-  pointer-events: none;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 3.5rem 2rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
 }
 
 .preview-card {
@@ -197,13 +209,11 @@ function triggerHeroCharge() {
 }
 
 .hero-preview .preview-card {
-  position: absolute;
-  width: clamp(290px, 26vw, 370px);
-  pointer-events: auto;
+  flex: 0 1 400px;
+  min-width: 0;
 }
 
-.card-setup { left: 24%; top: 13%; }
-.card-pos   { left: 58%; top: 27%; }
+.card-pos { margin-top: 2.5rem; }
 
 .preview-header {
   display: flex;
@@ -334,20 +344,17 @@ function triggerHeroCharge() {
 .terminal-charge:hover { opacity: 0.88; }
 
 @media (max-width: 900px) {
-  .hero-collage { height: auto; }
   .hero-preview {
-    position: relative;
-    inset: auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     align-items: start;
-    padding: 2.5rem 2rem 3rem;
+    padding: 0.5rem 2rem 0;
   }
-  .hero-preview .preview-card { position: static; width: auto; }
+  .card-pos { margin-top: 0; }
 }
 
 @media (max-width: 600px) {
-  .hero-preview { grid-template-columns: 1fr; padding: 2rem 1.25rem 2.5rem; }
+  .hero-preview { grid-template-columns: 1fr; padding: 0.5rem 1.25rem 0; }
 }
 </style>

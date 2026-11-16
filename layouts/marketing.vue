@@ -12,6 +12,8 @@ const navLinks = computed(() => [
 
 const scrolled = ref(false);
 const mobileMenuOpen = ref(false);
+// The home hero's faded pink backdrop runs up to the navbar, so the bar takes the same pink while the page sits at the top
+const isHome = computed(() => route.path === '/');
 
 function closeMobileMenu() {
   mobileMenuOpen.value = false;
@@ -33,6 +35,7 @@ onMounted(() => {
   loadLocale();
   void hydrateSession();
   const handler = () => { scrolled.value = window.scrollY > 24; };
+  handler();
   window.addEventListener('scroll', handler, { passive: true });
   onUnmounted(() => window.removeEventListener('scroll', handler));
 });
@@ -41,9 +44,10 @@ onMounted(() => {
 <template>
   <div class="marketing-shell">
     <!-- ── Navbar ─────────────────────────────────────────── -->
-    <header class="marketing-nav" :class="{ scrolled }">
+    <header class="marketing-nav" :class="{ scrolled, 'home-top': isHome && !scrolled }">
       <div class="nav-inner">
         <NuxtLink to="/" class="nav-logo" @click="closeMobileMenu">
+          <KoganeIcon class="logo-icon" />
           <span class="logo-wordmark">Kogane</span>
           <span class="logo-dot" aria-hidden="true" />
         </NuxtLink>
@@ -93,6 +97,7 @@ onMounted(() => {
       <div class="footer-inner">
         <div class="footer-brand">
           <NuxtLink to="/" class="nav-logo">
+            <KoganeIcon class="logo-icon footer-logo-icon" />
             <span class="logo-wordmark footer-logo">Kogane</span>
             <span class="logo-dot" aria-hidden="true" />
           </NuxtLink>
@@ -168,6 +173,9 @@ onMounted(() => {
   background: transparent;
   border-bottom: 1px solid transparent;
 }
+.marketing-nav.home-top {
+  background: var(--k-strawberry-soft);
+}
 .marketing-nav.scrolled {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
@@ -199,6 +207,16 @@ onMounted(() => {
   letter-spacing: -0.01em;
 }
 .footer-logo { font-size: 1.5rem; }
+
+/* Kogane mark, chocolate brown to match the wordmark */
+.logo-icon {
+  width: 30px;
+  height: auto;
+  color: #68293A;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.footer-logo-icon { width: 34px; }
 
 .logo-dot {
   width: 6px;

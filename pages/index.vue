@@ -120,37 +120,37 @@ const directoryRows = computed(() => [
 
 <template>
   <div class="home">
-    <!-- Hero: Neapolitan collage band with live previews, then the editorial headline split -->
+    <!-- Hero: the editorial headline split on a faded Neapolitan backdrop, then the live previews -->
     <section class="hero">
-      <HomeHeroCollage />
+      <HomeHeroCollage>
+        <div class="hero-inner">
+          <div class="hero-lede">
+            <div class="hero-badge">
+              <span class="badge-dot" aria-hidden="true" />
+              {{ t('index_hero_badge') }}
+            </div>
 
-      <div class="hero-inner">
-        <div class="hero-lede">
-          <div class="hero-badge">
-            <span class="badge-dot" aria-hidden="true" />
-            {{ t('index_hero_badge') }}
+            <p class="hero-sub">
+              {{ t('index_hero_sub') }}
+            </p>
           </div>
 
-          <p class="hero-sub">
-            {{ t('index_hero_sub') }}
-          </p>
+          <h1 class="hero-headline">{{ t('index_hero_headline') }}</h1>
+
+          <ul class="hero-facts">
+            <li>{{ t('index_hero_fact1') }}</li>
+            <li>{{ t('index_hero_fact2') }}</li>
+            <li>{{ t('index_hero_fact3') }}</li>
+          </ul>
+
+          <div class="hero-cta">
+            <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
+            <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
+            <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
+            <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
+          </div>
         </div>
-
-        <h1 class="hero-headline">{{ t('index_hero_headline') }}</h1>
-
-        <ul class="hero-facts">
-          <li>{{ t('index_hero_fact1') }}</li>
-          <li>{{ t('index_hero_fact2') }}</li>
-          <li>{{ t('index_hero_fact3') }}</li>
-        </ul>
-
-        <div class="hero-cta">
-          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
-          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
-          <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
-          <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
-        </div>
-      </div>
+      </HomeHeroCollage>
     </section>
 
     <!-- Industry strip -->
@@ -309,7 +309,7 @@ const directoryRows = computed(() => [
   z-index: 1;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2.25rem 2rem 0;
+  padding: 3.5rem 2rem 0;
   display: grid;
   grid-template-columns: var(--home-split);
   column-gap: var(--home-gap);
@@ -677,8 +677,7 @@ const directoryRows = computed(() => [
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero { display: flex; flex-direction: column-reverse; }
-  .hero-inner { display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem 2rem 3rem; }
+  .hero-inner { display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem 2rem 2.5rem; }
   .hero-lede { display: contents; }
   .hero-badge { order: 1; margin-bottom: 0; }
   .hero-headline { order: 2; }
@@ -698,7 +697,7 @@ const directoryRows = computed(() => [
 }
 
 @media (max-width: 600px) {
-  .hero-inner { padding: 2rem 1.25rem 2.5rem; }
+  .hero-inner { padding: 2rem 1.25rem 2rem; }
   .industry-grid { grid-template-columns: 1fr 1fr; }
   .comparison-row { grid-template-columns: 1fr; gap: 0.35rem; }
   .badge-card { min-height: 11rem; }
