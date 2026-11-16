@@ -951,19 +951,19 @@ onUnmounted(() => {
 
 <template>
   <div class="relative flex-1 min-h-0 flex flex-col overflow-hidden bg-[#f6efe8]">
-    <header class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-6 py-3 shrink-0 bg-[#fdf7f2]" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
-      <div class="flex items-center gap-4 min-w-0">
-        <div class="flex items-center gap-2 text-lg font-semibold" style="color: rgb(var(--shell-sidebar));">
-          <div class="w-6 h-6 rounded bg-[rgb(var(--shell-sidebar))] text-[#fdf7f2] flex items-center justify-center text-xs font-bold shadow-sm">U</div>
+    <header class="flex items-center gap-3 px-6 py-3 shrink-0 bg-[#fdf7f2]" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
+      <div class="flex flex-1 items-center gap-3 min-w-0">
+        <div class="flex shrink-0 items-center gap-2 font-serif text-lg" style="color: rgb(var(--shell-sidebar));">
+          <div class="w-7 h-7 rounded-lg bg-[rgb(var(--shell-sidebar))] text-[#fdf7f2] flex items-center justify-center shadow-sm"><LayersIcon class="w-4 h-4" /></div>
           Builder
         </div>
 
-        <div class="h-6 w-px" style="background: rgba(61,24,32,0.1);" />
+        <div class="h-6 w-px shrink-0" style="background: rgba(61,24,32,0.1);" />
 
         <select
           :value="selectedTerminal ?? ''"
           aria-label="Select terminal"
-          class="appearance-none bg-white/60 border px-3 py-1.5 rounded-xl text-sm font-medium transition-all focus:outline-none hover:bg-white"
+          class="select-chevron min-w-[8rem] max-w-[15rem] truncate appearance-none bg-white/60 border pl-3 pr-8 py-1.5 rounded-lg text-sm font-medium transition-all focus:outline-none hover:bg-white"
           style="border-color: rgba(61,24,32,0.15); color: rgb(var(--shell-sidebar));"
           @change="selectTerminal(($event.target as HTMLSelectElement).value)"
         >
@@ -977,7 +977,7 @@ onUnmounted(() => {
           v-if="selectedTerminal"
           :value="activeLayerId"
           aria-label="Select workspace screen"
-          class="appearance-none bg-white/60 border px-3 py-1.5 rounded-xl text-sm font-medium transition-all focus:outline-none hover:bg-white"
+          class="select-chevron min-w-[8rem] max-w-[15rem] truncate appearance-none bg-white/60 border pl-3 pr-8 py-1.5 rounded-lg text-sm font-medium transition-all focus:outline-none hover:bg-white"
           style="border-color: rgba(61,24,32,0.15); color: rgb(var(--shell-sidebar));"
           @change="setActiveLayer(($event.target as HTMLSelectElement).value)"
         >
@@ -989,7 +989,7 @@ onUnmounted(() => {
 
         <div
           v-if="selectedTerminalRecord"
-          class="hidden lg:flex items-center gap-3 rounded-2xl border px-3 py-2 min-w-0"
+          class="hidden 2xl:flex items-center gap-3 rounded-lg border px-3 py-1.5 min-w-0"
           style="border-color: rgba(61,24,32,0.1); background: rgba(61,24,32,0.03);"
         >
           <div class="min-w-0">
@@ -1019,32 +1019,41 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="hidden md:flex items-center justify-self-center rounded-xl border bg-white/70 px-1.5 py-1 shadow-sm" style="border-color: rgba(61,24,32,0.12);">
-        <button class="flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:bg-black/5" style="color: rgba(61,24,32,0.6);" @click="zoom = clampZoom(zoom - 0.1)">-</button>
-        <span class="w-14 text-center text-xs font-medium" style="color: rgba(61,24,32,0.78);">{{ Math.round(zoom * 100) }}%</span>
-        <button class="flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:bg-black/5" style="color: rgba(61,24,32,0.6);" @click="zoom = clampZoom(zoom + 0.1)">+</button>
+      <div class="hidden md:flex shrink-0 items-center rounded-lg border bg-white/70 px-1 py-0.5 shadow-sm" style="border-color: rgba(61,24,32,0.12);">
+        <button type="button" aria-label="Zoom out" class="flex h-7 w-7 items-center justify-center rounded-md transition-all hover:bg-black/5" style="color: rgba(61,24,32,0.6);" @click="zoom = clampZoom(zoom - 0.1)">-</button>
+        <span class="w-12 text-center text-xs font-medium tabular-nums" style="color: rgba(61,24,32,0.78);">{{ Math.round(zoom * 100) }}%</span>
+        <button type="button" aria-label="Zoom in" class="flex h-7 w-7 items-center justify-center rounded-md transition-all hover:bg-black/5" style="color: rgba(61,24,32,0.6);" @click="zoom = clampZoom(zoom + 0.1)">+</button>
       </div>
 
-      <div class="flex items-center justify-self-end gap-2 min-w-0 flex-wrap">
+      <div class="flex shrink-0 items-center gap-1.5">
         <template v-if="!interactivePreview">
-          <button :disabled="!canUndo" class="text-xs font-medium px-3 py-2 rounded-xl transition-all disabled:opacity-30 hover:bg-black/5 flex items-center gap-1.5" style="color: rgba(61,24,32,0.7);" @click="undo">
-            <UndoIcon class="w-4 h-4" /> Undo
-          </button>
-          <button :disabled="!canRedo" class="text-xs font-medium px-3 py-2 rounded-xl transition-all disabled:opacity-30 hover:bg-black/5 flex items-center gap-1.5" style="color: rgba(61,24,32,0.7);" @click="redo">
-            Redo <UndoIcon class="w-4 h-4 scale-x-[-1]" />
+          <button
+            type="button"
+            title="Undo"
+            aria-label="Undo" :disabled="!canUndo" class="text-xs font-medium px-3 py-2 rounded-lg transition-all disabled:opacity-30 hover:bg-black/5 flex items-center gap-1.5" style="color: rgba(61,24,32,0.7);" @click="undo">
+            <UndoIcon class="w-4 h-4" /> <span class="hidden 2xl:inline">Undo</span>
           </button>
           <button
+            type="button"
+            title="Redo"
+            aria-label="Redo" :disabled="!canRedo" class="text-xs font-medium px-3 py-2 rounded-lg transition-all disabled:opacity-30 hover:bg-black/5 flex items-center gap-1.5" style="color: rgba(61,24,32,0.7);" @click="redo">
+            <span class="hidden 2xl:inline">Redo</span> <UndoIcon class="w-4 h-4 scale-x-[-1]" />
+          </button>
+          <button
+            type="button"
+            title="New Modal"
+            aria-label="New Modal"
             v-if="selectedTerminal"
-            class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
+            class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="createModalLayer"
           >
-            <PlusIcon class="w-3.5 h-3.5" /> New Modal
+            <PlusIcon class="w-3.5 h-3.5" /> <span class="hidden 2xl:inline">New Modal</span>
           </button>
           <button
             v-if="selectedTerminal && presetUpdateVersion"
             :disabled="syncingPreset"
-            class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300 inline-flex items-center gap-1.5 disabled:opacity-50"
+            class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300 inline-flex items-center gap-1.5 disabled:opacity-50"
             title="A newer version of this preset is available"
             @click="syncPresetUpdate"
           >
@@ -1052,39 +1061,51 @@ onUnmounted(() => {
             Sync Update v{{ presetUpdateVersion }}
           </button>
           <button
-            class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
+            type="button"
+            title="Presets"
+            aria-label="Presets"
+            class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="showPresetsPanel = !showPresetsPanel; if (showPresetsPanel) loadPresets();"
           >
-            <SparklesIcon class="w-3.5 h-3.5" :weight="showPresetsPanel ? 'Filled' : 'Outline'" /> Presets
+            <SparklesIcon class="w-3.5 h-3.5" :weight="showPresetsPanel ? 'Filled' : 'Outline'" /> <span class="hidden 2xl:inline">Presets</span>
           </button>
           <button
+            type="button"
+            title="Save Preset"
+            aria-label="Save Preset"
             v-if="selectedTerminal"
-            class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
+            class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="openSavePresetModal"
           >
-            <PlusIcon class="w-3.5 h-3.5" /> Save Preset
+            <PlusIcon class="w-3.5 h-3.5" /> <span class="hidden 2xl:inline">Save Preset</span>
           </button>
           <button
+            type="button"
+            title="Preview"
+            aria-label="Preview"
             v-if="selectedTerminal"
-            class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
+            class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="enterInteractivePreview"
           >
-            <EyeIcon class="w-3.5 h-3.5" /> Preview
+            <EyeIcon class="w-3.5 h-3.5" /> <span class="hidden 2xl:inline">Preview</span>
           </button>
           <button
-            class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
+            type="button"
+            title="Studio"
+            aria-label="Studio"
+            class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border bg-white/70 hover:bg-white inline-flex items-center gap-1.5"
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="showStudioPanel = !showStudioPanel"
           >
-            <LayersIcon class="w-3.5 h-3.5" :weight="showStudioPanel ? 'Filled' : 'Outline'" /> {{ showStudioPanel ? 'Hide Studio' : 'Studio' }}
+            <LayersIcon class="w-3.5 h-3.5" :weight="showStudioPanel ? 'Filled' : 'Outline'" /> <span class="hidden 2xl:inline">{{ showStudioPanel ? 'Hide Studio' : 'Studio' }}</span>
           </button>
           <button
             :disabled="!isDirty || !selectedTerminal || saving"
-            class="text-sm font-semibold px-5 py-2 rounded-xl transition-all disabled:opacity-40"
-            style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text)); box-shadow: 0 4px 12px rgba(61,24,32,0.15);"
+            type="button"
+            class="btn-primary btn-ribbon ml-1 whitespace-nowrap text-sm px-4 py-2 disabled:opacity-40"
             @click="saveLayout"
           >
             <div class="flex items-center justify-center gap-2">
@@ -1096,14 +1117,14 @@ onUnmounted(() => {
         </template>
         <template v-else>
           <button
-            class="text-xs font-semibold px-3.5 py-2 rounded-xl transition-all border bg-white/80 hover:bg-white inline-flex items-center gap-1.5"
+            class="text-xs font-semibold px-3.5 py-2 rounded-lg transition-all border bg-white/80 hover:bg-white inline-flex items-center gap-1.5"
             style="border-color: rgba(61,24,32,0.12); color: rgb(var(--shell-sidebar));"
             @click="resetInteractivePreview"
           >
             <RefreshIcon class="w-3.5 h-3.5" /> Reset State
           </button>
           <button
-            class="text-xs font-semibold px-4 py-2 rounded-xl transition-all inline-flex items-center gap-1.5"
+            class="text-xs font-semibold px-4 py-2 rounded-lg transition-all inline-flex items-center gap-1.5"
             style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
             @click="exitInteractivePreview"
           >
@@ -1114,26 +1135,29 @@ onUnmounted(() => {
     </header>
 
     <div class="relative flex-1 min-h-0 flex overflow-hidden bg-[#e5dfd8]">
-      <aside class="w-16 shrink-0 min-h-0 bg-white flex flex-col items-center py-4 gap-1 z-10 shadow-sm" style="border-right: 1px solid rgba(61,24,32,0.1);">
+      <aside class="builder-rail w-16 shrink-0 min-h-0 bg-white flex flex-col items-center py-4 gap-1 z-10 shadow-sm overflow-y-auto overflow-x-hidden overscroll-contain" style="border-right: 1px solid rgba(61,24,32,0.1);">
         <!-- Pointer / select tool -->
         <button
-          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
-          :style="!pendingDrop ? 'background: rgba(232,116,138,0.1);' : 'hover:background: rgba(245,237,228,0.5);'"
+          type="button"
+          title="Select"
+          aria-label="Select"
+          class="builder-tool w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-all group relative"
+          :style="!pendingDrop ? 'background: rgba(232,116,138,0.1);' : ''"
           @click="pendingDrop = null"
         >
           <CursorIcon class="w-5 h-5" :weight="!pendingDrop ? 'Filled' : 'Outline'" :style="!pendingDrop ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.5);'" />
-          <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
-            Select
-          </div>
         </button>
 
-        <div class="w-8 border-t my-1" style="border-color: rgba(61,24,32,0.08);" />
-        <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Core</span>
+        <div class="w-8 shrink-0 border-t my-1" style="border-color: rgba(61,24,32,0.08);" />
+        <span class="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Core</span>
 
         <button
           v-for="item in recommendedPaletteItems"
           :key="`recommended-${item.type}`"
-          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+          class="builder-tool w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-all group relative"
+          type="button"
+          :title="item.description ? `${item.label} — ${item.description}` : item.label"
+          :aria-label="item.label"
           :style="pendingDrop?.id === item.id
             ? 'background: rgba(232,116,138,0.15);'
             : 'background: rgba(61,24,32,0.04);'"
@@ -1145,18 +1169,18 @@ onUnmounted(() => {
             class="w-5 h-5 transition-transform group-hover:scale-110"
             :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.78);'"
           />
-          <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
-            {{ item.label }} · Recommended
-          </div>
         </button>
 
-        <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
-        <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Objects</span>
+        <div class="w-8 shrink-0 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+        <span class="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Objects</span>
 
         <button
           v-for="item in recommendedStationObjects"
           :key="`object-${item.id}`"
-          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+          class="builder-tool w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-all group relative"
+          type="button"
+          :title="item.description ? `${item.label} — ${item.description}` : item.label"
+          :aria-label="item.label"
           :style="pendingDrop?.id === item.id
             ? 'background: rgba(232,116,138,0.15);'
             : 'background: rgba(61,24,32,0.04);'"
@@ -1168,22 +1192,21 @@ onUnmounted(() => {
             class="w-5 h-5 transition-transform group-hover:scale-110"
             :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.78);'"
           />
-          <div class="absolute left-full ml-3 w-52 px-2 py-2 bg-black/85 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-normal z-50 shadow-xl transition-opacity">
-            <div class="font-semibold">{{ item.label }}</div>
-            <div class="mt-1 text-white/70 leading-relaxed">{{ item.description }}</div>
-          </div>
         </button>
 
         <template v-if="optionalStationObjects.length > 0">
-          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
-          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Optional</span>
+          <div class="w-8 shrink-0 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Optional</span>
           <button
             v-for="item in optionalStationObjects"
             :key="`optional-object-${item.id}`"
-            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            class="builder-tool w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-all group relative"
+            type="button"
+            :title="item.description ? `${item.label} — ${item.description}` : item.label"
+            :aria-label="item.label"
             :style="pendingDrop?.id === item.id
               ? 'background: rgba(232,116,138,0.15);'
-              : 'hover:background: rgba(245,237,228,0.5);'"
+              : ''"
             @click="activatePaletteDrop(item)"
           >
             <component
@@ -1192,23 +1215,22 @@ onUnmounted(() => {
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
             />
-            <div class="absolute left-full ml-3 w-52 px-2 py-2 bg-black/85 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-normal z-50 shadow-xl transition-opacity">
-              <div class="font-semibold">{{ item.label }} · Optional</div>
-              <div class="mt-1 text-white/70 leading-relaxed">{{ item.description }}</div>
-            </div>
           </button>
         </template>
 
         <template v-if="extraStationObjects.length > 0">
-          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
-          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Shared</span>
+          <div class="w-8 shrink-0 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Shared</span>
           <button
             v-for="item in extraStationObjects"
             :key="`extra-object-${item.id}`"
-            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            class="builder-tool w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-all group relative"
+            type="button"
+            :title="item.description ? `${item.label} — ${item.description}` : item.label"
+            :aria-label="item.label"
             :style="pendingDrop?.id === item.id
               ? 'background: rgba(232,116,138,0.15);'
-              : 'hover:background: rgba(245,237,228,0.5);'"
+              : ''"
             @click="activatePaletteDrop(item)"
           >
             <component
@@ -1217,23 +1239,22 @@ onUnmounted(() => {
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.58);'"
             />
-            <div class="absolute left-full ml-3 w-52 px-2 py-2 bg-black/85 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-normal z-50 shadow-xl transition-opacity">
-              <div class="font-semibold">{{ item.label }}</div>
-              <div class="mt-1 text-white/70 leading-relaxed">{{ item.description }}</div>
-            </div>
           </button>
         </template>
 
         <template v-if="optionalPaletteItems.length > 0">
-          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
-          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Extra</span>
+          <div class="w-8 shrink-0 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">Extra</span>
           <button
             v-for="item in optionalPaletteItems"
             :key="`optional-${item.type}`"
-            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            class="builder-tool w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-all group relative"
+            type="button"
+            :title="item.description ? `${item.label} — ${item.description}` : item.label"
+            :aria-label="item.label"
             :style="pendingDrop?.id === item.id
               ? 'background: rgba(232,116,138,0.15);'
-              : 'hover:background: rgba(245,237,228,0.5);'"
+              : ''"
             @click="activatePaletteDrop(item)"
           >
             <component
@@ -1242,22 +1263,22 @@ onUnmounted(() => {
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.7);'"
             />
-            <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
-              {{ item.label }} · Optional
-            </div>
           </button>
         </template>
 
         <template v-if="extraPaletteItems.length > 0">
-          <div class="w-8 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
-          <span class="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">More</span>
+          <div class="w-8 shrink-0 border-t my-1.5" style="border-color: rgba(61,24,32,0.08);" />
+          <span class="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] mt-1 mb-1" style="color: rgba(61,24,32,0.28);">More</span>
           <button
             v-for="item in extraPaletteItems"
             :key="`extra-${item.type}`"
-            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all group relative"
+            class="builder-tool w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-all group relative"
+            type="button"
+            :title="item.description ? `${item.label} — ${item.description}` : item.label"
+            :aria-label="item.label"
             :style="pendingDrop?.id === item.id
               ? 'background: rgba(232,116,138,0.15);'
-              : 'hover:background: rgba(245,237,228,0.5);'"
+              : ''"
             @click="activatePaletteDrop(item)"
           >
             <component
@@ -1266,9 +1287,6 @@ onUnmounted(() => {
               class="w-5 h-5 transition-transform group-hover:scale-110"
               :style="pendingDrop?.id === item.id ? 'color: rgb(232,116,138);' : 'color: rgba(61,24,32,0.58);'"
             />
-            <div class="absolute left-full ml-3 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
-              {{ item.label }}
-            </div>
           </button>
         </template>
       </aside>
@@ -1361,10 +1379,10 @@ onUnmounted(() => {
               <input :value="(selectedElement as any).tableName" class="input-warm w-40 px-3 py-2 text-xs font-mono" placeholder="Table name" @input="patchSelected({ tableName: ($event.target as HTMLInputElement).value })" />
             </template>
 
-            <button class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition-colors hover:bg-[#f7f1eb]" style="color: rgba(61,24,32,0.72);" @click="duplicateElement()">
+            <button class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-[#f7f1eb]" style="color: rgba(61,24,32,0.72);" @click="duplicateElement()">
               <CopyIcon class="w-3.5 h-3.5" /> Duplicate
             </button>
-            <button class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition-colors hover:bg-red-50" style="color: #b42318;" @click="removeElement(selectedElement.id)">
+            <button class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-red-50" style="color: #b42318;" @click="removeElement(selectedElement.id)">
               <TrashIcon class="w-3.5 h-3.5" /> Delete
             </button>
           </div>
@@ -1465,7 +1483,7 @@ onUnmounted(() => {
                   <p class="text-[10px] font-bold uppercase tracking-[0.28em]" style="color: rgba(61,24,32,0.35);">Studio</p>
                   <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">{{ layerLabel }}</p>
                 </div>
-                <button class="rounded-full px-3 py-1.5 text-xs font-medium hover:bg-black/5" style="color: rgba(61,24,32,0.7);" @click="showStudioPanel = false">
+                <button class="rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-black/5" style="color: rgba(61,24,32,0.7);" @click="showStudioPanel = false">
                   Close
                 </button>
               </div>
@@ -1510,7 +1528,7 @@ onUnmounted(() => {
               <button
                 type="button"
                 :disabled="syncingPreset"
-                class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-900 text-white hover:bg-amber-800 disabled:opacity-50"
+                class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-900 text-white hover:bg-amber-800 disabled:opacity-50"
                 @click="syncPresetUpdate"
               >
                 {{ syncingPreset ? 'Syncing…' : 'Sync Update' }}
@@ -1531,7 +1549,7 @@ onUnmounted(() => {
               </div>
               <p class="text-xs" style="color: rgba(61,24,32,0.45);">{{ preset.description || 'Reusable terminal layout preset.' }}</p>
               <button
-                class="w-full py-2 text-xs rounded-full font-semibold transition-all"
+                class="w-full py-2 text-xs rounded-lg font-semibold transition-all"
                 style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
                 @click="applyBuilderPreset(preset.id)"
               >
@@ -1571,13 +1589,13 @@ onUnmounted(() => {
             </div>
           </div>
           <div class="flex items-center justify-end gap-2 pt-2">
-            <button type="button" class="px-4 py-2 rounded-full text-xs font-medium hover:bg-black/5" @click="showSavePresetModal = false">
+            <button type="button" class="px-4 py-2 rounded-lg text-xs font-medium hover:bg-black/5" @click="showSavePresetModal = false">
               Cancel
             </button>
             <button
               type="button"
               :disabled="savingPreset || !presetForm.name.trim()"
-              class="px-5 py-2 rounded-full text-xs font-semibold disabled:opacity-40"
+              class="px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
               style="background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));"
               @click="submitSaveAsPreset"
             >
@@ -1589,3 +1607,17 @@ onUnmounted(() => {
     </Transition>
   </div>
 </template>
+
+<style scoped>
+.builder-rail {
+  scrollbar-width: none;
+}
+
+.builder-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.builder-tool:hover {
+  background-color: rgba(61, 24, 32, 0.06);
+}
+</style>

@@ -557,7 +557,7 @@ onMounted(async () => {
       <button
         type="button"
         aria-label="Delete terminal"
-        class="text-sm font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-40"
+        class="text-sm font-semibold px-4 py-2 rounded-lg transition-all disabled:opacity-40"
         style="background: rgba(239,68,68,0.07); color: #b42318; border: 1px solid rgba(239,68,68,0.14);"
         :disabled="deleting || !terminal"
         @click="deleteTerminal"
@@ -631,7 +631,7 @@ onMounted(async () => {
               <div class="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border"
+                  class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border"
                   style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
                   aria-label="Copy terminal link"
                   @click="copyTerminalLink"
@@ -644,7 +644,7 @@ onMounted(async () => {
                 </button>
                 <button
                   type="button"
-                  class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border disabled:opacity-40"
+                  class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border disabled:opacity-40"
                   style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
                   :disabled="!optionPin"
                   aria-label="Copy terminal PIN"
@@ -662,7 +662,7 @@ onMounted(async () => {
             <p v-if="error" class="text-xs text-red-600" role="alert">{{ error }}</p>
 
             <button
-              class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+              class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="savingBasic"
               @click="saveBasic"
             >
@@ -714,7 +714,7 @@ onMounted(async () => {
             <div class="flex-1" />
 
             <button
-              class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+              class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="savingPublic"
               @click="savePublicSettings"
             >
@@ -761,7 +761,7 @@ onMounted(async () => {
             <button
               v-else
               type="button"
-              class="px-3 py-1.5 rounded-lg font-semibold btn-ghost disabled:opacity-40"
+              class="px-3 py-1.5 font-semibold btn-ghost disabled:opacity-40"
               :disabled="savingStyle"
               @click="useWorkspaceBrand"
             >
@@ -826,7 +826,7 @@ onMounted(async () => {
           </div>
 
           <button
-            class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+            class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
             :disabled="savingStyle"
             @click="saveStyle"
           >
@@ -915,7 +915,7 @@ onMounted(async () => {
           </div>
 
           <button
-            class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+            class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
             :disabled="savingContent"
             @click="saveContent"
           >
@@ -956,7 +956,7 @@ onMounted(async () => {
                 v-for="preset in ALL_TERMINAL_PERMISSION_PRESETS"
                 :key="preset.key"
                 type="button"
-                class="px-3 py-1.5 rounded-xl text-xs font-medium border transition-all"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
                 :class="activePermissionPreset?.key === preset.key
                   ? 'bg-[#3d1820] text-white border-[#3d1820]'
                   : 'bg-[#fdfaf7] text-[#3d1820] border-black/[0.08] hover:border-[#3d1820]/30'"
@@ -1087,7 +1087,7 @@ onMounted(async () => {
             />
             <button
               type="button"
-              class="px-3.5 py-2 rounded-xl text-xs font-semibold border border-black/[0.08] bg-[#faf5f0] hover:bg-[#f2ebe3] flex items-center gap-1.5"
+              class="px-3.5 py-2 rounded-lg text-xs font-semibold border border-black/[0.08] bg-[#faf5f0] hover:bg-[#f2ebe3] flex items-center gap-1.5"
               style="color: rgb(var(--shell-sidebar));"
               @click="addCustomPermissionTable"
             >
@@ -1098,7 +1098,7 @@ onMounted(async () => {
           <div class="flex items-center gap-3">
             <button
               type="button"
-              class="flex-1 text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+              class="flex-1 text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="savingPermissions"
               @click="savePermissions"
             >

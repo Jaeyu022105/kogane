@@ -50,8 +50,14 @@ function elementStyle(element: ElementDef) {
       return {
         ...base,
         background: element.backgroundColor ?? parsedLayout.value.theme.accentColor,
-        color: element.textColor ?? '#ffffff',
+        color: element.textColor ?? parsedLayout.value.theme.accentTextColor ?? '#ffffff',
         borderRadius: `${Math.max(4, (element.radius ?? 16) * scale.value)}px`,
+        fontSize: `${Math.max(6, Math.min(11, 15 * scale.value))}px`,
+        fontWeight: 600,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 4px',
       };
     case 'input-field':
       return {
@@ -64,6 +70,7 @@ function elementStyle(element: ElementDef) {
       return {
         ...base,
         background: element.backgroundColor ?? parsedLayout.value.theme.panelBackground,
+        color: element.textColor ?? parsedLayout.value.theme.panelText,
         border: `1px solid ${parsedLayout.value.theme.panelBorder}`,
         borderRadius: '10px',
       };
@@ -78,6 +85,7 @@ function elementStyle(element: ElementDef) {
       return {
         ...base,
         background: element.backgroundColor ?? parsedLayout.value.theme.panelBackground,
+        color: element.textColor ?? parsedLayout.value.theme.panelText,
         border: `1px solid ${element.borderColor ?? parsedLayout.value.theme.panelBorder}`,
         borderRadius: `${Math.max(6, (element.radius ?? 24) * scale.value)}px`,
       };
@@ -143,7 +151,7 @@ function elementStyle(element: ElementDef) {
             </div>
           </template>
           <template v-else-if="element.type === 'button'">
-            <span class="truncate">{{ element.text }}</span>
+            <span class="truncate leading-none">{{ element.text }}</span>
           </template>
         </div>
       </div>
@@ -222,7 +230,8 @@ function elementStyle(element: ElementDef) {
   display: block;
   height: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: currentColor;
+  opacity: 0.18;
 }
 
 .thumbnail-chart {
@@ -250,6 +259,7 @@ function elementStyle(element: ElementDef) {
   display: block;
   height: 22px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
+  background: currentColor;
+  opacity: 0.12;
 }
 </style>

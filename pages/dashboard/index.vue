@@ -315,13 +315,13 @@ watch(() => business.value?.id, loadTerminals);
 
         <div v-else class="space-y-4">
           <!-- Quick add strip -->
-          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
             <span class="text-[10px] font-bold uppercase tracking-wider text-[rgba(61,24,32,0.4)] shrink-0">Quick Add:</span>
             <NuxtLink
               v-for="preset in workstationPresets"
               :key="preset.key"
               :to="`/dashboard/terminals?create=${preset.key}`"
-              class="px-2.5 py-1 rounded-md bg-white border border-[rgba(61,24,32,0.08)] hover:border-[#FF5776] hover:text-[#FF5776] text-[rgba(61,24,32,0.7)] text-[11px] font-medium no-underline shrink-0 transition-colors flex items-center gap-1"
+              class="px-2.5 py-1 rounded-lg bg-white border border-[rgba(61,24,32,0.08)] hover:border-[#FF5776] hover:text-[#FF5776] text-[rgba(61,24,32,0.7)] text-[11px] font-medium no-underline shrink-0 transition-colors flex items-center gap-1"
             >
               <PlusIcon class="w-3 h-3" /> {{ preset.label }}
             </NuxtLink>

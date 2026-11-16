@@ -477,22 +477,21 @@ watch(() => route.query.create, (nextPreset) => {
   <div class="relative flex-1 min-h-0 flex flex-col overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Page header ──────────────────────────────────────────────────────── -->
     <div
-      class="px-8 py-5 flex items-center justify-between shrink-0"
+      class="px-4 py-4 sm:px-8 sm:py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0"
       style="background: white; border-bottom: 1px solid rgba(61,24,32,0.08);"
     >
-      <div>
+      <div class="min-w-0">
         <h1 class="font-serif text-2xl font-normal" style="color: rgb(var(--shell-sidebar));">Terminals</h1>
         <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">
           Staff & workstation terminals - {{ terminals.length }} configured
         </p>
       </div>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex shrink-0 items-center gap-2.5">
         <button
           v-if="terminals.length > 0"
           type="button"
-          class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer bg-white disabled:opacity-50"
-          style="border-color: rgba(61,24,32,0.14); color: rgb(var(--shell-sidebar));"
+          class="btn-ghost flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-xs font-semibold cursor-pointer bg-white disabled:opacity-50"
           :disabled="!business"
           @click="openSavePresetModal()"
         >
@@ -502,7 +501,7 @@ watch(() => route.query.create, (nextPreset) => {
 
         <button
           type="button"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 btn-primary btn-ribbon"
+          class="flex items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
           :disabled="!business"
           :title="!business ? 'Please create a business in Settings first' : 'Create new workstation'"
           @click="openCreateModal()"
@@ -514,7 +513,7 @@ watch(() => route.query.create, (nextPreset) => {
     </div>
 
     <!-- ── Content area ─────────────────────────────────────────────────────── -->
-    <div class="relative flex-1 min-h-0 overflow-y-auto overscroll-contain px-8 py-6">
+    <div class="relative flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-5 sm:px-8 sm:py-6">
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center py-20">
         <div
@@ -542,7 +541,7 @@ watch(() => route.query.create, (nextPreset) => {
         <p class="text-sm mt-1 mb-4" style="color: rgba(61,24,32,0.25);">You need to set up your business before creating terminals.</p>
         <NuxtLink
           to="/dashboard/settings"
-          class="px-4 py-2 text-sm font-medium rounded-xl transition-all"
+          class="px-4 py-2 text-sm font-medium rounded-lg transition-all"
           style="background: rgba(61,24,32,0.06); color: rgba(61,24,32,0.65); text-decoration: none;"
         >
           <div class="flex items-center justify-center gap-1.5">
@@ -719,7 +718,7 @@ watch(() => route.query.create, (nextPreset) => {
                 <div class="flex flex-wrap items-center gap-2 mt-auto pt-1">
                   <button
                     type="button"
-                    class="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold btn-primary btn-ribbon cursor-pointer border-none"
+                    class="flex-1 px-3 py-1.5 text-xs font-semibold btn-primary btn-ribbon cursor-pointer border-none"
                     @click="openApplyPresetModal(preset, terminals.length ? 'terminal' : 'new')"
                   >
                     Apply Preset
@@ -911,7 +910,7 @@ watch(() => route.query.create, (nextPreset) => {
             </button>
             <button
               type="button"
-              class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 btn-primary btn-ribbon"
+              class="flex-1 py-2.5 text-sm font-semibold transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="!form.displayName || !form.pin || saving"
               @click="createTerminal"
             >
@@ -959,7 +958,7 @@ watch(() => route.query.create, (nextPreset) => {
             <button type="button" class="flex-1 py-2 text-sm font-medium rounded-lg border-none cursor-pointer" style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06);" @click="showSavePresetModal = false">
               Cancel
             </button>
-            <button type="button" class="flex-1 py-2 text-sm font-semibold rounded-lg btn-primary btn-ribbon cursor-pointer border-none disabled:opacity-40" :disabled="savingCustomPreset || !savePresetForm.name.trim() || !savePresetForm.terminalId" @click="submitSavePreset">
+            <button type="button" class="flex-1 py-2 text-sm font-semibold btn-primary btn-ribbon cursor-pointer border-none disabled:opacity-40" :disabled="savingCustomPreset || !savePresetForm.name.trim() || !savePresetForm.terminalId" @click="submitSavePreset">
               {{ savingCustomPreset ? 'Saving...' : 'Save Preset' }}
             </button>
           </div>
@@ -998,7 +997,7 @@ watch(() => route.query.create, (nextPreset) => {
             <button type="button" class="flex-1 py-2 text-sm font-medium rounded-lg border-none cursor-pointer" style="color: rgba(61,24,32,0.6); background: rgba(61,24,32,0.06);" @click="editingPreset = null">
               Cancel
             </button>
-            <button type="button" class="flex-1 py-2 text-sm font-semibold rounded-lg btn-primary btn-ribbon cursor-pointer border-none disabled:opacity-40" :disabled="updatingCustomPreset || !editPresetForm.name.trim()" @click="submitEditPreset">
+            <button type="button" class="flex-1 py-2 text-sm font-semibold btn-primary btn-ribbon cursor-pointer border-none disabled:opacity-40" :disabled="updatingCustomPreset || !editPresetForm.name.trim()" @click="submitEditPreset">
               {{ updatingCustomPreset ? 'Updating...' : 'Save Changes' }}
             </button>
           </div>
@@ -1063,7 +1062,7 @@ watch(() => route.query.create, (nextPreset) => {
             </button>
             <button
               type="button"
-              class="flex-1 py-2 text-sm font-semibold rounded-lg btn-primary btn-ribbon cursor-pointer border-none disabled:opacity-40"
+              class="flex-1 py-2 text-sm font-semibold btn-primary btn-ribbon cursor-pointer border-none disabled:opacity-40"
               :disabled="applyingPresetBusy || (applyPresetForm.mode === 'terminal' ? !applyPresetForm.terminalId : !applyPresetForm.displayName.trim())"
               @click="submitApplyPreset"
             >
