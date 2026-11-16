@@ -15,6 +15,7 @@ import ChartBarIcon from 'reicon-vue/icons/ChartBar';
 import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
 import SparklesIcon from 'reicon-vue/icons/Sparkles';
 import PlusIcon from 'reicon-vue/icons/Plus';
+import SetupChecklist from '~/components/SetupChecklist.vue';
 import TerminalCard from '~/components/TerminalCard.vue';
 import { presetsForIndustry } from '~/lib/permissions';
 
@@ -40,6 +41,7 @@ const { isOnlineHost } = useShareOrigin();
 const terminals = ref<DashboardTerminal[]>([]);
 const latestPresetVersions = ref<Record<string, number>>({});
 const terminalLoading = ref(false);
+const terminalsLoaded = ref(false);
 const terminalError = ref('');
 
 interface QuickAction {
@@ -117,6 +119,7 @@ async function loadTerminals() {
     }
     terminals.value = termRes.terminals ?? [];
     latestPresetVersions.value = presetsRes?.latestVersions ?? {};
+    terminalsLoaded.value = true;
   } catch {
     terminalError.value = 'We could not load your terminals right now. Please try again.';
   } finally {
@@ -163,6 +166,13 @@ watch(() => business.value?.id, loadTerminals);
 
     <!-- ── Module Grid ────────────────────────────────────────────── -->
     <div class="dashboard-content px-10 py-10">
+      <SetupChecklist
+        v-if="business"
+        :has-logo="Boolean(business.logoUrl)"
+        :terminals="terminals"
+        :loading="!terminalsLoaded || terminalLoading"
+      />
+
       <div class="flex items-center justify-between mb-8">
         <h2 class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
           {{ t('dashboard_platform_modules') }}

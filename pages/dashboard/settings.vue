@@ -8,7 +8,6 @@ definePageMeta({ layout: 'dashboard' });
 import CheckIcon from 'reicon-vue/icons/Check';
 import GlobeIcon from 'reicon-vue/icons/Globe';
 import SparklesIcon from 'reicon-vue/icons/Sparkles';
-import UploadIcon from 'reicon-vue/icons/Upload';
 import LockIcon from 'reicon-vue/icons/Lock';
 import ShieldCheckIcon from 'reicon-vue/icons/ShieldCheck';
 import EyeIcon from 'reicon-vue/icons/Eye';
@@ -17,19 +16,17 @@ import KeyIcon from 'reicon-vue/icons/Key';
 import LaptopIcon from 'reicon-vue/icons/Laptop';
 import LogoutIcon from 'reicon-vue/icons/Logout';
 import { COUNTRIES, findCountry } from '~/lib/currency';
-import { sanitizeImageSrc } from '~/lib/securityClient';
+import BrandKitPanel from '~/components/BrandKitPanel.vue';
 
 const { session, authHeaders, setSession, hydrateSession } = useAuth();
 const { business, fetchBusiness, updateTheme, updateCountry } = useBusiness();
 const { openOnboarding }                     = useOnboarding();
 const { t, availableLocales, setLocale, locale } = useLocale();
 
-const saving        = ref(false);
 const savingCountry = ref(false);
-const uploadingLogo = ref(false);
 const error         = ref<string | null>(null);
-const success       = ref(false);
 const countrySuccess = ref(false);
+const languageError = ref<string | null>(null);
 
 // Password management state
 const currentPassword = ref('');
@@ -312,21 +309,10 @@ watch(locale, (newLoc) => {
   selectedLanguage.value = newLoc;
 });
 
-const palette = reactive({
-  primary:    '#3b82f6',
-  secondary:  '#6366f1',
-  accent:     '#a855f7',
-  background: '#0f0f17',
-});
-
 onMounted(async () => {
   if (!business.value) await fetchBusiness();
 
   if (business.value) {
-    palette.primary    = business.value.colorPalette.primary    ?? palette.primary;
-    palette.secondary  = business.value.colorPalette.secondary  ?? palette.secondary;
-    palette.accent     = business.value.colorPalette.accent     ?? palette.accent;
-    palette.background = business.value.colorPalette.background ?? palette.background;
     selectedLanguage.value = business.value.colorPalette.languagePreference ?? locale.value;
     selectedCountry.value = business.value.country ?? 'US';
   }
@@ -337,42 +323,6 @@ watch(() => business.value?.country, (newCountry) => {
     selectedCountry.value = newCountry;
   }
 });
-
-async function saveTheme() {
-  saving.value  = true;
-  error.value   = null;
-  success.value = false;
-
-  const invalidColor = Object.values(palette).some((value) => !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim()));
-  if (invalidColor) {
-    error.value = 'Use a valid hex colour such as #68293A for each colour.';
-    saving.value = false;
-    return;
-  }
-
-  try {
-    setLocale(selectedLanguage.value);
-    const updatedPalette = {
-      ...business.value?.colorPalette,
-      ...palette,
-      languagePreference: selectedLanguage.value,
-      country: currentCountryRecord.value.code,
-      currency: currentCountryRecord.value.currency,
-      currencySymbol: currentCountryRecord.value.symbol,
-    };
-    await updateTheme(updatedPalette, undefined, {
-      country: currentCountryRecord.value.code,
-      currency: currentCountryRecord.value.currency,
-      currencySymbol: currentCountryRecord.value.symbol,
-    });
-    success.value = true;
-    setTimeout(() => (success.value = false), 2500);
-  } catch (err) {
-    error.value = friendlySettingsError(err, 'We could not save the workspace settings. Please try again.');
-  } finally {
-    saving.value = false;
-  }
-}
 
 async function saveCountrySettings() {
   savingCountry.value = true;
@@ -392,6 +342,7 @@ async function saveCountrySettings() {
 }
 
 async function changeLanguage() {
+  languageError.value = null;
   setLocale(selectedLanguage.value);
   if (business.value) {
     const updatedPalette = {
@@ -401,61 +352,10 @@ async function changeLanguage() {
     try {
       await updateTheme(updatedPalette);
     } catch (err) {
-      error.value = friendlySettingsError(err, 'We could not save the language preference. Please try again.');
+      languageError.value = friendlySettingsError(err, 'We could not save the language preference. Please try again.');
     }
   }
 }
-
-async function uploadLogo() {
-  if (!import.meta.client) return;
-
-  const input    = document.createElement('input');
-  input.type     = 'file';
-  input.accept   = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
-  input.click();
-
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-
-    uploadingLogo.value = true;
-    error.value         = null;
-
-    try {
-      const ext  = file.name.includes('.') ? file.name.split('.').pop() : 'png';
-      const form = new FormData();
-      form.append('file',   file);
-      form.append('bucket', 'assets');
-      form.append('path',   `logo.${ext}`);
-
-      const res = await $fetch<{ url: string; error: string | null }>('/api/storage/upload', {
-        method: 'POST',
-        credentials: 'include',
-        headers: authHeaders(),
-        body:   form,
-      });
-
-      if (res.error) {
-        error.value = friendlySettingsError(res.error, 'We could not upload the logo. Please try again.');
-        return;
-      }
-
-      await updateTheme({ ...business.value?.colorPalette, ...palette }, res.url);
-      if (business.value) business.value.logoUrl = res.url;
-    } catch (err) {
-      error.value = friendlySettingsError(err, 'We could not upload the logo. Please try again.');
-    } finally {
-      uploadingLogo.value = false;
-    }
-  };
-}
-
-const COLOR_FIELDS: Array<{ key: keyof typeof palette; label: string }> = [
-  { key: 'primary',    label: 'Primary' },
-  { key: 'secondary',  label: 'Secondary' },
-  { key: 'accent',     label: 'Accent' },
-  { key: 'background', label: 'Background' },
-];
 
 const businessDetailItems = computed(() => {
   if (!business.value) return [];
@@ -559,6 +459,15 @@ const businessDetailItems = computed(() => {
         </div>
 
         <div
+          v-if="error"
+          role="alert"
+          class="text-xs px-3 py-2 rounded"
+          style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #dc2626;"
+        >
+          {{ error }}
+        </div>
+
+        <div
           v-if="countrySuccess"
           class="text-xs px-3 py-2 rounded flex items-center gap-1.5"
           style="background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); color: #15803d;"
@@ -575,98 +484,8 @@ const businessDetailItems = computed(() => {
         </button>
       </section>
 
-      <!-- ── Brand Colors ──────────────────────────────────────── -->
-      <section v-if="business" class="space-y-5">
-        <div style="border-bottom: 1px solid rgba(61,24,32,0.08); padding-bottom: 0.75rem;">
-          <p class="text-[10px] font-mono uppercase tracking-[0.18em] mb-1" style="color: rgba(61,24,32,0.3);">{{ t('settings_branding_overline') }}</p>
-          <h2 class="font-serif text-lg font-normal" style="color: rgb(var(--shell-sidebar));">{{ t('settings_brand_colors') }}</h2>
-        </div>
-
-        <!-- Logo -->
-        <div class="flex items-center gap-4">
-          <div
-            class="w-14 h-14 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
-            style="background: rgba(61,24,32,0.05); border: 1px solid rgba(61,24,32,0.1);"
-          >
-            <img v-if="business.logoUrl && sanitizeImageSrc(business.logoUrl)" :src="sanitizeImageSrc(business.logoUrl)" :alt="t('settings_business_logo')" class="w-full h-full object-cover" />
-            <span v-else class="text-xs font-mono" style="color: rgba(61,24,32,0.3);">{{ t('settings_logo_short') }}</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">{{ t('settings_business_logo') }}</p>
-            <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">{{ t('settings_logo_formats') }}</p>
-          </div>
-          <button
-            class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all disabled:opacity-40 shrink-0 btn-ghost"
-            :disabled="uploadingLogo"
-            @click="uploadLogo"
-          >
-            <UploadIcon class="w-3.5 h-3.5" />
-            {{ uploadingLogo ? t('settings_uploading') : t('settings_upload') }}
-          </button>
-        </div>
-
-        <!-- Color swatches preview strip -->
-        <div class="flex gap-2 h-2 rounded overflow-hidden">
-          <div
-            v-for="field in COLOR_FIELDS"
-            :key="field.key"
-            class="flex-1 transition-colors"
-            :style="{ background: palette[field.key] }"
-            :title="field.label"
-          />
-        </div>
-
-        <!-- Color fields -->
-        <div class="grid grid-cols-2 gap-4">
-          <div v-for="field in COLOR_FIELDS" :key="field.key" class="space-y-2">
-            <label :for="`settings-color-${field.key}`" class="text-[10px] font-mono uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">
-              {{ field.label }}
-            </label>
-            <div class="flex items-center gap-2">
-              <input
-                type="color"
-                :id="`settings-color-${field.key}`"
-                :aria-label="`${field.label} color`"
-                v-model="palette[field.key]"
-                class="w-8 h-8 rounded cursor-pointer shrink-0"
-                style="border: 1.5px solid rgba(61,24,32,0.12); background: transparent; padding: 1px;"
-              />
-              <input
-                :id="`settings-color-value-${field.key}`"
-                :aria-label="`${field.label} hex value`"
-                v-model="palette[field.key]"
-                class="input-warm flex-1 px-3 py-2 text-xs font-mono"
-                placeholder="#000000"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Feedback -->
-        <div
-          v-if="error"
-          class="text-xs px-3 py-2 rounded"
-          style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #dc2626;"
-        >
-          {{ error }}
-        </div>
-
-        <div
-          v-if="success"
-          class="text-xs px-3 py-2 rounded flex items-center gap-1.5"
-          style="background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); color: #15803d;"
-        >
-          <CheckIcon class="w-3.5 h-3.5" /> {{ t('settings_theme_saved') }}
-        </div>
-
-        <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
-          :disabled="saving"
-          @click="saveTheme"
-        >
-          {{ saving ? t('settings_saving') : t('settings_save_theme') }}
-        </button>
-      </section>
+      <!-- ── Brand Kit ──────────────────────────────────────────── -->
+      <BrandKitPanel v-if="business" />
 
       <!-- ── Business Info ──────────────────────────────────────── -->
       <section v-if="business" class="space-y-3">
@@ -731,6 +550,7 @@ const businessDetailItems = computed(() => {
             {{ lang.label }} ({{ lang.nativeLabel }})
           </option>
         </select>
+        <p v-if="languageError" role="alert" class="text-xs" style="color: #dc2626;">{{ languageError }}</p>
       </section>
 
       <!-- ── Account & Password Security ────────────────────────── -->

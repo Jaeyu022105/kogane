@@ -33,6 +33,7 @@ const { authHeaders }   = useAuth();
 const { business }      = useBusiness();
 const { confirm, alert } = useModal();
 const { buildShareUrl, copyToClipboard } = useShareOrigin();
+const { t } = useLocale();
 const businessId = computed(() => business.value?.id);
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -101,6 +102,16 @@ const publicUrl  = computed(() => {
 // Style settings
 const selectedBundle  = ref<LayoutBundleKey>('aurora-service');
 const accentColor     = ref('#ff8ca6');
+/** True while this terminal has no style override and simply follows the workspace brand kit. */
+const followsWorkspaceBrand = ref(true);
+const savingContent   = ref(false);
+
+function useWorkspaceStyleDefaults() {
+  const workspace = business.value?.colorPalette;
+  selectedBundle.value = workspace?.layoutBundle ?? 'aurora-service';
+  const bundle = UI_LAYOUT_BUNDLES.find((item) => item.key === selectedBundle.value);
+  accentColor.value = workspace?.accent ?? bundle?.swatches?.[2] ?? '#ff8ca6';
+}
 
 // Terminal content preferences.
 const stationConfig = reactive<{
@@ -157,9 +168,11 @@ async function loadTerminal() {
     if (typeof layout === 'string') {
       try { layout = JSON.parse(layout); } catch { layout = null; }
     }
-    if (layout?.brandConfig) {
-      selectedBundle.value = layout.brandConfig.layoutBundle ?? 'aurora-service';
-      accentColor.value    = layout.brandConfig.accent ?? '#ff8ca6';
+    useWorkspaceStyleDefaults();
+    followsWorkspaceBrand.value = !layout?.brandConfig || Object.keys(layout.brandConfig).length === 0;
+    if (!followsWorkspaceBrand.value) {
+      selectedBundle.value = layout.brandConfig.layoutBundle ?? selectedBundle.value;
+      accentColor.value    = layout.brandConfig.accent ?? accentColor.value;
     }
 
     // Restore station config
@@ -288,10 +301,9 @@ async function saveBasic() {
   }
 }
 
-async function saveStyle() {
-  if (!terminal.value || !business.value) return;
-  savingStyle.value = true;
-  error.value       = null;
+async function patchTerminalLayout(body: Record<string, unknown>, fallbackMessage: string) {
+  if (!terminal.value || !business.value) return false;
+  error.value = null;
 
   try {
     const res = await $fetch<{ success: boolean; error: string | null; terminal: any }>(
@@ -299,24 +311,57 @@ async function saveStyle() {
       {
         method:  'PATCH',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: {
-          businessId:   business.value.id,
-          brandConfig:  { layoutBundle: selectedBundle.value, accent: accentColor.value },
-          stationConfig: { ...stationConfig },
-        },
+        body: { businessId: business.value.id, ...body },
       },
     );
 
     if (res.error) {
-      error.value = friendlySaveError(res.error, 'We could not save the terminal appearance. Please try again.');
-    } else if (res.terminal) {
+      error.value = friendlySaveError(res.error, fallbackMessage);
+      return false;
+    }
+    if (res.terminal) {
       terminal.value = { ...terminal.value, ...res.terminal };
     }
+    return true;
   } catch (err) {
-    error.value = friendlySaveError((err as Error).message, 'We could not save the terminal appearance. Please try again.');
-  } finally {
-    savingStyle.value = false;
+    error.value = friendlySaveError((err as Error).message, fallbackMessage);
+    return false;
   }
+}
+
+/** Gives this terminal its own style (screen style + accent) on top of the workspace brand kit. */
+async function saveStyle() {
+  savingStyle.value = true;
+  const saved = await patchTerminalLayout(
+    { brandConfig: { layoutBundle: selectedBundle.value, accent: accentColor.value } },
+    'We could not save the terminal appearance. Please try again.',
+  );
+  if (saved) followsWorkspaceBrand.value = false;
+  savingStyle.value = false;
+}
+
+/** Drops this terminal's own style so it follows the workspace brand kit again. */
+async function useWorkspaceBrand() {
+  savingStyle.value = true;
+  const saved = await patchTerminalLayout(
+    { resetBrand: true },
+    'We could not switch this terminal back to the workspace brand. Please try again.',
+  );
+  if (saved) {
+    followsWorkspaceBrand.value = true;
+    useWorkspaceStyleDefaults();
+  }
+  savingStyle.value = false;
+}
+
+/** Saves welcome message, language, receipt and menu settings without touching the terminal's style. */
+async function saveContent() {
+  savingContent.value = true;
+  await patchTerminalLayout(
+    { stationConfig: { ...stationConfig } },
+    'We could not save the terminal content. Please try again.',
+  );
+  savingContent.value = false;
 }
 
 async function savePublicSettings() {
@@ -695,6 +740,35 @@ onMounted(async () => {
             </div>
           </div>
 
+          <div
+            class="flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 text-xs"
+            :style="followsWorkspaceBrand
+              ? 'background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.18); color: #047857;'
+              : 'background: rgba(255,87,118,0.07); border: 1px solid rgba(255,87,118,0.2); color: rgb(var(--shell-sidebar));'"
+            role="status"
+          >
+            <span class="flex-1 min-w-[12rem] leading-relaxed">
+              {{ followsWorkspaceBrand ? t('terminal_brand_follows') : t('terminal_brand_custom') }}
+            </span>
+            <NuxtLink
+              v-if="followsWorkspaceBrand"
+              to="/dashboard/settings"
+              class="font-semibold underline underline-offset-2"
+              style="color: inherit;"
+            >
+              {{ t('terminal_brand_edit_kit') }}
+            </NuxtLink>
+            <button
+              v-else
+              type="button"
+              class="px-3 py-1.5 rounded-lg font-semibold btn-ghost disabled:opacity-40"
+              :disabled="savingStyle"
+              @click="useWorkspaceBrand"
+            >
+              {{ t('terminal_brand_reset') }}
+            </button>
+          </div>
+
           <!-- Theme bundles -->
           <div>
             <p class="text-[10px] font-bold uppercase tracking-wider mb-3" style="color: rgba(61,24,32,0.45);">Theme</p>
@@ -842,13 +916,13 @@ onMounted(async () => {
 
           <button
             class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
-            :disabled="savingStyle"
-            @click="saveStyle"
+            :disabled="savingContent"
+            @click="saveContent"
           >
             <div class="flex items-center justify-center gap-2">
-              <div v-if="savingStyle" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              <div v-if="savingContent" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               <SparklesIcon v-else class="w-4 h-4" />
-              {{ savingStyle ? 'Saving…' : 'Save Terminal Content' }}
+              {{ savingContent ? 'Saving…' : 'Save Terminal Content' }}
             </div>
           </button>
         </div>
