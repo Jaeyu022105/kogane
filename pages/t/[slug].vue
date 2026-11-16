@@ -5,7 +5,9 @@ import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
 import XIcon from 'reicon-vue/icons/X';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
+import { sanitizeImageSrc } from '~/lib/securityClient';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
+import type { TerminalBrandInfo } from '~/lib/workspaceBranding';
 
 /**
  * Public (guest) terminal page.
@@ -25,6 +27,7 @@ interface GuestSession {
   country?: string;
   currency?: string;
   currencySymbol?: string;
+  brand?: TerminalBrandInfo;
   permissions: any;
   uiLayout: UiLayout;
   expiresAt: string;
@@ -85,8 +88,12 @@ watch(() => stationConfig.value?.welcomeMessage, () => {
   dismissedWelcome.value = false;
 });
 
+const brandName = computed(() => session.value?.brand?.name || session.value?.businessName || '');
+const brandLogo = computed(() => sanitizeImageSrc(session.value?.brand?.logoUrl) || '');
+
 useHead(() => ({
-  title: `${session.value?.displayName || 'Terminal'} - Kogane`,
+  title: `${session.value?.displayName || 'Terminal'} - ${brandName.value || 'Kogane'}`,
+  link: brandLogo.value ? [{ key: 'terminal-icon', rel: 'icon', href: brandLogo.value }] : [],
   htmlAttrs: {
     lang: (typeof stationConfig.value?.language === 'string' && stationConfig.value.language)
       ? stationConfig.value.language
@@ -148,7 +155,7 @@ async function bootstrap() {
     );
 
     if (res.error || !res.session) {
-      loadError.value = res.error ?? 'Terminal not found';
+      loadError.value = 'This link is no longer active. Ask the business for a new link.';
       return;
     }
 
@@ -167,8 +174,8 @@ async function bootstrap() {
     }
 
     configureGuestRuntime(session.value);
-  } catch (err) {
-    loadError.value = (err as Error).message;
+  } catch {
+    loadError.value = 'We could not open this terminal right now. Check your connection and try again.';
   } finally {
     loading.value = false;
   }
@@ -193,11 +200,13 @@ async function refreshGuestSession(evt?: Record<string, unknown>) {
     const nextLayout = normalizeLayout(res.session.uiLayout);
     const prevSnapshot = JSON.stringify({
       displayName: session.value.displayName,
+      brand: session.value.brand ?? null,
       permissions: session.value.permissions,
       uiLayout: session.value.uiLayout,
     });
     const nextSnapshot = JSON.stringify({
       displayName: res.session.displayName,
+      brand: res.session.brand ?? null,
       permissions: res.session.permissions,
       uiLayout: nextLayout,
     });
@@ -306,7 +315,7 @@ onUnmounted(() => {
         <button
           type="button"
           class="px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer transition-all active:scale-95"
-          :style="{ borderColor: activeTheme.panelBorder, background: fitToWidth ? activeTheme.accentColor : 'transparent', color: fitToWidth ? '#ffffff' : activeTheme.topBarText }"
+          :style="{ borderColor: activeTheme.panelBorder, background: fitToWidth ? activeTheme.accentColor : 'transparent', color: fitToWidth ? (activeTheme.accentTextColor || '#ffffff') : activeTheme.topBarText }"
           @click="fitToWidth = !fitToWidth"
         >
           {{ fitToWidth ? 'Fit Screen' : 'Scroll 100%' }}

@@ -9,8 +9,11 @@ import EyeIcon from 'reicon-vue/icons/Eye';
 import EyeOffIcon from 'reicon-vue/icons/EyeOff';
 import XIcon from 'reicon-vue/icons/X';
 import ElementRenderer from '~/components/ElementRenderer.vue';
+import TerminalBrandMark from '~/components/TerminalBrandMark.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
+import { sanitizeImageSrc } from '~/lib/securityClient';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
+import type { TerminalBrandInfo } from '~/lib/workspaceBranding';
 
 definePageMeta({ layout: 'default' });
 
@@ -23,6 +26,7 @@ interface TerminalRuntimeSession {
   country?: string;
   currency?: string;
   currencySymbol?: string;
+  brand?: TerminalBrandInfo;
   permissions: any;
   uiLayout: UiLayout;
   expiresAt: string;
@@ -45,6 +49,7 @@ const serverCountry = ref('US');
 const serverCurrency = ref('USD');
 const serverCurrencySymbol = ref('$');
 const terminalTheme = ref<UiLayoutTheme>({ ...DEFAULT_LAYOUT_THEME });
+const serverBrand = ref<TerminalBrandInfo | null>(null);
 const logoutPin = ref('');
 const showLogoutPinDigits = ref(false);
 const logoutError = ref<string | null>(null);
@@ -99,8 +104,13 @@ watch(() => stationConfig.value?.welcomeMessage, () => {
   dismissedWelcome.value = false;
 });
 
+const activeBrand = computed(() => session.value?.brand ?? serverBrand.value);
+const brandName = computed(() => activeBrand.value?.name || session.value?.businessName || serverBusinessName.value);
+const brandLogo = computed(() => sanitizeImageSrc(activeBrand.value?.logoUrl) || '');
+
 useHead(() => ({
-  title: `${session.value?.displayName || serverDisplayName.value || 'Terminal'} - Kogane`,
+  title: `${session.value?.displayName || serverDisplayName.value || 'Terminal'} - ${brandName.value || 'Kogane'}`,
+  link: brandLogo.value ? [{ key: 'terminal-icon', rel: 'icon', href: brandLogo.value }] : [],
   htmlAttrs: {
     lang: (typeof stationConfig.value?.language === 'string' && stationConfig.value.language)
       ? stationConfig.value.language
@@ -117,6 +127,8 @@ const activeModal = computed(() =>
 );
 const activeTheme = computed(() => session.value?.uiLayout?.theme ?? terminalTheme.value ?? DEFAULT_LAYOUT_THEME);
 const surfaceRadius = computed(() => activeTheme.value.surfaceStyle === 'square' ? '18px' : '28px');
+const accentInk = computed(() => activeTheme.value.accentTextColor || '#ffffff');
+const brandTileColor = computed(() => activeTheme.value.brandColor || activeBrand.value?.primary || activeTheme.value.accentColor);
 
 function closeActiveModal() {
   runtime.emitLocal('modal:close');
@@ -183,6 +195,7 @@ async function bootstrap() {
     country?: string;
     currency?: string;
     currencySymbol?: string;
+    brand?: TerminalBrandInfo;
     theme: UiLayoutTheme;
     permissions: any;
     error: string | null;
@@ -197,6 +210,7 @@ async function bootstrap() {
     serverCurrency.value = res.currency || 'USD';
     serverCurrencySymbol.value = res.currencySymbol || '$';
     terminalTheme.value = res.theme ?? { ...DEFAULT_LAYOUT_THEME };
+    serverBrand.value = res.brand ?? null;
   }
 
   // Restore active terminal session or authorize admin passthrough session
@@ -277,11 +291,13 @@ async function refreshTerminalSession(evt?: Record<string, unknown>) {
     const nextLayout = normalizeLayout(sessionRes.session.uiLayout);
     const prevSnapshot = JSON.stringify({
       displayName: session.value.displayName,
+      brand: session.value.brand ?? null,
       permissions: session.value.permissions,
       uiLayout: session.value.uiLayout,
     });
     const nextSnapshot = JSON.stringify({
       displayName: sessionRes.session.displayName,
+      brand: sessionRes.session.brand ?? null,
       permissions: sessionRes.session.permissions,
       uiLayout: nextLayout,
     });
@@ -509,9 +525,11 @@ onUnmounted(() => {
       class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 backdrop-blur-md border-b"
       :style="{ background: activeTheme.topBarBackground, borderColor: activeTheme.panelBorder }"
     >
-      <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" :style="{ background: activeTheme.accentColor }">K</div>
-        <span class="text-xs font-semibold" :style="{ color: activeTheme.topBarText }">{{ session.displayName }}</span>
+      <div class="flex min-w-0 items-center gap-2">
+        <TerminalBrandMark :name="brandName" :logo-url="activeBrand?.logoUrl" :color="brandTileColor" size="sm" :rounded="activeTheme.surfaceStyle" />
+        <span v-if="brandName" class="hidden truncate font-serif text-sm sm:inline" :style="{ color: activeTheme.topBarText }">{{ brandName }}</span>
+        <span v-if="brandName" class="hidden text-xs sm:inline" aria-hidden="true" :style="{ color: activeTheme.panelMutedText }">/</span>
+        <span class="truncate text-xs font-semibold" :style="{ color: activeTheme.topBarText }">{{ session.displayName }}</span>
         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" :style="{ color: activeTheme.panelMutedText, background: activeTheme.panelHeaderBackground, border: `1px solid ${activeTheme.panelBorder}` }">{{ session.role }}</span>
       </div>
       <button type="button" aria-label="Log out of terminal" class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" :style="{ color: activeTheme.topBarText }" @click="openLogoutPrompt">
@@ -531,7 +549,7 @@ onUnmounted(() => {
       <button
         type="button"
         class="px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer transition-all active:scale-95"
-        :style="{ borderColor: activeTheme.panelBorder, background: fitToWidth ? activeTheme.accentColor : 'transparent', color: fitToWidth ? '#ffffff' : activeTheme.topBarText }"
+        :style="{ borderColor: activeTheme.panelBorder, background: fitToWidth ? activeTheme.accentColor : 'transparent', color: fitToWidth ? accentInk : activeTheme.topBarText }"
         @click="fitToWidth = !fitToWidth"
       >
         {{ fitToWidth ? 'Fit Screen' : 'Scroll 100%' }}
@@ -662,7 +680,7 @@ onUnmounted(() => {
           }"
         >
           <div class="text-center">
-            <div class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white font-semibold mb-3 shadow-md" :style="{ background: activeTheme.accentColor }">T</div>
+            <TerminalBrandMark class="mx-auto mb-3 shadow-md" :name="brandName" :logo-url="activeBrand?.logoUrl" :color="brandTileColor" size="md" :rounded="activeTheme.surfaceStyle" />
             <h2 class="text-lg font-serif" :style="{ color: activeTheme.panelText }">Exit Terminal Mode</h2>
             <p class="text-sm mt-1" :style="{ color: activeTheme.panelMutedText }">
               {{ isLoggedIn ? 'Exit to dashboard or enter the terminal PIN to leave runtime mode.' : 'Enter the terminal PIN to leave runtime mode and return to the admin side.' }}
@@ -673,8 +691,8 @@ onUnmounted(() => {
             <button
               type="button"
               :disabled="logoutLoading"
-              class="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all shadow-md flex items-center justify-center gap-2 hover:opacity-90"
-              :style="{ background: activeTheme.accentColor }"
+              class="w-full py-3 rounded-xl text-sm font-semibold transition-all shadow-md flex items-center justify-center gap-2 hover:opacity-90"
+              :style="{ background: activeTheme.accentColor, color: accentInk }"
               @click="logout(true)"
             >
               <PowerIcon class="w-4 h-4" />
@@ -751,8 +769,8 @@ onUnmounted(() => {
             <button
               type="button"
               :disabled="logoutPin.length < serverPinLength || logoutLoading"
-              class="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40"
-              :style="{ background: activeTheme.accentColor }"
+              class="flex-1 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+              :style="{ background: activeTheme.accentColor, color: accentInk }"
               @click="logout(false)"
             >
               {{ logoutLoading ? 'Checking...' : 'Exit' }}
@@ -766,12 +784,10 @@ onUnmounted(() => {
   <div v-else class="min-h-dvh flex items-center justify-center px-4" :style="{ background: activeTheme.frameBackground }">
     <div class="w-full max-w-xs space-y-6 animate-fade-in">
       <div class="text-center">
-        <div class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-white font-serif text-2xl mb-4 shadow-xl" :style="{ background: activeTheme.accentColor }">
-          K
-        </div>
-        <h1 class="text-xl font-serif font-medium" :style="{ color: activeTheme.panelText }">Terminal Login</h1>
+        <TerminalBrandMark class="mx-auto mb-4 shadow-xl" :name="brandName" :logo-url="activeBrand?.logoUrl" :color="brandTileColor" size="lg" :rounded="activeTheme.surfaceStyle" />
+        <h1 class="text-xl font-serif font-medium" :style="{ color: activeTheme.panelText }">{{ brandName || 'Terminal Login' }}</h1>
         <p class="text-sm mt-1" :style="{ color: activeTheme.panelMutedText }">
-          Enter the PIN for {{ serverDisplayName || 'this terminal' }}<span v-if="serverBusinessName"> at {{ serverBusinessName }}</span>
+          Enter the PIN for {{ serverDisplayName || 'this terminal' }}
         </p>
       </div>
 
@@ -787,8 +803,8 @@ onUnmounted(() => {
           v-if="isLoggedIn"
           type="button"
           :disabled="loading"
-          class="w-full py-3.5 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90 flex items-center justify-center gap-2"
-          :style="{ background: activeTheme.accentColor, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
+          class="w-full py-3.5 font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90 flex items-center justify-center gap-2"
+          :style="{ background: activeTheme.accentColor, color: accentInk, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
           @click="loginAsAdmin"
         >
           {{ loading ? 'Signing in...' : 'Sign in as Business Admin' }}
@@ -855,8 +871,8 @@ onUnmounted(() => {
         <button
           type="button"
           :disabled="pin.length < serverPinLength || loading"
-          class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
-          :style="{ background: activeTheme.accentColor, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
+          class="w-full py-3.5 mt-2 font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
+          :style="{ background: activeTheme.accentColor, color: accentInk, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
           @click="login"
         >
           {{ loading ? 'Checking...' : 'Login with PIN' }}
