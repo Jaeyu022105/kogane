@@ -32,6 +32,9 @@ export interface PermissionPreset {
   permissions: TerminalPermissions;
 }
 
+/** PIN given to new terminals; the dashboard checklist nudges admins to change it before opening. */
+export const DEFAULT_TERMINAL_PIN = '1234';
+
 export const DENY_ALL_TABLE_PERMISSIONS: TablePermissionSet = {
   read: false,
   insert: false,

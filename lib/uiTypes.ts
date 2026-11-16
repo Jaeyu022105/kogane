@@ -62,6 +62,10 @@ export interface UiLayoutTheme {
   panelText: string;
   panelMutedText: string;
   panelBorder: string;
+  /** Text color that stays readable on top of `accentColor` (buttons, badges, PIN keys). */
+  accentTextColor?: string;
+  /** The business primary brand color, used for terminal chrome such as the logo tile. */
+  brandColor?: string;
   surfaceStyle?: 'rounded' | 'square';
   particleEffect?: 'none' | 'floating-orbs' | 'soft-grid';
 }
@@ -353,6 +357,8 @@ function normalizeTheme(value: unknown): UiLayoutTheme {
     panelText: typeof source.panelText === 'string' ? source.panelText : DEFAULT_LAYOUT_THEME.panelText,
     panelMutedText: typeof source.panelMutedText === 'string' ? source.panelMutedText : DEFAULT_LAYOUT_THEME.panelMutedText,
     panelBorder: typeof source.panelBorder === 'string' ? source.panelBorder : DEFAULT_LAYOUT_THEME.panelBorder,
+    accentTextColor: typeof source.accentTextColor === 'string' ? source.accentTextColor : '#ffffff',
+    ...(typeof source.brandColor === 'string' ? { brandColor: source.brandColor } : {}),
     surfaceStyle: source.surfaceStyle === 'square' ? 'square' : 'rounded',
     particleEffect: source.particleEffect === 'floating-orbs' || source.particleEffect === 'soft-grid'
       ? source.particleEffect

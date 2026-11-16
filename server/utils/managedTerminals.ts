@@ -1,7 +1,7 @@
 import { db } from '~/lib/db';
 import { ALL_BUILDER_PRESETS } from '~/lib/builderPresets';
 import { hashPin } from '~/lib/authUtils';
-import { presetByKey, type PermissionPresetKey } from '~/lib/permissions';
+import { DEFAULT_TERMINAL_PIN, presetByKey, type PermissionPresetKey } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, inferStarterTerminals } from '~/lib/starterWorkstations';
 import { DEFAULT_LAYOUT } from '~/lib/uiTypes';
 import { applyBrandingToLayout, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
@@ -26,7 +26,7 @@ function clone<T>(value: T): T {
 }
 
 function defaultPin() {
-  return '1234';
+  return DEFAULT_TERMINAL_PIN;
 }
 
 function patchElement(layoutSeed: typeof DEFAULT_LAYOUT, elementId: string, patch: Record<string, unknown>) {

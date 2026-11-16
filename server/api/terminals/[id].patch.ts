@@ -2,8 +2,9 @@ import { defineEventHandler, readBody } from 'h3';
 import { hashPin, verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { getBusinessForAdmin } from '~/server/utils/business';
-import { applyBrandingToLayout, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
-import { normalizeLayout } from '~/lib/uiTypes';
+import { applyBrandingToLayout, mergeTerminalBrandConfig, TERMINAL_BRAND_OVERRIDE_KEYS, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
+import { parseBusinessPalette } from '~/server/utils/terminalBrand';
+import { normalizeLayout, type UiLayout } from '~/lib/uiTypes';
 import { normalizePermissions } from '~/lib/permissions';
 import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
 import { writeAuditLog } from '~/server/utils/audit';
@@ -18,6 +19,8 @@ export default defineEventHandler(async (event) => {
     displayName?:  string;
     pin?:          string | null;
     brandConfig?:  Partial<WorkspaceBrandConfig> | null;
+    /** Drop this terminal's own style override so it follows the workspace brand kit again. */
+    resetBrand?:   boolean;
     stationConfig?: Record<string, unknown> | null;
   }>(event).catch(() => null);
   const body = (parsed && Object.keys(parsed).length > 0) ? parsed : (event.context?.body ?? (event as any)._body ?? {});
@@ -77,7 +80,7 @@ export default defineEventHandler(async (event) => {
 
   // ── Appearance + station config ───────────────────────────────────────────
 
-  if (body.brandConfig || body.stationConfig) {
+  if (body.brandConfig || body.resetBrand === true || body.stationConfig) {
     let cleanBrandConfig: Partial<WorkspaceBrandConfig> | null = null;
     let cleanStationConfig: Record<string, unknown> | null = null;
     try {
@@ -104,19 +107,32 @@ export default defineEventHandler(async (event) => {
 
     let updatedLayout = { ...existingLayout };
 
-    // Re-apply branding if brandConfig was supplied
-    if (cleanBrandConfig) {
-      const mergedBrandConfig: Partial<WorkspaceBrandConfig> = {
-        ...(existingLayout.brandConfig as Partial<WorkspaceBrandConfig> ?? {}),
-        ...cleanBrandConfig,
-      };
+    // Re-apply branding when this terminal's style override changes or is reset
+    if (cleanBrandConfig || body.resetBrand === true) {
+      const terminalOverride: Partial<WorkspaceBrandConfig> = {};
+      if (body.resetBrand !== true) {
+        const previousOverride = (existingLayout.brandConfig as Partial<WorkspaceBrandConfig> | undefined) ?? {};
+        for (const key of TERMINAL_BRAND_OVERRIDE_KEYS) {
+          const value = cleanBrandConfig?.[key] ?? previousOverride[key];
+          if (value !== undefined && value !== null && value !== '') {
+            (terminalOverride as Record<string, unknown>)[key] = value;
+          }
+        }
+      }
 
-      // applyBrandingToLayout expects a UiLayout-shaped object
-      const rebranded = applyBrandingToLayout(updatedLayout as any, mergedBrandConfig);
+      // The workspace brand kit supplies the business colors; the override only changes its own keys.
+      const effectiveBrand = mergeTerminalBrandConfig(
+        parseBusinessPalette(business.color_palette),
+        Object.keys(terminalOverride).length ? terminalOverride : null,
+      );
+      const rebranded = applyBrandingToLayout(normalizeLayout(updatedLayout as Partial<UiLayout>), effectiveBrand);
+      const { brandConfig: _previousOverride, ...rest } = updatedLayout;
       updatedLayout = {
+        ...rest,
         ...rebranded,
-        brandConfig: mergedBrandConfig,         // store so we can restore it
+        ...(Object.keys(terminalOverride).length ? { brandConfig: terminalOverride } : {}),
       };
+      if (!Object.keys(terminalOverride).length) delete updatedLayout.brandConfig;
     }
 
     // Merge station config

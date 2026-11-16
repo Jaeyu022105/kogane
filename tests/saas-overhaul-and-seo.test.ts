@@ -416,8 +416,20 @@ describe('Pillar 4 — Managed Presets & Terminal Sync', () => {
     expect(syncedLayout.resolution).toEqual({ width: 1440, height: 900 });
     expect(syncedLayout.stationConfig).toEqual({ lane: 'counter-2' });
     expect(syncedLayout.theme.accentColor.toLowerCase()).toBe('#d94e28');
-    expect((syncedLayout.brandConfig as any)?.background).toBe('#0d1524');
-    expect((syncedLayout.brandConfig as any)?.primary).toBe('#1E3A5F');
+    expect(syncedLayout.theme.brandColor).toBe('#1e3a5f');
+    // The workspace palette is not frozen onto the terminal, so later brand kit edits still reach it.
+    expect(syncedLayout.brandConfig).toBeUndefined();
+
+    const overriddenLayout = buildBrandedTerminalLayoutForPreset({
+      templateLayout: cashierPreset.layout,
+      presetId: 'preset_custom_pos',
+      presetVersion: 3,
+      businessPaletteRaw: JSON.stringify({ primary: '#1E3A5F', accent: '#d94e28' }),
+      existingTerminalLayout: { brandConfig: { layoutBundle: 'paper-ledger', accent: '#16a34a' } },
+    });
+    expect(overriddenLayout.theme.accentColor).toBe('#16a34a');
+    expect(overriddenLayout.theme.brandColor).toBe('#1e3a5f');
+    expect(overriddenLayout.brandConfig).toEqual({ layoutBundle: 'paper-ledger', accent: '#16a34a' });
 
     const extracted = extractPresetMetaFromLayout(syncedLayout);
     expect(extracted).toEqual({

@@ -8,7 +8,7 @@ import {
 } from '~/lib/permissions';
 import { validateTableDef, type SchemaDef, type TableDef } from '~/lib/schemaUtils';
 import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
-import { applyBrandingToLayout, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
+import { applyBrandingToLayout, mergeTerminalBrandConfig, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
 
 export interface BuilderPreset {
   id: string;
@@ -1606,7 +1606,12 @@ export function buildBrandedTerminalLayoutForPreset(
   const existingStationConfig = parseJsonObject(existingObj?.stationConfig) ?? parseJsonObject(templateObj?.stationConfig);
   const existingBrandConfig = parseJsonObject(existingObj?.brandConfig);
   const businessBrandConfig = parseBrandConfigFromBusinessPalette(options.businessPaletteRaw);
-  const effectiveBrand = (existingBrandConfig ?? businessBrandConfig) as WorkspaceBrandConfig | null;
+  // The terminal keeps only its own style override; the workspace brand kit fills in everything else,
+  // so later brand kit changes still reach this terminal.
+  const terminalOverride = existingBrandConfig as Partial<WorkspaceBrandConfig> | null;
+  const effectiveBrand = (businessBrandConfig || terminalOverride)
+    ? mergeTerminalBrandConfig(businessBrandConfig, terminalOverride) as WorkspaceBrandConfig
+    : null;
 
   const baseNormalized = normalizeLayout(cloneLayout(options.templateLayout));
 
@@ -1643,7 +1648,7 @@ export function buildBrandedTerminalLayoutForPreset(
     presetId: options.presetId,
     presetVersion: options.presetVersion,
     presetName: options.presetName ?? null,
-    brandConfig: effectiveBrand ? (effectiveBrand as Record<string, unknown>) : null,
+    brandConfig: terminalOverride ? (terminalOverride as Record<string, unknown>) : null,
     stationConfig: existingStationConfig,
   });
 }
