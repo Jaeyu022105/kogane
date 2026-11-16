@@ -39,14 +39,12 @@ kogane/
 │   ├── middleware/             # Security & SEO HTTP response header middleware
 │   ├── routes/                 # Root crawler routes (llms.txt, robots.txt, sitemap.xml)
 │   └── utils/                  # Server-only business, audit, preset sync & reporting helpers
-├── supabase/
-│   └── schema.sql              # Reference PostgreSQL schema for Supabase deployments
 ├── tests/                      # Bun unit, integration, security & SEO test suites (*.test.ts)
 ├── AGENTS.md                   # Primary Developer & Agent Guide
 ├── CLAUDE.md                   # Dedicated Claude Agent Guide
 ├── GEMINI.md                   # Dedicated Gemini / Antigravity Agent Guide
 ├── DESIGN-DOCUMENT.md          # Product design specification & domain workflows
-├── DEPLOYMENT.md               # SQLite, Supabase & Firebase deployment guide
+├── DEPLOYMENT.md               # SQLite & Firebase deployment guide
 ├── HANDOFF.md                  # Historical engineering log
 ├── nuxt.config.ts              # Nuxt 3 & Nitro configuration
 ├── tailwind.config.ts          # Tailwind CSS theme & Neapolitan color extensions
@@ -68,10 +66,11 @@ Modules in `lib/` contain TypeScript types, pure domain functions, and provider 
    - `lib/stationObjects.ts` — Composite workstation widgets for the UI Builder.
    - `lib/workspaceBranding.ts` — Brand color extraction, layout bundle theming, and surface styling.
 2. **Database & Storage Adapters**:
-   - `lib/db.ts` — `DatabaseAdapter` contract and active provider factory (`getDb()`).
-   - `lib/db-sqlite.ts`, `lib/db-supabase.ts`, `lib/db-firebase.ts` — Concrete database implementations.
+   - `lib/backend.ts` — Local (SQLite) vs production (Firebase) detection for the database and uploads.
+   - `lib/db.ts` — `DbAdapter` contract and the `db` facade every server module uses.
+   - `lib/db-sqlite.ts`, `lib/db-firebase.ts` — Concrete database implementations.
    - `lib/firebaseAdmin.ts` — Lazy-initialized Firebase Admin SDK singleton.
-   - `lib/storage.ts` — Multi-provider file and inline asset storage adapter.
+   - `lib/storage.ts` — Upload storage adapters (local disk, Cloud Storage, Firestore blobs).
 3. **Security, Permissions & SQL Safety**:
    - `lib/permissions.ts` — Role permission presets (`ALL_TERMINAL_PERMISSION_PRESETS`) and lookup helpers (`presetByRoleOrKey`).
    - `lib/authUtils.ts` — Session signing, password hashing, and TOTP 2FA utilities.

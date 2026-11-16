@@ -6,7 +6,7 @@
  */
 
 import { defineEventHandler, readBody, setResponseStatus } from 'h3';
-import { db, getDbProvider } from '~/lib/db';
+import { db } from '~/lib/db';
 import {
   hashPasswordSync,
   revokeAllUserSessions,
@@ -14,7 +14,6 @@ import {
   verifyPasswordSync,
 } from '~/lib/authUtils';
 import { clearRateLimit, enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
-import { createClient } from '@supabase/supabase-js';
 import { hasUnsafeControlChars } from '~/lib/securityClient';
 
 type ChangePasswordBody = {
@@ -68,41 +67,6 @@ export default defineEventHandler(async (event) => {
   }
   const rateKey = `admin_change_password:${getClientIp(event)}:${userId.toLowerCase()}`;
 
-  // Cloud Supabase mode
-  if (getDbProvider() === 'supabase') {
-    try {
-      const supabase = createClient(
-        process.env.SUPABASE_URL!,
-        process.env.SUPABASE_ANON_KEY!,
-      );
-
-      if (email) {
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
-          email,
-          password: currentPassword,
-        });
-        if (signInErr) {
-          recordRateLimitAttempt(rateKey, rateWindowMs);
-          return { error: 'Current password is incorrect', success: false };
-        }
-      }
-
-      const { error: updateErr } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (updateErr) {
-        return { error: updateErr.message || 'Failed to update password', success: false };
-      }
-
-      clearRateLimit(rateKey);
-      return { success: true, message: 'Password updated successfully', error: null };
-    } catch (err: any) {
-      return { error: err?.message || 'Failed to update password', success: false };
-    }
-  }
-
-  // SQLite & Firebase Firestore mode
   const { data: user, error: userErr } = await db.queryOne<{
     id: string;
     password_hash: string;

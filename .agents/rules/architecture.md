@@ -35,7 +35,7 @@ This document outlines the core product architecture, managed preset propagation
   - Preserve Kogane's signature **Neapolitan ice cream palette** (`#68293A` chocolate maroon, `#FF5776` strawberry pink, `#F6E6D7` vanilla cream, `#E3C7B9` blush), `DM Serif Display` headings, `Inter` body text, `JetBrains Mono` (`tabular-nums`) metrics, and hanging `.ribbon` / `.btn-ribbon` bookmark tails on primary buttons.
   - Always extend existing marketing, auth, and dashboard components additively; never strip or replace early-version UI sections unless explicitly requested.
 - **Tri-Provider Database Parity**:
-  - All data operations route through `getDb()` (`lib/db.ts`), which abstracts local SQLite (`lib/db-sqlite.ts`), Supabase/PostgreSQL (`lib/db-supabase.ts`), and Firebase Cloud Firestore (`lib/db-firebase.ts`).
+  - All data operations route through `db` (`lib/db.ts`), written in SQLite-dialect SQL. Locally it runs on SQLite (`lib/db-sqlite.ts`); in production on Firebase Cloud Firestore (`lib/db-firebase.ts`, which translates the same SQL). `lib/backend.ts` is the only place that decides which one is active; routes never check.
   - Domain logic and API handlers must remain provider-agnostic so local `DEV_MODE=true` SQLite runs and cloud deployments behave identically.
 - **Role-Based Permission Enforcement**:
   - Every terminal mutation checks table and action permissions (`select`, `insert`, `update`, `delete`) resolved via `lib/permissions.ts` (`ALL_TERMINAL_PERMISSION_PRESETS` and `presetByRoleOrKey()`).
@@ -57,9 +57,9 @@ This document outlines the core product architecture, managed preset propagation
 
 - `lib/db.ts`: Defines the `DatabaseAdapter` interface and resolves the active singleton adapter based on `DB_PROVIDER` and `DEV_MODE`.
 - `lib/db-sqlite.ts`: Local development and test adapter using `bun:sqlite` with parameterized queries and automatic schema initialization.
-- `lib/db-supabase.ts`: PostgreSQL/Supabase server-side adapter via `@supabase/supabase-js`.
+- `lib/backend.ts`: Local vs production detection (database and upload storage) from `DEV_MODE`, Firebase credentials, and the optional `DB_PROVIDER` / `STORAGE_PROVIDER` overrides.
 - `lib/db-firebase.ts`: Cloud Firestore adapter via lazy-loaded `firebase-admin/firestore` (`lib/firebaseAdmin.ts`), supporting Firebase Spark free-tier and Blaze deployments.
-- `lib/storage.ts` & `server/utils/storageServe.ts`: Multi-provider asset storage (`local`, `supabase`, `firebase`, and `firestore` inline chunk storage for `<= 700 KB` Spark-mode assets).
+- `lib/storage.ts` & `server/utils/storageServe.ts`: Upload storage (`local` disk, Firebase Cloud Storage, and `firestore` inline blobs for `<= 700 KB` Spark-mode assets), chosen by `lib/backend.ts`.
 - `lib/sql.ts` & `lib/security.ts`: Identifier allowlisting (`validateIdentifier`), SQL injection prevention, XSS payload sanitization, and payload size guards.
 
 ### Preset, Branding & Workstation Engine

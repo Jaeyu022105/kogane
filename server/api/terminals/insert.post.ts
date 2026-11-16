@@ -5,7 +5,7 @@ import { isActionAllowed, normalizePermissions } from '~/lib/permissions';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { validateAndSanitizeRecord } from '~/lib/securityClient';
 import { writeAuditLog } from '~/server/utils/audit';
-import { isPrefixDb } from '~/server/utils/business';
+import { qualifyBusinessTable } from '~/server/utils/business';
 import { realtimeHub } from '~/server/utils/realtimeHub';
 
 export default defineEventHandler(async (event) => {
@@ -83,13 +83,10 @@ export default defineEventHandler(async (event) => {
       validateIdentifier(key);
     }
 
-    const isDevMode = isPrefixDb();
-    const tbl = isDevMode
-      ? `${business.schema_name}_${tableName}`
-      : `"${business.schema_name}"."${tableName}"`;
+    const tbl = qualifyBusinessTable(business.schema_name, tableName);
 
     const cols = keys.map(k => `"${k}"`).join(', ');
-    const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
     const values = keys.map((k) => {
       const val = sanitizedRecord[k];
       if (val === undefined) return null;
@@ -98,12 +95,7 @@ export default defineEventHandler(async (event) => {
       return val;
     });
 
-    const sql = `INSERT INTO ${tbl} (${cols}) VALUES (${placeholders})`;
-
-    // SQLite driver uses ? instead of $1
-    const finalSql = isDevMode ? sql.replace(/\$[0-9]+/g, '?') : sql;
-
-    await db.query(finalSql, values);
+    await db.query(`INSERT INTO ${tbl} (${cols}) VALUES (${placeholders})`, values);
 
     await writeAuditLog({
       businessId: terminal.business_id,

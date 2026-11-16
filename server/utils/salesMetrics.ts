@@ -6,12 +6,7 @@
 
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
-import {
-  isPrefixDb,
-  qualifyBusinessTable,
-  replacePlaceholdersForDialect,
-  sqlPlaceholder,
-} from '~/server/utils/business';
+import { qualifyBusinessTable } from '~/server/utils/business';
 import { getBusinessTableColumns } from '~/server/utils/businessTable';
 import { inDateRange, toDateBucket, type ReportGrouping } from '~/server/utils/reporting';
 import type { SpreadsheetWorkbook } from '~/server/utils/spreadsheet';
@@ -231,12 +226,7 @@ export async function fetchBusinessOrders(
   const qualified = qualifyBusinessTable(schemaName, chosenTable);
   validateIdentifier(dateCol);
   validateIdentifier(revenueCol);
-  const isSqlite = isPrefixDb();
-  const sql = isSqlite
-    ? `SELECT * FROM ${qualified} WHERE datetime("${dateCol}") >= datetime(?) AND datetime("${dateCol}") <= datetime(?) ORDER BY "${dateCol}" ASC`
-    : replacePlaceholdersForDialect(
-        `SELECT * FROM ${qualified} WHERE "${dateCol}" >= ${sqlPlaceholder(1)} AND "${dateCol}" <= ${sqlPlaceholder(2)} ORDER BY "${dateCol}" ASC`,
-      );
+  const sql = `SELECT * FROM ${qualified} WHERE datetime("${dateCol}") >= datetime(?) AND datetime("${dateCol}") <= datetime(?) ORDER BY "${dateCol}" ASC`;
 
   const res = await db.query<Record<string, unknown>>(sql, [from.toISOString(), to.toISOString()]);
   if (res.error) {

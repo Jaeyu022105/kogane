@@ -128,7 +128,6 @@ describe('SQL Injection (SQLi) Prevention', () => {
           ],
         },
         'biz_safe',
-        'sqlite',
       ),
     ).toThrow();
 
@@ -141,7 +140,6 @@ describe('SQL Injection (SQLi) Prevention', () => {
           ],
         },
         'biz_safe',
-        'sqlite',
       ),
     ).toThrow();
 
@@ -154,9 +152,9 @@ describe('SQL Injection (SQLi) Prevention', () => {
       }),
     ).toThrow();
 
-    expect(() => buildDropTableSql('orders', 'biz_safe"; DROP TABLE users;--', 'sqlite')).toThrow();
+    expect(() => buildDropTableSql('orders', 'biz_safe"; DROP TABLE users;--')).toThrow();
     expect(() =>
-      buildAddColumnSql('orders', { name: 'note', type: 'text', nullable: true }, 'biz_safe;--', 'sqlite'),
+      buildAddColumnSql('orders', { name: 'note', type: 'text', nullable: true }, 'biz_safe;--'),
     ).toThrow();
   });
 
@@ -193,7 +191,6 @@ describe('SQL Injection (SQLi) Prevention', () => {
       "SELECT id, total FROM orders WHERE status != 'delete me' ORDER BY created_at DESC",
       schema,
       allowed,
-      true,
     );
     expect(valid).toContain('"biz_tenant_a_orders"');
 
@@ -216,7 +213,7 @@ describe('SQL Injection (SQLi) Prevention', () => {
     ];
 
     for (const q of maliciousQueries) {
-      expect(() => validateAndQualifyBusinessSql(q, schema, allowed, true)).toThrow();
+      expect(() => validateAndQualifyBusinessSql(q, schema, allowed)).toThrow();
     }
     expect(() => validateReadOnlySql('PRAGMA database_list')).toThrow();
   });
@@ -450,7 +447,6 @@ describe('XSS & Script Injection Prevention', () => {
       'SELECT COUNT(*) AS "Total Orders" FROM orders',
       schema,
       allowed,
-      true,
     );
     expect(aliasQuery).toContain('"biz_tenant_a_orders"');
     expect(aliasQuery).toContain('"Total Orders"');
@@ -470,12 +466,12 @@ describe('XSS & Script Injection Prevention', () => {
     ];
 
     for (const q of bypassQueries) {
-      expect(() => validateAndQualifyBusinessSql(q, schema, allowed, true)).toThrow();
+      expect(() => validateAndQualifyBusinessSql(q, schema, allowed)).toThrow();
     }
 
     // Zero-table tenant cannot query any table
-    expect(() => validateAndQualifyBusinessSql('SELECT * FROM users', 'biz_empty', [], true)).toThrow();
-    expect(() => validateAndQualifyBusinessSql('SELECT * FROM orders', 'biz_empty', [], true)).toThrow();
+    expect(() => validateAndQualifyBusinessSql('SELECT * FROM users', 'biz_empty', [])).toThrow();
+    expect(() => validateAndQualifyBusinessSql('SELECT * FROM orders', 'biz_empty', [])).toThrow();
   });
 
   test('reports/custom, data/query, and schema/tables/update enforce SQLi protections and return structured errors', async () => {

@@ -6,7 +6,7 @@
 
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
-import { db, getDbProvider } from '~/lib/db';
+import { db } from '~/lib/db';
 import { validateIdentifier, buildCreateTableSql } from '~/lib/schemaUtils';
 import type { PermissionPresetKey } from '~/lib/permissions';
 import type { SchemaDef } from '~/lib/schemaUtils';
@@ -14,7 +14,6 @@ import { createManagedTerminal, inferStarterTerminals } from '~/server/utils/man
 import { findCountry } from '~/lib/currency';
 import { sanitizeImageSrc, sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
 import { writeAuditLog } from '~/server/utils/audit';
-import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -145,18 +144,12 @@ export default defineEventHandler(async (event) => {
     business = newBiz;
   }
 
-  const dialect = getSqlDialect();
-
-  if (getDbProvider() === 'supabase') {
-    await db.execute(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`);
-  }
-
   const tableErrors: string[] = [];
 
   for (const table of body.schemaDef?.tables ?? []) {
     let sql: string;
     try {
-      sql = buildCreateTableSql(table, schemaName, dialect);
+      sql = buildCreateTableSql(table, schemaName);
     } catch (err) {
       tableErrors.push(`${table?.name ?? 'table'}: ${(err as Error).message}`);
       continue;

@@ -45,8 +45,8 @@ describe('End-to-End Database Isolation & Reporting Exports', () => {
       ],
     };
 
-    const sqlA = buildCreateTableSql(tableDef, schemaA, 'sqlite');
-    const sqlB = buildCreateTableSql(tableDef, schemaB, 'sqlite');
+    const sqlA = buildCreateTableSql(tableDef, schemaA);
+    const sqlB = buildCreateTableSql(tableDef, schemaB);
 
     await db.execute(sqlA);
     await db.execute(sqlB);

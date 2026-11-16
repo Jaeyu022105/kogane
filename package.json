@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.3.0",
-    "@supabase/supabase-js": "^2.49.4",
     "firebase-admin": "^14.5.1",
     "lucide-vue-next": "^1.0.0",
     "nuxt": "^3.16.2",

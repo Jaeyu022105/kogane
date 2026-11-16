@@ -26,7 +26,7 @@ import { buildCreateTableSql, type TableDef } from '~/lib/schemaUtils';
 import { sanitizeTextInput } from '~/lib/securityClient';
 import { cloneLayout, DEFAULT_LAYOUT, type UiLayout } from '~/lib/uiTypes';
 import { writeAuditLog } from '~/server/utils/audit';
-import { getBusinessForAdmin, getBusinessForAdminUser, getSqlDialect } from '~/server/utils/business';
+import { getBusinessForAdmin, getBusinessForAdminUser } from '~/server/utils/business';
 import { realtimeHub } from '~/server/utils/realtimeHub';
 import { STARTER_BUSINESS_TABLES, starterTableNamesForPreset } from '~/server/utils/starterTables';
 
@@ -146,9 +146,8 @@ export default defineEventHandler(async (event) => {
 
   const appliedTables: string[] = [];
   if (body.applySchema !== false && schemaTables.length > 0) {
-    const dialect = getSqlDialect();
     for (const tableDef of schemaTables) {
-      const sql = buildCreateTableSql(tableDef, business.schema_name, dialect);
+      const sql = buildCreateTableSql(tableDef, business.schema_name);
       const execRes = await db.execute(sql);
       if (execRes.error) {
         throw createError({ statusCode: 500, statusMessage: execRes.error });

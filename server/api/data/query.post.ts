@@ -8,7 +8,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
-import { isPrefixDb } from '~/server/utils/business';
+import { qualifyBusinessTable } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -49,7 +49,6 @@ export default defineEventHandler(async (event) => {
     return { data: null, error: 'Invalid business schema identifier' };
   }
 
-  const isDevMode = isPrefixDb();
   const cols = rawCols.length
     ? (rawCols.includes('*')
         ? '*'
@@ -60,19 +59,8 @@ export default defineEventHandler(async (event) => {
   const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(Math.floor(parsedLimit), 200) : 50;
   const offset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? Math.floor(parsedOffset) : 0;
 
-  let sql: string;
-  let params: unknown[];
-
-  if (isDevMode) {
-    const tbl = `${business.schema_name}_${body.tableName}`;
-    sql = `SELECT ${cols} FROM ${tbl} LIMIT ? OFFSET ?`;
-    params = [limit, offset];
-  } else {
-    sql = `SELECT ${cols} FROM "${business.schema_name}"."${body.tableName}" LIMIT $1 OFFSET $2`;
-    params = [limit, offset];
-  }
-
-  const { data, error } = await db.query(sql, params);
+  const table = qualifyBusinessTable(business.schema_name, body.tableName);
+  const { data, error } = await db.query(`SELECT ${cols} FROM ${table} LIMIT ? OFFSET ?`, [limit, offset]);
 
   return { data: data ?? [], error: error ?? null };
 });

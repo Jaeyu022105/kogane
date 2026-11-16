@@ -39,11 +39,7 @@ export function getSessionSecret(): string {
     );
   }
 
-  return (
-    process.env.FIREBASE_PRIVATE_KEY
-    || process.env.SUPABASE_SERVICE_KEY
-    || 'kogane-dev-secret'
-  );
+  return process.env.FIREBASE_PRIVATE_KEY || 'kogane-dev-secret';
 }
 
 /** Derives a 32-byte AES-256 key from ENCRYPTION_KEY or SESSION_SECRET. */

@@ -26,15 +26,11 @@ describe('Storage path sanitization and adapters', () => {
     expect(() => sanitizeStoragePath('')).toThrow();
   });
 
-  test('useStorage returns DevStorageAdapter when DEV_MODE is true or Supabase is not configured', () => {
+  test('useStorage returns local disk storage when DEV_MODE is true', () => {
     const originalDevMode = process.env.DEV_MODE;
-    const originalUrl = process.env.SUPABASE_URL;
-    const originalKey = process.env.SUPABASE_SERVICE_KEY;
 
     try {
       process.env.DEV_MODE = 'true';
-      delete process.env.SUPABASE_URL;
-      delete process.env.SUPABASE_SERVICE_KEY;
 
       const storage = useStorage();
       expect(storage).toBeDefined();
@@ -42,8 +38,6 @@ describe('Storage path sanitization and adapters', () => {
       expect(typeof storage.read).toBe('function');
     } finally {
       process.env.DEV_MODE = originalDevMode;
-      if (originalUrl) process.env.SUPABASE_URL = originalUrl;
-      if (originalKey) process.env.SUPABASE_SERVICE_KEY = originalKey;
     }
   });
 });

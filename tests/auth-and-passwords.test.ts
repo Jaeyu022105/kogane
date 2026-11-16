@@ -47,7 +47,6 @@ function createMockEvent(opts: {
 describe('Authentication & Password Security Engine', () => {
   beforeEach(() => {
     process.env.DEV_MODE = 'true';
-    delete process.env.SUPABASE_URL;
   });
 
   test('PBKDF2 password hashing generates secure salts and verifiable hashes', () => {

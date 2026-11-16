@@ -208,7 +208,7 @@ describe('Specialized Terminals for All 8 Industries', () => {
     for (const name of requiredTables) {
       const def = STARTER_BUSINESS_TABLES[name];
       expect(def).toBeDefined();
-      const sql = buildCreateTableSql(def, 'biz_test_industry', 'sqlite');
+      const sql = buildCreateTableSql(def, 'biz_test_industry');
       expect(sql).toContain(`CREATE TABLE IF NOT EXISTS biz_test_industry_${name}`);
     }
 

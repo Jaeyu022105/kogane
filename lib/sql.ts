@@ -295,7 +295,6 @@ export function validateAndQualifyBusinessSql(
   sql: string,
   schemaName: string,
   allowedTables: string[],
-  prefixMode: boolean,
 ): string {
   validateIdentifier(schemaName);
   const validated = validateReadOnlySql(sql);
@@ -367,7 +366,7 @@ export function validateAndQualifyBusinessSql(
       if (index % 2 === 1) return segment;
       let out = segment;
       for (const table of allowedTables) {
-        const qualified = prefixMode ? `"${schemaName}_${table}"` : `"${schemaName}"."${table}"`;
+        const qualified = `"${schemaName}_${table}"`;
         const escaped = table.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         out = out.replace(new RegExp(`(?<!\\.)\\b${escaped}\\b`, 'g'), qualified);
       }

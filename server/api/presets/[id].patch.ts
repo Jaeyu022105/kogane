@@ -24,7 +24,7 @@ import { buildCreateTableSql } from '~/lib/schemaUtils';
 import { sanitizeTextInput } from '~/lib/securityClient';
 import type { UiLayout } from '~/lib/uiTypes';
 import { writeAuditLog } from '~/server/utils/audit';
-import { getBusinessForAdmin, getSqlDialect } from '~/server/utils/business';
+import { getBusinessForAdmin } from '~/server/utils/business';
 import { realtimeHub } from '~/server/utils/realtimeHub';
 
 export default defineEventHandler(async (event) => {
@@ -205,9 +205,8 @@ export default defineEventHandler(async (event) => {
     if (body.applySchema === true) {
       const parsedSchema = sanitizePresetSchemaDefinition(updatedRow.schema_definition);
       if (parsedSchema?.tables.length) {
-        const dialect = getSqlDialect();
         for (const tableDef of parsedSchema.tables) {
-          const sql = buildCreateTableSql(tableDef, business.schema_name, dialect);
+          const sql = buildCreateTableSql(tableDef, business.schema_name);
           const execRes = await db.execute(sql);
           if (execRes.error) {
             throw createError({ statusCode: 500, statusMessage: execRes.error });

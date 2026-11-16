@@ -17,8 +17,6 @@ export function useShareOrigin() {
   }
 
   const isOnlineHost = computed(() => {
-    const provider = String(config.public.dbProvider || '').trim().toLowerCase();
-    if (provider === 'firebase' || provider === 'supabase') return true;
     if (import.meta.client) {
       if (window.location.protocol === 'https:') return true;
       return !isLocalHostname(window.location.hostname);

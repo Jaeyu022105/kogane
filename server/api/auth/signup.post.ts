@@ -7,8 +7,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { defineEventHandler, readBody, setResponseStatus } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-import { db, getDbProvider } from '~/lib/db';
+import { db } from '~/lib/db';
 import { hashPasswordSync, issueStatefulAdminSession } from '~/lib/authUtils';
 import { normalizeEmail } from '~/lib/mappers';
 import { enforceRateLimit, getClientIp, recordRateLimitAttempt } from '~/lib/rateLimit';
@@ -69,48 +68,6 @@ export default defineEventHandler(async (event) => {
   }
   recordRateLimitAttempt(`admin_signup:${getClientIp(event)}`, 15 * 60 * 1000);
 
-  // Supabase Auth mode
-  if (getDbProvider() === 'supabase') {
-    try {
-      const supabase = createClient(
-        process.env.SUPABASE_URL!,
-        process.env.SUPABASE_ANON_KEY!,
-      );
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            username,
-            profile_photo_url: body?.profilePhotoUrl,
-          },
-        },
-      });
-
-      if (error || !data.user) {
-        return { error: error?.message || 'Registration failed', session: null };
-      }
-
-      const token = data.session?.access_token || 'pending-verification';
-      return {
-        session: {
-          userId: data.user.id,
-          email: data.user.email ?? email,
-          token,
-          fullName,
-          username,
-          has2fa: false,
-        },
-        error: null,
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'Registration failed', session: null };
-    }
-  }
-
-  // SQLite & Firebase Firestore mode
   const { data: existing } = await db.queryOne<{ id: string }>(
     'SELECT id FROM users WHERE email = ? COLLATE NOCASE',
     [email],

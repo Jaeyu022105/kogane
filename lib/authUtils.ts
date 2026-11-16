@@ -12,8 +12,6 @@ import {
   type H3Event,
   setCookie,
 } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-import { getDbProvider } from './db';
 import { getClientIp } from './rateLimit';
 import { getSessionSecret, hashTokenSha256, timingSafeEqualStr } from './security';
 
@@ -430,39 +428,8 @@ export async function verifyAdmin(event: H3Event): Promise<VerifiedAdminResult> 
     };
   }
 
-  // 3. Firebase ID token verification when running with Firebase provider
-  if (getDbProvider() === 'firebase') {
-    try {
-      const { getFirebaseAuth } = await import('./firebaseAdmin');
-      const decoded = await getFirebaseAuth().verifyIdToken(token);
-      if (decoded?.uid) {
-        return { userId: decoded.uid, email: decoded.email };
-      }
-    } catch {
-      // Fall through to 401
-    }
-  }
-
-  // 4. In dev / local mode or without Supabase config, reject invalid token
-  const isDevMode = process.env.DEV_MODE === 'true';
-  const hasSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
-  if (isDevMode || !hasSupabase || getDbProvider() !== 'supabase') {
-    throw createError({ statusCode: 401, message: 'Invalid or expired token' });
-  }
-
-  // 5. Supabase Auth in Supabase cloud mode
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-  );
-
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error || !data.user) {
-    throw createError({ statusCode: 401, message: 'Invalid or expired token' });
-  }
-
-  return { userId: data.user.id, email: data.user.email };
+  // Only Kogane's own signed session tokens are accepted.
+  throw createError({ statusCode: 401, message: 'Invalid or expired token' });
 }
 
 export async function createTerminalSessionToken(

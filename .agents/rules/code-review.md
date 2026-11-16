@@ -34,8 +34,8 @@ Before landing any substantial feature, refactor, UI update, or backend endpoint
 
 ### L — Liskov Substitution Principle (LSP)
 
-- **Tri-Provider Database Substitutability**: `SQLiteAdapter` (`lib/db-sqlite.ts`), `SupabaseAdapter` (`lib/db-supabase.ts`), and `FirestoreAdapter` (`lib/db-firebase.ts`) must honor the exact same `DatabaseAdapter` contract (`lib/db.ts`)—returning identical shapes, handling missing records consistently, and enforcing parameter safety across all three backends.
-- **Storage Provider Parity**: Local filesystem, Supabase Storage, Firebase Cloud Storage, and Firestore inline Spark-mode storage must behave interchangeably behind `lib/storage.ts`.
+- **Database Substitutability**: `SqliteAdapter` (`lib/db-sqlite.ts`) and `FirestoreAdapter` (`lib/db-firebase.ts`) must honor the exact same `DbAdapter` contract (`lib/db.ts`)—returning identical shapes, handling missing records consistently, and enforcing parameter safety on both backends. Route code must not branch on the active provider; put any unavoidable difference in a `server/utils` data-access helper (see `server/utils/auditLogQuery.ts`).
+- **Storage Provider Parity**: Local filesystem, Firebase Cloud Storage, and Firestore inline Spark-mode storage must behave interchangeably behind `lib/storage.ts`.
 - **Preset Role Alias Resolution**: `presetByRoleOrKey()` (`lib/permissions.ts`) must deterministically resolve both canonical preset keys (e.g. `kitchen-display`) and role aliases (e.g. `kitchen-station`) without silent fallbacks to unrelated permissions.
 
 ### I — Interface Segregation Principle (ISP)
@@ -45,7 +45,7 @@ Before landing any substantial feature, refactor, UI update, or backend endpoint
 
 ### D — Dependency Inversion Principle (DIP)
 
-- **Depend on Adapters, Not Concrete Cloud SDKs**: Server routes and utilities must access persistence through `getDb()` (`lib/db.ts`) and `getStorage()` (`lib/storage.ts`), never by importing `bun:sqlite`, `@supabase/supabase-js`, or `firebase-admin` directly inside route handlers.
+- **Depend on Adapters, Not Concrete Cloud SDKs**: Server routes and utilities must access persistence through `getDb()` (`lib/db.ts`) and `getStorage()` (`lib/storage.ts`), never by importing `bun:sqlite` or `firebase-admin` directly inside route handlers.
 - **Lazy Cloud SDK Initialization**: Cloud adapters (`lib/db-firebase.ts`, `lib/firebaseAdmin.ts`, `lib/storage.ts`) must lazy-load external SDKs only when that provider is active so local development and unit tests run with zero external credentials.
 
 ---
@@ -92,7 +92,7 @@ Before committing any feature, bug fix, or refactor, verify every item below:
 
 - [ ] **Additive UI Preservation**: Existing UI sections, classes, and the Neapolitan palette (`#68293A`, `#FF5776`, `#F6E6D7`, `#E3C7B9`) + `.ribbon` / `.btn-ribbon` hanging bookmark buttons are preserved intact.
 - [ ] **SRP & Layering**: Pure logic lives in `lib/`, reactive UI state in `composables/`, server helpers in `server/utils/`, and thin HTTP handlers in `server/api/`.
-- [ ] **Database & Storage Parity**: Queries work across SQLite, Supabase, and Firestore adapters via `lib/db.ts` without hardcoded provider assumptions.
+- [ ] **Database & Storage Parity**: Queries work on both the SQLite and Firestore adapters via `lib/db.ts` without hardcoded provider assumptions.
 - [ ] **Managed Preset Sync**: Changes to preset structures remain compatible with `managed_preset_key` propagation (`/api/presets/sync` and `server/utils/managedTerminals.ts`).
 - [ ] **Security & Permissions**: SQL identifiers are validated via `lib/sql.ts`, inputs are sanitized via `lib/security.ts`, and terminal role permissions are enforced via `lib/permissions.ts`.
 - [ ] **Audit Logging**: State-mutating endpoints record structured entries via `recordAuditLog()` (`server/utils/audit.ts`).

@@ -26,7 +26,7 @@ import { buildCreateTableSql } from '~/lib/schemaUtils';
 import { sanitizeTextInput } from '~/lib/securityClient';
 import type { UiLayout } from '~/lib/uiTypes';
 import { writeAuditLog } from '~/server/utils/audit';
-import { getBusinessForAdmin, getSqlDialect } from '~/server/utils/business';
+import { getBusinessForAdmin } from '~/server/utils/business';
 import { realtimeHub } from '~/server/utils/realtimeHub';
 import { ensureStarterBusinessTables, starterTableNamesForPreset } from '~/server/utils/starterTables';
 
@@ -177,9 +177,8 @@ export default defineEventHandler(async (event) => {
   if (dbPreset) {
     const cleanSchema = sanitizePresetSchemaDefinition(dbPreset.schema_definition);
     if (cleanSchema?.tables.length) {
-      const dialect = getSqlDialect();
       for (const tableDef of cleanSchema.tables) {
-        const sql = buildCreateTableSql(tableDef, business.schema_name, dialect);
+        const sql = buildCreateTableSql(tableDef, business.schema_name);
         await db.execute(sql);
       }
     }

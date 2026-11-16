@@ -9,7 +9,7 @@ Detailed rules, coding style guidelines, architectural boundaries, and review st
 - [`.agents/rules/code-style.md`](.agents/rules/code-style.md): TypeScript and Vue 3 `<script setup lang="ts">` conventions, guard clauses, explicit `<button type="...">` attributes, semantic landmarks and strict `h1 -> h2 -> h3` heading hierarchy, unabbreviated identifier naming, signature Neapolitan ice cream palette tokens (`#68293A`, `#FF5776`, `#F6E6D7`, `#E3C7B9`), `DM Serif Display` / `Inter` / `JetBrains Mono` typography, `.ribbon` and `.btn-ribbon` hanging bookmark buttons, parameterized SQL and XSS/SQLi sanitization, 6-locale parity (`en`, `ph`, `es`, `ja`, `ko`, `zh`), and 1,000-line file limits.
 - [`.agents/rules/code-review.md`](.agents/rules/code-review.md): Architectural review standards, SOLID principles audit across Nuxt 3 / Vue 3 / Nitro / database adapters, additive UI preservation audit, simplicity, readability, business-friendly copy restraint, and zero bloat.
 - [`.agents/rules/workflow.md`](.agents/rules/workflow.md): User intent, additive UI preservation protocol, bug handling protocols, verification checkpoints (`bun test`, `bunx nuxi typecheck`, `bun run build`), artifact hygiene, and conventional commit policy.
-- [`.agents/rules/architecture.md`](.agents/rules/architecture.md): Managed terminal preset lifecycle, 1-to-many preset propagation (`managed_preset_key` & `/api/presets/sync`), tri-provider database abstraction (`SQLiteAdapter`, `SupabaseAdapter`, `FirestoreAdapter`), canvas builder & runtime event execution (`useCanvasRuntime`), SSE realtime sync (`realtimeHub`), role-based permissions, audit logging, and SEO middleware.
+- [`.agents/rules/architecture.md`](.agents/rules/architecture.md): Managed terminal preset lifecycle, 1-to-many preset propagation (`managed_preset_key` & `/api/presets/sync`), single database layer (`lib/db.ts`) over SQLite locally and Firestore in production, selected by `lib/backend.ts`, canvas builder & runtime event execution (`useCanvasRuntime`), SSE realtime sync (`realtimeHub`), role-based permissions, audit logging, and SEO middleware.
 - [`.agents/rules/resource-order.md`](.agents/rules/resource-order.md): Deterministic Nuxt 3 project directory hierarchy, layer separation (`lib/`, `composables/`, `components/`, `pages/`, `server/`, `locales/`, `tests/`), API route naming, 6-locale key ordering, and resource registration checklist.
 
 Additional design and agent references:
@@ -17,7 +17,7 @@ Additional design and agent references:
 - [`DESIGN-DOCUMENT.md`](DESIGN-DOCUMENT.md): Product summary, target users, workstation preset workflows (Cashier Register, Kitchen Display, Inventory Manager, Catalog Registrar, Reports Viewer), scope boundaries, layout bundles, and onboarding flow.
 - [`CLAUDE.md`](CLAUDE.md): Dedicated operating guide for Claude agents (skill/MCP/subagent maximization, additive design preservation, and lightweight SaaS alignment).
 - [`GEMINI.md`](GEMINI.md): Dedicated operating guide for Gemini / Antigravity agents (Gemini 4 Hydrogen XHigh model mandate, native swarm execution, and additive design preservation).
-- [`DEPLOYMENT.md`](DEPLOYMENT.md): Local SQLite, Supabase/PostgreSQL, and Firebase Spark/Blaze deployment instructions.
+- [`DEPLOYMENT.md`](DEPLOYMENT.md): Local SQLite and Firebase Spark/Blaze deployment instructions.
 - [`HANDOFF.md`](HANDOFF.md): Historical engineering context and architectural decisions across milestones.
 
 You can view the `.agents/rules/` folder for code rules and review purposes.

@@ -5,7 +5,7 @@
 
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
-import { db, getDbProvider } from '~/lib/db';
+import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { findCountry } from '~/lib/currency';
 import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
@@ -78,11 +78,6 @@ export default defineEventHandler(async (event) => {
   });
 
   if (error || !business) return { error: error ?? 'Insert failed', business: null };
-
-  // Provision the schema namespace (only needed for Postgres/Supabase)
-  if (getDbProvider() === 'supabase') {
-    await db.execute(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`);
-  }
 
   return { business, error: null };
 });

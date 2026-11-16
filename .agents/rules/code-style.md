@@ -143,7 +143,7 @@ All public marketing pages (`assets/css/marketing.css`), dashboard views (`asset
 ## 5. Database, Security & Localization Standards
 
 - **Parameterized Queries & Identifier Validation**:
-  - Always use parameterized placeholders (`?` in SQLite, SDK filters in Supabase/Firestore) for values.
+  - Always use parameterized placeholders (`?` — the Firestore adapter reads the same placeholders) for values.
   - Always validate dynamic table and column identifiers through `validateIdentifier()` in `lib/sql.ts` before constructing queries.
   - Sanitize incoming row records and string payloads with `lib/security.ts` (`sanitizeRecord`, payload size limits).
 - **6-Locale Synchronization (`locales/*.json`)**:

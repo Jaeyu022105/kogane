@@ -5,8 +5,7 @@
  */
 
 import { defineEventHandler, readBody, setResponseStatus } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-import { db, getDbProvider } from '~/lib/db';
+import { db } from '~/lib/db';
 import {
   issueStatefulAdminSession,
   verifyPasswordSync,
@@ -52,43 +51,6 @@ export default defineEventHandler(async (event) => {
 
   const rateKey = `admin_login:${getClientIp(event)}:${email}`;
 
-  // Supabase Auth mode (only when DB_PROVIDER is supabase)
-  if (getDbProvider() === 'supabase') {
-    try {
-      const supabase = createClient(
-        process.env.SUPABASE_URL!,
-        process.env.SUPABASE_ANON_KEY!,
-      );
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error || !data.user || !data.session) {
-        recordRateLimitAttempt(rateKey, 15 * 60 * 1000);
-        return { error: error?.message || 'Invalid email or password', session: null };
-      }
-
-      clearRateLimit(rateKey);
-      return {
-        requires2fa: false,
-        session: {
-          userId: data.user.id,
-          email: data.user.email ?? email,
-          token: data.session.access_token,
-          fullName: data.user.user_metadata?.full_name,
-          username: data.user.user_metadata?.username,
-          has2fa: false,
-        },
-        error: null,
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'Login failed', session: null };
-    }
-  }
-
-  // SQLite & Firebase Firestore mode
   const { data: user, error: dbError } = await db.queryOne<{
     id: string;
     email: string;

@@ -1,7 +1,7 @@
 import { defineEventHandler, getQuery } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
-import { getBusinessForAdminUser, replacePlaceholdersForDialect, sqlPlaceholder } from '~/server/utils/business';
+import { getBusinessForAdminUser } from '~/server/utils/business';
 import { inDateRange, normalizeDateRange } from '~/server/utils/reporting';
 
 export default defineEventHandler(async (event) => {
@@ -14,15 +14,13 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event) as { from?: string; to?: string };
   const range = normalizeDateRange(query.from, query.to);
 
-  const sql = replacePlaceholdersForDialect(
-    `
+  const sql = `
       SELECT target_table, action_type, created_at
       FROM audit_log
-      WHERE business_id = ${sqlPlaceholder(1)}
+      WHERE business_id = ?
         AND action_type IN ('insert', 'update', 'delete')
       ORDER BY created_at DESC
-    `,
-  );
+    `;
   const result = await db.query<{ target_table: string | null; action_type: string; created_at: string }>(
     sql,
     [businessResult.data.id],
