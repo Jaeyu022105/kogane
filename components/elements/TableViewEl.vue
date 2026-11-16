@@ -1,5 +1,18 @@
 <script setup lang="ts">
-import { AlertTriangle, Bell, BellOff, CheckCircle2, ChevronLeft, ChevronRight, Clock, Eye, Pencil, Receipt, RefreshCw, Trash2, UtensilsCrossed, X } from 'lucide-vue-next';
+import AlertTriangleIcon from 'reicon-vue/icons/AlertTriangle';
+import BellIcon from 'reicon-vue/icons/Bell';
+import BellOffIcon from 'reicon-vue/icons/BellOff';
+import CheckCircleIcon from 'reicon-vue/icons/CheckCircle';
+import ChevronLeftIcon from 'reicon-vue/icons/ChevronLeft';
+import ChevronRightIcon from 'reicon-vue/icons/ChevronRight';
+import ClockIcon from 'reicon-vue/icons/Clock';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import PenIcon from 'reicon-vue/icons/Pen';
+import ReceiptIcon from 'reicon-vue/icons/Receipt';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import ForkKnifeIcon from 'reicon-vue/icons/ForkKnife';
+import XIcon from 'reicon-vue/icons/X';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { isActionAllowed } from '~/lib/permissions';
 import type { TableViewElementDef } from '~/lib/uiTypes';
@@ -835,7 +848,7 @@ onUnmounted(() => {
             v-if="newOrderAlert"
             class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500 text-white animate-bounce shadow-md"
           >
-            <Bell class="w-3.5 h-3.5 animate-spin" />
+            <BellIcon class="w-3.5 h-3.5 animate-spin" />
             <span>New Order!</span>
           </div>
         </Transition>
@@ -854,8 +867,8 @@ onUnmounted(() => {
           :aria-label="soundEnabled ? 'Mute kitchen bell' : 'Unmute kitchen bell'"
           @click="toggleKitchenSound"
         >
-          <Bell v-if="soundEnabled" class="w-3.5 h-3.5 animate-pulse text-amber-500" />
-          <BellOff v-else class="w-3.5 h-3.5 opacity-60" />
+          <BellIcon v-if="soundEnabled" weight="Filled" class="w-3.5 h-3.5 animate-pulse text-amber-500" />
+          <BellOffIcon v-else class="w-3.5 h-3.5 opacity-60" />
           <span class="hidden sm:inline font-semibold text-[11px]">{{ soundEnabled ? 'Chime ON' : 'Chime OFF' }}</span>
         </button>
 
@@ -880,7 +893,7 @@ onUnmounted(() => {
           aria-label="Refresh list"
           @click="fetchRows({ bypassFilter: true })"
         >
-          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
+          <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
         </button>
       </div>
     </div>
@@ -984,7 +997,7 @@ onUnmounted(() => {
                       color: textColor,
                     }"
                   >
-                    <Eye class="w-3 h-3" />
+                    <EyeIcon class="w-3 h-3" />
                     <span>View</span>
                   </span>
                 </div>
@@ -1015,7 +1028,7 @@ onUnmounted(() => {
                   title="Inspect full order line items, notes, and totals"
                   @click.stop="openOrderModal(row)"
                 >
-                  <Eye class="w-3.5 h-3.5" />
+                  <EyeIcon class="w-3.5 h-3.5" />
                   <span class="hidden md:inline">Inspect</span>
                 </button>
                 <button
@@ -1027,15 +1040,15 @@ onUnmounted(() => {
                   title="Confirm order has been prepared and served"
                   @click="markOrderServed(row, $event)"
                 >
-                  <RefreshCw v-if="servingOrderId === String(row.id)" class="w-3.5 h-3.5 animate-spin" />
-                  <CheckCircle2 v-else class="w-3.5 h-3.5" />
+                  <RefreshIcon v-if="servingOrderId === String(row.id)" class="w-3.5 h-3.5 animate-spin" />
+                  <CheckCircleIcon v-else class="w-3.5 h-3.5" />
                   {{ servingOrderId === String(row.id) ? 'Updating...' : 'Mark as Served' }}
                 </button>
                 <span
                   v-else
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-emerald-600 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30"
                 >
-                  <CheckCircle2 class="w-3.5 h-3.5" />
+                  <CheckCircleIcon class="w-3.5 h-3.5" />
                   Served
                 </span>
               </div>
@@ -1050,7 +1063,7 @@ onUnmounted(() => {
                   title="Edit product"
                   @click="openEditModal(row, $event)"
                 >
-                  <Pencil class="w-3 h-3" />
+                  <PenIcon class="w-3 h-3" />
                   Edit
                 </button>
                 <button
@@ -1060,7 +1073,7 @@ onUnmounted(() => {
                   title="Delete product"
                   @click="openDeleteModal(row, $event)"
                 >
-                  <Trash2 class="w-3 h-3" />
+                  <TrashIcon class="w-3 h-3" />
                   Delete
                 </button>
               </div>
@@ -1124,7 +1137,7 @@ onUnmounted(() => {
                   :style="{ borderColor, background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)', color: textColor }"
                   @click.stop
                 >
-                  <Receipt class="w-3 h-3" />
+                  <ReceiptIcon class="w-3 h-3" />
                   Receipt
                 </a>
                 <button
@@ -1134,7 +1147,7 @@ onUnmounted(() => {
                   title="Delete expense"
                   @click="openDeleteModal(row, $event)"
                 >
-                  <Trash2 class="w-3 h-3" />
+                  <TrashIcon class="w-3 h-3" />
                   Delete
                 </button>
               </div>
@@ -1163,7 +1176,7 @@ onUnmounted(() => {
           :disabled="loading || pageIndex === 0"
           @click="goToPage(pageIndex - 1)"
         >
-          <ChevronLeft class="w-3.5 h-3.5" />
+          <ChevronLeftIcon class="w-3.5 h-3.5" />
           Prev
         </button>
         <button
@@ -1174,7 +1187,7 @@ onUnmounted(() => {
           @click="goToPage(pageIndex + 1)"
         >
           Next
-          <ChevronRight class="w-3.5 h-3.5" />
+          <ChevronRightIcon class="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -1206,12 +1219,12 @@ onUnmounted(() => {
               :style="{ color: mutedTextColor }"
               @click="closeEditModal"
             >
-              <X class="w-4 h-4" />
+              <XIcon class="w-4 h-4" />
             </button>
           </div>
 
           <div v-if="editError" class="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-500 flex items-center gap-2">
-            <AlertTriangle class="w-4 h-4 shrink-0" />
+            <AlertTriangleIcon class="w-4 h-4 shrink-0" />
             <span>{{ editError }}</span>
           </div>
 
@@ -1341,7 +1354,7 @@ onUnmounted(() => {
         >
           <div class="flex items-start gap-3">
             <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-rose-500/15 text-rose-500">
-              <Trash2 class="w-5 h-5" />
+              <TrashIcon class="w-5 h-5" />
             </div>
             <div>
               <h3 class="text-base font-semibold">{{ isExpensesTable ? 'Delete Expense' : 'Delete Product' }}</h3>
@@ -1352,7 +1365,7 @@ onUnmounted(() => {
           </div>
 
           <div v-if="deleteError" class="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-500 flex items-center gap-2">
-            <AlertTriangle class="w-4 h-4 shrink-0" />
+            <AlertTriangleIcon class="w-4 h-4 shrink-0" />
             <span>{{ deleteError }}</span>
           </div>
 
@@ -1413,7 +1426,7 @@ onUnmounted(() => {
                 {{ inspectedOrder.table_number || 'Counter / Takeout' }}
               </h3>
               <p class="text-[11px] mt-0.5 flex items-center gap-1.5" :style="{ color: mutedTextColor }">
-                <Clock class="w-3 h-3" />
+                <ClockIcon class="w-3 h-3" />
                 <span>{{ inspectedOrder.created_at || 'Just now' }}</span>
                 <span v-if="inspectedOrder.staff_name">&middot; Server: {{ inspectedOrder.staff_name }}</span>
               </p>
@@ -1425,7 +1438,7 @@ onUnmounted(() => {
               aria-label="Close modal"
               @click="closeOrderModal"
             >
-              <X class="w-4 h-4" />
+              <XIcon class="w-4 h-4" />
             </button>
           </div>
 
@@ -1433,7 +1446,7 @@ onUnmounted(() => {
           <div class="flex-1 overflow-y-auto py-3 space-y-2 min-h-0">
             <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider px-1 pb-1" :style="{ color: mutedTextColor }">
               <span class="flex items-center gap-1.5">
-                <UtensilsCrossed class="w-3.5 h-3.5" /> Ordered Items
+                <ForkKnifeIcon class="w-3.5 h-3.5" /> Ordered Items
               </span>
               <span>{{ parseInspectionItems(inspectedOrder).length }} item(s)</span>
             </div>
@@ -1533,7 +1546,7 @@ onUnmounted(() => {
                 :disabled="servingOrderId === String(inspectedOrder.id)"
                 @click="markOrderServed(inspectedOrder, $event); closeOrderModal()"
               >
-                <CheckCircle2 class="w-4 h-4" />
+                <CheckCircleIcon class="w-4 h-4" />
                 <span>Mark as Served</span>
               </button>
               <button

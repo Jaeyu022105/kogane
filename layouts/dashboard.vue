@@ -5,7 +5,14 @@
  * Shows onboarding modal on first login when no business exists.
  */
 
-import { LayoutDashboard, Terminal, Settings, Power, Shield, BarChart3, Menu, X } from 'lucide-vue-next';
+import WidgetIcon from 'reicon-vue/icons/Widget';
+import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
+import SettingsIcon from 'reicon-vue/icons/Settings';
+import PowerIcon from 'reicon-vue/icons/Power';
+import ShieldIcon from 'reicon-vue/icons/Shield';
+import ChartBarIcon from 'reicon-vue/icons/ChartBar';
+import MenuIcon from 'reicon-vue/icons/Menu';
+import XIcon from 'reicon-vue/icons/X';
 
 const router = useRouter();
 const route  = useRoute();
@@ -55,11 +62,11 @@ onMounted(async () => {
 });
 
 const navItems = computed(() => [
-  { label: t('nav_overview'),  icon: LayoutDashboard, to: '/dashboard' },
-  { label: t('nav_terminals'), icon: Terminal,        to: '/dashboard/terminals' },
-  { label: t('nav_audit_log'), icon: Shield,          to: '/dashboard/audit' },
-  { label: t('nav_reports'),   icon: BarChart3,       to: '/dashboard/reports' },
-  { label: t('nav_settings'),  icon: Settings,        to: '/dashboard/settings' },
+  { label: t('nav_overview'),  icon: WidgetIcon, to: '/dashboard' },
+  { label: t('nav_terminals'), icon: TerminalSquareIcon,        to: '/dashboard/terminals' },
+  { label: t('nav_audit_log'), icon: ShieldIcon,          to: '/dashboard/audit' },
+  { label: t('nav_reports'),   icon: ChartBarIcon,       to: '/dashboard/reports' },
+  { label: t('nav_settings'),  icon: SettingsIcon,        to: '/dashboard/settings' },
 ]);
 
 function isActive(to: string) {
@@ -128,6 +135,7 @@ function handleOnboardingDone() {
         >
           <component
             :is="item.icon"
+            :weight="isActive(item.to) ? 'Filled' : 'Outline'"
             class="w-3.5 h-3.5 shrink-0 transition-colors duration-150"
             :style="isActive(item.to) ? 'color: #fff;' : 'color: rgba(61,24,32,0.4);'"
           />
@@ -169,7 +177,7 @@ function handleOnboardingDone() {
             @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgb(var(--shell-sidebar))'"
             @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.4)'"
           >
-            <Power class="w-3.5 h-3.5" />
+            <PowerIcon class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -185,8 +193,8 @@ function handleOnboardingDone() {
           aria-label="Open dashboard menu"
           @click="sidebarOpen = !sidebarOpen"
         >
-          <X v-if="sidebarOpen" class="w-5 h-5" />
-          <Menu v-else class="w-5 h-5" />
+          <XIcon v-if="sidebarOpen" class="w-5 h-5" />
+          <MenuIcon v-else class="w-5 h-5" />
         </button>
         <span class="font-serif text-base" style="color: rgb(var(--shell-sidebar));">{{ pageTitle }}</span>
       </div>

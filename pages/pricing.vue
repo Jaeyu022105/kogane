@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { Monitor, ShieldCheck, WifiOff, Users, ArrowRight, CheckCircle2, Check } from 'lucide-vue-next';
+import MonitorIcon from 'reicon-vue/icons/Monitor';
+import ShieldCheckIcon from 'reicon-vue/icons/ShieldCheck';
+import WifiOffIcon from 'reicon-vue/icons/WifiOff';
+import UsersIcon from 'reicon-vue/icons/Users';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import CheckCircleIcon from 'reicon-vue/icons/CheckCircle';
+import CheckIcon from 'reicon-vue/icons/Check';
 
 definePageMeta({ layout: 'marketing' });
 
@@ -281,10 +287,10 @@ usePageSeo({
 
         <div class="hero-cta-wrap">
           <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">
-            {{ t('pricing_cta_dashboard') }} <ArrowRight class="w-4 h-4 ml-1" aria-hidden="true" />
+            {{ t('pricing_cta_dashboard') }} <ArrowRightIcon class="w-4 h-4 ml-1" aria-hidden="true" />
           </NuxtLink>
           <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">
-            {{ t('pricing_cta_btn1') }} <ArrowRight class="w-4 h-4 ml-1" aria-hidden="true" />
+            {{ t('pricing_cta_btn1') }} <ArrowRightIcon class="w-4 h-4 ml-1" aria-hidden="true" />
           </NuxtLink>
         </div>
 
@@ -348,12 +354,12 @@ usePageSeo({
               :class="[`plan-btn--${plan.buttonVariant}`, { ribbon: plan.featured || plan.buttonVariant === 'dark' }]"
             >
               <span>{{ plan.ctaLabel }}</span>
-              <ArrowRight class="plan-btn-icon" aria-hidden="true" />
+              <ArrowRightIcon class="plan-btn-icon" aria-hidden="true" />
             </NuxtLink>
 
             <ul class="plan-features">
               <li v-for="feat in plan.features" :key="feat" class="plan-feature-item">
-                <Check class="plan-check-icon" aria-hidden="true" />
+                <CheckIcon class="plan-check-icon" aria-hidden="true" />
                 <span>{{ feat }}</span>
               </li>
             </ul>
@@ -378,7 +384,7 @@ usePageSeo({
         <div class="pillars-grid">
           <div class="pillar-card">
             <div class="pillar-icon-wrap" aria-hidden="true">
-              <ShieldCheck class="w-6 h-6 text-[#FF5776]" />
+              <ShieldCheckIcon class="w-6 h-6 text-[#FF5776]" />
             </div>
             <h3 class="pillar-title">{{ t('pricing_why_1_title') }}</h3>
             <p class="pillar-text">
@@ -388,7 +394,7 @@ usePageSeo({
 
           <div class="pillar-card">
             <div class="pillar-icon-wrap" aria-hidden="true">
-              <WifiOff class="w-6 h-6 text-[#FF5776]" />
+              <WifiOffIcon class="w-6 h-6 text-[#FF5776]" />
             </div>
             <h3 class="pillar-title">Cloud Sync &amp; Local Ready</h3>
             <p class="pillar-text">
@@ -398,7 +404,7 @@ usePageSeo({
 
           <div class="pillar-card">
             <div class="pillar-icon-wrap" aria-hidden="true">
-              <Users class="w-6 h-6 text-[#FF5776]" />
+              <UsersIcon class="w-6 h-6 text-[#FF5776]" />
             </div>
             <h3 class="pillar-title">Scalable Workstations</h3>
             <p class="pillar-text">
@@ -428,7 +434,7 @@ usePageSeo({
           >
             <div class="station-header">
               <div class="station-icon" aria-hidden="true">
-                <Monitor class="w-5 h-5 text-[#68293A]" />
+                <MonitorIcon class="w-5 h-5 text-[#68293A]" />
               </div>
               <span class="station-badge">{{ station.badge }}</span>
             </div>
@@ -436,7 +442,7 @@ usePageSeo({
             <p class="station-desc">{{ station.description }}</p>
             <ul class="station-details">
               <li v-for="d in station.details" :key="d" class="station-detail-item">
-                <CheckCircle2 class="w-4 h-4 text-[#FF5776] shrink-0" aria-hidden="true" />
+                <CheckCircleIcon class="w-4 h-4 text-[#FF5776] shrink-0" aria-hidden="true" />
                 <span>{{ d }}</span>
               </li>
             </ul>

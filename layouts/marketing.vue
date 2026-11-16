@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Menu, X } from 'lucide-vue-next';
+import MenuIcon from 'reicon-vue/icons/Menu';
+import XIcon from 'reicon-vue/icons/X';
 
 const { t, locale, setLocale, loadLocale, availableLocales } = useLocale();
 const route = useRoute();
@@ -81,8 +82,8 @@ onMounted(() => {
           :aria-label="mobileMenuOpen ? 'Close menu' : 'Open menu'"
           @click="mobileMenuOpen = !mobileMenuOpen"
         >
-          <X v-if="mobileMenuOpen" class="w-5 h-5" aria-hidden="true" />
-          <Menu v-else class="w-5 h-5" aria-hidden="true" />
+          <XIcon v-if="mobileMenuOpen" class="w-5 h-5" aria-hidden="true" />
+          <MenuIcon v-else class="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
     </header>

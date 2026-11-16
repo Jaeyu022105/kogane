@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { AlertTriangle, ArrowLeft, ArrowRight, Circle, Delete, Power, Eye, EyeOff, X } from 'lucide-vue-next';
+import AlertTriangleIcon from 'reicon-vue/icons/AlertTriangle';
+import ArrowLeftIcon from 'reicon-vue/icons/ArrowLeft';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import RecordIcon from 'reicon-vue/icons/Record';
+import BackspaceIcon from 'reicon-vue/icons/Backspace';
+import PowerIcon from 'reicon-vue/icons/Power';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import XIcon from 'reicon-vue/icons/X';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
@@ -507,7 +515,7 @@ onUnmounted(() => {
         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" :style="{ color: activeTheme.panelMutedText, background: activeTheme.panelHeaderBackground, border: `1px solid ${activeTheme.panelBorder}` }">{{ session.role }}</span>
       </div>
       <button type="button" aria-label="Log out of terminal" class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" :style="{ color: activeTheme.topBarText }" @click="openLogoutPrompt">
-        <Power class="w-3.5 h-3.5" /> Logout
+        <PowerIcon class="w-3.5 h-3.5" /> Logout
       </button>
     </div>
 
@@ -518,7 +526,7 @@ onUnmounted(() => {
       aria-live="polite"
     >
       <button type="button" class="rounded-full p-1" aria-label="Show the previous workspace area" @click.stop="scrollWorkspace('left')">
-        <ArrowLeft class="h-3.5 w-3.5" />
+        <ArrowLeftIcon class="h-3.5 w-3.5" />
       </button>
       <button
         type="button"
@@ -529,7 +537,7 @@ onUnmounted(() => {
         {{ fitToWidth ? 'Fit Screen' : 'Scroll 100%' }}
       </button>
       <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
-        <ArrowRight class="h-3.5 w-3.5" />
+        <ArrowRightIcon class="h-3.5 w-3.5" />
       </button>
     </div>
 
@@ -545,7 +553,7 @@ onUnmounted(() => {
         class="p-0.5 rounded-full hover:opacity-75 shrink-0"
         @click="dismissedWelcome = true"
       >
-        <X class="w-3.5 h-3.5" />
+        <XIcon class="w-3.5 h-3.5" />
       </button>
     </div>
 
@@ -554,7 +562,7 @@ onUnmounted(() => {
       role="alert"
       class="fixed top-12 right-4 z-[80] max-w-sm flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-xs font-medium shadow-lg border bg-red-600/95 text-white border-red-400/50"
     >
-      <AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" />
+      <AlertTriangleIcon class="w-4 h-4 shrink-0 mt-0.5" />
       <span class="flex-1 leading-snug">{{ runtime.state.value.lastError }}</span>
       <button
         type="button"
@@ -562,7 +570,7 @@ onUnmounted(() => {
         class="p-0.5 rounded-full hover:bg-white/20 shrink-0"
         @click="runtime.clearError()"
       >
-        <X class="w-3.5 h-3.5" />
+        <XIcon class="w-3.5 h-3.5" />
       </button>
     </div>
 
@@ -669,7 +677,7 @@ onUnmounted(() => {
               :style="{ background: activeTheme.accentColor }"
               @click="logout(true)"
             >
-              <Power class="w-4 h-4" />
+              <PowerIcon class="w-4 h-4" />
               {{ logoutLoading ? 'Exiting...' : 'Exit to Dashboard (Admin)' }}
             </button>
             <div class="relative flex py-3 items-center">
@@ -690,7 +698,7 @@ onUnmounted(() => {
                 <template v-if="showLogoutPinDigits">
                   {{ logoutPin[i - 1] ?? '' }}
                 </template>
-                <Circle v-else class="w-3.5 h-3.5 transition-all" :style="i <= logoutPin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
+                <RecordIcon v-else class="w-3.5 h-3.5 transition-all" :style="i <= logoutPin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
               </div>
             </div>
             <button
@@ -701,8 +709,8 @@ onUnmounted(() => {
               :aria-label="showLogoutPinDigits ? 'Hide PIN' : 'Show PIN'"
               @click="showLogoutPinDigits = !showLogoutPinDigits"
             >
-              <EyeOff v-if="showLogoutPinDigits" class="w-4 h-4" />
-              <Eye v-else class="w-4 h-4" />
+              <EyeOffIcon v-if="showLogoutPinDigits" class="w-4 h-4" />
+              <EyeIcon v-else class="w-4 h-4" />
             </button>
           </div>
 
@@ -724,7 +732,7 @@ onUnmounted(() => {
               :aria-label="digit === 'delete' ? 'Backspace PIN' : digit || undefined"
               @click="digit === 'delete' ? deleteLastPinDigit() : appendPin(digit)"
             >
-              <Delete v-if="digit === 'delete'" class="w-6 h-6" />
+              <BackspaceIcon v-if="digit === 'delete'" class="w-6 h-6" />
               <template v-else>{{ digit }}</template>
             </button>
           </div>
@@ -803,7 +811,7 @@ onUnmounted(() => {
               <template v-if="showPinDigits">
                 {{ pin[i - 1] ?? '' }}
               </template>
-              <Circle v-else class="w-3.5 h-3.5 transition-all" :style="i <= pin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
+              <RecordIcon v-else class="w-3.5 h-3.5 transition-all" :style="i <= pin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
             </div>
           </div>
           <button
@@ -814,8 +822,8 @@ onUnmounted(() => {
             :aria-label="showPinDigits ? 'Hide PIN' : 'Show PIN'"
             @click="showPinDigits = !showPinDigits"
           >
-            <EyeOff v-if="showPinDigits" class="w-4 h-4" />
-            <Eye v-else class="w-4 h-4" />
+            <EyeOffIcon v-if="showPinDigits" class="w-4 h-4" />
+            <EyeIcon v-else class="w-4 h-4" />
           </button>
         </div>
 
@@ -837,7 +845,7 @@ onUnmounted(() => {
             :aria-label="digit === 'delete' ? 'Backspace PIN' : digit || undefined"
             @click="digit === 'delete' ? deleteLastPinDigit() : appendPin(digit)"
           >
-            <Delete v-if="digit === 'delete'" class="w-6 h-6" />
+            <BackspaceIcon v-if="digit === 'delete'" class="w-6 h-6" />
             <template v-else>{{ digit }}</template>
           </button>
         </div>

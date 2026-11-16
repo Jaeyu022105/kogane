@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LockKeyhole } from 'lucide-vue-next';
+import LockKeyholeIcon from 'reicon-vue/icons/LockKeyhole';
 import type { ButtonElementDef } from '~/lib/uiTypes';
 import { isLightColor } from '~/lib/workspaceBranding';
 
@@ -38,7 +38,7 @@ async function handleClick() {
     @click="handleClick"
   >
     <span class="inline-flex items-center justify-center gap-2">
-      <LockKeyhole v-if="disabled" class="w-3.5 h-3.5" />
+      <LockKeyholeIcon v-if="disabled" class="w-3.5 h-3.5" />
       {{ element.text }}
     </span>
   </button>

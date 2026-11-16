@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { AlertTriangle, ArrowLeft, ArrowRight, X } from 'lucide-vue-next';
+import AlertTriangleIcon from 'reicon-vue/icons/AlertTriangle';
+import ArrowLeftIcon from 'reicon-vue/icons/ArrowLeft';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import XIcon from 'reicon-vue/icons/X';
 import ElementRenderer from '~/components/ElementRenderer.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
@@ -270,7 +273,7 @@ onUnmounted(() => {
           class="p-0.5 rounded-full hover:opacity-75 shrink-0"
           @click="dismissedWelcome = true"
         >
-          <X class="w-3.5 h-3.5" />
+          <XIcon class="w-3.5 h-3.5" />
         </button>
       </div>
 
@@ -279,7 +282,7 @@ onUnmounted(() => {
         role="alert"
         class="fixed top-3 right-4 z-[80] max-w-sm flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-xs font-medium shadow-lg border bg-red-600/95 text-white border-red-400/50"
       >
-        <AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" />
+        <AlertTriangleIcon class="w-4 h-4 shrink-0 mt-0.5" />
         <span class="flex-1 leading-snug">{{ runtime.state.value.lastError }}</span>
         <button
           type="button"
@@ -287,7 +290,7 @@ onUnmounted(() => {
           class="p-0.5 rounded-full hover:bg-white/20 shrink-0"
           @click="runtime.clearError()"
         >
-          <X class="w-3.5 h-3.5" />
+          <XIcon class="w-3.5 h-3.5" />
         </button>
       </div>
 
@@ -298,7 +301,7 @@ onUnmounted(() => {
         aria-live="polite"
       >
         <button type="button" class="rounded-full p-1" aria-label="Show the previous workspace area" @click.stop="scrollWorkspace('left')">
-          <ArrowLeft class="h-3.5 w-3.5" />
+          <ArrowLeftIcon class="h-3.5 w-3.5" />
         </button>
         <button
           type="button"
@@ -309,7 +312,7 @@ onUnmounted(() => {
           {{ fitToWidth ? 'Fit Screen' : 'Scroll 100%' }}
         </button>
         <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
-          <ArrowRight class="h-3.5 w-3.5" />
+          <ArrowRightIcon class="h-3.5 w-3.5" />
         </button>
       </div>
 

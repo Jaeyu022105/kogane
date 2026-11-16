@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { Camera, QrCode, Eye, EyeOff } from 'lucide-vue-next';
+import CameraIcon from 'reicon-vue/icons/Camera';
+import QrIcon from 'reicon-vue/icons/Qr';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import AlertCircleIcon from 'reicon-vue/icons/AlertCircle';
+import TextSquareIcon from 'reicon-vue/icons/TextSquare';
 
 definePageMeta({ layout: 'default' });
 
@@ -450,10 +455,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
         :class="{ 'login-brand--centered': mode === 'signup' && signupStep > 0 }"
       >
         <div class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="3" />
-            <path d="M8 12h8 M8 8h5 M8 16h6" />
-          </svg>
+          <TextSquareIcon />
         </div>
         <div>
           <span class="brand-name">Kogane</span>
@@ -563,7 +565,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                       alt="Profile preview"
                       class="w-full h-full object-cover"
                     />
-                    <Camera
+                    <CameraIcon
                       v-else
                       class="w-5 h-5"
                       aria-hidden="true"
@@ -645,8 +647,8 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                         :aria-label="signupPasswordVisible ? 'Hide password' : 'Show password'"
                         @click="signupPasswordVisible = !signupPasswordVisible"
                       >
-                        <EyeOff v-if="signupPasswordVisible" class="w-4 h-4" aria-hidden="true" />
-                        <Eye v-else class="w-4 h-4" aria-hidden="true" />
+                        <EyeOffIcon v-if="signupPasswordVisible" class="w-4 h-4" aria-hidden="true" />
+                        <EyeIcon v-else class="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -669,8 +671,8 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                         :aria-label="signupConfirmPasswordVisible ? 'Hide password' : 'Show password'"
                         @click="signupConfirmPasswordVisible = !signupConfirmPasswordVisible"
                       >
-                        <EyeOff v-if="signupConfirmPasswordVisible" class="w-4 h-4" aria-hidden="true" />
-                        <Eye v-else class="w-4 h-4" aria-hidden="true" />
+                        <EyeOffIcon v-if="signupConfirmPasswordVisible" class="w-4 h-4" aria-hidden="true" />
+                        <EyeIcon v-else class="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -766,8 +768,8 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     :aria-label="loginPasswordVisible ? 'Hide password' : 'Show password'"
                     @click="loginPasswordVisible = !loginPasswordVisible"
                   >
-                    <EyeOff v-if="loginPasswordVisible" class="w-4 h-4" aria-hidden="true" />
-                    <Eye v-else class="w-4 h-4" aria-hidden="true" />
+                    <EyeOffIcon v-if="loginPasswordVisible" class="w-4 h-4" aria-hidden="true" />
+                    <EyeIcon v-else class="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -828,7 +830,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
                     alt="Two-factor authentication QR code"
                     class="w-40 h-40 border border-[#E3C7B9] bg-white p-1"
                   />
-                  <QrCode v-else class="w-16 h-16" aria-hidden="true" style="color: #68293A;" />
+                  <QrIcon v-else class="w-16 h-16" aria-hidden="true" style="color: #68293A;" />
                   <p class="qr-text">Scan with Google Authenticator, Authy, 1Password, or Apple Passwords.</p>
                   <div v-if="twoFactorSecret" class="mt-2 w-full text-center">
                     <span class="secret-label">Manual entry key</span>
@@ -889,11 +891,7 @@ const years = Array.from({ length: 100 }, (_, i) => String(currentYear - i));
             </template>
 
             <div v-if="error" class="login-error" role="alert">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+              <AlertCircleIcon aria-hidden="true" />
               <span>{{ error }}</span>
             </div>
           </form>

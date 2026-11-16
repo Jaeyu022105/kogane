@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Eye, EyeOff, KeyRound, Link2, Check, Trash2, ArrowRight, Settings2, RefreshCw } from 'lucide-vue-next';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import KeyIcon from 'reicon-vue/icons/Key';
+import Link2Icon from 'reicon-vue/icons/Link2';
+import CheckIcon from 'reicon-vue/icons/Check';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import Setting2Icon from 'reicon-vue/icons/Setting2';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
 import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
 import { getTerminalPresetStatus } from '~/lib/builderPresets';
 import { presetByRoleOrKey } from '~/lib/permissions';
@@ -221,7 +229,7 @@ async function deleteTerminal() {
         @click="deleteTerminal"
       >
         <div v-if="deleting" class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-        <Trash2 v-else class="w-4 h-4" />
+        <TrashIcon v-else class="w-4 h-4" />
       </button>
     </div>
 
@@ -236,8 +244,8 @@ async function deleteTerminal() {
         :aria-label="copiedLink ? 'Terminal link copied' : (isOnlineHost ? 'Copy terminal link' : 'Copy LAN terminal link')"
         @click="copyLink"
       >
-        <Check v-if="copiedLink" class="w-3.5 h-3.5 text-emerald-600" />
-        <Link2 v-else class="w-3.5 h-3.5" />
+        <CheckIcon v-if="copiedLink" class="w-3.5 h-3.5 text-emerald-600" />
+        <Link2Icon v-else class="w-3.5 h-3.5" />
         {{ copiedLink ? 'Copied Link' : (isOnlineHost ? 'Copy Link' : 'Copy LAN Link') }}
       </button>
 
@@ -254,7 +262,7 @@ async function deleteTerminal() {
           :aria-label="copiedPin ? 'PIN copied' : 'Copy terminal PIN'"
           @click="copyPin"
         >
-          <KeyRound class="w-3.5 h-3.5 shrink-0" style="color: rgba(61, 24, 32, 0.5);" />
+          <KeyIcon class="w-3.5 h-3.5 shrink-0" style="color: rgba(61, 24, 32, 0.5);" />
           <span>{{ copiedPin ? 'Copied!' : (showPin ? terminal.pin_code : '••••') }}</span>
         </button>
         <button
@@ -265,8 +273,8 @@ async function deleteTerminal() {
           :title="showPin ? 'Hide PIN' : 'Show PIN'"
           :aria-label="showPin ? 'Hide PIN' : 'Show PIN'"
         >
-          <EyeOff v-if="showPin" class="w-3.5 h-3.5" />
-          <Eye v-else class="w-3.5 h-3.5" />
+          <EyeOffIcon v-if="showPin" class="w-3.5 h-3.5" />
+          <EyeIcon v-else class="w-3.5 h-3.5" />
         </button>
       </div>
       <div
@@ -274,7 +282,7 @@ async function deleteTerminal() {
         class="text-xs font-medium px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 select-none"
         style="color: rgba(61, 24, 32, 0.35); background: rgba(61, 24, 32, 0.03);"
       >
-        <KeyRound class="w-3.5 h-3.5 opacity-40" />
+        <KeyIcon class="w-3.5 h-3.5 opacity-40" />
         <span>No PIN</span>
       </div>
     </div>
@@ -288,7 +296,7 @@ async function deleteTerminal() {
       :disabled="syncing"
       @click="syncPreset"
     >
-      <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
+      <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
       {{ syncing ? 'Syncing preset...' : 'Sync preset' }}
     </button>
 
@@ -303,7 +311,7 @@ async function deleteTerminal() {
         :title="presetStatus.linked ? 'Re-sync terminal with latest template' : 'Link and sync with official preset'"
         @click="syncPreset"
       >
-        <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
+        <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
         {{ syncing ? 'Syncing...' : 'Sync preset' }}
       </button>
 
@@ -313,7 +321,7 @@ async function deleteTerminal() {
         style="color: rgba(61, 24, 32, 0.6); background: rgba(61, 24, 32, 0.06);"
       >
         <div class="flex items-center justify-center gap-1.5">
-          <Settings2 class="w-3.5 h-3.5" /> Options
+          <Setting2Icon class="w-3.5 h-3.5" /> Options
         </div>
       </NuxtLink>
       <NuxtLink
@@ -322,7 +330,7 @@ async function deleteTerminal() {
         style="color: rgb(var(--shell-pink)); background: rgba(232, 116, 138, 0.1);"
       >
         <div class="flex items-center justify-center gap-1.5">
-          Open <ArrowRight class="w-3.5 h-3.5" />
+          Open <ArrowRightIcon class="w-3.5 h-3.5" />
         </div>
       </NuxtLink>
     </div>

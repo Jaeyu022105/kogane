@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ImageUp, LockKeyhole } from 'lucide-vue-next';
+import ImageUpIcon from 'reicon-vue/icons/ImageUp';
+import LockKeyholeIcon from 'reicon-vue/icons/LockKeyhole';
 import { getElementEvents, type UploadElementDef } from '~/lib/uiTypes';
 import { resolveRuntimePathTemplate } from '~/lib/runtime';
 import { isLightColor } from '~/lib/workspaceBranding';
@@ -60,8 +61,8 @@ async function handleClick() {
   >
     <div class="flex items-center gap-3">
       <div class="flex h-10 w-10 items-center justify-center rounded-2xl" :style="{ background: iconBg }">
-        <LockKeyhole v-if="disabled" class="w-4 h-4" />
-        <ImageUp v-else class="w-4 h-4" />
+        <LockKeyholeIcon v-if="disabled" class="w-4 h-4" />
+        <ImageUpIcon v-else class="w-4 h-4" />
       </div>
       <div class="min-w-0">
         <p class="text-sm font-semibold">{{ element.buttonLabel ?? 'Upload file' }}</p>
