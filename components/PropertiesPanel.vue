@@ -513,7 +513,7 @@ function applyThemeToCurrentWidgets() {
             </p>
           </div>
           <button
-            class="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors"
+            class="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-colors"
             style="background: rgba(61,24,32,0.06); color: rgb(var(--shell-sidebar)); border: 1px solid rgba(61,24,32,0.12);"
             @click="applyThemeToCurrentWidgets"
           >
@@ -710,7 +710,7 @@ function applyThemeToCurrentWidgets() {
             <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">{{ selectedElement.label || '(unnamed)' }}</p>
           </div>
           <button
-            class="text-xs px-2.5 py-1 rounded-full font-medium transition-colors"
+            class="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors"
             style="color: #dc2626; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.18);"
             @click="removeElement(selectedElement.id)"
           >
@@ -737,8 +737,8 @@ function applyThemeToCurrentWidgets() {
             <div><label class="text-xs block mb-1" style="color: rgba(61,24,32,0.4);">Height</label><input type="number" :value="selectedElement.position.height" class="input-warm w-full px-2 py-1 text-sm" @input="patchPosition({ height: Number(($event.target as HTMLInputElement).value) })" /></div>
           </div>
           <div class="flex gap-2 pt-1">
-            <button class="flex-1 text-xs py-1.5 rounded-full font-medium transition-colors" style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.55);" @click="sendBackward(selectedElement.id)">Back</button>
-            <button class="flex-1 text-xs py-1.5 rounded-full font-medium transition-colors" style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.55);" @click="bringForward(selectedElement.id)">Forward</button>
+            <button class="flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors" style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.55);" @click="sendBackward(selectedElement.id)">Back</button>
+            <button class="flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors" style="border: 1.5px solid rgba(61,24,32,0.15); color: rgba(61,24,32,0.55);" @click="bringForward(selectedElement.id)">Forward</button>
           </div>
         </section>
 

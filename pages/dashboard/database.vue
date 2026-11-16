@@ -590,15 +590,16 @@ function getTablePositionSafe(name: string) {
 </script>
 
 <template>
-  <div class="relative flex-1 min-h-0 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="relative flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Left sidebar: schema / table tree ──────────────────────────────── -->
-    <aside class="w-56 shrink-0 min-h-0 flex flex-col overflow-hidden overscroll-contain" style="background: #1a0e11; border-right: 1px solid rgba(255,255,255,0.05);">
+    <aside class="database-tables w-full max-h-[38dvh] md:max-h-none md:w-56 shrink-0 min-h-0 flex flex-col overflow-hidden overscroll-contain">
       <!-- Header -->
-      <div class="px-4 py-3 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(255,255,255,0.07);">
-        <span class="text-xs font-semibold tracking-widest uppercase" style="color: rgba(245,237,228,0.4);">Tables</span>
+      <div class="px-4 py-3 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
+        <span class="text-[10px] font-bold tracking-[0.2em] uppercase" style="color: rgba(61,24,32,0.45);">Tables</span>
         <button
-          class="text-xs font-semibold px-2 py-0.5 rounded transition-all"
-          style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.12);"
+          type="button"
+          class="text-xs font-semibold px-2 py-1 rounded-lg transition-all hover:opacity-80"
+          style="color: rgb(var(--shell-pink)); background: rgba(255,87,118,0.12);"
           title="New table"
           @click="showNewTable = true"
         >
@@ -610,43 +611,39 @@ function getTablePositionSafe(name: string) {
 
       <!-- Schema label -->
       <div class="px-4 pt-3 pb-1">
-        <p class="text-xs font-semibold" style="color: rgba(245,237,228,0.25);">
+        <p class="text-[11px] font-mono" style="color: rgba(61,24,32,0.4);">
           {{ business?.schemaName ?? '—' }}
         </p>
       </div>
 
       <!-- Table list -->
       <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain py-1 px-2">
-        <div v-if="loading" class="px-2 py-4 text-xs" style="color: rgba(245,237,228,0.25);">Loading…</div>
+        <div v-if="loading" class="px-2 py-4 text-xs" style="color: rgba(61,24,32,0.4);">Loading…</div>
 
         <button
           v-for="table in tables"
           :key="table"
-          class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all mb-0.5"
-          :style="selectedTable === table
-            ? 'background: rgba(232,116,138,0.15); color: rgb(232,116,138);'
-            : 'color: rgba(245,237,228,0.55);'"
+          type="button"
+          class="database-table-item w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition-all mb-0.5"
+          :class="{ 'is-active': selectedTable === table }"
+          :aria-current="selectedTable === table ? 'true' : undefined"
           @click="selectTable(table)"
-          @mouseenter="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = 'rgba(245,237,228,0.05)'; }"
-          @mouseleave="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = ''; }"
         >
-          <DatabaseIcon class="w-3 h-3 opacity-50" :weight="selectedTable === table ? 'Filled' : 'Outline'" />
+          <DatabaseIcon class="w-3.5 h-3.5 opacity-60" :weight="selectedTable === table ? 'Filled' : 'Outline'" />
           <span class="font-mono truncate">{{ table }}</span>
         </button>
 
-        <div v-if="!loading && tables.length === 0" class="px-2 py-4 text-xs text-center" style="color: rgba(245,237,228,0.2);">
+        <div v-if="!loading && tables.length === 0" class="px-2 py-4 text-xs text-center" style="color: rgba(61,24,32,0.4);">
           No tables yet
         </div>
       </div>
 
       <!-- Presets button -->
-      <div class="p-3 shrink-0" style="border-top: 1px solid rgba(255,255,255,0.05);">
+      <div class="p-3 shrink-0" style="border-top: 1px solid rgba(61,24,32,0.08);">
         <button
-          class="w-full text-xs font-medium py-1.5 rounded-lg transition-all"
-          style="color: rgba(245,237,228,0.4); background: rgba(245,237,228,0.05);"
+          type="button"
+          class="btn-ghost w-full bg-white text-xs py-2"
           @click="showPresets = !showPresets"
-          @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.75)'"
-          @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.4)'"
         >
           <div class="flex items-center justify-center gap-1.5">
             <ElementIcon class="w-3.5 h-3.5" /> Presets
@@ -678,14 +675,14 @@ function getTablePositionSafe(name: string) {
         <div v-if="selectedTable" class="flex items-center gap-2 shrink-0">
           <div class="flex bg-gray-100 rounded-lg p-1 mr-4" style="background: rgba(61,24,32,0.06);">
             <button
-              class="text-xs px-3 py-1.5 rounded-md transition-all font-semibold"
+              class="text-xs px-3 py-1.5 rounded-lg transition-all font-semibold"
               :style="viewMode === 'data' ? 'background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: rgb(var(--shell-sidebar));' : 'color: rgba(61,24,32,0.5);'"
               @click="viewMode = 'data'"
             >
               Data
             </button>
             <button
-              class="text-xs px-3 py-1.5 rounded-md transition-all font-semibold"
+              class="text-xs px-3 py-1.5 rounded-lg transition-all font-semibold"
               :style="viewMode === 'schema' ? 'background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: rgb(var(--shell-sidebar));' : 'color: rgba(61,24,32,0.5);'"
               @click="viewMode = 'schema'"
             >
@@ -722,7 +719,7 @@ function getTablePositionSafe(name: string) {
             Drop Table
           </button>
           <button
-            class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all btn-primary btn-ribbon"
+            class="text-xs font-semibold px-3 py-1.5 transition-all btn-primary btn-ribbon"
             @click="loadRows"
           >
             <div class="flex items-center gap-1.5">
@@ -740,7 +737,7 @@ function getTablePositionSafe(name: string) {
             <DatabaseIcon class="w-12 h-12 mx-auto" style="color: rgba(61,24,32,0.12);" />
             <p class="text-sm" style="color: rgba(61,24,32,0.3);">Pick a table from the sidebar</p>
             <button
-              class="mt-2 text-xs font-semibold px-4 py-2 rounded-full transition-all btn-primary btn-ribbon"
+              class="mt-2 text-xs font-semibold px-4 py-2 transition-all btn-primary btn-ribbon"
               @click="showNewTable = true"
             >
               <div class="flex items-center justify-center gap-1.5">
@@ -997,7 +994,7 @@ function getTablePositionSafe(name: string) {
             <button
               type="button"
               :disabled="creatingPreset || !newPresetName.trim()"
-              class="w-full py-1.5 text-xs rounded-lg font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
+              class="w-full py-1.5 text-xs font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
               @click="createSchemaPreset"
             >
               {{ creatingPreset ? 'Saving...' : 'Save Current Tables as Preset' }}
@@ -1094,7 +1091,7 @@ function getTablePositionSafe(name: string) {
             <div class="flex items-center gap-1.5 pt-1">
               <button
                 :disabled="applyingId === preset.id"
-                class="flex-1 py-1.5 text-xs rounded-full font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
+                class="flex-1 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
                 @click="applyPreset(preset.id)"
               >
                 {{ applyingId === preset.id ? 'Applying…' : (applyTargetTerminalId ? 'Apply to Terminal' : 'Apply Preset') }}
@@ -1231,14 +1228,14 @@ function getTablePositionSafe(name: string) {
             </div>
             <div class="flex gap-3">
               <button
-                class="flex-1 py-2.5 text-sm font-medium rounded-full transition-all"
+                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all"
                 style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65);"
                 @click="showNewTable = false"
               >
                 Cancel
               </button>
               <button
-                class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40 btn-primary btn-ribbon"
+                class="flex-1 py-2.5 text-sm font-semibold transition-all disabled:opacity-40 btn-primary btn-ribbon"
                 :disabled="!newTableName.trim() || saving"
                 @click="handleCreate"
               >
@@ -1309,14 +1306,14 @@ function getTablePositionSafe(name: string) {
             </div>
             <div class="flex gap-3">
               <button
-                class="flex-1 py-2.5 text-sm font-medium rounded-full transition-all"
+                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all"
                 style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65);"
                 @click="showAddRow = false"
               >
                 Cancel
               </button>
               <button
-                class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40 btn-primary btn-ribbon"
+                class="flex-1 py-2.5 text-sm font-semibold transition-all disabled:opacity-40 btn-primary btn-ribbon"
                 :disabled="addingRow"
                 @click="handleAddRow"
               >
@@ -1329,3 +1326,31 @@ function getTablePositionSafe(name: string) {
     </Transition>
   </div>
 </template>
+
+<style scoped>
+.database-tables {
+  background: #FBF4ED;
+  border-bottom: 1px solid rgba(61, 24, 32, 0.08);
+}
+
+@media (min-width: 768px) {
+  .database-tables {
+    border-bottom: 0;
+    border-right: 1px solid rgba(61, 24, 32, 0.08);
+  }
+}
+
+.database-table-item {
+  color: rgba(61, 24, 32, 0.72);
+}
+
+.database-table-item:hover {
+  background: rgba(61, 24, 32, 0.05);
+}
+
+.database-table-item.is-active {
+  background: rgba(255, 87, 118, 0.12);
+  color: rgb(var(--shell-sidebar));
+  font-weight: 600;
+}
+</style>

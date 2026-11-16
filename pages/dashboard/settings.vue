@@ -397,7 +397,7 @@ const businessDetailItems = computed(() => {
         </div>
 
         <button
-          class="w-full py-3 text-sm font-semibold rounded-lg transition-all active:scale-[0.98] btn-primary btn-ribbon"
+          class="w-full py-3 text-sm font-semibold transition-all active:scale-[0.98] btn-primary btn-ribbon"
           @click="openOnboarding"
         >
           {{ t('settings_open_setup_wizard') }}
@@ -476,7 +476,7 @@ const businessDetailItems = computed(() => {
         </div>
 
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
+          class="w-full py-2.5 text-sm font-semibold transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
           :disabled="savingCountry"
           @click="saveCountrySettings"
         >
@@ -518,7 +518,7 @@ const businessDetailItems = computed(() => {
         </div>
 
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 btn-ghost"
+          class="w-full py-2.5 text-sm font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2 btn-ghost"
           @click="openOnboarding"
         >
           <SparklesIcon class="w-4 h-4" style="color: rgb(232,116,138);" />
@@ -654,7 +654,7 @@ const businessDetailItems = computed(() => {
         </div>
 
         <button
-          class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon flex items-center justify-center gap-2"
+          class="w-full py-2.5 text-sm font-semibold transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon flex items-center justify-center gap-2"
           :disabled="changingPassword || !currentPassword || !newPassword"
           @click="handlePasswordChange"
         >
@@ -716,7 +716,7 @@ const businessDetailItems = computed(() => {
         <template v-if="!session?.has2fa">
           <div v-if="!twoFactorSecret">
             <button
-              class="py-2.5 px-4 text-xs font-semibold rounded-lg btn-primary btn-ribbon flex items-center gap-2 disabled:opacity-40"
+              class="py-2.5 px-4 text-xs font-semibold btn-primary btn-ribbon flex items-center gap-2 disabled:opacity-40"
               :disabled="twoFactorLoading"
               @click="beginTwoFactorSetup"
             >
@@ -759,7 +759,7 @@ const businessDetailItems = computed(() => {
                 />
               </div>
               <button
-                class="py-2 px-4 text-xs font-semibold rounded-lg btn-primary btn-ribbon h-9 disabled:opacity-40"
+                class="py-2 px-4 text-xs font-semibold btn-primary btn-ribbon h-9 disabled:opacity-40"
                 :disabled="twoFactorLoading"
                 @click="activateTwoFactor"
               >
@@ -902,7 +902,7 @@ const businessDetailItems = computed(() => {
             <button
               v-if="!item.isCurrent"
               type="button"
-              class="text-xs px-2.5 py-1 rounded flex items-center gap-1 shrink-0"
+              class="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 shrink-0"
               style="background: white; border: 1px solid rgba(61,24,32,0.15); color: #dc2626;"
               :disabled="revokingSessionId === item.id"
               @click="revokeSession({ sessionId: item.id })"

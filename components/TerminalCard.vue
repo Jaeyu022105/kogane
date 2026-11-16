@@ -221,7 +221,7 @@ async function deleteTerminal() {
       </div>
       <button
         type="button"
-        class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-all border-none cursor-pointer"
+        class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center transition-all border-none cursor-pointer"
         style="background: rgba(239, 68, 68, 0.06); color: #b42318;"
         :disabled="deleting"
         :title="deleting ? 'Deleting...' : 'Delete terminal'"
@@ -301,23 +301,23 @@ async function deleteTerminal() {
     </button>
 
     <!-- Actions row -->
-    <div class="flex items-center gap-2 mt-auto">
+    <div class="grid grid-flow-col auto-cols-fr gap-2 mt-auto">
       <button
         v-if="!presetStatus.updateAvailable && presetStatus.canSync"
         type="button"
-        class="text-xs font-medium px-2.5 py-1.5 rounded-md transition-all border-none cursor-pointer flex items-center gap-1 disabled:opacity-50"
+        class="text-xs font-medium px-2 py-2 rounded-lg transition-all border-none cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-50"
         style="color: rgba(61, 24, 32, 0.65); background: rgba(61, 24, 32, 0.06);"
         :disabled="syncing"
         :title="presetStatus.linked ? 'Re-sync terminal with latest template' : 'Link and sync with official preset'"
         @click="syncPreset"
       >
         <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
-        {{ syncing ? 'Syncing...' : 'Sync preset' }}
+        {{ syncing ? 'Syncing…' : 'Sync' }}
       </button>
 
       <NuxtLink
         :to="`/dashboard/terminals/${terminal.id}`"
-        class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-md transition-all no-underline"
+        class="text-center text-xs font-medium px-2 py-2 rounded-lg transition-all no-underline whitespace-nowrap"
         style="color: rgba(61, 24, 32, 0.6); background: rgba(61, 24, 32, 0.06);"
       >
         <div class="flex items-center justify-center gap-1.5">
@@ -326,7 +326,7 @@ async function deleteTerminal() {
       </NuxtLink>
       <NuxtLink
         :to="terminal.is_public && terminal.public_slug ? `/t/${terminal.public_slug}` : `/terminal/${terminal.id}`"
-        class="text-center text-xs font-semibold px-3 py-1.5 rounded-md transition-all no-underline"
+        class="text-center text-xs font-semibold px-2 py-2 rounded-lg transition-all no-underline whitespace-nowrap"
         style="color: rgb(var(--shell-pink)); background: rgba(232, 116, 138, 0.1);"
       >
         <div class="flex items-center justify-center gap-1.5">

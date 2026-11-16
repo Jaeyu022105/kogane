@@ -250,7 +250,7 @@ async function matchColorsToLogo() {
       <div class="flex flex-wrap gap-2">
         <button
           type="button"
-          class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all disabled:opacity-40 shrink-0 btn-ghost"
+          class="flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-all disabled:opacity-40 shrink-0 btn-ghost"
           :disabled="uploadingLogo"
           @click="uploadLogo"
         >
@@ -260,7 +260,7 @@ async function matchColorsToLogo() {
         <button
           v-if="logoUrl"
           type="button"
-          class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all disabled:opacity-40 shrink-0 btn-ghost"
+          class="flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-all disabled:opacity-40 shrink-0 btn-ghost"
           :disabled="matchingLogo"
           @click="matchColorsToLogo"
         >
@@ -270,7 +270,7 @@ async function matchColorsToLogo() {
         <button
           v-if="logoUrl"
           type="button"
-          class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all disabled:opacity-40 shrink-0 btn-ghost"
+          class="flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-all disabled:opacity-40 shrink-0 btn-ghost"
           :disabled="uploadingLogo"
           :aria-label="t('brandkit_remove_logo')"
           @click="removeLogo"
@@ -454,7 +454,7 @@ async function matchColorsToLogo() {
 
     <button
       type="button"
-      class="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
+      class="w-full py-2.5 text-sm font-semibold transition-all disabled:opacity-40 active:scale-[0.98] btn-primary btn-ribbon"
       :disabled="saving"
       @click="saveBrandKit"
     >

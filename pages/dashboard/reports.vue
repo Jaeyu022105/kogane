@@ -502,7 +502,7 @@ onUnmounted(() => {
 
         <button
           type="button"
-          class="flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg shrink-0 transition-all active:scale-[0.97] btn-ghost cursor-pointer"
+          class="flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 transition-all active:scale-[0.97] btn-ghost cursor-pointer"
           :disabled="exporting"
           @click="exportCsv"
         >
@@ -588,7 +588,7 @@ onUnmounted(() => {
 
         <button
           type="button"
-          class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all active:scale-[0.97] btn-primary btn-ribbon cursor-pointer"
+          class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-all active:scale-[0.97] btn-primary btn-ribbon cursor-pointer"
           @click="loadReport()"
         >
           <PlayIcon class="w-4 h-4" /> Run Report

@@ -463,80 +463,86 @@ function clearSearch() {
     <div class="px-10 py-7 space-y-6">
 
       <!-- ── Filter bar ─────────────────────────────────────────── -->
-      <div class="relative flex flex-wrap items-end gap-3">
-        <div class="flex items-center gap-1.5 shrink-0 pb-2" style="color: rgba(61,24,32,0.35);">
-          <FilterIcon class="w-3.5 h-3.5" />
-          <span class="text-[10px] font-mono uppercase tracking-widest">Filters</span>
+      <div class="relative space-y-2.5">
+        <div class="relative flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center gap-1.5 shrink-0" style="color: rgba(61,24,32,0.35);">
+            <FilterIcon class="w-3.5 h-3.5" />
+            <span class="text-[10px] font-mono uppercase tracking-widest">Filters</span>
+          </div>
+
+          <div class="relative flex-1 min-w-0 sm:max-w-md">
+            <label for="audit-search" class="sr-only">Search audit logs</label>
+            <SearchIcon class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color: rgba(61,24,32,0.45);" />
+            <input
+              id="audit-search"
+              v-model="searchQuery"
+              type="search"
+              placeholder="Search actor, record ID, table, payload…"
+              class="input-warm w-full pl-8 pr-7 py-2 text-xs"
+              @keydown.enter="applyFilters"
+            />
+            <button
+              v-if="searchQuery"
+              type="button"
+              aria-label="Clear search"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/5"
+              @click="clearSearch"
+            >
+              <XIcon class="w-3 h-3" />
+            </button>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-2 sm:ml-auto">
+            <button
+              type="button"
+              class="px-4 py-2 text-xs font-semibold transition-all active:scale-[0.97] btn-primary btn-ribbon"
+              @click="applyFilters"
+            >
+              Apply
+            </button>
+
+            <button
+              v-if="hasActiveFilters"
+              type="button"
+              class="px-3 py-2 text-xs font-medium btn-ghost"
+              @click="resetFilters"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
-        <div class="relative flex-1 min-w-[210px] max-w-xs">
-          <label for="audit-search" class="sr-only">Search audit logs</label>
-          <SearchIcon class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color: rgba(61,24,32,0.45);" />
-          <input
-            id="audit-search"
-            v-model="searchQuery"
-            type="search"
-            placeholder="Search actor, record ID, table, payload…"
-            class="input-warm w-full pl-8 pr-7 py-2 text-xs"
-            @keydown.enter="applyFilters"
-          />
-          <button
-            v-if="searchQuery"
-            type="button"
-            aria-label="Clear search"
-            class="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/5"
-            @click="clearSearch"
-          >
-            <XIcon class="w-3 h-3" />
-          </button>
+        <div class="relative grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <label for="audit-actor" class="sr-only">Filter by person</label>
+          <select id="audit-actor" v-model="actorType" class="input-warm w-full min-w-0 px-3 py-2 text-xs" @change="applyFilters">
+            <option value="all">All actors</option>
+            <option value="admin">Owner workspace</option>
+            <option value="inpoint">Staff terminal</option>
+          </select>
+
+          <label for="audit-action" class="sr-only">Activity</label>
+          <select id="audit-action" v-model="actionType" class="input-warm w-full min-w-0 px-3 py-2 text-xs" @change="applyFilters">
+            <option value="">All activity</option>
+            <option v-for="filter in ACTION_FILTERS" :key="filter.value" :value="filter.value">{{ filter.label }}</option>
+          </select>
+
+          <label for="audit-target" class="sr-only">Area</label>
+          <select id="audit-target" v-model="tableFilter" class="input-warm w-full min-w-0 px-3 py-2 text-xs" @change="applyFilters">
+            <option value="">All areas</option>
+            <option v-for="filter in AREA_FILTERS" :key="filter.value" :value="filter.value">{{ filter.label }}</option>
+          </select>
+
+          <label for="audit-from" class="sr-only">Start date</label>
+          <input id="audit-from" v-model="from" type="date" class="input-warm w-full min-w-0 px-3 py-2 text-xs" />
+
+          <label for="audit-to" class="sr-only">End date</label>
+          <input id="audit-to" v-model="to" type="date" class="input-warm w-full min-w-0 px-3 py-2 text-xs" />
+
+          <label for="audit-per-page" class="sr-only">Rows per page</label>
+          <select id="audit-per-page" v-model.number="perPage" class="input-warm w-full min-w-0 px-3 py-2 text-xs" @change="applyFilters">
+            <option v-for="size in PAGE_SIZE_OPTIONS" :key="size" :value="size">{{ size }} / page</option>
+          </select>
         </div>
-
-        <label for="audit-actor" class="sr-only">Filter by person</label>
-        <select id="audit-actor" v-model="actorType" class="input-warm px-3 py-2 text-xs" @change="applyFilters">
-          <option value="all">All actors</option>
-          <option value="admin">Owner workspace</option>
-          <option value="inpoint">Staff terminal</option>
-        </select>
-
-        <label for="audit-action" class="sr-only">Activity</label>
-        <select id="audit-action" v-model="actionType" class="input-warm px-3 py-2 text-xs" @change="applyFilters">
-          <option value="">All activity</option>
-          <option v-for="filter in ACTION_FILTERS" :key="filter.value" :value="filter.value">{{ filter.label }}</option>
-        </select>
-
-        <label for="audit-target" class="sr-only">Area</label>
-        <select id="audit-target" v-model="tableFilter" class="input-warm px-3 py-2 text-xs" @change="applyFilters">
-          <option value="">All areas</option>
-          <option v-for="filter in AREA_FILTERS" :key="filter.value" :value="filter.value">{{ filter.label }}</option>
-        </select>
-
-        <label for="audit-from" class="sr-only">Start date</label>
-        <input id="audit-from" v-model="from" type="date" class="input-warm px-3 py-2 text-xs" />
-
-        <label for="audit-to" class="sr-only">End date</label>
-        <input id="audit-to" v-model="to" type="date" class="input-warm px-3 py-2 text-xs" />
-
-        <label for="audit-per-page" class="sr-only">Rows per page</label>
-        <select id="audit-per-page" v-model.number="perPage" class="input-warm px-3 py-2 text-xs" @change="applyFilters">
-          <option v-for="size in PAGE_SIZE_OPTIONS" :key="size" :value="size">{{ size }} / page</option>
-        </select>
-
-        <button
-          type="button"
-          class="px-4 py-2 text-xs font-semibold rounded-lg transition-all active:scale-[0.97] btn-primary btn-ribbon"
-          @click="applyFilters"
-        >
-          Apply
-        </button>
-
-        <button
-          v-if="hasActiveFilters"
-          type="button"
-          class="px-3 py-2 text-xs font-medium btn-ghost"
-          @click="resetFilters"
-        >
-          Reset
-        </button>
       </div>
 
       <!-- ── Log table ──────────────────────────────────────────── -->
@@ -834,7 +840,7 @@ function clearSearch() {
         <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3" style="background: rgba(61,24,32,0.02); border-top: 1px solid rgba(61,24,32,0.07);">
           <button
             type="button"
-            class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded transition-all disabled:opacity-30 btn-ghost"
+            class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 transition-all disabled:opacity-30 btn-ghost"
             :disabled="page <= 1 || loading"
             @click="page--; loadEntries()"
           >
@@ -847,7 +853,7 @@ function clearSearch() {
 
           <button
             type="button"
-            class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded transition-all disabled:opacity-30 btn-ghost"
+            class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 transition-all disabled:opacity-30 btn-ghost"
             :disabled="page * perPage >= total || loading"
             @click="page++; loadEntries()"
           >
@@ -875,7 +881,7 @@ function clearSearch() {
 
   .audit-table-grid {
     min-width: 0 !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 42%) !important;
   }
 
   .audit-table-grid > span:nth-child(2),
@@ -891,7 +897,7 @@ function clearSearch() {
 
   .audit-row {
     min-width: 0 !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 42%) !important;
     gap: 0.45rem 0.75rem !important;
   }
 
@@ -929,6 +935,7 @@ function clearSearch() {
     grid-column: 2;
     grid-row: 3;
     align-self: center;
+    justify-self: end;
   }
 
   .audit-diff-row {

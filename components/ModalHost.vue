@@ -43,7 +43,7 @@ const panelClass = computed(() => {
             <button
               v-if="state.kind === 'confirm'"
               type="button"
-              class="flex-1 rounded-full border px-4 py-2.5 text-sm font-medium"
+              class="flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium"
               style="border-color: rgba(61,24,32,0.15);"
               @click="close(false)"
             >
@@ -51,7 +51,7 @@ const panelClass = computed(() => {
             </button>
             <button
               type="button"
-              class="flex-1 rounded-full px-4 py-2.5 text-sm font-semibold"
+              class="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold"
               :style="state.confirmVariant === 'danger'
                 ? 'background: #fda4af; color: #4b1419;'
                 : 'background: rgb(var(--shell-sidebar)); color: rgb(var(--shell-sidebar-text));'"
