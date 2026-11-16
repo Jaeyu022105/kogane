@@ -30,6 +30,15 @@ export interface WorkspaceBrandConfig {
   terminalLayouts?: Record<string, string>;
 }
 
+/** What a running terminal shows of the business: name, logo, and the two brand colors. */
+export interface TerminalBrandInfo {
+  name: string;
+  logoUrl: string | null;
+  initials: string;
+  primary: string;
+  accent: string;
+}
+
 export const UI_LAYOUT_BUNDLES: WorkspaceUiBundle[] = [
   {
     key: 'aurora-service',
@@ -176,60 +185,125 @@ export function buildBusinessPalette(primary: string, bundleKey?: LayoutBundleKe
   };
 }
 
-export function buildLayoutTheme(config?: Partial<WorkspaceBrandConfig> | null): UiLayoutTheme {
-  const resolved = normalizeWorkspaceBrandConfig(config);
-  const bundle = pickBundle(resolved.layoutBundle);
-  const userAccent = config?.accent ? normalizeHex(config.accent, bundle.swatches[2]) : bundle.swatches[2];
+/**
+ * Relative luminance (WCAG) of a hex color, 0 = black, 1 = white.
+ */
+function relativeLuminance(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  const channel = (value: number) => {
+    const scaled = value / 255;
+    return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
 
-  if (bundle.key === 'paper-ledger') {
-    return {
-      frameBackground: '#ede4d8',
-      topBarBackground: 'rgba(255, 255, 255, 0.94)',
-      topBarText: '#261a14',
-      canvasBackground: '#faf6f0',
-      gridColor: 'rgba(81, 49, 31, 0.12)',
-      accentColor: userAccent || '#d97706',
-      panelBackground: '#ffffff',
-      panelHeaderBackground: '#f5ede2',
-      panelText: '#261a14',
-      panelMutedText: 'rgba(38, 26, 20, 0.68)',
-      panelBorder: 'rgba(81, 49, 31, 0.16)',
-      surfaceStyle: resolved.surfaceStyle,
-      particleEffect: resolved.particleEffect,
-    };
-  }
+/**
+ * Picks white or a deep ink for text placed on top of `background`.
+ * Typical brand colors keep white text; only pale accents (yellow, pastel, cream) flip to dark ink.
+ */
+export function readableTextColor(background?: string | null) {
+  if (!background || !/^#?[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/.test(background.trim())) return '#ffffff';
+  return relativeLuminance(normalizeHex(background)) > 0.45 ? '#1f1418' : '#ffffff';
+}
 
-  if (bundle.key === 'ink-studio') {
-    return {
-      frameBackground: '#0b111c',
-      topBarBackground: 'rgba(17, 28, 46, 0.92)',
-      topBarText: '#eef2ff',
-      canvasBackground: '#0d1524',
-      gridColor: 'rgba(238, 242, 255, 0.08)',
-      accentColor: userAccent || '#38bdf8',
-      panelBackground: '#111c2e',
-      panelHeaderBackground: 'rgba(238, 242, 255, 0.08)',
-      panelText: '#eef2ff',
-      panelMutedText: 'rgba(238, 242, 255, 0.65)',
-      panelBorder: 'rgba(238, 242, 255, 0.14)',
-      surfaceStyle: resolved.surfaceStyle,
-      particleEffect: resolved.particleEffect,
-    };
-  }
+/** Up to two initials from a business name, used when no logo has been uploaded. */
+export function brandInitials(name?: string | null) {
+  const words = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return 'K';
+  const letters = words.length === 1
+    ? Array.from(words[0]).slice(0, 2).join('')
+    : `${Array.from(words[0])[0] ?? ''}${Array.from(words[words.length - 1])[0] ?? ''}`;
+  return letters.toUpperCase() || 'K';
+}
 
-  // Default: aurora-service
-  return {
+interface BundleSurfaces {
+  frameBackground: string;
+  topBarBackground: string;
+  topBarText: string;
+  canvasBackground: string;
+  gridColor: string;
+  defaultAccent: string;
+  panelBackground: string;
+  panelHeaderBackground: string;
+  panelText: string;
+  panelMutedText: string;
+  panelBorder: string;
+}
+
+const BUNDLE_SURFACES: Record<LayoutBundleKey, BundleSurfaces> = {
+  'paper-ledger': {
+    frameBackground: '#ede4d8',
+    topBarBackground: 'rgba(255, 255, 255, 0.94)',
+    topBarText: '#261a14',
+    canvasBackground: '#faf6f0',
+    gridColor: 'rgba(81, 49, 31, 0.12)',
+    defaultAccent: '#d97706',
+    panelBackground: '#ffffff',
+    panelHeaderBackground: '#f5ede2',
+    panelText: '#261a14',
+    panelMutedText: 'rgba(38, 26, 20, 0.68)',
+    panelBorder: 'rgba(81, 49, 31, 0.16)',
+  },
+  'ink-studio': {
+    frameBackground: '#0b111c',
+    topBarBackground: 'rgba(17, 28, 46, 0.92)',
+    topBarText: '#eef2ff',
+    canvasBackground: '#0d1524',
+    gridColor: 'rgba(238, 242, 255, 0.08)',
+    defaultAccent: '#38bdf8',
+    panelBackground: '#111c2e',
+    panelHeaderBackground: 'rgba(238, 242, 255, 0.08)',
+    panelText: '#eef2ff',
+    panelMutedText: 'rgba(238, 242, 255, 0.65)',
+    panelBorder: 'rgba(238, 242, 255, 0.14)',
+  },
+  'aurora-service': {
     frameBackground: '#130d11',
     topBarBackground: 'rgba(255, 255, 255, 0.04)',
     topBarText: '#f5ede4',
     canvasBackground: '#111118',
     gridColor: 'rgba(255, 255, 255, 0.08)',
-    accentColor: userAccent || '#ff8ca6',
+    defaultAccent: '#ff8ca6',
     panelBackground: '#161116',
     panelHeaderBackground: 'rgba(255, 255, 255, 0.06)',
     panelText: '#f5ede4',
     panelMutedText: 'rgba(245, 237, 228, 0.68)',
     panelBorder: 'rgba(255, 255, 255, 0.08)',
+  },
+};
+
+export function buildLayoutTheme(config?: Partial<WorkspaceBrandConfig> | null): UiLayoutTheme {
+  const resolved = normalizeWorkspaceBrandConfig(config);
+  const bundle = pickBundle(resolved.layoutBundle);
+  const surfaces = BUNDLE_SURFACES[bundle.key];
+  const accentColor = config?.accent ? normalizeHex(config.accent, surfaces.defaultAccent) : surfaces.defaultAccent;
+  const brandColor = normalizeHex(config?.primary, bundle.primaryBias);
+  const isPaper = bundle.key === 'paper-ledger';
+
+  // Only an explicit business primary tints the frame; panels stay neutral so data stays easy to read.
+  const tint = config?.primary
+    ? {
+        frameBackground: mixHex(surfaces.frameBackground, brandColor, isPaper ? 0.1 : 0.16),
+        canvasBackground: mixHex(surfaces.canvasBackground, brandColor, isPaper ? 0.04 : 0.08),
+        gridColor: alphaHex(isPaper ? brandColor : mixHex(brandColor, '#ffffff', 0.6), isPaper ? 0.12 : 0.1),
+      }
+    : {};
+
+  return {
+    frameBackground: surfaces.frameBackground,
+    topBarBackground: surfaces.topBarBackground,
+    topBarText: surfaces.topBarText,
+    canvasBackground: surfaces.canvasBackground,
+    gridColor: surfaces.gridColor,
+    ...tint,
+    accentColor,
+    accentTextColor: readableTextColor(accentColor),
+    brandColor,
+    panelBackground: surfaces.panelBackground,
+    panelHeaderBackground: surfaces.panelHeaderBackground,
+    panelText: surfaces.panelText,
+    panelMutedText: surfaces.panelMutedText,
+    panelBorder: surfaces.panelBorder,
     surfaceStyle: resolved.surfaceStyle,
     particleEffect: resolved.particleEffect,
   };
@@ -246,7 +320,7 @@ function applyElementDefaults(element: ElementDef, theme: UiLayoutTheme, style: 
       return {
         ...element,
         backgroundColor: theme.accentColor,
-        textColor: '#ffffff',
+        textColor: theme.accentTextColor ?? '#ffffff',
         radius: themedRadius(style, true),
       };
     case 'text':
@@ -331,6 +405,72 @@ export function applyBrandingToLayout(incoming: UiLayout, config?: Partial<Works
   return layout;
 }
 
+/** Brand keys a single terminal may override on top of the workspace brand kit. */
+export const TERMINAL_BRAND_OVERRIDE_KEYS = ['layoutBundle', 'accent', 'surfaceStyle', 'particleEffect'] as const;
+
+/**
+ * Combines the workspace brand kit with a terminal's own style override.
+ * The workspace supplies the brand colors and defaults; the terminal only wins on the keys it overrides.
+ */
+export function mergeTerminalBrandConfig(
+  workspace?: Partial<WorkspaceBrandConfig> | null,
+  terminalOverride?: Partial<WorkspaceBrandConfig> | null,
+): Partial<WorkspaceBrandConfig> {
+  const merged: Partial<WorkspaceBrandConfig> = { ...(workspace ?? {}) };
+  if (!terminalOverride) return merged;
+
+  for (const key of TERMINAL_BRAND_OVERRIDE_KEYS) {
+    const value = terminalOverride[key];
+    if (value !== undefined && value !== null && value !== '') {
+      (merged as Record<string, unknown>)[key] = value;
+    }
+  }
+  return merged;
+}
+
+function sameValue(left: unknown, right: unknown) {
+  if (Array.isArray(left) || Array.isArray(right)) return JSON.stringify(left) === JSON.stringify(right);
+  if (typeof left === 'string' && typeof right === 'string') return left.trim().toLowerCase() === right.trim().toLowerCase();
+  return left === right;
+}
+
+function rebrandElement(element: ElementDef, previous: UiLayoutTheme, next: UiLayoutTheme, nextStyle: SurfaceStyle): ElementDef {
+  const previousStyle: SurfaceStyle = previous.surfaceStyle === 'square' ? 'square' : 'rounded';
+  const previousDefaults = applyElementDefaults(element, previous, previousStyle) as unknown as Record<string, unknown>;
+  const nextDefaults = applyElementDefaults(element, next, nextStyle) as unknown as Record<string, unknown>;
+  const current = element as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...current };
+
+  for (const [key, nextValue] of Object.entries(nextDefaults)) {
+    if (sameValue(current[key], nextValue)) continue;
+    // Only move values that still match the old theme default; anything styled by hand stays put.
+    if (current[key] === undefined || sameValue(current[key], previousDefaults[key])) {
+      out[key] = nextValue;
+    }
+  }
+  return out as unknown as ElementDef;
+}
+
+/**
+ * Re-themes an existing terminal layout after the brand kit changes.
+ * Unlike `applyBrandingToLayout`, it keeps colors and corner radii that were customized in the builder.
+ */
+export function rebrandLayout(incoming: UiLayout, config?: Partial<WorkspaceBrandConfig> | null) {
+  const layout = normalizeLayout(cloneLayout(incoming));
+  const previous = layout.theme ?? DEFAULT_LAYOUT_THEME;
+  const resolved = normalizeWorkspaceBrandConfig(config);
+  const next = buildLayoutTheme(config);
+
+  layout.theme = next;
+  layout.elements = layout.elements.map((element) => rebrandElement(element, previous, next, resolved.surfaceStyle));
+  layout.modals = (layout.modals ?? []).map((modal) => ({
+    ...modal,
+    elements: modal.elements.map((element) => rebrandElement(element, previous, next, resolved.surfaceStyle)),
+  }));
+
+  return layout;
+}
+
 export async function extractPaletteFromLogoDataUrl(dataUrl: string, bundleKey?: LayoutBundleKey) {
   if (!import.meta.client) {
     return buildBusinessPalette(DEFAULT_BRAND_PRIMARY, bundleKey);
@@ -338,6 +478,8 @@ export async function extractPaletteFromLogoDataUrl(dataUrl: string, bundleKey?:
 
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
     const next = new Image();
+    // Uploaded logos may live on a storage host; ask for CORS so the canvas can read its pixels.
+    if (!dataUrl.startsWith('data:')) next.crossOrigin = 'anonymous';
     next.onload = () => resolve(next);
     next.onerror = () => reject(new Error('Unable to read logo image'));
     next.src = dataUrl;
