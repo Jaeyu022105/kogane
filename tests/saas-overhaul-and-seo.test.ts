@@ -292,6 +292,9 @@ describe('Pillar 3 — 20-Point SEO Infrastructure', () => {
   });
 
   test('server/routes/{sitemap.xml,robots.txt,llms.txt}.ts serve canonical SEO discovery endpoints', async () => {
+    // Pricing is a preview-channel page; pin the channel so this passes on main too.
+    const previousChannel = process.env.KOGANE_RELEASE_CHANNEL;
+    process.env.KOGANE_RELEASE_CHANNEL = 'preview';
     const ev = createMockH3Event('/sitemap.xml', 'kogane.app', 'https');
     expect(resolveServerSiteOrigin(ev)).toBe('https://kogane.app');
 
@@ -321,6 +324,9 @@ describe('Pillar 3 — 20-Point SEO Infrastructure', () => {
     expect(llmsTxt).toContain('Starter ($0 / mo)');
     expect(llmsTxt).toContain('Business ($15 / mo monthly, $12 / mo billed annually)');
     expect(llmsTxt).toContain('Multi-Site / Team ($49 / mo monthly, $39 / mo billed annually)');
+
+    if (previousChannel === undefined) delete process.env.KOGANE_RELEASE_CHANNEL;
+    else process.env.KOGANE_RELEASE_CHANNEL = previousChannel;
   });
 });
 

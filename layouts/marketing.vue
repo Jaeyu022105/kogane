@@ -3,12 +3,13 @@ import MenuIcon from 'reicon-vue/icons/Menu';
 import XIcon from 'reicon-vue/icons/X';
 
 const { t, locale, setLocale, loadLocale, availableLocales } = useLocale();
+const { isEnabled } = useFeatureFlags();
 const route = useRoute();
 const { isLoggedIn, hydrateSession } = useAuth();
 
 const navLinks = computed(() => [
   { label: t('nav_features'), to: '/features' },
-  { label: t('nav_pricing'), to: '/pricing' },
+  ...(isEnabled('pricing') ? [{ label: t('nav_pricing'), to: '/pricing' }] : []),
 ]);
 
 const scrolled = ref(false);
@@ -124,7 +125,7 @@ onMounted(() => {
         <div class="footer-links-group">
           <p class="footer-col-title">{{ t('footer_product') }}</p>
           <NuxtLink to="/features" class="footer-link">{{ t('nav_features') }}</NuxtLink>
-          <NuxtLink to="/pricing" class="footer-link">{{ t('nav_pricing') }}</NuxtLink>
+          <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="footer-link">{{ t('nav_pricing') }}</NuxtLink>
         </div>
 
         <div class="footer-links-group">

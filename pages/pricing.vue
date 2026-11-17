@@ -7,7 +7,7 @@ import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
 import CheckCircleIcon from 'reicon-vue/icons/CheckCircle';
 import CheckIcon from 'reicon-vue/icons/Check';
 
-definePageMeta({ layout: 'marketing' });
+definePageMeta({ layout: 'marketing', feature: 'pricing' });
 
 const { t } = useLocale();
 const { isLoggedIn, hydrateSession } = useAuth();

@@ -7,6 +7,12 @@ runConfig:
   concurrency: 80
 
 env:
+  # Release channel: production builds without branch info default to "stable", which hides
+  # preview-only features such as /pricing (see DEPLOYMENT.md section 10). Uncomment to force it.
+  # - variable: KOGANE_RELEASE_CHANNEL
+  #   value: stable
+  #   availability:
+  #     - BUILD
   - variable: NODE_ENV
     value: production
     availability:

@@ -278,3 +278,30 @@ Kogane works around all Blaze-only services cleanly with two zero-cost deploymen
    bun run tunnel
    ```
    *(Optionally set `NUXT_PUBLIC_SHARE_ORIGIN` to the generated HTTPS tunnel URL.)*
+
+---
+
+## 10. Release Channels & Feature Flags (`main` vs. `dev`)
+
+Every build belongs to a **release channel**, decided once at build time in `nuxt.config.ts`:
+
+| Channel | Built from | Unfinished features |
+| :--- | :--- | :--- |
+| `stable` | `main` (production) | Hidden |
+| `preview` | `dev`, feature branches, local `bun run dev` | Shown |
+
+How the channel is picked, in order:
+
+1. `KOGANE_RELEASE_CHANNEL=stable` or `KOGANE_RELEASE_CHANNEL=preview`, if set.
+2. The git branch: `main` is stable, anything else is preview. The branch is read from `KOGANE_BRANCH`, common CI variables (`GITHUB_REF_NAME`, `RENDER_GIT_BRANCH`, `VERCEL_GIT_COMMIT_REF`, …), or `git rev-parse`.
+3. No branch information: production builds (`NODE_ENV=production` without `DEV_MODE=true`) are stable, everything else is preview. Firebase App Hosting and Docker builds land here, so they stay stable unless told otherwise.
+
+Flags live in `lib/featureFlags.ts`. Current flags:
+
+| Flag | On `main` | What it covers |
+| :--- | :--- | :--- |
+| `pricing` | Off | `/pricing` (returns 404), nav/footer/CTA/error-page links, sitemap and `llms.txt` entries |
+
+To force one feature for a single deployment, set `KOGANE_FEATURES` at build time, for example `KOGANE_FEATURES=pricing` (turn on) or `KOGANE_FEATURES=-pricing` (turn off). At runtime, `NUXT_PUBLIC_FEATURES_PRICING=true` overrides a built server without rebuilding.
+
+To gate a new page: add an entry to `FEATURE_FLAGS`, put `definePageMeta({ feature: '<key>' })` on the page, and wrap links with `v-if="isEnabled('<key>')"` from `useFeatureFlags()`.

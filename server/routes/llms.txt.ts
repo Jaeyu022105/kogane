@@ -1,8 +1,11 @@
 import { defineEventHandler, setResponseHeader } from 'h3';
+import { featureFlagsFromConfig } from '~/lib/featureFlags';
 import { resolveServerSiteOrigin } from '../middleware/seoHeaders';
 
 export default defineEventHandler((event) => {
   const origin = resolveServerSiteOrigin(event);
+  const runtimePublic = typeof useRuntimeConfig === 'function' ? useRuntimeConfig(event)?.public : undefined;
+  const features = featureFlagsFromConfig(runtimePublic as { features?: unknown } | undefined);
   setResponseHeader(event, 'Content-Type', 'text/plain; charset=utf-8');
   setResponseHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=3600');
 
@@ -15,7 +18,9 @@ export default defineEventHandler((event) => {
     '',
     `- [Home](${origin}/): Interactive Terminal Builder overview, live preset explorer, and automatic release sync`,
     `- [Features](${origin}/features): Guided onboarding, industry schemas, visual Terminal Builder, role-scoped links, and audit history`,
-    `- [Pricing](${origin}/pricing): Transparent SaaS plans for solo operators, multi-station teams, and multi-site businesses`,
+    ...(features.pricing
+      ? [`- [Pricing](${origin}/pricing): Transparent SaaS plans for solo operators, multi-station teams, and multi-site businesses`]
+      : []),
     `- [Sitemap](${origin}/sitemap.xml): Canonical XML sitemap of public marketing and legal routes`,
     '',
     '## Built-in Terminal Presets',
@@ -30,12 +35,16 @@ export default defineEventHandler((event) => {
     '- Appointments & Intake Desk (`appointment-station`): Front-desk scheduling and check-in queue for clinics, salons, and repair desks',
     '- Directory & Roster Desk (`directory-station`): Client, patient, student, loyalty member, and staff roster records',
     '',
-    '## Pricing Overview',
-    '',
-    '- **Starter ($0 / mo)**: 1 active terminal, core presets, local and cloud testing, community updates',
-    '- **Business ($15 / mo monthly, $12 / mo billed annually)**: Up to 5 connected terminals, automatic preset updates, custom presets, full audit log history, real-time sync across devices, plus $5 / mo per extra terminal',
-    '- **Multi-Site / Team ($49 / mo monthly, $39 / mo billed annually)**: Unlimited workspaces and terminals across branches, shared custom preset library, priority preset rollouts, CSV/JSON audit exports, and role permissions',
-    '',
+    ...(features.pricing
+      ? [
+          '## Pricing Overview',
+          '',
+          '- **Starter ($0 / mo)**: 1 active terminal, core presets, local and cloud testing, community updates',
+          '- **Business ($15 / mo monthly, $12 / mo billed annually)**: Up to 5 connected terminals, automatic preset updates, custom presets, full audit log history, real-time sync across devices, plus $5 / mo per extra terminal',
+          '- **Multi-Site / Team ($49 / mo monthly, $39 / mo billed annually)**: Unlimited workspaces and terminals across branches, shared custom preset library, priority preset rollouts, CSV/JSON audit exports, and role permissions',
+          '',
+        ]
+      : []),
     '## Platform Capabilities',
     '',
     '- Guided workspace setup for industry tables, currency, brand theme, and starter terminals',

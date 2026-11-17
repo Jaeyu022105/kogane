@@ -1,4 +1,34 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { execSync } from 'node:child_process';
+import { parseFeatureOverrides, resolveFeatureFlags, resolveReleaseChannel } from './lib/featureFlags';
+
+/** Branch this build comes from: CI variables first, then the local git checkout. */
+function detectBuildBranch(): string | null {
+  const fromEnv = process.env.KOGANE_BRANCH
+    || process.env.GITHUB_HEAD_REF
+    || process.env.GITHUB_REF_NAME
+    || process.env.VERCEL_GIT_COMMIT_REF
+    || process.env.RENDER_GIT_BRANCH
+    || process.env.CF_PAGES_BRANCH
+    || process.env.BRANCH_NAME
+    || process.env.BRANCH;
+  if (fromEnv) return fromEnv;
+
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+// `main` builds the stable (production) channel; every other branch builds preview.
+const releaseChannel = resolveReleaseChannel({
+  explicitChannel: process.env.KOGANE_RELEASE_CHANNEL,
+  branch: detectBuildBranch(),
+  isProductionBuild: process.env.NODE_ENV === 'production' && process.env.DEV_MODE !== 'true',
+});
+const featureFlags = resolveFeatureFlags(releaseChannel, parseFeatureOverrides(process.env.KOGANE_FEATURES));
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: process.env.NODE_ENV !== 'production' },
@@ -52,6 +82,8 @@ export default defineNuxtConfig({
     encryptionKey: process.env.ENCRYPTION_KEY || '',
     public: {
       devMode:                process.env.DEV_MODE === 'true',
+      releaseChannel,
+      features:               featureFlags,
       enterpriseTools:       process.env.NUXT_PUBLIC_ENTERPRISE_TOOLS || '',
       shareOrigin:            process.env.NUXT_PUBLIC_SHARE_ORIGIN || '',
       siteUrl:                process.env.NUXT_PUBLIC_SITE_URL || process.env.SITE_URL || '',

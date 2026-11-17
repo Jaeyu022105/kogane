@@ -12,6 +12,7 @@ import StarIcon from 'reicon-vue/icons/Star';
 import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
 
 const { t } = useLocale();
+const { isEnabled } = useFeatureFlags();
 const { isLoggedIn } = useAuth();
 definePageMeta({ layout: 'marketing' });
 
@@ -172,7 +173,7 @@ const extras = computed(() => [
           <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary ribbon">
             {{ isLoggedIn ? t('nav_dashboard') : t('feat_cta_btn1') }}
           </NuxtLink>
-          <NuxtLink to="/pricing" class="m-btn-secondary">
+          <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="m-btn-secondary">
             {{ t('feat_cta_btn2') }}
           </NuxtLink>
         </div>
@@ -338,7 +339,7 @@ const extras = computed(() => [
           <NuxtLink :to="isLoggedIn ? '/dashboard' : '/login?mode=signup'" class="m-btn-primary ribbon">
             {{ isLoggedIn ? t('nav_dashboard') : t('feat_cta_btn1') }}
           </NuxtLink>
-          <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('feat_cta_btn2') }}</NuxtLink>
+          <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="m-btn-secondary">{{ t('feat_cta_btn2') }}</NuxtLink>
           <NuxtLink to="/login" class="m-btn-ghost">{{ t('nav_signin') }} →</NuxtLink>
         </div>
       </div>
