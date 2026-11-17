@@ -4,13 +4,37 @@
     {
       "name": "kogane-dev",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["--bun", "nuxt", "dev", "--port", "3000"],
+      "runtimeArgs": [
+        "--bun",
+        "nuxt",
+        "dev",
+        "--port",
+        "3000"
+      ],
       "port": 3000
+    },
+    {
+      "name": "kogane-dev-stable",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": [
+        "--bun",
+        "nuxt",
+        "dev",
+        "--port",
+        "3000"
+      ],
+      "port": 3000,
+      "env": {
+        "KOGANE_RELEASE_CHANNEL": "stable"
+      }
     },
     {
       "name": "kogane-preview",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", ".output/server/index.mjs"],
+      "runtimeArgs": [
+        "run",
+        ".output/server/index.mjs"
+      ],
       "port": 3000
     }
   ]

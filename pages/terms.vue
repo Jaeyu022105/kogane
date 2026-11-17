@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useLocale();
+const { isEnabled } = useFeatureFlags();
 definePageMeta({ layout: 'marketing' });
 
 usePageSeo({
@@ -53,7 +54,7 @@ const licenseItems = computed(() => [
       <nav class="legal-cross-nav" aria-label="Related documentation">
         <NuxtLink to="/privacy" class="legal-cross-link">{{ t('footer_privacy') }} &rarr;</NuxtLink>
         <NuxtLink to="/features" class="legal-cross-link">{{ t('nav_features') }} &rarr;</NuxtLink>
-        <NuxtLink to="/pricing" class="legal-cross-link">{{ t('nav_pricing') }} &rarr;</NuxtLink>
+        <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="legal-cross-link">{{ t('nav_pricing') }} &rarr;</NuxtLink>
       </nav>
     </div>
   </div>

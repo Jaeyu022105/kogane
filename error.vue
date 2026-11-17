@@ -10,6 +10,7 @@ const props = defineProps<{
 }>();
 
 const { t, loadLocale } = useLocale();
+const { isEnabled } = useFeatureFlags();
 const route = useRoute();
 
 const statusCode = computed(() => props.error?.statusCode || 500);
@@ -44,7 +45,7 @@ function handleNavigate(path: string) {
           <a href="/features" class="error-nav-link" @click.prevent="handleNavigate('/features')">
             {{ t('nav_features') }}
           </a>
-          <a href="/pricing" class="error-nav-link" @click.prevent="handleNavigate('/pricing')">
+          <a v-if="isEnabled('pricing')" href="/pricing" class="error-nav-link" @click.prevent="handleNavigate('/pricing')">
             {{ t('nav_pricing') }}
           </a>
           <a href="/login" class="error-nav-link" @click.prevent="handleNavigate('/login')">
@@ -75,7 +76,7 @@ function handleNavigate(path: string) {
             <a href="/features" class="m-btn-secondary" @click.prevent="handleNavigate('/features')">
               {{ t('nav_features') }}
             </a>
-            <a href="/pricing" class="m-btn-secondary" @click.prevent="handleNavigate('/pricing')">
+            <a v-if="isEnabled('pricing')" href="/pricing" class="m-btn-secondary" @click.prevent="handleNavigate('/pricing')">
               {{ t('nav_pricing') }}
             </a>
           </div>

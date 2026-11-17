@@ -12,6 +12,7 @@ import ShoppingBagIcon from 'reicon-vue/icons/ShoppingBag';
 import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
 
 const { t } = useLocale();
+const { isEnabled } = useFeatureFlags();
 const { isLoggedIn, hydrateSession } = useAuth();
 definePageMeta({ layout: 'marketing' });
 
@@ -158,7 +159,7 @@ const directoryRows = computed(() => [
           <div class="hero-cta">
             <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
             <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
-            <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
+            <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
             <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
           </div>
         </div>
@@ -293,7 +294,7 @@ const directoryRows = computed(() => [
         <div class="m-cta-btns">
           <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
           <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
-          <NuxtLink to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
+          <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
           <NuxtLink to="/features" class="m-btn-ghost">{{ t('nav_features') }} →</NuxtLink>
         </div>
       </div>
