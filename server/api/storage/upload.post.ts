@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { randomUUID } from 'node:crypto';
 import { defineEventHandler, readMultipartFormData, setResponseStatus } from 'h3';
 import type { AuditActorType } from '~/lib/audit';
 import { verifyAdmin, verifyTerminalSession } from '~/lib/authUtils';
@@ -113,13 +114,17 @@ export default defineEventHandler(async (event) => {
 
   const storage = useStorage();
   const physicalBucket = businessId ? `biz-${businessId}` : 'public';
-  const finalPath = `${safeLogicalBucket}/${safePath}`;
+  // Guests share the public bucket, so each guest upload gets its own random folder and can
+  // never overwrite someone else's file at a guessed path.
+  const finalPath = actorType
+    ? `${safeLogicalBucket}/${safePath}`
+    : `${safeLogicalBucket}/guest-${randomUUID()}/${safePath}`;
   let url: string;
   try {
     url = await storage.upload(physicalBucket, finalPath, {
       data: filePart.data,
       contentType,
-      upsert: true,
+      upsert: Boolean(actorType),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Storage upload failed';

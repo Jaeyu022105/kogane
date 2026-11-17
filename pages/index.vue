@@ -1,229 +1,335 @@
 <script setup lang="ts">
+import type { Component } from 'vue';
+import BoltIcon from 'reicon-vue/icons/Bolt';
+import CoffeeIcon from 'reicon-vue/icons/Coffee';
+import DocumentTextIcon from 'reicon-vue/icons/DocumentText';
+import DollarCircleIcon from 'reicon-vue/icons/DollarCircle';
+import HeartPulseIcon from 'reicon-vue/icons/HeartPulse';
+import HomeIcon from 'reicon-vue/icons/Home';
+import ListCheckIcon from 'reicon-vue/icons/ListCheck';
+import PackageIcon from 'reicon-vue/icons/Package';
+import ShoppingBagIcon from 'reicon-vue/icons/ShoppingBag';
+import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
+
 const { t } = useLocale();
+const { isEnabled } = useFeatureFlags();
 const { isLoggedIn, hydrateSession } = useAuth();
 definePageMeta({ layout: 'marketing' });
 
-useSeoMeta({
-  title:       t('seo_home_title'),
-  description: t('seo_home_description'),
+usePageSeo({
+  title: () => t('seo_home_title'),
+  description: () => t('seo_home_description'),
+  path: '/',
+  jsonLd: () => [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Kogane',
+      description: t('seo_home_description'),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'Kogane Terminal Builder',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description: t('seo_home_description'),
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+    },
+  ],
 });
 
 onMounted(() => {
   void hydrateSession();
 });
 
-/* SVG path strings for industry chips */
-const industryIcons: Record<string, string> = {
-  restaurant: 'M18 8h1a4 4 0 0 1 0 8h-1 M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z M6 1v3 M10 1v3 M14 1v3',
-  logistics:  'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
-  retail:     'M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0',
-  healthcare: 'M22 12h-4l-3 9L9 3l-3 9H2',
-  construct:  'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
-  finance:    'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+/* ── Industry chip icons (Reicon outline) ─────────────────── */
+const industryIcons: Record<string, Component> = {
+  restaurant: CoffeeIcon,
+  logistics:  PackageIcon,
+  retail:     ShoppingBagIcon,
+  healthcare: HeartPulseIcon,
+  construct:  HomeIcon,
+  finance:    DollarCircleIcon,
 };
 
 const industries = computed(() => [
-  { iconKey: 'restaurant', name: t('ind_restaurant')   },
-  { iconKey: 'logistics',  name: t('ind_logistics') },
-  { iconKey: 'retail',     name: t('ind_retail')         },
-  { iconKey: 'healthcare', name: t('ind_healthcare')           },
-  { iconKey: 'construct',  name: t('ind_construct')         },
-  { iconKey: 'finance',    name: t('ind_finance')        },
+  { iconKey: 'restaurant', name: t('ind_restaurant') },
+  { iconKey: 'logistics',  name: t('ind_logistics')  },
+  { iconKey: 'retail',     name: t('ind_retail')     },
+  { iconKey: 'healthcare', name: t('ind_healthcare') },
+  { iconKey: 'construct',  name: t('ind_construct')  },
+  { iconKey: 'finance',    name: t('ind_finance')    },
 ]);
 
-/* SVG path strings for pillar cards */
-const pillarIcons: Record<string, string> = {
-  schema:   'M4 7h16 M4 12h16 M4 17h10 M16 17l2 2 4-4',
-  builder:  'M12 2L3 14h9l-1 8 10-12h-9l1-8z',
-  terminal: 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z M8 10l2 2-2 2 M12 14h4',
-  onboard:  'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7 M9 12h6 M9 16h4',
+/* ── Pillar card icons (Reicon outline) ───────────────────── */
+const pillarIcons: Record<string, Component> = {
+  schema:   ListCheckIcon,
+  builder:  BoltIcon,
+  terminal: TerminalSquareIcon,
+  onboard:  DocumentTextIcon,
 };
 
 const pillars = computed(() => [
-  { iconKey: 'onboard',  title: t('pillar_setup_title'),     body: t('pillar_setup_body') },
-  { iconKey: 'schema',   title: t('pillar_schema_title'), body: t('pillar_schema_body') },
-  { iconKey: 'builder',  title: t('pillar_builder_title'),    body: t('pillar_builder_body') },
-  { iconKey: 'terminal', title: t('pillar_terminal_title'),   body: t('pillar_terminal_body') },
+  { iconKey: 'onboard',  title: t('pillar_setup_title'),    body: t('pillar_setup_body') },
+  { iconKey: 'schema',   title: t('pillar_schema_title'),   body: t('pillar_schema_body') },
+  { iconKey: 'builder',  title: t('pillar_builder_title'),  body: t('pillar_builder_body') },
+  { iconKey: 'terminal', title: t('pillar_terminal_title'), body: t('pillar_terminal_body') },
 ]);
 
-const tableRows = computed(() => [
-  { col: t('table_orders'),      type: t('table_cashier'), key: t('table_ready'), keyClass: 'pk' },
-  { col: t('table_inventory'),   type: t('table_ops'),     key: '',      keyClass: '' },
-  { col: t('table_customers'),   type: t('table_crm'),     key: '',      keyClass: '' },
-  { col: t('table_reports'),     type: t('table_manager'), key: t('table_live'),  keyClass: 'fk' },
-  { col: t('table_brand'), type: t('table_warm'),    key: '',      keyClass: '' },
+/* ── Directory & Comparison Data ─────────────────────────── */
+const comparisons = computed(() => [
+  {
+    title: t('index_compare_1_title'),
+    body: t('index_compare_1_body'),
+  },
+  {
+    title: t('index_compare_2_title'),
+    body: t('index_compare_2_body'),
+  },
+  {
+    title: t('index_compare_3_title'),
+    body: t('index_compare_3_body'),
+  },
+]);
+
+const directoryRows = computed(() => [
+  {
+    industry: t('ind_restaurant_label'),
+    presets: t('index_dir_restaurant_presets'),
+    tables: t('index_dir_restaurant_tables'),
+  },
+  {
+    industry: t('ind_logistics_label'),
+    presets: t('index_dir_logistics_presets'),
+    tables: t('index_dir_logistics_tables'),
+  },
+  {
+    industry: t('ind_retail_label'),
+    presets: t('index_dir_retail_presets'),
+    tables: t('index_dir_retail_tables'),
+  },
+  {
+    industry: t('ind_clinic_label'),
+    presets: t('index_dir_clinic_presets'),
+    tables: t('index_dir_clinic_tables'),
+  },
+  {
+    industry: t('ind_services_label'),
+    presets: t('index_dir_services_presets'),
+    tables: t('index_dir_services_tables'),
+  },
+  {
+    industry: t('ind_accounting_label'),
+    presets: t('index_dir_accounting_presets'),
+    tables: t('index_dir_accounting_tables'),
+  },
 ]);
 </script>
 
 <template>
-  <!-- ── Hero ─────────────────────────────────────────────── -->
-  <section class="hero">
-    <div class="hero-inner">
-      <div class="hero-badge">
-        <span class="badge-dot" />
-        {{ t('index_hero_badge') }}
-      </div>
+  <div class="home">
+    <!-- Hero: the editorial headline split on a faded Neapolitan backdrop, then the live previews -->
+    <section class="hero">
+      <HomeHeroCollage>
+        <div class="hero-inner">
+          <div class="hero-lede">
+            <div class="hero-badge">
+              <span class="badge-dot" aria-hidden="true" />
+              {{ t('index_hero_badge') }}
+            </div>
 
-      <h1 class="hero-headline" v-html="t('index_hero_headline')"></h1>
-
-      <p class="hero-sub">
-        {{ t('index_hero_sub') }}
-      </p>
-
-      <div class="hero-cta">
-        <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
-        <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
-        <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
-      </div>
-    </div>
-
-    <div class="hero-preview">
-      <div class="preview-card">
-        <div class="preview-header">
-          <div class="preview-dots">
-            <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
+            <p class="hero-sub">
+              {{ t('index_hero_sub') }}
+            </p>
           </div>
-          <span class="preview-title">{{ t('index_preview_setup') }}</span>
-        </div>
-        <div class="preview-table">
-          <div class="table-head">
-            <span>{{ t('index_table_workflow') }}</span><span>{{ t('index_table_preset') }}</span><span>{{ t('index_table_status') }}</span>
-          </div>
-          <div v-for="(row, i) in tableRows" :key="row.col" class="table-row" :class="{ 'row-alt': i % 2 !== 0 }">
-            <span class="col-name">{{ row.col }}</span>
-            <span class="type-badge">{{ row.type }}</span>
-            <span v-if="row.key" :class="['key-badge', row.keyClass]">{{ row.key }}</span>
-            <span v-else />
+
+          <h1 class="hero-headline">{{ t('index_hero_headline') }}</h1>
+
+          <ul class="hero-facts">
+            <li>{{ t('index_hero_fact1') }}</li>
+            <li>{{ t('index_hero_fact2') }}</li>
+            <li>{{ t('index_hero_fact3') }}</li>
+          </ul>
+
+          <div class="hero-cta">
+            <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
+            <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_hero_cta1') }}</NuxtLink>
+            <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
+            <NuxtLink to="/features" class="m-btn-ghost">{{ t('index_hero_cta2') }}</NuxtLink>
           </div>
         </div>
-      </div>
+      </HomeHeroCollage>
+    </section>
 
-      <div class="preview-card">
-        <div class="preview-header">
-          <div class="preview-dots">
-            <span class="dot dot-red" /><span class="dot dot-yellow" /><span class="dot dot-green" />
+    <!-- Industry strip -->
+    <section class="section-industries industries-strip">
+      <div class="section-inner">
+        <div class="section-rule">
+          <p class="m-overline">{{ t('index_industry_overline') }}</p>
+        </div>
+        <div class="industry-grid">
+          <div v-for="ind in industries" :key="ind.name" class="industry-chip">
+            <span class="chip-icon" aria-hidden="true">
+              <component :is="industryIcons[ind.iconKey]" />
+            </span>
+            <span>{{ ind.name }}</span>
           </div>
-          <span class="preview-title">{{ t('index_preview_pos') }}</span>
         </div>
-        <div class="terminal-mock">
-          <div class="terminal-items">
-            <div class="t-item"><span>{{ t('index_mock_item1') }}</span><span>$5.50</span></div>
-            <div class="t-item t-alt"><span>{{ t('index_mock_item2') }}</span><span>$4.00</span></div>
-            <div class="t-item"><span>{{ t('index_mock_item3') }}</span><span>$6.00</span></div>
+      </div>
+    </section>
+
+    <!-- Pillars -->
+    <section class="section-pillars">
+      <div class="section-inner">
+        <div class="section-rule">
+          <p class="m-overline">{{ t('index_pillars_overline') }}</p>
+        </div>
+        <div class="m-label-block">
+          <h2 class="m-heading">{{ t('index_pillars_heading') }}</h2>
+          <p class="m-sub">{{ t('index_pillars_sub') }}</p>
+        </div>
+        <div class="pillar-grid">
+          <div v-for="(p, pillarIndex) in pillars" :key="p.title" class="pillar-card">
+            <div class="pillar-top">
+              <span class="pillar-number m-mono m-tabular">{{ String(pillarIndex + 1).padStart(2, '0') }}</span>
+              <span class="pillar-icon" aria-hidden="true">
+                <component :is="pillarIcons[p.iconKey]" />
+              </span>
+            </div>
+            <h3 class="pillar-title">{{ p.title }}</h3>
+            <p class="pillar-body">{{ p.body }}</p>
+            <NuxtLink to="/features" class="pillar-link">{{ t('index_pillars_learn_more') }}</NuxtLink>
           </div>
-          <div class="terminal-total">
-            <span>{{ t('index_mock_total') }}</span><span class="total-val">$15.50</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive terminal preset explorer -->
+    <HomePresetExplorer />
+
+    <!-- Philosophy: statement and comparison list, then the 2x2 flavour cards -->
+    <section class="section-philosophy">
+      <div class="section-inner">
+        <div class="section-rule">
+          <p class="m-overline">{{ t('index_philosophy_overline') }}</p>
+        </div>
+
+        <div class="philosophy-inner">
+          <div class="philosophy-text">
+            <h2 class="m-heading">{{ t('index_philosophy_heading') }}</h2>
+            <p class="m-sub">
+              {{ t('index_philosophy_sub') }}
+            </p>
+
+            <NuxtLink to="/features" class="m-btn-secondary philosophy-cta">
+              {{ t('index_philosophy_cta') }}
+            </NuxtLink>
           </div>
-          <div class="terminal-charge btn-ribbon" style="--ribbon-color: #68293A;">{{ t('index_mock_charge') }}</div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ── Industry strip ────────────────────────────────────── -->
-  <section class="section-industries">
-    <div class="section-inner">
-      <p class="m-overline">{{ t('index_industry_overline') }}</p>
-      <div class="industry-grid">
-        <div v-for="ind in industries" :key="ind.name" class="industry-chip">
-          <span class="chip-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-              <path :d="industryIcons[ind.iconKey]" />
-            </svg>
-          </span>
-          <span>{{ ind.name }}</span>
+          <div class="comparison-list">
+            <div v-for="item in comparisons" :key="item.title" class="comparison-row">
+              <h3 class="comparison-title">{{ item.title }}</h3>
+              <p class="comparison-body">{{ item.body }}</p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ── Pillars ───────────────────────────────────────────── -->
-  <section class="section-pillars">
-    <div class="section-inner">
-      <div class="m-label-block">
-        <p class="m-overline">{{ t('index_pillars_overline') }}</p>
-        <h2 class="m-heading" v-html="t('index_pillars_heading')"></h2>
-        <p class="m-sub">{{ t('index_pillars_sub') }}</p>
-      </div>
-      <div class="pillar-grid">
-        <div v-for="p in pillars" :key="p.title" class="pillar-card">
-          <span class="pillar-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-              <path :d="pillarIcons[p.iconKey]" />
-            </svg>
-          </span>
-          <h3 class="pillar-title">{{ p.title }}</h3>
-          <p class="pillar-body">{{ p.body }}</p>
-          <NuxtLink to="/features" class="pillar-link">{{ t('index_pillars_learn_more') }}</NuxtLink>
+        <div class="philosophy-badges">
+          <div class="badge-card badge-plain">
+            <h3 class="badge-title">{{ t('badge_preset_title') }}</h3>
+            <p class="badge-body">{{ t('badge_preset_body') }}</p>
+          </div>
+          <div class="badge-card badge-dark">
+            <h3 class="badge-title">{{ t('badge_style_title') }}</h3>
+            <p class="badge-body">{{ t('badge_style_body') }}</p>
+          </div>
+          <div class="badge-card badge-brand">
+            <h3 class="badge-title">{{ t('badge_role_title') }}</h3>
+            <p class="badge-body">{{ t('badge_role_body') }}</p>
+          </div>
+          <div class="badge-card badge-outline">
+            <h3 class="badge-title">{{ t('badge_theme_title') }}</h3>
+            <p class="badge-body">{{ t('badge_theme_body') }}</p>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ── Philosophy ────────────────────────────────────────── -->
-  <section class="section-philosophy">
-    <div class="section-inner philosophy-inner">
-      <div class="philosophy-text">
-        <p class="m-overline">{{ t('index_philosophy_overline') }}</p>
-        <h2 class="m-heading">{{ t('index_philosophy_heading') }}</h2>
-        <p class="m-sub">
-          {{ t('index_philosophy_sub') }}
-        </p>
-        <NuxtLink to="/features" class="m-btn-secondary" style="margin-top: 1.75rem;">{{ t('index_philosophy_cta') }}</NuxtLink>
-      </div>
-      <div class="philosophy-badges">
-        <div class="badge-card badge-plain">
-          <p class="badge-title">{{ t('badge_preset_title') }}</p>
-          <p class="badge-body">{{ t('badge_preset_body') }}</p>
+    <!-- ── Preset Directory Across Industries (Additive) ──────── -->
+    <section class="directory-section">
+      <div class="section-inner">
+        <div class="section-rule">
+          <p class="m-overline">{{ t('index_industry_overline') }}</p>
         </div>
-        <div class="badge-card badge-dark">
-          <p class="badge-title">{{ t('badge_style_title') }}</p>
-          <p class="badge-body">{{ t('badge_style_body') }}</p>
+        <div class="directory-header">
+          <h2 class="m-heading">{{ t('index_directory_heading') }}</h2>
+          <p class="m-sub">{{ t('index_directory_sub') }}</p>
         </div>
-        <div class="badge-card badge-brand">
-          <p class="badge-title">{{ t('badge_role_title') }}</p>
-          <p class="badge-body">{{ t('badge_role_body') }}</p>
-        </div>
-        <div class="badge-card badge-outline">
-          <p class="badge-title">{{ t('badge_theme_title') }}</p>
-          <p class="badge-body">{{ t('badge_theme_body') }}</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ── CTA ───────────────────────────────────────────────── -->
-  <section class="m-cta-strip">
-    <div class="m-cta-inner">
-      <h2 class="m-cta-heading" v-html="t('index_cta_heading')"></h2>
-      <p class="m-cta-sub">{{ t('index_cta_sub') }}</p>
-      <div class="m-cta-btns">
-        <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
-        <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
-        <NuxtLink to="/features" class="m-btn-ghost">{{ t('nav_features') }} →</NuxtLink>
+        <div class="directory-table" role="region" aria-label="Industry terminal presets">
+          <div class="directory-head">
+            <span>{{ t('index_dir_col_industry') }}</span>
+            <span>{{ t('index_dir_col_presets') }}</span>
+            <span>{{ t('index_dir_col_tables') }}</span>
+          </div>
+          <div v-for="row in directoryRows" :key="row.industry" class="directory-row">
+            <span class="dir-industry">{{ row.industry }}</span>
+            <span class="dir-presets">{{ row.presets }}</span>
+            <span class="dir-tables m-mono">{{ row.tables }}</span>
+          </div>
+        </div>
       </div>
+    </section>
+
+    <!-- ── Bottom CTA ────────────────────────────────────────── -->
+    <section class="m-cta-strip">
+      <div class="m-cta-inner">
+        <h2 class="m-cta-heading">{{ t('index_cta_heading') }}</h2>
+        <p class="m-cta-sub">{{ t('index_cta_sub') }}</p>
+        <div class="m-cta-btns">
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="m-btn-primary ribbon">{{ t('index_dashboard_cta') }}</NuxtLink>
+          <NuxtLink v-else to="/login?mode=signup" class="m-btn-primary ribbon">{{ t('index_cta_btn1') }}</NuxtLink>
+          <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="m-btn-secondary">{{ t('index_cta_btn2') }}</NuxtLink>
+          <NuxtLink to="/features" class="m-btn-ghost">{{ t('nav_features') }} →</NuxtLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- Closing wordmark: the name returns at full width on a chocolate field -->
+    <div class="closing-wordmark" aria-hidden="true">
+      <span class="closing-word">Kogane</span><span class="closing-dot" />
     </div>
-  </section>
+  </div>
 </template>
-<style scoped>
-/* ── Shared ─────────────────────────────────────────── */
-.section-inner {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
 
+<style scoped>
 /* ── Hero ─────────────────────────────────────────────── */
 .hero {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  align-items: center;
-  max-width: 1160px;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 5.5rem 2rem 6rem;
-  overflow: visible;
+  padding: 3.5rem 2rem 0;
+  display: grid;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 3rem;
+  align-items: start;
+}
+
+.hero-lede {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .hero-badge {
@@ -256,216 +362,138 @@ const tableRows = computed(() => [
 
 .hero-headline {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(2.2rem, 4vw, 3rem);
-  line-height: 1.12;
+  font-size: clamp(2.4rem, 4.4vw, 3.9rem);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.015em;
   color: #68293A;
-  margin: 0 0 1.2rem;
+  margin: 0;
   text-decoration: none;
 }
 .hero-headline em { font-style: italic; color: #FF5776; text-decoration: none; }
 
 .hero-sub {
-  font-size: 1rem;
-  line-height: 1.72;
-  color: rgba(104, 41, 58, 0.58);
-  max-width: 440px;
-  margin-bottom: 2rem;
+  font-size: 1.02rem;
+  line-height: 1.62;
+  color: rgba(104, 41, 58, 0.8);
+  max-width: 27rem;
+  margin: 0;
 }
-
-.hero-inner   { position: relative; z-index: 1; }
 
 .hero-cta {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
+  padding-bottom: 12px;
 }
 
-/* ── Hero preview cards ───────────────────────────────── */
-.hero-preview {
-  position: relative;
-  z-index: 1;
+.hero-facts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  align-self: end;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.preview-card {
-  background: #FFFFFF;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(104, 41, 58, 0.09);
-  box-shadow: 0 6px 24px rgba(104, 41, 58, 0.08), 0 1px 4px rgba(104, 41, 58, 0.05);
-  overflow: hidden;
-}
-
-.preview-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid rgba(104, 41, 58, 0.07);
-  background: #F6E6D7;
-}
-
-.preview-dots { display: flex; align-items: center; gap: 0.32rem; }
-.dot { width: 8px; height: 8px; border-radius: 50%; }
-.dot-red    { background: #FF5F56; }
-.dot-yellow { background: #FFBD2E; }
-.dot-green  { background: #27C93F; }
-
-.preview-title {
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: rgba(104, 41, 58, 0.45);
-  margin-left: 0.2rem;
-}
-
-/* Preset table */
-.preview-table { padding: 0.6rem; display: flex; flex-direction: column; }
-
-.table-head {
-  display: grid;
-  grid-template-columns: 2fr 1.4fr 0.7fr;
-  gap: 0.5rem;
-  padding: 0 0.6rem 0.4rem;
-  font-size: 0.65rem;
-  font-weight: 700;
+  gap: 0.35rem;
+  font-family: var(--k-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: rgba(104, 41, 58, 0.32);
-  border-bottom: 1px solid rgba(104, 41, 58, 0.08);
-  margin-bottom: 0.2rem;
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1.4fr 0.7fr;
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.36rem 0.6rem;
-  border-radius: 0.35rem;
-  font-size: 0.78rem;
-  color: rgba(104, 41, 58, 0.7);
-}
-.row-alt { background: #F6E6D7; }
-
-.col-name { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; }
-
-.type-badge {
-  display: inline-block;
-  padding: 0.1rem 0.4rem;
-  background: rgba(255, 87, 118, 0.1);
-  color: #FF5776;
-  border-radius: 3px;
-  font-size: 0.66rem;
-  font-weight: 600;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.key-badge {
-  display: inline-block;
-  padding: 0.1rem 0.38rem;
-  border-radius: 3px;
-  font-size: 0.63rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.key-badge.pk { background: rgba(104, 41, 58, 0.1); color: #68293A; }
-.key-badge.fk { background: transparent; color: rgba(104, 41, 58, 0.5); border: 1px solid rgba(104, 41, 58, 0.18); }
-
-/* Workspace preview */
-.terminal-mock { padding: 0.85rem; }
-.terminal-items { display: flex; flex-direction: column; margin-bottom: 0.7rem; }
-
-.t-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.82rem;
-  color: rgba(104, 41, 58, 0.7);
-  padding: 0.36rem 0.55rem;
-  border-radius: 0.35rem;
-}
-.t-alt { background: #F6E6D7; }
-
-.terminal-total {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0.55rem;
-  font-weight: 600;
-  font-size: 0.86rem;
   color: #68293A;
-  border-top: 1px solid rgba(104, 41, 58, 0.1);
-  margin-bottom: 0.7rem;
 }
-.total-val { font-family: 'DM Serif Display', serif; font-size: 1rem; }
 
-.terminal-charge {
-  text-align: center;
-  padding: 0.55rem;
-  background: #68293A;
-  color: #F6E6D7;
-  border-radius: 0.5rem;
-  font-weight: 700;
-  font-size: 0.86rem;
-  cursor: pointer;
-  overflow: visible;
-  transition: opacity 0.15s;
+.hero-facts li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
-.terminal-charge:hover { opacity: 0.88; }
+
+.hero-facts li::before {
+  content: '—';
+  color: #FF5776;
+  font-weight: 600;
+}
 
 /* ── Industries ───────────────────────────────────────── */
 .section-industries {
-  padding: 1rem 0 3rem;
-  text-align: center;
+  padding: 4.5rem 0 0;
 }
-.section-industries .section-inner { display: flex; flex-direction: column; align-items: center; }
 
+/* Business types set in a row like a partner strip */
 .industry-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem 1.5rem;
+  margin-top: 2.25rem;
 }
 
 .industry-chip {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.42rem 0.95rem;
-  background: #FFFFFF;
-  border: 1px solid rgba(104, 41, 58, 0.1);
-  border-radius: 0.45rem;
-  font-size: 0.855rem;
-  font-weight: 500;
+  gap: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
   color: #68293A;
-  transition: border-color 0.15s, transform 0.15s;
 }
-.industry-chip:hover { border-color: rgba(255, 87, 118, 0.3); transform: translateY(-1px); }
+
+.chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #FF5776;
+  flex-shrink: 0;
+}
+.chip-icon svg { width: 1.35rem; height: 1.35rem; }
 
 /* ── Pillars ──────────────────────────────────────────── */
 .section-pillars {
-  padding: 5rem 0;
+  padding: 5.5rem 0 6.5rem;
+}
+
+.home .m-label-block {
+  display: grid;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 1rem;
+  align-items: end;
+  max-width: none;
+  margin: 2.25rem 0 3.5rem;
+  text-align: left;
+}
+
+.home .m-label-block .m-sub {
+  margin: 0;
 }
 
 .pillar-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.1rem;
+  gap: 2rem;
 }
 
 .pillar-card {
-  padding: 1.5rem;
-  background: #FFFFFF;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(104, 41, 58, 0.08);
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--home-rule);
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 0.5rem;
 }
-.pillar-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(104, 41, 58, 0.09);
+
+.pillar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.pillar-number {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #68293A;
 }
 
 .pillar-icon {
@@ -475,73 +503,217 @@ const tableRows = computed(() => [
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 0.55rem;
-  background: rgba(255, 87, 118, 0.1);
+  background: #FFEBEF;
   color: #FF5776;
   flex-shrink: 0;
 }
 .pillar-icon svg { width: 1.1rem; height: 1.1rem; }
 
-.chip-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.3rem;
-  height: 1.3rem;
-  color: rgba(104, 41, 58, 0.55);
-  flex-shrink: 0;
+.pillar-title {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  color: #68293A;
+  margin: 0;
 }
-.chip-icon svg { width: 1.1rem; height: 1.1rem; }
-
-.pillar-title { font-weight: 700; font-size: 0.98rem; color: #68293A; margin: 0; }
-.pillar-body  { font-size: 0.845rem; color: rgba(104, 41, 58, 0.58); line-height: 1.6; flex: 1; margin: 0; }
-.pillar-link  { font-size: 0.79rem; font-weight: 600; color: #FF5776; text-decoration: none; margin-top: 0.3rem; }
-.pillar-link:hover { text-decoration: underline; }
+.pillar-body  { font-size: 0.95rem; color: rgba(104, 41, 58, 0.8); line-height: 1.6; flex: 1; margin: 0; }
+.pillar-link  { font-size: 0.85rem; font-weight: 600; color: #68293A; text-decoration: underline; text-decoration-color: #FF5776; text-underline-offset: 0.25em; margin-top: 0.5rem; }
+.pillar-link:hover { color: #FF5776; }
 
 /* ── Philosophy ───────────────────────────────────────── */
-.section-philosophy { padding: 5rem 0; }
+.section-philosophy { padding: 5.5rem 0 6.5rem; }
 
+/* Statement on the left, hairline comparison list on the right */
 .philosophy-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5rem;
-  align-items: center;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 2.5rem;
+  align-items: start;
+  margin-top: 2.25rem;
 }
 
+.philosophy-text .m-heading {
+  margin-bottom: 1.25rem;
+}
+
+.philosophy-cta {
+  margin-top: 1.75rem;
+}
+
+.comparison-list {
+  border-top: 1px solid var(--home-rule);
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 1.5rem;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--home-rule);
+}
+
+.comparison-title {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: #68293A;
+  margin: 0;
+}
+
+.comparison-body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(104, 41, 58, 0.8);
+  margin: 0;
+}
+
+/* 2x2 flavour cards */
 .philosophy-badges {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
+  gap: 1rem;
+  margin-top: 4.5rem;
 }
 
 .badge-card {
   border-radius: 0.75rem;
-  padding: 1.3rem;
+  padding: 1.75rem;
+  min-height: 13.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
-.badge-plain   { background: #FFFFFF; border: 1px solid rgba(104, 41, 58, 0.09); }
+.badge-plain   { background: #F6E6D7; color: #68293A; }
 .badge-dark    { background: #68293A; color: #F6E6D7; }
-.badge-brand   { background: #FF5776; color: #FFFFFF; }
-.badge-outline { background: transparent; border: 1.5px solid rgba(104, 41, 58, 0.14); }
+.badge-brand   { background: #FF5776; color: #4A1A27; }
+.badge-outline { background: transparent; border: 1.5px solid #E3C7B9; color: #68293A; }
 
-.badge-title { font-weight: 700; font-size: 0.9rem; margin: 0; }
-.badge-body  { font-size: 0.81rem; line-height: 1.55; margin: 0; opacity: 0.74; }
-.badge-dark .badge-body, .badge-brand .badge-body { opacity: 0.82; }
+.badge-title {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: clamp(1.7rem, 2.7vw, 2.3rem);
+  line-height: 1.05;
+  margin: 0;
+}
+.badge-body  { font-size: 0.95rem; line-height: 1.55; margin: 0; max-width: 24rem; }
 
-/* ── CTA — handled by .m-cta-strip in marketing.css ──── */
+/* ── Industry Preset Directory ────────────────────────── */
+.directory-section {
+  padding: 0 0 6.5rem;
+}
+
+.directory-header {
+  display: grid;
+  grid-template-columns: var(--home-split);
+  column-gap: var(--home-gap);
+  row-gap: 1rem;
+  align-items: end;
+  margin: 2.25rem 0 3rem;
+}
+
+.directory-table {
+  border-top: 2px solid #68293A;
+}
+
+.directory-head,
+.directory-row {
+  display: grid;
+  grid-template-columns: 1.1fr 2fr 1.2fr;
+  gap: 1.25rem;
+  align-items: baseline;
+  padding: 1rem 0.5rem;
+  border-bottom: 1px solid rgba(104, 41, 58, 0.1);
+}
+
+.directory-row:last-child { border-bottom: none; }
+.directory-row:hover { background: #FFF8FA; }
+
+.directory-head {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(104, 41, 58, 0.55);
+}
+
+.dir-industry {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.12rem;
+  color: #68293A;
+}
+
+.dir-presets {
+  font-size: 0.88rem;
+  color: #68293A;
+  line-height: 1.45;
+}
+
+.dir-tables {
+  font-size: 0.78rem;
+  color: rgba(104, 41, 58, 0.68);
+}
+
+/* ── Closing wordmark ─────────────────────────────────── */
+.closing-wordmark {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding: 1rem 2rem min(5.5vw, 5rem);
+  background: #68293A;
+  overflow: hidden;
+}
+
+.closing-word {
+  font-family: 'DM Serif Display', serif;
+  font-size: min(27vw, 26rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #F6E6D7;
+}
+
+.closing-dot {
+  width: min(2.6vw, 2.5rem);
+  height: min(2.6vw, 2.5rem);
+  border-radius: 50%;
+  background: #FF5776;
+  flex-shrink: 0;
+  margin-left: 0.4vw;
+}
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; gap: 3rem; padding: 3.5rem 1.5rem 4rem; }
-  .hero-preview { display: none; }
+  .hero-inner { display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem 2rem 2.5rem; }
+  .hero-lede { display: contents; }
+  .hero-badge { order: 1; margin-bottom: 0; }
+  .hero-headline { order: 2; }
+  .hero-sub { order: 3; max-width: 34rem; }
+  .hero-cta { order: 4; }
+  .hero-facts { order: 5; align-self: start; }
+  .industry-grid { grid-template-columns: repeat(3, 1fr); }
+  .home .m-label-block,
+  .directory-header { grid-template-columns: 1fr; }
   .pillar-grid { grid-template-columns: 1fr 1fr; }
-  .philosophy-inner { grid-template-columns: 1fr; gap: 3rem; }
+  .philosophy-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+  .directory-head { display: none; }
+  .directory-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
 }
 
 @media (max-width: 600px) {
-  .pillar-grid { grid-template-columns: 1fr; }
-  .philosophy-badges { grid-template-columns: 1fr; }
+  .hero-inner { padding: 2rem 1.25rem 2rem; }
+  .industry-grid { grid-template-columns: 1fr 1fr; }
+  .comparison-row { grid-template-columns: 1fr; gap: 0.35rem; }
+  .badge-card { min-height: 11rem; }
+  .closing-wordmark { padding: 0.5rem 1.25rem 6vw; }
+  .pillar-grid,
+  .philosophy-badges {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

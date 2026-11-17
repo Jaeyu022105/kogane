@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Kogane">
+  <rect width="64" height="64" rx="14" fill="#68293A" />
+  <rect x="3" y="3" width="58" height="58" rx="11" fill="none" stroke="#E3C7B9" stroke-opacity="0.22" stroke-width="1.5" />
+  <rect x="15" y="15" width="7.5" height="34" rx="2" fill="#F6E6D7" />
+  <polygon points="24,32 41,15 49,15 31.5,32 49,49 41,49" fill="#F6E6D7" />
+  <circle cx="48" cy="45" r="4.5" fill="#FF5776" />
+</svg>

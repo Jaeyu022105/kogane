@@ -10,7 +10,6 @@ import { db } from '~/lib/db';
 import { buildAddColumnSql, validateIdentifier } from '~/lib/schemaUtils';
 import type { ColumnDef } from '~/lib/schemaUtils';
 import { writeAuditLog } from '~/server/utils/audit';
-import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -35,12 +34,11 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { error: 'Business not found', success: false };
   if (business.admin_user_id !== userId) return { error: 'Forbidden', success: false };
 
-  const dialect = getSqlDialect();
 
   for (const col of body.addColumns) {
     let sql: string;
     try {
-      sql = buildAddColumnSql(body.tableName, col, business.schema_name, dialect);
+      sql = buildAddColumnSql(body.tableName, col, business.schema_name);
     } catch (err) {
       return { error: (err as Error).message, success: false };
     }

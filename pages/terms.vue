@@ -1,11 +1,22 @@
 <script setup lang="ts">
 const { t } = useLocale();
+const { isEnabled } = useFeatureFlags();
 definePageMeta({ layout: 'marketing' });
 
-useSeoMeta({
-  title:       `${t('terms_title')} - Kogane`,
-  description: t('terms_agreement_body'),
+usePageSeo({
+  title: () => t('terms_title'),
+  description: () => t('terms_agreement_body'),
+  path: '/terms',
+  ogType: 'article',
 });
+
+const licenseItems = computed(() => [
+  t('terms_license_p1'),
+  t('terms_license_p2'),
+  t('terms_license_p3'),
+  t('terms_license_p4'),
+  t('terms_license_p5'),
+]);
 </script>
 
 <template>
@@ -16,33 +27,35 @@ useSeoMeta({
         <p class="m-sub">{{ t('terms_last_updated') }}</p>
       </div>
     </div>
-    
+
     <div class="legal-container legal-content">
       <h2>{{ t('terms_agreement_title') }}</h2>
       <p>{{ t('terms_agreement_body') }}</p>
-      
+
       <h2>{{ t('terms_license_title') }}</h2>
       <p>{{ t('terms_license_body') }}</p>
       <ul>
-        <li>{{ t('terms_license_p1') }}</li>
-        <li>{{ t('terms_license_p2') }}</li>
-        <li>{{ t('terms_license_p3') }}</li>
-        <li>{{ t('terms_license_p4') }}</li>
-        <li>{{ t('terms_license_p5') }}</li>
+        <li v-for="(item, idx) in licenseItems" :key="idx">{{ item }}</li>
       </ul>
       <p>{{ t('terms_license_footer') }}</p>
-      
+
       <h2>{{ t('terms_disclaimer_title') }}</h2>
       <p>{{ t('terms_disclaimer_body') }}</p>
-      
+
       <h2>{{ t('terms_limitations_title') }}</h2>
       <p>{{ t('terms_limitations_body') }}</p>
 
       <h2>{{ t('terms_limits_title') }}</h2>
       <p>{{ t('terms_limits_body') }}</p>
-      
+
       <h2>{{ t('terms_revisions_title') }}</h2>
       <p>{{ t('terms_revisions_body') }}</p>
+
+      <nav class="legal-cross-nav" aria-label="Related documentation">
+        <NuxtLink to="/privacy" class="legal-cross-link">{{ t('footer_privacy') }} &rarr;</NuxtLink>
+        <NuxtLink to="/features" class="legal-cross-link">{{ t('nav_features') }} &rarr;</NuxtLink>
+        <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="legal-cross-link">{{ t('nav_pricing') }} &rarr;</NuxtLink>
+      </nav>
     </div>
   </div>
 </template>
@@ -70,12 +83,13 @@ useSeoMeta({
   font-size: 1.6rem;
   color: #68293A;
   margin: 2.5rem 0 1rem;
+  font-weight: 400;
 }
 
 .legal-content p {
   font-size: 1rem;
   line-height: 1.7;
-  color: rgba(104, 41, 58, 0.7);
+  color: rgba(104, 41, 58, 0.72);
   margin-bottom: 1.2rem;
 }
 
@@ -87,7 +101,7 @@ useSeoMeta({
 .legal-content li {
   font-size: 1rem;
   line-height: 1.7;
-  color: rgba(104, 41, 58, 0.7);
+  color: rgba(104, 41, 58, 0.72);
   margin-bottom: 0.5rem;
 }
 
@@ -101,8 +115,32 @@ useSeoMeta({
 
 .m-sub {
   font-size: 1rem;
-  color: rgba(104, 41, 58, 0.5);
+  color: rgba(104, 41, 58, 0.65);
   margin: 0;
+}
+
+.legal-cross-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding-top: 2.25rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid rgba(104, 41, 58, 0.12);
+}
+
+.legal-cross-link {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #68293A;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(104, 41, 58, 0.14);
+  padding-bottom: 2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.legal-cross-link:hover {
+  color: #FF5776;
+  border-color: #FF5776;
 }
 
 @media (max-width: 768px) {

@@ -123,17 +123,24 @@ export function useBusiness() {
     }
   }
 
+  /**
+   * Saves the brand kit. Pass `logoUrl: null` to remove the logo and `extras.name` to rename the business.
+   * Resolves with how many terminals picked up the new look.
+   */
   async function updateTheme(
     palette: ColorPalette,
-    logoUrl?: string,
+    logoUrl?: string | null,
     countryData?: { country?: string; currency?: string; currencySymbol?: string },
+    extras?: { name?: string },
   ) {
-    const body: Record<string, any> = { colorPalette: palette, logoUrl };
+    const body: Record<string, any> = { colorPalette: palette };
+    if (logoUrl !== undefined) body.logoUrl = logoUrl ?? '';
+    if (extras?.name !== undefined) body.name = extras.name;
     if (countryData?.country) body.country = countryData.country;
     if (countryData?.currency) body.currency = countryData.currency;
     if (countryData?.currencySymbol) body.currencySymbol = countryData.currencySymbol;
 
-    const res = await $fetch<{ success?: boolean; error?: string | null }>('/api/businesses/theme', {
+    const res = await $fetch<{ success?: boolean; error?: string | null; terminalsUpdated?: number }>('/api/businesses/theme', {
       method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body,
@@ -145,11 +152,15 @@ export function useBusiness() {
 
     if (business.value) {
       business.value.colorPalette = palette;
+      if (logoUrl !== undefined) business.value.logoUrl = logoUrl || null;
+      if (extras?.name?.trim()) business.value.name = extras.name.trim();
       if (countryData?.country) business.value.country = countryData.country;
       if (countryData?.currency) business.value.currency = countryData.currency;
       if (countryData?.currencySymbol) business.value.currencySymbol = countryData.currencySymbol;
       applyTheme(palette);
     }
+
+    return { terminalsUpdated: res.terminalsUpdated ?? 0 };
   }
 
   async function updateCountry(countryCode: string) {

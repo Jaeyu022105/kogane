@@ -2,9 +2,8 @@ import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
-import { createClient } from '@supabase/supabase-js';
+import { getStorageMode, resolveFirebaseStorageBucket, type StorageMode } from './backend';
 import { db, getDbProvider } from './db';
-import { parseFirebaseConfig, resolveFirebaseStorageBucket } from './firebaseAdmin';
 
 export const FIRESTORE_STORAGE_COLLECTION = '__storage_blobs';
 // 700 KB binary safely fits under Firestore's 1 MiB document limit after base64 expansion (~956 KB).
@@ -108,79 +107,6 @@ class DevStorageAdapter implements StorageAdapter {
   async read(bucket: string, path: string): Promise<Buffer> {
     const target = getDevFilePath(bucket, path);
     return readFile(target);
-  }
-}
-
-function getSupabaseClient() {
-  const url = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !serviceKey) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
-  }
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
-}
-
-class SupabaseStorageAdapter implements StorageAdapter {
-  private client = getSupabaseClient();
-
-  private async ensureBucket(bucket: string) {
-    const { error } = await this.client.storage.createBucket(bucket, {
-      public: false,
-      fileSizeLimit: '10MB',
-    });
-
-    if (error && !/already exists/i.test(error.message)) {
-      throw error;
-    }
-  }
-
-  async upload(bucket: string, path: string, file: StorageUploadInput): Promise<string> {
-    const safeBucket = sanitizeStoragePath(bucket);
-    const safePath = sanitizeStoragePath(path);
-
-    await this.ensureBucket(safeBucket);
-
-    const { error } = await this.client.storage.from(safeBucket).upload(safePath, toBuffer(file.data), {
-      upsert: file.upsert ?? true,
-      contentType: file.contentType,
-    });
-
-    if (error) throw error;
-
-    const signed = await this.client.storage.from(safeBucket).createSignedUrl(safePath, 60 * 60 * 24 * 365);
-    if (signed.error || !signed.data?.signedUrl) {
-      throw signed.error ?? new Error('Failed to generate signed URL');
-    }
-
-    return signed.data.signedUrl;
-  }
-
-  async delete(bucket: string, path: string): Promise<void> {
-    const safeBucket = sanitizeStoragePath(bucket);
-    const safePath = sanitizeStoragePath(path);
-    const { error } = await this.client.storage.from(safeBucket).remove([safePath]);
-    if (error) throw error;
-  }
-
-  async list(bucket: string, prefix = ''): Promise<string[]> {
-    const safeBucket = sanitizeStoragePath(bucket);
-    const safePrefix = prefix ? sanitizeStoragePath(prefix) : '';
-    const { data, error } = await this.client.storage.from(safeBucket).list(safePrefix, {
-      limit: 1000,
-      offset: 0,
-    });
-
-    if (error) throw error;
-
-    return (data ?? []).map((item) => [safePrefix, item.name].filter(Boolean).join('/'));
-  }
-
-  async read(bucket: string, path: string): Promise<Buffer> {
-    const safeBucket = sanitizeStoragePath(bucket);
-    const safePath = sanitizeStoragePath(path);
-    const { data, error } = await this.client.storage.from(safeBucket).download(safePath);
-    if (error || !data) throw error ?? new Error('File not found');
-    return Buffer.from(await data.arrayBuffer());
   }
 }
 
@@ -371,72 +297,17 @@ export class FirestoreStorageAdapter implements StorageAdapter {
 }
 
 let adapter: StorageAdapter | null = null;
-let adapterMode: string | null = null;
+let adapterMode: StorageMode | null = null;
 
+/** The upload store for the current backend (see lib/backend.ts for how it is chosen). */
 export function useStorage(): StorageAdapter {
-  const explicitStorageProvider = process.env.STORAGE_PROVIDER?.trim().toLowerCase();
-  const sparkMode = process.env.FIREBASE_SPARK_MODE === 'true';
-  const isDevMode = process.env.DEV_MODE === 'true';
-  const explicitDbProvider = process.env.DB_PROVIDER?.trim().toLowerCase();
-  const fbConfig = parseFirebaseConfig();
-  const hasExplicitBucket = Boolean(process.env.FIREBASE_STORAGE_BUCKET?.trim() || fbConfig.storageBucket?.trim());
-  const hasGcpBlazeRuntime = Boolean(
-    process.env.GCLOUD_PROJECT?.trim()
-    || process.env.GOOGLE_CLOUD_PROJECT?.trim()
-    || process.env.FIREBASE_CONFIG?.trim(),
-  );
-  const hasFirebaseProjectOrBucket = Boolean(resolveFirebaseStorageBucket());
-  const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
-
-  let mode: 'firestore' | 'firebase' | 'supabase' | 'dev';
-
-  if (explicitStorageProvider === 'firestore') {
-    mode = 'firestore';
-  } else if (explicitStorageProvider === 'firebase' || explicitStorageProvider === 'gcs') {
-    mode = 'firebase';
-  } else if (explicitStorageProvider === 'supabase') {
-    mode = 'supabase';
-  } else if (explicitStorageProvider === 'dev' || explicitStorageProvider === 'local') {
-    mode = 'dev';
-  } else if (sparkMode && explicitDbProvider !== 'sqlite' && explicitDbProvider !== 'supabase') {
-    mode = 'firestore';
-  } else if (
-    (explicitDbProvider === 'firebase' || explicitDbProvider === 'firestore')
-    && !hasExplicitBucket
-    && !hasGcpBlazeRuntime
-  ) {
-    // Firebase Spark free tier has Cloud Firestore enabled without Blaze Firebase Storage / Cloud Run runtime.
-    mode = 'firestore';
-  } else {
-    const explicitFirebaseStorage =
-      hasFirebaseProjectOrBucket
-      && (explicitDbProvider === 'firebase' || explicitDbProvider === 'firestore' || Boolean(process.env.FIREBASE_STORAGE_BUCKET));
-    const explicitSupabaseStorage = explicitDbProvider === 'supabase' && hasSupabase && !explicitFirebaseStorage;
-    const explicitSqliteStorage = explicitDbProvider === 'sqlite' && !process.env.FIREBASE_STORAGE_BUCKET;
-    const hasFirebaseStorage =
-      explicitFirebaseStorage || (!isDevMode && !explicitSupabaseStorage && !explicitSqliteStorage && hasFirebaseProjectOrBucket);
-
-    mode = explicitFirebaseStorage
-      ? 'firebase'
-      : explicitSupabaseStorage
-        ? 'supabase'
-        : isDevMode || explicitSqliteStorage
-          ? 'dev'
-          : hasFirebaseStorage
-            ? 'firebase'
-            : hasSupabase
-              ? 'supabase'
-              : 'dev';
-  }
-
+  const mode = getStorageMode();
   if (adapter && adapterMode === mode) return adapter;
 
   if (mode === 'firestore') {
     adapter = new FirestoreStorageAdapter();
-  } else if (mode === 'firebase') {
+  } else if (mode === 'cloud-storage') {
     adapter = new FirebaseStorageAdapter();
-  } else if (mode === 'supabase') {
-    adapter = new SupabaseStorageAdapter();
   } else {
     adapter = new DevStorageAdapter();
   }

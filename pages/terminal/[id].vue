@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, Circle, Delete, Power, Eye, EyeOff } from 'lucide-vue-next';
+import AlertTriangleIcon from 'reicon-vue/icons/AlertTriangle';
+import ArrowLeftIcon from 'reicon-vue/icons/ArrowLeft';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import RecordIcon from 'reicon-vue/icons/Record';
+import BackspaceIcon from 'reicon-vue/icons/Backspace';
+import PowerIcon from 'reicon-vue/icons/Power';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import XIcon from 'reicon-vue/icons/X';
 import ElementRenderer from '~/components/ElementRenderer.vue';
+import TerminalBrandMark from '~/components/TerminalBrandMark.vue';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
+import { sanitizeImageSrc } from '~/lib/securityClient';
 import { DEFAULT_LAYOUT_THEME, normalizeLayout, type UiLayout, type UiLayoutTheme } from '~/lib/uiTypes';
+import type { TerminalBrandInfo } from '~/lib/workspaceBranding';
 
 definePageMeta({ layout: 'default' });
 
@@ -15,6 +26,7 @@ interface TerminalRuntimeSession {
   country?: string;
   currency?: string;
   currencySymbol?: string;
+  brand?: TerminalBrandInfo;
   permissions: any;
   uiLayout: UiLayout;
   expiresAt: string;
@@ -37,6 +49,7 @@ const serverCountry = ref('US');
 const serverCurrency = ref('USD');
 const serverCurrencySymbol = ref('$');
 const terminalTheme = ref<UiLayoutTheme>({ ...DEFAULT_LAYOUT_THEME });
+const serverBrand = ref<TerminalBrandInfo | null>(null);
 const logoutPin = ref('');
 const showLogoutPinDigits = ref(false);
 const logoutError = ref<string | null>(null);
@@ -85,15 +98,41 @@ const canvasScale = computed(() => {
   return Math.min(1, Math.max(scaleY, 0.75));
 });
 
+const stationConfig = computed(() => session.value?.uiLayout?.stationConfig ?? null);
+const dismissedWelcome = ref(false);
+watch(() => stationConfig.value?.welcomeMessage, () => {
+  dismissedWelcome.value = false;
+});
+
+const activeBrand = computed(() => session.value?.brand ?? serverBrand.value);
+const brandName = computed(() => activeBrand.value?.name || session.value?.businessName || serverBusinessName.value);
+const brandLogo = computed(() => sanitizeImageSrc(activeBrand.value?.logoUrl) || '');
+
 useHead(() => ({
-  title: `${serverDisplayName.value || 'Terminal'} - Kogane`,
+  title: `${session.value?.displayName || serverDisplayName.value || 'Terminal'} - ${brandName.value || 'Kogane'}`,
+  link: brandLogo.value ? [{ key: 'terminal-icon', rel: 'icon', href: brandLogo.value }] : [],
+  htmlAttrs: {
+    lang: (typeof stationConfig.value?.language === 'string' && stationConfig.value.language)
+      ? stationConfig.value.language
+      : 'en',
+  },
 }));
+
+useSeoMeta({
+  robots: 'noindex, nofollow',
+});
 
 const activeModal = computed(() =>
   session.value?.uiLayout?.modals?.find((modal) => modal.id === runtime.state.value.activeModalId) ?? null,
 );
 const activeTheme = computed(() => session.value?.uiLayout?.theme ?? terminalTheme.value ?? DEFAULT_LAYOUT_THEME);
 const surfaceRadius = computed(() => activeTheme.value.surfaceStyle === 'square' ? '18px' : '28px');
+const accentInk = computed(() => activeTheme.value.accentTextColor || '#ffffff');
+const brandTileColor = computed(() => activeTheme.value.brandColor || activeBrand.value?.primary || activeTheme.value.accentColor);
+
+function closeActiveModal() {
+  runtime.emitLocal('modal:close');
+}
 
 function adminReturnLocation() {
   return `/dashboard/terminals/${terminalId.value}`;
@@ -156,6 +195,7 @@ async function bootstrap() {
     country?: string;
     currency?: string;
     currencySymbol?: string;
+    brand?: TerminalBrandInfo;
     theme: UiLayoutTheme;
     permissions: any;
     error: string | null;
@@ -170,6 +210,7 @@ async function bootstrap() {
     serverCurrency.value = res.currency || 'USD';
     serverCurrencySymbol.value = res.currencySymbol || '$';
     terminalTheme.value = res.theme ?? { ...DEFAULT_LAYOUT_THEME };
+    serverBrand.value = res.brand ?? null;
   }
 
   // Restore active terminal session or authorize admin passthrough session
@@ -201,6 +242,12 @@ function configureRuntime(currentSession: TerminalRuntimeSession) {
   if (currentSession.businessId) {
     businessId.value = currentSession.businessId;
   }
+  const cfg = currentSession.uiLayout?.stationConfig;
+  const resolvedCurrencySymbol =
+    typeof cfg?.currencySymbol === 'string' && cfg.currencySymbol.trim()
+      ? cfg.currencySymbol.trim()
+      : (currentSession.currencySymbol ?? serverCurrencySymbol.value);
+
   runtime.configure({
     terminalId: currentSession.terminalId,
     businessId: effectiveBusinessId,
@@ -212,9 +259,61 @@ function configureRuntime(currentSession: TerminalRuntimeSession) {
       terminalRole: currentSession.role,
       country: currentSession.country ?? serverCountry.value,
       currency: currentSession.currency ?? serverCurrency.value,
-      currencySymbol: currentSession.currencySymbol ?? serverCurrencySymbol.value,
+      currencySymbol: resolvedCurrencySymbol,
+      language: typeof cfg?.language === 'string' && cfg.language ? cfg.language : 'en',
+      welcomeMessage: typeof cfg?.welcomeMessage === 'string' ? cfg.welcomeMessage : '',
+      showReceipt: cfg?.showReceipt !== false,
+      menuItems: typeof cfg?.menuItems === 'string' ? cfg.menuItems : '',
     },
   });
+}
+
+let refreshingSession = false;
+async function refreshTerminalSession(evt?: Record<string, unknown>) {
+  if (!session.value || refreshingSession) return;
+  if (evt?.terminalId && String(evt.terminalId) !== terminalId.value) return;
+
+  refreshingSession = true;
+  try {
+    const sessionRes = await $fetch<{
+      session: TerminalRuntimeSession | null;
+      token?: string | null;
+      error: string | null;
+    }>(`/api/terminals/${terminalId.value}/session`, {
+      headers: terminalRequestHeaders(),
+    });
+    if (!sessionRes?.session) return;
+
+    if (sessionRes.token && typeof window !== 'undefined') {
+      sessionStorage.setItem(`kogane_term_token_${terminalId.value}`, sessionRes.token);
+    }
+
+    const nextLayout = normalizeLayout(sessionRes.session.uiLayout);
+    const prevSnapshot = JSON.stringify({
+      displayName: session.value.displayName,
+      brand: session.value.brand ?? null,
+      permissions: session.value.permissions,
+      uiLayout: session.value.uiLayout,
+    });
+    const nextSnapshot = JSON.stringify({
+      displayName: sessionRes.session.displayName,
+      brand: sessionRes.session.brand ?? null,
+      permissions: sessionRes.session.permissions,
+      uiLayout: nextLayout,
+    });
+
+    if (prevSnapshot !== nextSnapshot) {
+      session.value = {
+        ...sessionRes.session,
+        uiLayout: nextLayout,
+      };
+      configureRuntime(session.value);
+    }
+  } catch {
+    // Keep existing active terminal session on transient refresh failure
+  } finally {
+    refreshingSession = false;
+  }
 }
 
 async function login() {
@@ -365,8 +464,21 @@ function leaveLoginPage() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    if (showLogoutPrompt.value) {
+      closeLogoutPrompt();
+      e.preventDefault();
+      return;
+    }
+    if (runtime.state.value.activeModalId) {
+      closeActiveModal();
+      e.preventDefault();
+      return;
+    }
+  }
+
   const activeEl = document.activeElement;
-  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
     if (!showLogoutPrompt.value) return;
   }
 
@@ -383,24 +495,27 @@ function handleKeydown(e: KeyboardEvent) {
       login();
     }
     e.preventDefault();
-  } else if (e.key === 'Escape') {
-    if (showLogoutPrompt.value) {
-      closeLogoutPrompt();
-      e.preventDefault();
-    }
   }
 }
+
+let offTerminalUpdated: (() => void) | null = null;
 
 onMounted(() => {
   bootstrap();
   updateViewport();
   window.addEventListener('resize', updateViewport);
   window.addEventListener('keydown', handleKeydown);
+  offTerminalUpdated = runtime.on('terminal:updated', (payload) => {
+    refreshTerminalSession(payload as Record<string, unknown> | undefined);
+  });
 });
 
 onUnmounted(() => {
+  offTerminalUpdated?.();
+  offTerminalUpdated = null;
   window.removeEventListener('resize', updateViewport);
   window.removeEventListener('keydown', handleKeydown);
+  runtime.reset();
 });
 </script>
 
@@ -410,13 +525,15 @@ onUnmounted(() => {
       class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 backdrop-blur-md border-b"
       :style="{ background: activeTheme.topBarBackground, borderColor: activeTheme.panelBorder }"
     >
-      <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" :style="{ background: activeTheme.accentColor }">K</div>
-        <span class="text-xs font-semibold" :style="{ color: activeTheme.topBarText }">{{ session.displayName }}</span>
+      <div class="flex min-w-0 items-center gap-2">
+        <TerminalBrandMark :name="brandName" :logo-url="activeBrand?.logoUrl" :color="brandTileColor" size="sm" :rounded="activeTheme.surfaceStyle" />
+        <span v-if="brandName" class="hidden truncate font-serif text-sm sm:inline" :style="{ color: activeTheme.topBarText }">{{ brandName }}</span>
+        <span v-if="brandName" class="hidden text-xs sm:inline" aria-hidden="true" :style="{ color: activeTheme.panelMutedText }">/</span>
+        <span class="truncate text-xs font-semibold" :style="{ color: activeTheme.topBarText }">{{ session.displayName }}</span>
         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" :style="{ color: activeTheme.panelMutedText, background: activeTheme.panelHeaderBackground, border: `1px solid ${activeTheme.panelBorder}` }">{{ session.role }}</span>
       </div>
       <button type="button" aria-label="Log out of terminal" class="flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80" :style="{ color: activeTheme.topBarText }" @click="openLogoutPrompt">
-        <Power class="w-3.5 h-3.5" /> Logout
+        <PowerIcon class="w-3.5 h-3.5" /> Logout
       </button>
     </div>
 
@@ -427,18 +544,51 @@ onUnmounted(() => {
       aria-live="polite"
     >
       <button type="button" class="rounded-full p-1" aria-label="Show the previous workspace area" @click.stop="scrollWorkspace('left')">
-        <ArrowLeft class="h-3.5 w-3.5" />
+        <ArrowLeftIcon class="h-3.5 w-3.5" />
       </button>
       <button
         type="button"
         class="px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer transition-all active:scale-95"
-        :style="{ borderColor: activeTheme.panelBorder, background: fitToWidth ? activeTheme.accentColor : 'transparent', color: fitToWidth ? '#ffffff' : activeTheme.topBarText }"
+        :style="{ borderColor: activeTheme.panelBorder, background: fitToWidth ? activeTheme.accentColor : 'transparent', color: fitToWidth ? accentInk : activeTheme.topBarText }"
         @click="fitToWidth = !fitToWidth"
       >
         {{ fitToWidth ? 'Fit Screen' : 'Scroll 100%' }}
       </button>
       <button type="button" class="rounded-full p-1" aria-label="Show the next workspace area" @click.stop="scrollWorkspace('right')">
-        <ArrowRight class="h-3.5 w-3.5" />
+        <ArrowRightIcon class="h-3.5 w-3.5" />
+      </button>
+    </div>
+
+    <div
+      v-if="stationConfig?.welcomeMessage && !dismissedWelcome"
+      class="fixed top-12 left-1/2 z-[65] -translate-x-1/2 max-w-md flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium shadow-md backdrop-blur-md border"
+      :style="{ background: activeTheme.topBarBackground, color: activeTheme.topBarText, borderColor: activeTheme.panelBorder }"
+    >
+      <span class="truncate">{{ stationConfig.welcomeMessage }}</span>
+      <button
+        type="button"
+        aria-label="Dismiss welcome message"
+        class="p-0.5 rounded-full hover:opacity-75 shrink-0"
+        @click="dismissedWelcome = true"
+      >
+        <XIcon class="w-3.5 h-3.5" />
+      </button>
+    </div>
+
+    <div
+      v-if="runtime.state.value.lastError"
+      role="alert"
+      class="fixed top-12 right-4 z-[80] max-w-sm flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-xs font-medium shadow-lg border bg-red-600/95 text-white border-red-400/50"
+    >
+      <AlertTriangleIcon class="w-4 h-4 shrink-0 mt-0.5" />
+      <span class="flex-1 leading-snug">{{ runtime.state.value.lastError }}</span>
+      <button
+        type="button"
+        aria-label="Dismiss runtime error"
+        class="p-0.5 rounded-full hover:bg-white/20 shrink-0"
+        @click="runtime.clearError()"
+      >
+        <XIcon class="w-3.5 h-3.5" />
       </button>
     </div>
 
@@ -490,15 +640,18 @@ onUnmounted(() => {
 
         <div
           v-if="activeModal"
+          role="dialog"
+          aria-modal="true"
           class="absolute inset-0 z-[60] flex items-center justify-center bg-black/45"
+          @click.self="closeActiveModal"
         >
           <div
             class="relative overflow-hidden border shadow-2xl"
             :style="activeModal.presentation === 'fullscreen'
               ? `width: ${session.uiLayout.resolution.width}px; height: ${session.uiLayout.resolution.height}px; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
               : activeModal.presentation === 'drawer'
-                ? `width: ${Math.min(460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
-                : `width: 640px; max-width: calc(100% - 48px); height: 420px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`"
+                ? `width: ${Math.min(activeModal.width ?? 460, session.uiLayout.resolution.width)}px; height: ${session.uiLayout.resolution.height - 80}px; margin-left: auto; background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`
+                : `width: ${activeModal.width ?? 640}px; max-width: calc(100% - 48px); height: ${activeModal.height ?? 420}px; max-height: calc(100% - 48px); background: ${activeTheme.panelBackground}; border-color: ${activeTheme.panelBorder}; border-radius: ${surfaceRadius};`"
           >
             <ElementRenderer
               v-for="el in activeModal.elements"
@@ -527,7 +680,7 @@ onUnmounted(() => {
           }"
         >
           <div class="text-center">
-            <div class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white font-semibold mb-3 shadow-md" :style="{ background: activeTheme.accentColor }">T</div>
+            <TerminalBrandMark class="mx-auto mb-3 shadow-md" :name="brandName" :logo-url="activeBrand?.logoUrl" :color="brandTileColor" size="md" :rounded="activeTheme.surfaceStyle" />
             <h2 class="text-lg font-serif" :style="{ color: activeTheme.panelText }">Exit Terminal Mode</h2>
             <p class="text-sm mt-1" :style="{ color: activeTheme.panelMutedText }">
               {{ isLoggedIn ? 'Exit to dashboard or enter the terminal PIN to leave runtime mode.' : 'Enter the terminal PIN to leave runtime mode and return to the admin side.' }}
@@ -538,11 +691,11 @@ onUnmounted(() => {
             <button
               type="button"
               :disabled="logoutLoading"
-              class="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all shadow-md flex items-center justify-center gap-2 hover:opacity-90"
-              :style="{ background: activeTheme.accentColor }"
+              class="w-full py-3 rounded-xl text-sm font-semibold transition-all shadow-md flex items-center justify-center gap-2 hover:opacity-90"
+              :style="{ background: activeTheme.accentColor, color: accentInk }"
               @click="logout(true)"
             >
-              <Power class="w-4 h-4" />
+              <PowerIcon class="w-4 h-4" />
               {{ logoutLoading ? 'Exiting...' : 'Exit to Dashboard (Admin)' }}
             </button>
             <div class="relative flex py-3 items-center">
@@ -563,7 +716,7 @@ onUnmounted(() => {
                 <template v-if="showLogoutPinDigits">
                   {{ logoutPin[i - 1] ?? '' }}
                 </template>
-                <Circle v-else class="w-3.5 h-3.5 transition-all" :style="i <= logoutPin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
+                <RecordIcon v-else class="w-3.5 h-3.5 transition-all" :style="i <= logoutPin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
               </div>
             </div>
             <button
@@ -574,8 +727,8 @@ onUnmounted(() => {
               :aria-label="showLogoutPinDigits ? 'Hide PIN' : 'Show PIN'"
               @click="showLogoutPinDigits = !showLogoutPinDigits"
             >
-              <EyeOff v-if="showLogoutPinDigits" class="w-4 h-4" />
-              <Eye v-else class="w-4 h-4" />
+              <EyeOffIcon v-if="showLogoutPinDigits" class="w-4 h-4" />
+              <EyeIcon v-else class="w-4 h-4" />
             </button>
           </div>
 
@@ -597,7 +750,7 @@ onUnmounted(() => {
               :aria-label="digit === 'delete' ? 'Backspace PIN' : digit || undefined"
               @click="digit === 'delete' ? deleteLastPinDigit() : appendPin(digit)"
             >
-              <Delete v-if="digit === 'delete'" class="w-6 h-6" />
+              <BackspaceIcon v-if="digit === 'delete'" class="w-6 h-6" />
               <template v-else>{{ digit }}</template>
             </button>
           </div>
@@ -616,8 +769,8 @@ onUnmounted(() => {
             <button
               type="button"
               :disabled="logoutPin.length < serverPinLength || logoutLoading"
-              class="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40"
-              :style="{ background: activeTheme.accentColor }"
+              class="flex-1 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+              :style="{ background: activeTheme.accentColor, color: accentInk }"
               @click="logout(false)"
             >
               {{ logoutLoading ? 'Checking...' : 'Exit' }}
@@ -631,12 +784,10 @@ onUnmounted(() => {
   <div v-else class="min-h-dvh flex items-center justify-center px-4" :style="{ background: activeTheme.frameBackground }">
     <div class="w-full max-w-xs space-y-6 animate-fade-in">
       <div class="text-center">
-        <div class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-white font-serif text-2xl mb-4 shadow-xl" :style="{ background: activeTheme.accentColor }">
-          K
-        </div>
-        <h1 class="text-xl font-serif font-medium" :style="{ color: activeTheme.panelText }">Terminal Login</h1>
+        <TerminalBrandMark class="mx-auto mb-4 shadow-xl" :name="brandName" :logo-url="activeBrand?.logoUrl" :color="brandTileColor" size="lg" :rounded="activeTheme.surfaceStyle" />
+        <h1 class="text-xl font-serif font-medium" :style="{ color: activeTheme.panelText }">{{ brandName || 'Terminal Login' }}</h1>
         <p class="text-sm mt-1" :style="{ color: activeTheme.panelMutedText }">
-          Enter the PIN for {{ serverDisplayName || 'this terminal' }}<span v-if="serverBusinessName"> at {{ serverBusinessName }}</span>
+          Enter the PIN for {{ serverDisplayName || 'this terminal' }}
         </p>
       </div>
 
@@ -652,8 +803,8 @@ onUnmounted(() => {
           v-if="isLoggedIn"
           type="button"
           :disabled="loading"
-          class="w-full py-3.5 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90 flex items-center justify-center gap-2"
-          :style="{ background: activeTheme.accentColor, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
+          class="w-full py-3.5 font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90 flex items-center justify-center gap-2"
+          :style="{ background: activeTheme.accentColor, color: accentInk, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
           @click="loginAsAdmin"
         >
           {{ loading ? 'Signing in...' : 'Sign in as Business Admin' }}
@@ -676,7 +827,7 @@ onUnmounted(() => {
               <template v-if="showPinDigits">
                 {{ pin[i - 1] ?? '' }}
               </template>
-              <Circle v-else class="w-3.5 h-3.5 transition-all" :style="i <= pin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
+              <RecordIcon v-else class="w-3.5 h-3.5 transition-all" :style="i <= pin.length ? `fill: ${activeTheme.accentColor}; color: ${activeTheme.accentColor};` : 'color: transparent;'" />
             </div>
           </div>
           <button
@@ -687,8 +838,8 @@ onUnmounted(() => {
             :aria-label="showPinDigits ? 'Hide PIN' : 'Show PIN'"
             @click="showPinDigits = !showPinDigits"
           >
-            <EyeOff v-if="showPinDigits" class="w-4 h-4" />
-            <Eye v-else class="w-4 h-4" />
+            <EyeOffIcon v-if="showPinDigits" class="w-4 h-4" />
+            <EyeIcon v-else class="w-4 h-4" />
           </button>
         </div>
 
@@ -710,7 +861,7 @@ onUnmounted(() => {
             :aria-label="digit === 'delete' ? 'Backspace PIN' : digit || undefined"
             @click="digit === 'delete' ? deleteLastPinDigit() : appendPin(digit)"
           >
-            <Delete v-if="digit === 'delete'" class="w-6 h-6" />
+            <BackspaceIcon v-if="digit === 'delete'" class="w-6 h-6" />
             <template v-else>{{ digit }}</template>
           </button>
         </div>
@@ -720,8 +871,8 @@ onUnmounted(() => {
         <button
           type="button"
           :disabled="pin.length < serverPinLength || loading"
-          class="w-full py-3.5 mt-2 text-white font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
-          :style="{ background: activeTheme.accentColor, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
+          class="w-full py-3.5 mt-2 font-semibold text-sm rounded-xl transition-all shadow-xl disabled:opacity-40 hover:opacity-90"
+          :style="{ background: activeTheme.accentColor, color: accentInk, boxShadow: `0 4px 14px ${activeTheme.accentColor}40` }"
           @click="login"
         >
           {{ loading ? 'Checking...' : 'Login with PIN' }}

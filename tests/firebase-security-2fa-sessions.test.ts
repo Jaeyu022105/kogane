@@ -39,7 +39,7 @@ import {
   createAdminSessionToken,
 } from '../lib/authUtils';
 import { resetAllRateLimits } from '../lib/rateLimit';
-import { resolveFirebaseProjectId, resolveFirebaseStorageBucket } from '../lib/firebaseAdmin';
+import { resolveFirebaseProjectId, resolveFirebaseStorageBucket } from '../lib/backend';
 import {
   FirebaseStorageAdapter,
   FirestoreStorageAdapter,

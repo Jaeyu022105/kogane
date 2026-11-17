@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import {
-  CheckCircle2,
-  CreditCard,
-  Minus,
-  Percent,
-  Plus,
-  Printer,
-  ReceiptText,
-  RotateCcw,
-  ShoppingCart,
-  Tag,
-  Trash2,
-  X,
-} from 'lucide-vue-next';
+import CheckCircleIcon from 'reicon-vue/icons/CheckCircle';
+import CreditCardIcon from 'reicon-vue/icons/CreditCard';
+import MinusIcon from 'reicon-vue/icons/Minus';
+import PercentCircleIcon from 'reicon-vue/icons/PercentCircle';
+import PlusIcon from 'reicon-vue/icons/Plus';
+import PrinterIcon from 'reicon-vue/icons/Printer';
+import ReceiptTextIcon from 'reicon-vue/icons/ReceiptText';
+import RotateLeftIcon from 'reicon-vue/icons/RotateLeft';
+import ShoppingCartIcon from 'reicon-vue/icons/ShoppingCart';
+import TagIcon from 'reicon-vue/icons/Tag';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import XIcon from 'reicon-vue/icons/X';
 import type { CartWidgetElementDef } from '~/lib/uiTypes';
 import { isLightColor } from '~/lib/workspaceBranding';
 import { findCountry, formatCurrencyAmount } from '~/lib/currency';
@@ -977,7 +975,7 @@ watch(
                 color: textColor,
               }"
             >
-              <Plus class="w-3 h-3" /> Add
+              <PlusIcon class="w-3 h-3" /> Add
             </span>
           </div>
         </button>
@@ -1009,7 +1007,7 @@ watch(
         :style="{ borderColor, color: mutedTextColor }"
       >
         <div class="flex items-center gap-2 min-w-0">
-          <ShoppingCart class="w-4 h-4 shrink-0" :style="{ color: accentColor }" />
+          <ShoppingCartIcon class="w-4 h-4 shrink-0" :style="{ color: accentColor }" />
           <span class="font-bold tracking-normal text-sm truncate" :style="{ color: textColor }">Current Order</span>
           <span
             v-if="cart.length > 0"
@@ -1028,7 +1026,7 @@ watch(
           title="Clear all items from cart"
           @click="clearCart"
         >
-          <RotateCcw class="w-3.5 h-3.5" />
+          <RotateLeftIcon class="w-3.5 h-3.5" />
           <span>Clear</span>
         </button>
       </div>
@@ -1083,8 +1081,8 @@ watch(
               :aria-label="`Decrease quantity of ${item.name}`"
               @click.stop="decreaseQuantity(item.id)"
             >
-              <Trash2 v-if="item.qty <= 1" class="w-3.5 h-3.5 text-rose-500" />
-              <Minus v-else class="w-3.5 h-3.5" />
+              <TrashIcon v-if="item.qty <= 1" class="w-3.5 h-3.5 text-rose-500" />
+              <MinusIcon v-else class="w-3.5 h-3.5" />
             </button>
 
             <span
@@ -1105,7 +1103,7 @@ watch(
               :aria-label="`Increase quantity of ${item.name}`"
               @click.stop="increaseQuantity(item.id)"
             >
-              <Plus class="w-3.5 h-3.5" />
+              <PlusIcon class="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -1122,7 +1120,7 @@ watch(
               :aria-label="`Remove ${item.name}`"
               @click.stop="removeFromCart(item.id)"
             >
-              <X class="w-3.5 h-3.5" />
+              <XIcon class="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -1142,7 +1140,7 @@ watch(
               color: mutedTextColor,
             }"
           >
-            <ShoppingCart class="w-5 h-5" />
+            <ShoppingCartIcon class="w-5 h-5" />
           </div>
           <p class="font-semibold text-xs" :style="{ color: textColor }">Cart is empty</p>
           <p class="text-[11px] mt-1" :style="{ color: mutedTextColor }">
@@ -1193,7 +1191,7 @@ watch(
                   : { background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)', color: textColor, border: `1px solid ${borderColor}` }"
                 @click="selectedPaymentMethod = method"
               >
-                <CreditCard v-if="isCardStyleMethod(method)" class="w-3 h-3 shrink-0" />
+                <CreditCardIcon v-if="isCardStyleMethod(method)" class="w-3 h-3 shrink-0" />
                 <span class="truncate">{{ formatPaymentLabel(method) }}</span>
               </button>
             </div>
@@ -1282,7 +1280,7 @@ watch(
         >
           <div class="flex items-center justify-between text-[11px] font-semibold">
             <span class="flex items-center gap-1.5">
-              <Tag class="w-3.5 h-3.5" :style="{ color: accentColor }" />
+              <TagIcon class="w-3.5 h-3.5" :style="{ color: accentColor }" />
               Discounts
             </span>
             <span v-if="discountAmount > 0" class="text-[10px] font-bold" :style="{ color: accentColor }">
@@ -1484,8 +1482,8 @@ watch(
           :disabled="!canSubmit"
           @click="submitOrder"
         >
-          <CreditCard v-if="isCardPaymentSelected" class="w-4 h-4" />
-          <CheckCircle2 v-else class="w-4 h-4" />
+          <CreditCardIcon v-if="isCardPaymentSelected" class="w-4 h-4" />
+          <CheckCircleIcon v-else class="w-4 h-4" />
           <span>{{ submitting ? 'Submitting Order...' : submitLabel }}</span>
           <span v-if="cart.length > 0 && !submitting" class="ml-1 opacity-90 text-xs font-semibold">
             &middot; {{ formatMoney(total) }}
@@ -1512,7 +1510,7 @@ watch(
             <p class="text-[11px] uppercase tracking-[0.2em] mt-1" style="color: rgba(47,24,34,0.55);">{{ lastReceipt.title }}</p>
           </div>
           <div class="w-10 h-10 rounded-2xl flex items-center justify-center" :style="{ background: `${accentColor}18`, color: accentColor }">
-            <ReceiptText class="w-5 h-5" />
+            <ReceiptTextIcon class="w-5 h-5" />
           </div>
         </div>
 
@@ -1565,7 +1563,7 @@ watch(
             @click="printReceipt"
           >
             <span class="inline-flex items-center justify-center gap-1.5">
-              <Printer class="w-3.5 h-3.5" /> Print Receipt
+              <PrinterIcon class="w-3.5 h-3.5" /> Print Receipt
             </span>
           </button>
           <button
@@ -1574,7 +1572,7 @@ watch(
             @click="dismissReceipt"
           >
             <span class="inline-flex items-center justify-center gap-1.5">
-              <CheckCircle2 class="w-3.5 h-3.5" /> Done
+              <CheckCircleIcon class="w-3.5 h-3.5" /> Done
             </span>
           </button>
         </div>

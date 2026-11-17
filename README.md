@@ -11,8 +11,8 @@ Kogane is designed for daily users: choose a business setup, let Kogane create t
 - Preset-first: start from useful cashier, kitchen, inventory, catalog, and reporting terminals.
 - UI-driven: customize terminal layouts in a visual builder.
 - Browser-based: run terminals on PCs, tablets, phones, or other devices with a modern browser.
-- Local-first development: use SQLite in dev mode through Bun.
-- Production path: use Supabase/PostgreSQL when `DEV_MODE=false`.
+- Local-first: SQLite through Bun on your PC or counter machine.
+- Production: Firebase Cloud Firestore, picked automatically when Firebase credentials are set.
 
 ---
 
@@ -23,8 +23,8 @@ Kogane is designed for daily users: choose a business setup, let Kogane create t
 | Runtime | Bun |
 | Framework | Nuxt 3 / Vue 3 |
 | Styling | Tailwind CSS and custom CSS |
-| Database in dev | SQLite through Bun |
-| Database in production | Supabase / PostgreSQL |
+| Database (local) | SQLite through Bun |
+| Database (production) | Firebase Cloud Firestore |
 
 ---
 
@@ -102,7 +102,7 @@ http://192.168.1.25:3000
 
 ## Environment Config
 
-Kogane uses a hybrid database strategy. Keep local demos in SQLite mode:
+Server code talks to one database layer (`lib/db.ts`), and `lib/backend.ts` decides which engine runs it. Local demos use SQLite:
 
 ```env
 DEV_MODE=true
@@ -115,13 +115,14 @@ Optional LAN helper for copied terminal links:
 NUXT_PUBLIC_SHARE_ORIGIN=http://192.168.1.25:3000
 ```
 
-Supabase is only required when `DEV_MODE=false`:
+For production, turn off dev mode and add Firebase credentials. The server switches to Cloud Firestore on its own:
 
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-role-key
+DEV_MODE=false
+FIREBASE_SERVICE_ACCOUNT_JSON=<raw or base64 service account JSON>
 ```
+
+See `.env.example` for upload storage options (Spark vs Blaze) and the full list.
 
 Do not commit your real `.env`. Use `.env.example` as the safe template.
 

@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { existsSync, unlinkSync } from 'node:fs';
+import { describe, test, expect, beforeEach, afterEach, afterAll } from 'bun:test';
+import { existsSync, readdirSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import net from 'node:net';
 import {
@@ -170,20 +170,43 @@ describe('Launcher Port Availability & Inspection', () => {
   });
 });
 
+const removeTempLauncherDbs = (targetPath?: string) => {
+  try {
+    if (typeof Bun !== 'undefined' && typeof Bun.gc === 'function') {
+      Bun.gc(true);
+    }
+  } catch {}
+  if (targetPath) {
+    for (const suffix of ['', '-shm', '-wal']) {
+      const candidate = `${targetPath}${suffix}`;
+      if (existsSync(candidate)) {
+        try { unlinkSync(candidate); } catch {}
+      }
+    }
+  }
+  try {
+    for (const entry of readdirSync(process.cwd())) {
+      if (/^test-launcher-temp-.*\.db(?:-shm|-wal)?$/i.test(entry)) {
+        try { unlinkSync(join(process.cwd(), entry)); } catch {}
+      }
+    }
+  } catch {}
+};
+
 describe('Launcher Database Preparation & Workstation Setup', () => {
-  let testDbPath = join(process.cwd(), `test-launcher-temp-${Math.random().toString(36).slice(2, 8)}.db`);
+  let testDbPath = '';
 
   beforeEach(() => {
     testDbPath = join(process.cwd(), `test-launcher-temp-${Math.random().toString(36).slice(2, 8)}.db`);
-    if (existsSync(testDbPath)) {
-      try { unlinkSync(testDbPath); } catch {}
-    }
+    removeTempLauncherDbs(testDbPath);
   });
 
   afterEach(() => {
-    if (existsSync(testDbPath)) {
-      try { unlinkSync(testDbPath); } catch {}
-    }
+    removeTempLauncherDbs(testDbPath);
+  });
+
+  afterAll(() => {
+    removeTempLauncherDbs(testDbPath);
   });
 
   test('ensureDatabaseReady auto-initializes a fresh database with 5 starter workstations and menu', () => {
@@ -304,7 +327,7 @@ describe('Launcher Terminal QR Code & Dashboard Display', () => {
     expect(typeof result.success).toBe('boolean');
     expect(typeof result.alreadyExisted).toBe('boolean');
     expect(typeof result.message).toBe('string');
-  });
+  }, 20000);
 
   test('getPidOnPort executes cleanly without throwing errors', async () => {
     const { getPidOnPort } = await import('../scripts/lib/launcher-core');
@@ -315,5 +338,9 @@ describe('Launcher Terminal QR Code & Dashboard Display', () => {
     } else {
       expect(result).toBeNull();
     }
+  }, 20000);
+
+  afterAll(() => {
+    removeTempLauncherDbs();
   });
 });

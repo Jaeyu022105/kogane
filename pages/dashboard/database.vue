@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import type { TableDef, ColumnDef, ColumnType, NormalizationHint } from '~/lib/schemaUtils';
-import { Database, Hexagon, RefreshCw, Plus, ArrowLeft, ArrowRight, X } from 'lucide-vue-next';
+import type { ApiPresetRecord } from '~/lib/builderPresets';
+import DatabaseIcon from 'reicon-vue/icons/Database';
+import ElementIcon from 'reicon-vue/icons/Element';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import PlusIcon from 'reicon-vue/icons/Plus';
+import ArrowLeftIcon from 'reicon-vue/icons/ArrowLeft';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import XIcon from 'reicon-vue/icons/X';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import PenIcon from 'reicon-vue/icons/Pen';
+import CheckIcon from 'reicon-vue/icons/Check';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -226,38 +236,198 @@ async function handleDrop(tableName: string) {
 
 // ── Presets ────────────────────────────────────────────────────────────────
 
-const showPresets  = ref(false);
-const presets      = ref<any[]>([]);
-const applyingId   = ref<string | null>(null);
-const { authHeaders } = useAuth();
+const showPresets           = ref(false);
+const presets               = ref<ApiPresetRecord[]>([]);
+const businessTerminals     = ref<Array<{ id: string; display_name: string; role: string }>>([]);
+const applyingId            = ref<string | null>(null);
+const syncingPresetId       = ref<string | null>(null);
+const deletingPresetId      = ref<string | null>(null);
+const applyTargetTerminalId = ref('');
+const presetError           = ref<string | null>(null);
+const presetNotice          = ref<string | null>(null);
+const newPresetName         = ref('');
+const newPresetDescription  = ref('');
+const creatingPreset        = ref(false);
+const editingPresetId       = ref<string | null>(null);
+const editPresetName        = ref('');
+const savingPresetEdit      = ref(false);
+const { authHeaders }       = useAuth();
+const { confirm: confirmModal } = useModal();
 
 async function loadPresets() {
-  const res = await $fetch<{ presets: any[] }>('/api/presets');
-  presets.value = res.presets ?? [];
+  if (!businessId.value) return;
+  try {
+    const res = await $fetch<{ presets?: ApiPresetRecord[]; error?: string | null }>('/api/presets', {
+      headers: authHeaders(),
+      query: { businessId: businessId.value },
+    });
+    presets.value = res.presets ?? [];
+  } catch (err: any) {
+    presetError.value = err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Could not load presets.';
+  }
+}
+
+async function loadPresetTerminals() {
+  if (!businessId.value) return;
+  try {
+    const res = await $fetch<{ terminals?: Array<{ id: string; display_name: string; role: string }> }>('/api/terminals', {
+      headers: authHeaders(),
+      query: { businessId: businessId.value },
+    });
+    businessTerminals.value = res.terminals ?? [];
+  } catch {
+    businessTerminals.value = [];
+  }
+}
+
+async function createSchemaPreset() {
+  if (!business.value) return;
+  const cleanName = newPresetName.value.trim();
+  if (!cleanName) {
+    presetError.value = 'Enter a preset name first.';
+    return;
+  }
+  if (!tableDefs.value || tableDefs.value.length === 0) {
+    presetError.value = 'Create at least one table before saving a schema preset.';
+    return;
+  }
+  creatingPreset.value = true;
+  presetError.value = null;
+  presetNotice.value = null;
+  try {
+    await $fetch('/api/presets/create', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: {
+        businessId: business.value.id,
+        name: cleanName,
+        description: newPresetDescription.value.trim() || null,
+        category: 'database',
+        schemaDefinition: { tables: tableDefs.value },
+      },
+    });
+    newPresetName.value = '';
+    newPresetDescription.value = '';
+    presetNotice.value = `Saved "${cleanName}" preset.`;
+    await loadPresets();
+  } catch (err: any) {
+    presetError.value = err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Could not save preset.';
+  } finally {
+    creatingPreset.value = false;
+  }
+}
+
+function startPresetRename(preset: ApiPresetRecord) {
+  editingPresetId.value = preset.id;
+  editPresetName.value = preset.name;
+  presetError.value = null;
+}
+
+async function savePresetRename(preset: ApiPresetRecord) {
+  const nextName = editPresetName.value.trim();
+  if (!nextName) return;
+  savingPresetEdit.value = true;
+  presetError.value = null;
+  try {
+    await $fetch(`/api/presets/${preset.id}`, {
+      method: 'PATCH',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: {
+        name: nextName,
+        syncLinkedTerminals: preset.linked_terminal_count > 0,
+      },
+    });
+    editingPresetId.value = null;
+    presetNotice.value = `Renamed preset to "${nextName}".`;
+    await loadPresets();
+  } catch (err: any) {
+    presetError.value = err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Could not update preset.';
+  } finally {
+    savingPresetEdit.value = false;
+  }
+}
+
+async function syncLinkedTerminals(preset: ApiPresetRecord) {
+  syncingPresetId.value = preset.id;
+  presetError.value = null;
+  presetNotice.value = null;
+  try {
+    const res = await $fetch<{ syncedCount?: number }>(`/api/presets/${preset.id}`, {
+      method: 'PATCH',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: { syncLinkedTerminals: true },
+    });
+    presetNotice.value = `Synced ${res.syncedCount ?? 0} linked terminal(s).`;
+    await loadPresets();
+  } catch (err: any) {
+    presetError.value = err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Could not sync linked terminals.';
+  } finally {
+    syncingPresetId.value = null;
+  }
+}
+
+async function removeCustomPreset(preset: ApiPresetRecord) {
+  const approved = await confirmModal({
+    title: `Delete "${preset.name}"?`,
+    description: 'This removes the saved business preset. Existing tables and terminals will remain intact.',
+    confirmLabel: 'Delete preset',
+    confirmVariant: 'danger',
+  });
+  if (!approved) return;
+
+  deletingPresetId.value = preset.id;
+  presetError.value = null;
+  presetNotice.value = null;
+  try {
+    await $fetch(`/api/presets/${preset.id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    presetNotice.value = `Deleted "${preset.name}".`;
+    await loadPresets();
+  } catch (err: any) {
+    presetError.value = err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Could not delete preset.';
+  } finally {
+    deletingPresetId.value = null;
+  }
 }
 
 async function applyPreset(presetId: string) {
   if (!business.value) return;
   applyingId.value = presetId;
+  presetError.value = null;
+  presetNotice.value = null;
 
-  await $fetch('/api/presets/apply', {
-    method:  'POST',
-    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-    body:    { businessId: business.value.id, presetId },
-  });
-
-  await fetchTables();
-  applyingId.value  = null;
-  showPresets.value = false;
+  try {
+    const res = await $fetch<{ appliedTables?: string[]; terminal?: { display_name?: string } | null }>('/api/presets/apply', {
+      method:  'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: {
+        businessId: business.value.id,
+        presetId,
+        ...(applyTargetTerminalId.value ? { terminalId: applyTargetTerminalId.value } : {}),
+      },
+    });
+    await Promise.all([fetchTables(), loadPresets()]);
+    const tableMsg = res.appliedTables?.length ? `${res.appliedTables.length} table(s) ensured` : 'Preset applied';
+    presetNotice.value = res.terminal?.display_name
+      ? `${tableMsg} and updated ${res.terminal.display_name}.`
+      : `${tableMsg}.`;
+  } catch (err: any) {
+    presetError.value = err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Failed to apply preset.';
+  } finally {
+    applyingId.value = null;
+  }
 }
 
 onMounted(async () => {
-  await fetchTables();
-  await loadPresets();
+  await Promise.all([fetchTables(), loadPresets(), loadPresetTerminals()]);
 });
 
 watch(businessId, () => {
   fetchTables();
+  loadPresets();
+  loadPresetTerminals();
 });
 
 // ── Column type badge color ────────────────────────────────────────────────
@@ -420,66 +590,63 @@ function getTablePositionSafe(name: string) {
 </script>
 
 <template>
-  <div class="relative flex-1 min-h-0 flex overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
+  <div class="relative flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden" style="background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);">
     <!-- ── Left sidebar: schema / table tree ──────────────────────────────── -->
-    <aside class="w-56 shrink-0 min-h-0 flex flex-col overflow-hidden overscroll-contain" style="background: #1a0e11; border-right: 1px solid rgba(255,255,255,0.05);">
+    <aside class="database-tables w-full max-h-[38dvh] md:max-h-none md:w-56 shrink-0 min-h-0 flex flex-col overflow-hidden overscroll-contain">
       <!-- Header -->
-      <div class="px-4 py-3 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(255,255,255,0.07);">
-        <span class="text-xs font-semibold tracking-widest uppercase" style="color: rgba(245,237,228,0.4);">Tables</span>
+      <div class="px-4 py-3 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.08);">
+        <span class="text-[10px] font-bold tracking-[0.2em] uppercase" style="color: rgba(61,24,32,0.45);">Tables</span>
         <button
-          class="text-xs font-semibold px-2 py-0.5 rounded transition-all"
-          style="color: rgb(var(--shell-pink)); background: rgba(232,116,138,0.12);"
+          type="button"
+          class="text-xs font-semibold px-2 py-1 rounded-lg transition-all hover:opacity-80"
+          style="color: rgb(var(--shell-pink)); background: rgba(255,87,118,0.12);"
           title="New table"
           @click="showNewTable = true"
         >
           <div class="flex items-center gap-1">
-            <Plus class="w-3 h-3" /> New
+            <PlusIcon class="w-3 h-3" /> New
           </div>
         </button>
       </div>
 
       <!-- Schema label -->
       <div class="px-4 pt-3 pb-1">
-        <p class="text-xs font-semibold" style="color: rgba(245,237,228,0.25);">
+        <p class="text-[11px] font-mono" style="color: rgba(61,24,32,0.4);">
           {{ business?.schemaName ?? '—' }}
         </p>
       </div>
 
       <!-- Table list -->
       <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain py-1 px-2">
-        <div v-if="loading" class="px-2 py-4 text-xs" style="color: rgba(245,237,228,0.25);">Loading…</div>
+        <div v-if="loading" class="px-2 py-4 text-xs" style="color: rgba(61,24,32,0.4);">Loading…</div>
 
         <button
           v-for="table in tables"
           :key="table"
-          class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all mb-0.5"
-          :style="selectedTable === table
-            ? 'background: rgba(232,116,138,0.15); color: rgb(232,116,138);'
-            : 'color: rgba(245,237,228,0.55);'"
+          type="button"
+          class="database-table-item w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition-all mb-0.5"
+          :class="{ 'is-active': selectedTable === table }"
+          :aria-current="selectedTable === table ? 'true' : undefined"
           @click="selectTable(table)"
-          @mouseenter="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = 'rgba(245,237,228,0.05)'; }"
-          @mouseleave="(e: MouseEvent) => { if (selectedTable !== table) (e.currentTarget as HTMLElement).style.background = ''; }"
         >
-          <Database class="w-3 h-3 opacity-50" />
+          <DatabaseIcon class="w-3.5 h-3.5 opacity-60" :weight="selectedTable === table ? 'Filled' : 'Outline'" />
           <span class="font-mono truncate">{{ table }}</span>
         </button>
 
-        <div v-if="!loading && tables.length === 0" class="px-2 py-4 text-xs text-center" style="color: rgba(245,237,228,0.2);">
+        <div v-if="!loading && tables.length === 0" class="px-2 py-4 text-xs text-center" style="color: rgba(61,24,32,0.4);">
           No tables yet
         </div>
       </div>
 
       <!-- Presets button -->
-      <div class="p-3 shrink-0" style="border-top: 1px solid rgba(255,255,255,0.05);">
+      <div class="p-3 shrink-0" style="border-top: 1px solid rgba(61,24,32,0.08);">
         <button
-          class="w-full text-xs font-medium py-1.5 rounded-lg transition-all"
-          style="color: rgba(245,237,228,0.4); background: rgba(245,237,228,0.05);"
+          type="button"
+          class="btn-ghost w-full bg-white text-xs py-2"
           @click="showPresets = !showPresets"
-          @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.75)'"
-          @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(245,237,228,0.4)'"
         >
           <div class="flex items-center justify-center gap-1.5">
-            <Hexagon class="w-3.5 h-3.5" /> Presets
+            <ElementIcon class="w-3.5 h-3.5" /> Presets
           </div>
         </button>
       </div>
@@ -508,14 +675,14 @@ function getTablePositionSafe(name: string) {
         <div v-if="selectedTable" class="flex items-center gap-2 shrink-0">
           <div class="flex bg-gray-100 rounded-lg p-1 mr-4" style="background: rgba(61,24,32,0.06);">
             <button
-              class="text-xs px-3 py-1.5 rounded-md transition-all font-semibold"
+              class="text-xs px-3 py-1.5 rounded-lg transition-all font-semibold"
               :style="viewMode === 'data' ? 'background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: rgb(var(--shell-sidebar));' : 'color: rgba(61,24,32,0.5);'"
               @click="viewMode = 'data'"
             >
               Data
             </button>
             <button
-              class="text-xs px-3 py-1.5 rounded-md transition-all font-semibold"
+              class="text-xs px-3 py-1.5 rounded-lg transition-all font-semibold"
               :style="viewMode === 'schema' ? 'background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: rgb(var(--shell-sidebar));' : 'color: rgba(61,24,32,0.5);'"
               @click="viewMode = 'schema'"
             >
@@ -538,7 +705,7 @@ function getTablePositionSafe(name: string) {
             @click="openAddRowModal"
           >
             <div class="flex items-center gap-1.5">
-              <Plus class="w-3.5 h-3.5" /> Add Row
+              <PlusIcon class="w-3.5 h-3.5" /> Add Row
             </div>
           </button>
 
@@ -552,11 +719,11 @@ function getTablePositionSafe(name: string) {
             Drop Table
           </button>
           <button
-            class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all btn-primary btn-ribbon"
+            class="text-xs font-semibold px-3 py-1.5 transition-all btn-primary btn-ribbon"
             @click="loadRows"
           >
             <div class="flex items-center gap-1.5">
-              <RefreshCw class="w-3.5 h-3.5" /> Refresh
+              <RefreshIcon class="w-3.5 h-3.5" /> Refresh
             </div>
           </button>
         </div>
@@ -567,14 +734,14 @@ function getTablePositionSafe(name: string) {
         <!-- Empty state: no table selected -->
         <div v-if="!selectedTable" class="flex items-center justify-center h-full">
           <div class="text-center space-y-2">
-            <Database class="w-12 h-12 mx-auto" style="color: rgba(61,24,32,0.12);" />
+            <DatabaseIcon class="w-12 h-12 mx-auto" style="color: rgba(61,24,32,0.12);" />
             <p class="text-sm" style="color: rgba(61,24,32,0.3);">Pick a table from the sidebar</p>
             <button
-              class="mt-2 text-xs font-semibold px-4 py-2 rounded-full transition-all btn-primary btn-ribbon"
+              class="mt-2 text-xs font-semibold px-4 py-2 transition-all btn-primary btn-ribbon"
               @click="showNewTable = true"
             >
               <div class="flex items-center justify-center gap-1.5">
-                <Plus class="w-3.5 h-3.5" /> New Table
+                <PlusIcon class="w-3.5 h-3.5" /> New Table
               </div>
             </button>
           </div>
@@ -648,7 +815,7 @@ function getTablePositionSafe(name: string) {
                 style="borderColor: rgba(61,24,32,0.1);"
                 @mousedown="onTableMousedown($event, table.name)"
               >
-                <Database class="w-4 h-4 opacity-50" />
+                <DatabaseIcon class="w-4 h-4 opacity-50" />
                 <span class="font-mono font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">{{ table.name }}</span>
               </div>
               <div class="flex flex-col py-2">
@@ -761,7 +928,7 @@ function getTablePositionSafe(name: string) {
             @click="rowsPage--; loadRows()"
           >
             <div class="flex items-center gap-1">
-              <ArrowLeft class="w-3.5 h-3.5" /> Prev
+              <ArrowLeftIcon class="w-3.5 h-3.5" /> Prev
             </div>
           </button>
           <button
@@ -771,7 +938,7 @@ function getTablePositionSafe(name: string) {
             @click="rowsPage++; loadRows()"
           >
             <div class="flex items-center gap-1">
-              Next <ArrowRight class="w-3.5 h-3.5" />
+              Next <ArrowRightIcon class="w-3.5 h-3.5" />
             </div>
           </button>
         </div>
@@ -782,14 +949,64 @@ function getTablePositionSafe(name: string) {
     <Transition name="v">
       <aside
         v-if="showPresets"
-        class="w-64 shrink-0 min-h-0 bg-white flex flex-col overflow-y-auto overscroll-contain"
+        class="w-80 shrink-0 min-h-0 bg-white flex flex-col overflow-y-auto overscroll-contain"
         style="border-left: 1px solid rgba(61,24,32,0.1);"
       >
         <div class="px-5 py-4 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
-          <h2 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Presets</h2>
+          <div>
+            <h2 class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">Presets</h2>
+            <p class="text-[11px]" style="color: rgba(61,24,32,0.45);">Apply schema templates or save custom packs</p>
+          </div>
           <button class="text-xs transition-colors" style="color: rgba(61,24,32,0.3);" @click="showPresets = false">
-            <X class="w-4 h-4" />
+            <XIcon class="w-4 h-4" />
           </button>
+        </div>
+
+        <div class="p-3 space-y-3 border-b" style="border-color: rgba(61,24,32,0.08); background: #fdf7f2;">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider block" style="color: rgba(61,24,32,0.5);">
+              Target Terminal (optional)
+            </label>
+            <select v-model="applyTargetTerminalId" class="input-warm w-full px-3 py-1.5 text-xs">
+              <option value="">Schema tables only</option>
+              <option v-for="term in businessTerminals" :key="term.id" :value="term.id">
+                {{ term.display_name }} ({{ term.role }})
+              </option>
+            </select>
+          </div>
+
+          <div class="pt-2 border-t space-y-2" style="border-color: rgba(61,24,32,0.08);">
+            <p class="text-[10px] font-bold uppercase tracking-wider" style="color: rgba(61,24,32,0.5);">
+              Save Current Schema as Preset
+            </p>
+            <input
+              v-model="newPresetName"
+              type="text"
+              placeholder="Preset name (e.g. Bistro Schema)"
+              class="input-warm w-full px-3 py-1.5 text-xs"
+            />
+            <input
+              v-model="newPresetDescription"
+              type="text"
+              placeholder="Optional description"
+              class="input-warm w-full px-3 py-1.5 text-xs"
+            />
+            <button
+              type="button"
+              :disabled="creatingPreset || !newPresetName.trim()"
+              class="w-full py-1.5 text-xs font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
+              @click="createSchemaPreset"
+            >
+              {{ creatingPreset ? 'Saving...' : 'Save Current Tables as Preset' }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="presetError" class="mx-3 mt-3 px-3 py-2 rounded-lg text-xs" style="background: rgba(239,68,68,0.08); color: #b42318;">
+          {{ presetError }}
+        </div>
+        <div v-if="presetNotice" class="mx-3 mt-3 px-3 py-2 rounded-lg text-xs" style="background: rgba(16,185,129,0.1); color: #047857;">
+          {{ presetNotice }}
         </div>
 
         <div v-if="presets.length === 0" class="px-5 py-8 text-center text-xs" style="color: rgba(61,24,32,0.35);">No presets available</div>
@@ -798,18 +1015,99 @@ function getTablePositionSafe(name: string) {
           <div
             v-for="preset in presets"
             :key="preset.id"
-            class="rounded-xl p-4 space-y-2"
+            class="rounded-xl p-3.5 space-y-2"
             style="background: #fdf7f2; border: 1px solid rgba(61,24,32,0.08);"
           >
-            <p class="font-semibold text-sm" style="color: rgb(var(--shell-sidebar));">{{ preset.name }}</p>
-            <p class="text-xs" style="color: rgba(61,24,32,0.45);">{{ preset.description }}</p>
-            <button
-              :disabled="applyingId === preset.id"
-              class="w-full py-1.5 text-xs rounded-full font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
-              @click="applyPreset(preset.id)"
-            >
-              {{ applyingId === preset.id ? 'Applying…' : 'Apply Preset' }}
-            </button>
+            <div class="flex items-start justify-between gap-2">
+              <div v-if="editingPresetId === preset.id" class="flex-1 flex items-center gap-1.5">
+                <input
+                  v-model="editPresetName"
+                  type="text"
+                  class="input-warm flex-1 px-2 py-1 text-xs"
+                  @keyup.enter="savePresetRename(preset)"
+                />
+                <button
+                  type="button"
+                  :disabled="savingPresetEdit"
+                  class="p-1 rounded bg-emerald-600 text-white border-none cursor-pointer"
+                  @click="savePresetRename(preset)"
+                >
+                  <CheckIcon class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  class="p-1 rounded bg-white text-gray-500 border cursor-pointer"
+                  @click="editingPresetId = null"
+                >
+                  <XIcon class="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div v-else class="min-w-0 flex-1">
+                <p class="font-semibold text-sm truncate" style="color: rgb(var(--shell-sidebar));">{{ preset.name }}</p>
+                <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span
+                    class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                    :style="preset.is_custom
+                      ? 'background: rgba(255, 87, 118, 0.12); color: #be123c;'
+                      : 'background: rgba(61, 24, 32, 0.08); color: rgba(61, 24, 32, 0.6);'"
+                  >
+                    {{ preset.is_custom ? 'Custom' : 'System' }} v{{ preset.version }}
+                  </span>
+                  <span
+                    v-if="preset.linked_terminal_count > 0"
+                    class="px-1.5 py-0.5 rounded text-[10px] font-mono"
+                    style="background: rgba(16, 185, 129, 0.1); color: #047857;"
+                  >
+                    {{ preset.linked_terminal_count }} linked
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="preset.is_custom && editingPresetId !== preset.id" class="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  class="p-1 rounded hover:bg-black/5 border-none cursor-pointer bg-transparent"
+                  style="color: rgba(61,24,32,0.5);"
+                  title="Rename preset"
+                  @click="startPresetRename(preset)"
+                >
+                  <PenIcon class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  :disabled="deletingPresetId === preset.id"
+                  class="p-1 rounded hover:bg-red-50 border-none cursor-pointer bg-transparent"
+                  style="color: #b42318;"
+                  title="Delete custom preset"
+                  @click="removeCustomPreset(preset)"
+                >
+                  <TrashIcon class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <p v-if="preset.description" class="text-xs" style="color: rgba(61,24,32,0.55);">{{ preset.description }}</p>
+
+            <div class="flex items-center gap-1.5 pt-1">
+              <button
+                :disabled="applyingId === preset.id"
+                class="flex-1 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 btn-primary btn-ribbon"
+                @click="applyPreset(preset.id)"
+              >
+                {{ applyingId === preset.id ? 'Applying…' : (applyTargetTerminalId ? 'Apply to Terminal' : 'Apply Preset') }}
+              </button>
+              <button
+                v-if="preset.is_custom && preset.linked_terminal_count > 0"
+                type="button"
+                :disabled="syncingPresetId === preset.id"
+                class="px-2.5 py-1.5 text-xs rounded-full font-medium border cursor-pointer transition-all disabled:opacity-50 bg-white"
+                style="border-color: rgba(61,24,32,0.14); color: rgb(var(--shell-sidebar));"
+                title="Sync updates to linked terminals"
+                @click="syncLinkedTerminals(preset)"
+              >
+                <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncingPresetId === preset.id }" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -829,7 +1127,7 @@ function getTablePositionSafe(name: string) {
           <div class="px-6 py-5 flex items-center justify-between shrink-0" style="border-bottom: 1px solid rgba(61,24,32,0.1);">
             <h2 class="font-serif text-xl font-normal" style="color: rgb(var(--shell-sidebar));">New Table</h2>
             <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showNewTable = false">
-              <X class="w-5 h-5" />
+              <XIcon class="w-5 h-5" />
             </button>
           </div>
 
@@ -866,7 +1164,7 @@ function getTablePositionSafe(name: string) {
                 <label class="text-xs font-bold uppercase tracking-widest" style="color: rgba(61,24,32,0.4);">Columns</label>
                 <button class="text-xs font-semibold transition-colors" style="color: rgb(var(--shell-pink));" @click="addColumn">
                   <div class="flex items-center gap-1">
-                    <Plus class="w-3.5 h-3.5" /> Add
+                    <PlusIcon class="w-3.5 h-3.5" /> Add
                   </div>
                 </button>
               </div>
@@ -894,7 +1192,7 @@ function getTablePositionSafe(name: string) {
                       @mouseenter="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = '#dc2626'"
                       @mouseleave="(e: MouseEvent) => (e.currentTarget as HTMLElement).style.color = 'rgba(61,24,32,0.25)'"
                     >
-                      <X class="w-4 h-4" />
+                      <XIcon class="w-4 h-4" />
                     </button>
                   </div>
 
@@ -930,14 +1228,14 @@ function getTablePositionSafe(name: string) {
             </div>
             <div class="flex gap-3">
               <button
-                class="flex-1 py-2.5 text-sm font-medium rounded-full transition-all"
+                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all"
                 style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65);"
                 @click="showNewTable = false"
               >
                 Cancel
               </button>
               <button
-                class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40 btn-primary btn-ribbon"
+                class="flex-1 py-2.5 text-sm font-semibold transition-all disabled:opacity-40 btn-primary btn-ribbon"
                 :disabled="!newTableName.trim() || saving"
                 @click="handleCreate"
               >
@@ -966,7 +1264,7 @@ function getTablePositionSafe(name: string) {
               <p class="text-xs font-mono mt-0.5" style="color: rgba(61,24,32,0.4);">{{ selectedTable }}</p>
             </div>
             <button class="text-lg transition-colors" style="color: rgba(61,24,32,0.3);" @click="showAddRow = false">
-              <X class="w-5 h-5" />
+              <XIcon class="w-5 h-5" />
             </button>
           </div>
 
@@ -1008,14 +1306,14 @@ function getTablePositionSafe(name: string) {
             </div>
             <div class="flex gap-3">
               <button
-                class="flex-1 py-2.5 text-sm font-medium rounded-full transition-all"
+                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all"
                 style="border: 1.5px solid rgba(61,24,32,0.18); color: rgba(61,24,32,0.65);"
                 @click="showAddRow = false"
               >
                 Cancel
               </button>
               <button
-                class="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all disabled:opacity-40 btn-primary btn-ribbon"
+                class="flex-1 py-2.5 text-sm font-semibold transition-all disabled:opacity-40 btn-primary btn-ribbon"
                 :disabled="addingRow"
                 @click="handleAddRow"
               >
@@ -1028,3 +1326,31 @@ function getTablePositionSafe(name: string) {
     </Transition>
   </div>
 </template>
+
+<style scoped>
+.database-tables {
+  background: #FBF4ED;
+  border-bottom: 1px solid rgba(61, 24, 32, 0.08);
+}
+
+@media (min-width: 768px) {
+  .database-tables {
+    border-bottom: 0;
+    border-right: 1px solid rgba(61, 24, 32, 0.08);
+  }
+}
+
+.database-table-item {
+  color: rgba(61, 24, 32, 0.72);
+}
+
+.database-table-item:hover {
+  background: rgba(61, 24, 32, 0.05);
+}
+
+.database-table-item.is-active {
+  background: rgba(255, 87, 118, 0.12);
+  color: rgb(var(--shell-sidebar));
+  font-weight: 600;
+}
+</style>

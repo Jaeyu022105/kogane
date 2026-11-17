@@ -7,6 +7,12 @@ runConfig:
   concurrency: 80
 
 env:
+  # Release channel: production builds without branch info default to "stable", which hides
+  # preview-only features such as /pricing (see DEPLOYMENT.md section 10). Uncomment to force it.
+  # - variable: KOGANE_RELEASE_CHANNEL
+  #   value: stable
+  #   availability:
+  #     - BUILD
   - variable: NODE_ENV
     value: production
     availability:
@@ -24,6 +30,12 @@ env:
       - RUNTIME
   - variable: COOKIE_SECURE
     value: "true"
+    availability:
+      - RUNTIME
+  # Google's load balancer appends "<visitor-ip>, <load-balancer-ip>" to X-Forwarded-For,
+  # so the visitor is 2 entries from the right (used for login rate limits).
+  - variable: TRUST_PROXY
+    value: "2"
     availability:
       - RUNTIME
   - variable: SESSION_SECRET

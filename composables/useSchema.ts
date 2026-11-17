@@ -78,7 +78,7 @@ export function useSchema(businessId: Ref<string | undefined>) {
   async function analyzeTable(def: TableDef): Promise<NormalizationHint[]> {
     const res = await $fetch<{ hints: NormalizationHint[]; error: string | null }>(
       '/api/schema/tables/analyze',
-      { method: 'POST', body: { table: def } },
+      { method: 'POST', headers: authHeaders(), body: { table: def } },
     );
     return res.hints ?? [];
   }

@@ -5,6 +5,7 @@ node_modules
 .github
 .env
 dev.db*
+.kogane-secret
 *.log
 _risk_doc_review
 .system_generated

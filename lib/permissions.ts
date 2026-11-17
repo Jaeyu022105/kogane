@@ -32,6 +32,9 @@ export interface PermissionPreset {
   permissions: TerminalPermissions;
 }
 
+/** PIN given to new terminals; the dashboard checklist nudges admins to change it before opening. */
+export const DEFAULT_TERMINAL_PIN = '1234';
+
 export const DENY_ALL_TABLE_PERMISSIONS: TablePermissionSet = {
   read: false,
   insert: false,
@@ -232,12 +235,15 @@ const ROLE_PRESET_ALIASES: Record<string, PermissionPresetKey> = {
   'menu-catalog': 'catalog-registrar',
   'catalog-desk': 'catalog-registrar',
   'catalog': 'catalog-registrar',
+  'catalog-station': 'catalog-registrar',
   'front-counter': 'cashier-register',
   'cashier': 'cashier-register',
+  'cashier-station': 'cashier-register',
   'stock-room': 'inventory-manager',
   'warehouse-desk': 'inventory-manager',
   'warehouse': 'inventory-manager',
   'inventory': 'inventory-manager',
+  'inventory-station': 'inventory-manager',
   'kitchen-queue': 'kitchen-display',
   'kitchen': 'kitchen-display',
   'kitchen-display': 'kitchen-display',
@@ -246,23 +252,28 @@ const ROLE_PRESET_ALIASES: Record<string, PermissionPresetKey> = {
   'courier': 'dispatch-console',
   'delivery-desk': 'dispatch-console',
   'dispatch-console': 'dispatch-console',
+  'dispatch-station': 'dispatch-console',
   'billing': 'billing-ledger',
   'ledger': 'billing-ledger',
   'bookkeeping': 'billing-ledger',
   'finance-console': 'billing-ledger',
   'billing-ledger': 'billing-ledger',
+  'billing-station': 'billing-ledger',
   'appointments': 'appointment-desk',
   'triage': 'appointment-desk',
   'intake': 'appointment-desk',
   'care-desk': 'appointment-desk',
   'campus-overview': 'appointment-desk',
   'appointment-desk': 'appointment-desk',
+  'appointment-station': 'appointment-desk',
   'directory': 'service-directory',
   'clienteling': 'service-directory',
   'roster': 'service-directory',
   'service-overview': 'service-directory',
   'service-directory': 'service-directory',
+  'directory-station': 'service-directory',
   'reports': 'reports-viewer',
+  'reports-station': 'reports-viewer',
 };
 
 export function presetByRoleOrKey(identifier?: string | null): PermissionPreset | null {

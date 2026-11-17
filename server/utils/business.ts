@@ -1,4 +1,4 @@
-import { db, getDbProvider } from '~/lib/db';
+import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 
 export interface BusinessRecord {
@@ -21,16 +21,6 @@ export interface TerminalContext {
   permissions: string | null;
   schemaName: string;
   businessName: string;
-}
-
-export const isDevDb = process.env.DEV_MODE === 'true' || (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY);
-
-export function isPrefixDb(): boolean {
-  return getDbProvider() !== 'supabase';
-}
-
-export function getSqlDialect(): 'sqlite' | 'postgres' {
-  return getDbProvider() === 'supabase' ? 'postgres' : 'sqlite';
 }
 
 export async function getBusinessById(businessId: string) {
@@ -75,51 +65,26 @@ export async function getTerminalContext(terminalId: string) {
   );
 }
 
+/** Lists a business's own tables (stored as `<schema>_<table>`), without the prefix. */
 export async function listBusinessTables(schemaName: string) {
-  if (isPrefixDb()) {
-    const result = await db.query<{ name: string }>(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ? ORDER BY name`,
-      [`${schemaName}_%`],
-    );
-    return {
-      data: (result.data ?? []).map((row) => row.name.replace(`${schemaName}_`, '')),
-      error: result.error,
-    };
-  }
-
-  const result = await db.query<{ table_name: string }>(
-    `SELECT table_name FROM information_schema.tables WHERE table_schema = $1 ORDER BY table_name`,
-    [schemaName],
+  const result = await db.query<{ name: string }>(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ? ORDER BY name`,
+    [`${schemaName}_%`],
   );
   return {
-    data: (result.data ?? []).map((row) => row.table_name),
+    data: (result.data ?? []).map((row) => row.name.replace(`${schemaName}_`, '')),
     error: result.error,
   };
 }
 
+/** Physical table name for a business table: `<schema>_<table>`. Accepts the name with or without the prefix. */
 export function qualifyBusinessTable(schemaName: string, tableName: string): string {
   validateIdentifier(schemaName);
-  const usePrefix = isPrefixDb();
-  const cleanTableName = usePrefix && tableName.startsWith(`${schemaName}_`)
+  const cleanTableName = tableName.startsWith(`${schemaName}_`)
     ? tableName.slice(schemaName.length + 1)
     : tableName;
   validateIdentifier(cleanTableName);
-  return usePrefix
-    ? `${schemaName}_${cleanTableName}`
-    : `"${schemaName}"."${cleanTableName}"`;
-}
-
-export function sqlPlaceholder(index: number): string {
-  return isPrefixDb() ? '?' : `$${index}`;
-}
-
-export function sqlPlaceholders(count: number, startAt = 1): string[] {
-  return Array.from({ length: count }, (_, offset) => sqlPlaceholder(startAt + offset));
-}
-
-export function replacePlaceholdersForDialect(sql: string): string {
-  if (!isPrefixDb()) return sql;
-  return sql.replace(/\$[0-9]+/g, '?');
+  return `${schemaName}_${cleanTableName}`;
 }
 
 export function parseJson<T>(value: string | null | undefined, fallback: T): T {

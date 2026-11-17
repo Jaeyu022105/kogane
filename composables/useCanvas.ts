@@ -2,28 +2,28 @@
  * useCanvas manages the builder canvas state, selection, history, and active layer.
  */
 
-import { ref, computed, readonly } from 'vue';
+import { ref, computed, readonly, type Ref } from 'vue';
 import type { ElementDef, ElementPosition, ModalLayerDef, UiLayout } from '~/lib/uiTypes';
 import { cloneLayout, DEFAULT_LAYOUT, normalizeLayout } from '~/lib/uiTypes';
 
-const layout = ref<UiLayout>(cloneLayout(DEFAULT_LAYOUT));
+const layout = ref(cloneLayout(DEFAULT_LAYOUT)) as unknown as Ref<UiLayout>;
 const selectedId = ref<string | null>(null);
 const activeLayerId = ref<string>('main');
-const undoStack = ref<UiLayout[]>([]);
-const redoStack = ref<UiLayout[]>([]);
+const undoStack = ref([]) as unknown as Ref<UiLayout[]>;
+const redoStack = ref([]) as unknown as Ref<UiLayout[]>;
 const isDirty = ref(false);
 const clipboard = ref<ElementDef | null>(null);
 const cameraX = ref(0);
 const cameraY = ref(0);
 
 function snapshot() {
-  undoStack.value.push(cloneLayout(layout.value));
+  (undoStack.value as unknown as UiLayout[]).push(cloneLayout(layout.value as UiLayout));
   if (undoStack.value.length > 50) undoStack.value.shift();
   redoStack.value = [];
   isDirty.value = true;
 }
 
-function getLayerElements(targetLayout = layout.value): ElementDef[] {
+function getLayerElements(targetLayout: UiLayout = layout.value as UiLayout): ElementDef[] {
   if (activeLayerId.value === 'main') return targetLayout.elements;
   const modal = targetLayout.modals?.find((item) => item.id === activeLayerId.value);
   return modal?.elements ?? targetLayout.elements;
@@ -32,7 +32,7 @@ function getLayerElements(targetLayout = layout.value): ElementDef[] {
 export function useCanvas() {
   const activeLayer = computed<ModalLayerDef | null>(() => {
     if (activeLayerId.value === 'main') return null;
-    return layout.value.modals?.find((item) => item.id === activeLayerId.value) ?? null;
+    return (layout.value as UiLayout).modals?.find((item) => item.id === activeLayerId.value) ?? null;
   });
 
   const activeElements = computed(() => getLayerElements());
@@ -75,8 +75,9 @@ export function useCanvas() {
 
   function updateAllElements(mapper: (element: ElementDef) => ElementDef) {
     snapshot();
-    layout.value.elements = layout.value.elements.map((element) => mapper(element));
-    layout.value.modals = (layout.value.modals ?? []).map((modal) => ({
+    const current = layout.value as UiLayout;
+    current.elements = current.elements.map((element) => mapper(element));
+    current.modals = (current.modals ?? []).map((modal) => ({
       ...modal,
       elements: modal.elements.map((element) => mapper(element)),
     }));
@@ -84,15 +85,29 @@ export function useCanvas() {
 
   function addModal(name: string, presentation: ModalLayerDef['presentation'] = 'custom') {
     snapshot();
-    layout.value.modals = layout.value.modals ?? [];
+    const current = layout.value as UiLayout;
+    current.modals = current.modals ?? [];
     const modal: ModalLayerDef = {
       id: crypto.randomUUID(),
       name,
       presentation,
       elements: [],
     };
-    layout.value.modals.push(modal);
+    current.modals.push(modal);
     activeLayerId.value = modal.id;
+  }
+
+  function updateModal(
+    id: string,
+    patch: Partial<Pick<ModalLayerDef, 'name' | 'presentation' | 'width' | 'height'>>,
+  ) {
+    snapshot();
+    const modal = layout.value.modals?.find((item) => item.id === id);
+    if (!modal) return;
+    if (patch.name !== undefined) modal.name = patch.name;
+    if (patch.presentation !== undefined) modal.presentation = patch.presentation;
+    if ('width' in patch) modal.width = patch.width;
+    if ('height' in patch) modal.height = patch.height;
   }
 
   function removeModal(id: string) {
@@ -129,20 +144,45 @@ export function useCanvas() {
     if (selectedId.value === id) selectedId.value = null;
   }
 
-  function updateElement(id: string, patch: Partial<Omit<ElementDef, 'id' | 'type'>>) {
+  function captureSnapshot() {
     snapshot();
+  }
+
+  function updateLayoutMetadata(
+    patch: Partial<Pick<UiLayout, 'presetId' | 'presetVersion' | 'brandConfig' | 'stationConfig'>>,
+    options?: { markDirty?: boolean },
+  ) {
+    layout.value = {
+      ...layout.value,
+      ...patch,
+    };
+    if (options?.markDirty) isDirty.value = true;
+  }
+
+  function updateElement(
+    id: string,
+    patch: Partial<Omit<ElementDef, 'id' | 'type'>>,
+    options?: { recordHistory?: boolean },
+  ) {
+    if (options?.recordHistory !== false) snapshot();
+    else isDirty.value = true;
     const elements = getLayerElements();
     const index = elements.findIndex((element) => element.id === id);
     if (index === -1) return;
     elements[index] = { ...elements[index], ...patch } as ElementDef;
   }
 
-  function moveElement(id: string, pos: Partial<ElementPosition>) {
+  function moveElement(
+    id: string,
+    pos: Partial<ElementPosition>,
+    options?: { recordHistory?: boolean },
+  ) {
     const elements = getLayerElements();
     const index = elements.findIndex((element) => element.id === id);
     if (index === -1) return;
+    if (options?.recordHistory !== false) snapshot();
+    else isDirty.value = true;
     elements[index].position = { ...elements[index].position, ...pos };
-    isDirty.value = true;
   }
 
   function selectElement(id: string | null) {
@@ -198,9 +238,10 @@ export function useCanvas() {
     clipboard.value = cloneLayout({
       version: layout.value.version,
       resolution: layout.value.resolution,
+      theme: layout.value.theme,
       elements: [element],
       modals: [],
-    }).elements[0];
+    } as UiLayout).elements[0];
   }
 
   function pasteElement() {
@@ -212,9 +253,10 @@ export function useCanvas() {
       ...cloneLayout({
         version: layout.value.version,
         resolution: layout.value.resolution,
+        theme: layout.value.theme,
         elements: [clipboard.value],
         modals: [],
-      }).elements[0],
+      } as UiLayout).elements[0],
       id: newId,
       position: {
         ...clipboard.value.position,
@@ -251,10 +293,13 @@ export function useCanvas() {
     loadLayout,
     setActiveLayer,
     addModal,
+    updateModal,
     removeModal,
     addElement,
     addElements,
     removeElement,
+    captureSnapshot,
+    updateLayoutMetadata,
     updateElement,
     updateResolution,
     updateTheme,

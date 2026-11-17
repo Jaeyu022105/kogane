@@ -2,7 +2,7 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { limitSqlRows, validateAndQualifyBusinessSql } from '~/lib/sql';
-import { getBusinessForAdminUser, isPrefixDb, listBusinessTables } from '~/server/utils/business';
+import { getBusinessForAdminUser, listBusinessTables } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -20,7 +20,6 @@ export default defineEventHandler(async (event) => {
       body?.sql ?? '',
       businessResult.data.schema_name,
       allowedTables,
-      isPrefixDb(),
     );
     const limitedSql = limitSqlRows(qualifiedSql, 1000);
     const result = await db.query<Record<string, unknown>>(limitedSql);

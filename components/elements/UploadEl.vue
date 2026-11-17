@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ImageUp, LockKeyhole } from 'lucide-vue-next';
-import type { UploadElementDef } from '~/lib/uiTypes';
+import ImageUpIcon from 'reicon-vue/icons/ImageUp';
+import LockKeyholeIcon from 'reicon-vue/icons/LockKeyhole';
+import { getElementEvents, type UploadElementDef } from '~/lib/uiTypes';
 import { resolveRuntimePathTemplate } from '~/lib/runtime';
 import { isLightColor } from '~/lib/workspaceBranding';
 
 const props = defineProps<{ element: UploadElementDef; runtime?: any; builderMode?: boolean }>();
 
-const disabled = computed(() => Boolean(props.runtime?.isElementDisabled?.(props.element)));
+const disabled = computed(() => Boolean(props.builderMode || props.runtime?.isElementDisabled?.(props.element)));
 const uploadedUrl = computed(() => props.runtime?.state?.value?.uploads?.[props.element.id] ?? null);
 const pathPreview = computed(() => resolveRuntimePathTemplate(props.element.pathTemplate ?? 'No file selected yet'));
 
@@ -21,7 +22,16 @@ const iconBg = computed(() => isLight.value ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255,
 
 async function handleClick() {
   if (props.builderMode || disabled.value) return;
-  await props.runtime?.dispatch?.({
+
+  const clickEvents = getElementEvents(props.element).filter((binding) => binding.trigger === 'click');
+  const hasUploadBinding = clickEvents.some((binding) => binding.action.type === 'upload');
+
+  if (hasUploadBinding && props.runtime?.triggerElement) {
+    await props.runtime.triggerElement(props.element, 'click');
+    return;
+  }
+
+  const uploaded = await props.runtime?.dispatch?.({
     type: 'upload',
     bucket: props.element.bucket,
     path: props.element.pathTemplate ?? `${props.element.id}/upload`,
@@ -30,6 +40,10 @@ async function handleClick() {
     element: props.element,
     trigger: 'click',
   });
+
+  if (uploaded && clickEvents.length > 0) {
+    await props.runtime?.triggerElement?.(props.element, 'click');
+  }
 }
 </script>
 
@@ -47,8 +61,8 @@ async function handleClick() {
   >
     <div class="flex items-center gap-3">
       <div class="flex h-10 w-10 items-center justify-center rounded-2xl" :style="{ background: iconBg }">
-        <LockKeyhole v-if="disabled" class="w-4 h-4" />
-        <ImageUp v-else class="w-4 h-4" />
+        <LockKeyholeIcon v-if="disabled" class="w-4 h-4" />
+        <ImageUpIcon v-else class="w-4 h-4" />
       </div>
       <div class="min-w-0">
         <p class="text-sm font-semibold">{{ element.buttonLabel ?? 'Upload file' }}</p>

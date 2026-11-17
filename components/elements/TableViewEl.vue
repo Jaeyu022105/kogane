@@ -1,5 +1,18 @@
 <script setup lang="ts">
-import { AlertTriangle, Bell, BellOff, CheckCircle2, Clock, Eye, Pencil, Receipt, RefreshCw, Trash2, UtensilsCrossed, X } from 'lucide-vue-next';
+import AlertTriangleIcon from 'reicon-vue/icons/AlertTriangle';
+import BellIcon from 'reicon-vue/icons/Bell';
+import BellOffIcon from 'reicon-vue/icons/BellOff';
+import CheckCircleIcon from 'reicon-vue/icons/CheckCircle';
+import ChevronLeftIcon from 'reicon-vue/icons/ChevronLeft';
+import ChevronRightIcon from 'reicon-vue/icons/ChevronRight';
+import ClockIcon from 'reicon-vue/icons/Clock';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import PenIcon from 'reicon-vue/icons/Pen';
+import ReceiptIcon from 'reicon-vue/icons/Receipt';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import ForkKnifeIcon from 'reicon-vue/icons/ForkKnife';
+import XIcon from 'reicon-vue/icons/X';
 import { CANVAS_RUNTIME_KEY } from '~/lib/runtime';
 import { isActionAllowed } from '~/lib/permissions';
 import type { TableViewElementDef } from '~/lib/uiTypes';
@@ -8,7 +21,7 @@ import { findCountry, formatCurrencyAmount } from '~/lib/currency';
 import { useBusiness } from '~/composables/useBusiness';
 
 import { parseInspectionItems, type ParsedInspectionItem } from '~/lib/kitchenDisplay';
-import { sanitizeTextInput } from '~/lib/securityClient';
+import { sanitizeNavigationUrl, sanitizeTextInput } from '~/lib/securityClient';
 
 const props = defineProps<{
   element: TableViewElementDef;
@@ -21,6 +34,8 @@ const injectedRuntime = inject<any>(CANVAS_RUNTIME_KEY, null);
 const effectiveRuntime = computed(() => props.runtime ?? injectedRuntime);
 
 const loading = ref(false);
+const pageIndex = ref(0);
+const pageSize = computed(() => Math.max(1, Number(props.element.pageSize ?? 20)));
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 const displayColumns = computed(() =>
   props.element.columns.length > 0
@@ -85,19 +100,51 @@ const borderColor = computed(() => isLight.value ? 'rgba(81, 49, 31, 0.14)' : 'r
 const rowBorderColor = computed(() => isLight.value ? 'rgba(81, 49, 31, 0.08)' : 'rgba(255,255,255,0.06)');
 const stripedBg = computed(() => isLight.value ? 'rgba(0,0,0,0.025)' : 'rgba(255,255,255,0.03)');
 
-async function fetchRows() {
+const isTargetedFilterActive = computed(() =>
+  Boolean(effectiveRuntime.value?.state?.value?.targetedQueries?.[props.element.id]),
+);
+const hasNextPage = computed(() => rows.value.length >= pageSize.value);
+
+async function fetchRows(options?: { bypassFilter?: boolean }) {
   if (props.builderMode || !effectiveRuntime.value) return;
+  if (!options?.bypassFilter && isTargetedFilterActive.value) return;
   loading.value = true;
+
+  const queryOverrides = {
+    offset: pageIndex.value * pageSize.value,
+    limit: pageSize.value,
+  };
 
   try {
     if (effectiveRuntime.value.reloadElement) {
-      await effectiveRuntime.value.reloadElement(props.element);
+      await effectiveRuntime.value.reloadElement(props.element, queryOverrides);
     } else {
-      await effectiveRuntime.value.loadElement(props.element);
+      await effectiveRuntime.value.loadElement(props.element, queryOverrides);
     }
   } finally {
     loading.value = false;
   }
+}
+
+async function clearTargetedFilter() {
+  if (props.builderMode || !effectiveRuntime.value) return;
+  pageIndex.value = 0;
+  loading.value = true;
+  try {
+    if (effectiveRuntime.value.clearTargetQuery) {
+      await effectiveRuntime.value.clearTargetQuery(props.element.id);
+    } else {
+      await fetchRows({ bypassFilter: true });
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function goToPage(nextPage: number) {
+  if (nextPage < 0 || loading.value) return;
+  pageIndex.value = nextPage;
+  await fetchRows({ bypassFilter: true });
 }
 
 function stopAutoRefresh() {
@@ -116,6 +163,7 @@ function startAutoRefresh() {
   if (!intervalMs || intervalMs < 1000) return;
 
   refreshTimer = setInterval(() => {
+    if (isTargetedFilterActive.value) return;
     fetchRows();
   }, intervalMs);
 }
@@ -232,6 +280,8 @@ const isOrdersTable = computed(() => props.element.tableName === 'orders' || Boo
 const isDeliveriesTable = computed(() => props.element.tableName === 'deliveries' || Boolean(props.element.tableName?.endsWith('_deliveries')));
 const isAppointmentsTable = computed(() => props.element.tableName === 'appointments' || Boolean(props.element.tableName?.endsWith('_appointments')));
 const isInvoicesTable = computed(() => props.element.tableName === 'invoices' || Boolean(props.element.tableName?.endsWith('_invoices')));
+const isExpensesTable = computed(() => props.element.tableName === 'expenses' || Boolean(props.element.tableName?.endsWith('_expenses')));
+const isInventoryTable = computed(() => props.element.tableName === 'inventory' || Boolean(props.element.tableName?.endsWith('_inventory')));
 const isStatusCycleTable = computed(() => isOrdersTable.value || isDeliveriesTable.value || isAppointmentsTable.value);
 
 const hasRowActions = computed(() => {
@@ -239,10 +289,20 @@ const hasRowActions = computed(() => {
     return true;
   }
   if (props.builderMode) {
-    return isProductsTable.value;
+    return (
+      isProductsTable.value
+      || isDeliveriesTable.value
+      || isAppointmentsTable.value
+      || isInvoicesTable.value
+      || isExpensesTable.value
+      || isInventoryTable.value
+    );
   }
-  if (isProductsTable.value) {
+  if (isProductsTable.value || isExpensesTable.value) {
     return canUpdateTable.value || canDeleteTable.value;
+  }
+  if (isDeliveriesTable.value || isAppointmentsTable.value || isInvoicesTable.value || isInventoryTable.value) {
+    return canUpdateTable.value;
   }
   return false;
 });
@@ -362,6 +422,46 @@ async function toggleInvoicePaid(row: Record<string, unknown>, e: Event) {
     row.paid = previousPaid;
     console.error('Failed to update invoice payment status:', err);
   }
+}
+
+const adjustingStockId = ref<string | null>(null);
+
+async function adjustInventoryQuantity(row: Record<string, unknown>, delta: number, e: Event) {
+  e.stopPropagation();
+  const rowId = row.id ?? (row as any)._id ?? (row as any).reference;
+  if (props.builderMode || !effectiveRuntime.value || !isInventoryTable.value || !rowId || !canUpdateTable.value) return;
+  const key = String(rowId);
+  if (adjustingStockId.value === key) return;
+
+  const previousQuantity = Number(row.quantity ?? 0);
+  const nextQuantity = Math.max(0, previousQuantity + delta);
+  if (nextQuantity === previousQuantity && delta < 0) return;
+
+  adjustingStockId.value = key;
+  row.quantity = nextQuantity;
+
+  try {
+    await effectiveRuntime.value.dispatch({
+      type: 'update',
+      table: props.element.tableName || 'inventory',
+      rowId,
+      payload: { quantity: nextQuantity },
+    }, {
+      element: props.element,
+      trigger: 'click',
+    });
+    await fetchRows();
+  } catch (err) {
+    row.quantity = previousQuantity;
+    console.error('Failed to adjust stock quantity:', err);
+  } finally {
+    adjustingStockId.value = null;
+  }
+}
+
+function safeReceiptUrl(raw: unknown): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  return sanitizeNavigationUrl(raw.trim());
 }
 
 // Order Inspection Modal
@@ -611,14 +711,14 @@ async function confirmDeleteProduct() {
     });
 
     if (result === null) {
-      deleteError.value = 'Failed to delete product. Please check permissions and try again.';
+      deleteError.value = 'Failed to delete record. Please check permissions and try again.';
       return;
     }
 
     closeDeleteModal();
     await fetchRows();
   } catch (err: any) {
-    deleteError.value = err?.message || 'Failed to delete product.';
+    deleteError.value = err?.message || 'Failed to delete record.';
   } finally {
     deleting.value = false;
   }
@@ -632,7 +732,10 @@ watch(
     JSON.stringify(props.element.filters ?? {}),
     props.element.pageSize,
   ],
-  fetchRows,
+  () => {
+    pageIndex.value = 0;
+    fetchRows({ bypassFilter: true });
+  },
   { deep: true },
 );
 
@@ -706,7 +809,9 @@ onMounted(() => {
           const insertId = String(payload.row?.id ?? payload.id ?? '');
           triggerNewOrderArrival(insertId || undefined);
         }
-        fetchRows();
+        if (!isTargetedFilterActive.value) {
+          fetchRows();
+        }
       }
     });
   }
@@ -743,7 +848,7 @@ onUnmounted(() => {
             v-if="newOrderAlert"
             class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500 text-white animate-bounce shadow-md"
           >
-            <Bell class="w-3.5 h-3.5 animate-spin" />
+            <BellIcon class="w-3.5 h-3.5 animate-spin" />
             <span>New Order!</span>
           </div>
         </Transition>
@@ -762,18 +867,33 @@ onUnmounted(() => {
           :aria-label="soundEnabled ? 'Mute kitchen bell' : 'Unmute kitchen bell'"
           @click="toggleKitchenSound"
         >
-          <Bell v-if="soundEnabled" class="w-3.5 h-3.5 animate-pulse text-amber-500" />
-          <BellOff v-else class="w-3.5 h-3.5 opacity-60" />
+          <BellIcon v-if="soundEnabled" weight="Filled" class="w-3.5 h-3.5 animate-pulse text-amber-500" />
+          <BellOffIcon v-else class="w-3.5 h-3.5 opacity-60" />
           <span class="hidden sm:inline font-semibold text-[11px]">{{ soundEnabled ? 'Chime ON' : 'Chime OFF' }}</span>
+        </button>
+
+        <button
+          v-if="isTargetedFilterActive"
+          type="button"
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-colors cursor-pointer"
+          :style="{
+            borderColor: 'rgba(232, 116, 138, 0.35)',
+            background: 'rgba(232, 116, 138, 0.12)',
+            color: '#e8748a',
+          }"
+          title="Clear search filter and restore full list"
+          @click="clearTargetedFilter"
+        >
+          <span>Filtered · Reset</span>
         </button>
 
         <button
           class="text-xs shrink-0 transition-colors p-1 rounded-lg hover:opacity-80"
           :style="{ color: mutedTextColor }"
           aria-label="Refresh list"
-          @click="fetchRows"
+          @click="fetchRows({ bypassFilter: true })"
         >
-          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
+          <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
         </button>
       </div>
     </div>
@@ -877,7 +997,7 @@ onUnmounted(() => {
                       color: textColor,
                     }"
                   >
-                    <Eye class="w-3 h-3" />
+                    <EyeIcon class="w-3 h-3" />
                     <span>View</span>
                   </span>
                 </div>
@@ -908,7 +1028,7 @@ onUnmounted(() => {
                   title="Inspect full order line items, notes, and totals"
                   @click.stop="openOrderModal(row)"
                 >
-                  <Eye class="w-3.5 h-3.5" />
+                  <EyeIcon class="w-3.5 h-3.5" />
                   <span class="hidden md:inline">Inspect</span>
                 </button>
                 <button
@@ -920,15 +1040,15 @@ onUnmounted(() => {
                   title="Confirm order has been prepared and served"
                   @click="markOrderServed(row, $event)"
                 >
-                  <RefreshCw v-if="servingOrderId === String(row.id)" class="w-3.5 h-3.5 animate-spin" />
-                  <CheckCircle2 v-else class="w-3.5 h-3.5" />
+                  <RefreshIcon v-if="servingOrderId === String(row.id)" class="w-3.5 h-3.5 animate-spin" />
+                  <CheckCircleIcon v-else class="w-3.5 h-3.5" />
                   {{ servingOrderId === String(row.id) ? 'Updating...' : 'Mark as Served' }}
                 </button>
                 <span
                   v-else
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-emerald-600 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30"
                 >
-                  <CheckCircle2 class="w-3.5 h-3.5" />
+                  <CheckCircleIcon class="w-3.5 h-3.5" />
                   Served
                 </span>
               </div>
@@ -943,7 +1063,7 @@ onUnmounted(() => {
                   title="Edit product"
                   @click="openEditModal(row, $event)"
                 >
-                  <Pencil class="w-3 h-3" />
+                  <PenIcon class="w-3 h-3" />
                   Edit
                 </button>
                 <button
@@ -953,7 +1073,81 @@ onUnmounted(() => {
                   title="Delete product"
                   @click="openDeleteModal(row, $event)"
                 >
-                  <Trash2 class="w-3 h-3" />
+                  <TrashIcon class="w-3 h-3" />
+                  Delete
+                </button>
+              </div>
+
+              <!-- Deliveries / Appointments row quick-action: Advance Status -->
+              <div v-else-if="(isDeliveriesTable || isAppointmentsTable) && canUpdateTable" class="inline-flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer hover:brightness-125"
+                  :style="{ borderColor, background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)', color: textColor }"
+                  @click.stop="cycleOrderStatus(row, $event)"
+                >
+                  {{ isAppointmentsTable ? 'Advance Visit' : 'Advance Status' }}
+                </button>
+              </div>
+
+              <!-- Invoices row quick-action: Toggle Paid / Unpaid -->
+              <div v-else-if="isInvoicesTable && canUpdateTable" class="inline-flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer hover:brightness-125"
+                  :style="{ borderColor, background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)', color: textColor }"
+                  @click.stop="toggleInvoicePaid(row, $event)"
+                >
+                  {{ row.paid === 1 || row.paid === true || String(row.paid) === '1' || String(row.paid).toLowerCase() === 'true' ? 'Mark Unpaid' : 'Mark Paid' }}
+                </button>
+              </div>
+
+              <!-- Inventory row quick-actions: -1 / +1 Stock Adjust -->
+              <div v-else-if="isInventoryTable && canUpdateTable" class="inline-flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  class="px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer disabled:opacity-40"
+                  :style="{ borderColor, background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)', color: textColor }"
+                  :disabled="Number(row.quantity ?? 0) <= 0 || adjustingStockId === String(row.id ?? '')"
+                  title="Decrement stock by 1"
+                  @click.stop="adjustInventoryQuantity(row, -1, $event)"
+                >
+                  -1
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer disabled:opacity-40"
+                  :style="{ borderColor, background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)', color: textColor }"
+                  :disabled="adjustingStockId === String(row.id ?? '')"
+                  title="Increment stock by 1"
+                  @click.stop="adjustInventoryQuantity(row, 1, $event)"
+                >
+                  +1
+                </button>
+              </div>
+
+              <!-- Expenses row quick-actions: Receipt & Delete -->
+              <div v-else-if="isExpensesTable" class="inline-flex items-center justify-end gap-1.5">
+                <a
+                  v-if="safeReceiptUrl(row.receipt_url)"
+                  :href="safeReceiptUrl(row.receipt_url)!"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-colors"
+                  :style="{ borderColor, background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)', color: textColor }"
+                  @click.stop
+                >
+                  <ReceiptIcon class="w-3 h-3" />
+                  Receipt
+                </a>
+                <button
+                  v-if="canDeleteTable"
+                  type="button"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-all active:scale-95 cursor-pointer"
+                  title="Delete expense"
+                  @click="openDeleteModal(row, $event)"
+                >
+                  <TrashIcon class="w-3 h-3" />
                   Delete
                 </button>
               </div>
@@ -966,6 +1160,36 @@ onUnmounted(() => {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div
+      v-if="!builderMode && !isTargetedFilterActive && (pageIndex > 0 || hasNextPage)"
+      class="px-4 py-2 border-t flex items-center justify-between text-[11px] shrink-0"
+      :style="{ borderColor, color: mutedTextColor }"
+    >
+      <span>Page {{ pageIndex + 1 }} · {{ rows.length }} shown</span>
+      <div class="inline-flex items-center gap-1.5">
+        <button
+          type="button"
+          class="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg border transition-opacity disabled:opacity-35 cursor-pointer"
+          :style="{ borderColor, color: textColor }"
+          :disabled="loading || pageIndex === 0"
+          @click="goToPage(pageIndex - 1)"
+        >
+          <ChevronLeftIcon class="w-3.5 h-3.5" />
+          Prev
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg border transition-opacity disabled:opacity-35 cursor-pointer"
+          :style="{ borderColor, color: textColor }"
+          :disabled="loading || !hasNextPage"
+          @click="goToPage(pageIndex + 1)"
+        >
+          Next
+          <ChevronRightIcon class="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
 
     <!-- Edit Product Modal -->
@@ -995,12 +1219,12 @@ onUnmounted(() => {
               :style="{ color: mutedTextColor }"
               @click="closeEditModal"
             >
-              <X class="w-4 h-4" />
+              <XIcon class="w-4 h-4" />
             </button>
           </div>
 
           <div v-if="editError" class="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-500 flex items-center gap-2">
-            <AlertTriangle class="w-4 h-4 shrink-0" />
+            <AlertTriangleIcon class="w-4 h-4 shrink-0" />
             <span>{{ editError }}</span>
           </div>
 
@@ -1130,18 +1354,18 @@ onUnmounted(() => {
         >
           <div class="flex items-start gap-3">
             <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-rose-500/15 text-rose-500">
-              <Trash2 class="w-5 h-5" />
+              <TrashIcon class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="text-base font-semibold">Delete Product</h3>
+              <h3 class="text-base font-semibold">{{ isExpensesTable ? 'Delete Expense' : 'Delete Product' }}</h3>
               <p class="text-xs mt-1 leading-relaxed" :style="{ color: mutedTextColor }">
-                Are you sure you want to remove <span class="font-semibold text-rose-400">"{{ deletingProduct.name || 'this product' }}"</span> from the catalog? This cannot be undone.
+                Are you sure you want to remove <span class="font-semibold text-rose-400">"{{ deletingProduct.name || deletingProduct.description || 'this record' }}"</span>? This cannot be undone.
               </p>
             </div>
           </div>
 
           <div v-if="deleteError" class="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-500 flex items-center gap-2">
-            <AlertTriangle class="w-4 h-4 shrink-0" />
+            <AlertTriangleIcon class="w-4 h-4 shrink-0" />
             <span>{{ deleteError }}</span>
           </div>
 
@@ -1202,7 +1426,7 @@ onUnmounted(() => {
                 {{ inspectedOrder.table_number || 'Counter / Takeout' }}
               </h3>
               <p class="text-[11px] mt-0.5 flex items-center gap-1.5" :style="{ color: mutedTextColor }">
-                <Clock class="w-3 h-3" />
+                <ClockIcon class="w-3 h-3" />
                 <span>{{ inspectedOrder.created_at || 'Just now' }}</span>
                 <span v-if="inspectedOrder.staff_name">&middot; Server: {{ inspectedOrder.staff_name }}</span>
               </p>
@@ -1214,7 +1438,7 @@ onUnmounted(() => {
               aria-label="Close modal"
               @click="closeOrderModal"
             >
-              <X class="w-4 h-4" />
+              <XIcon class="w-4 h-4" />
             </button>
           </div>
 
@@ -1222,7 +1446,7 @@ onUnmounted(() => {
           <div class="flex-1 overflow-y-auto py-3 space-y-2 min-h-0">
             <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider px-1 pb-1" :style="{ color: mutedTextColor }">
               <span class="flex items-center gap-1.5">
-                <UtensilsCrossed class="w-3.5 h-3.5" /> Ordered Items
+                <ForkKnifeIcon class="w-3.5 h-3.5" /> Ordered Items
               </span>
               <span>{{ parseInspectionItems(inspectedOrder).length }} item(s)</span>
             </div>
@@ -1322,7 +1546,7 @@ onUnmounted(() => {
                 :disabled="servingOrderId === String(inspectedOrder.id)"
                 @click="markOrderServed(inspectedOrder, $event); closeOrderModal()"
               >
-                <CheckCircle2 class="w-4 h-4" />
+                <CheckCircleIcon class="w-4 h-4" />
                 <span>Mark as Served</span>
               </button>
               <button

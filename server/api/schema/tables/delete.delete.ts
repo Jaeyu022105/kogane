@@ -9,7 +9,6 @@ import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { buildDropTableSql, validateIdentifier } from '~/lib/schemaUtils';
 import { writeAuditLog } from '~/server/utils/audit';
-import { getSqlDialect } from '~/server/utils/business';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -33,8 +32,7 @@ export default defineEventHandler(async (event) => {
   if (bizErr || !business) return { error: 'Business not found', success: false };
   if (business.admin_user_id !== userId) return { error: 'Forbidden', success: false };
 
-  const dialect = getSqlDialect();
-  const sql = buildDropTableSql(body.tableName, business.schema_name, dialect);
+  const sql = buildDropTableSql(body.tableName, business.schema_name);
 
   const { error } = await db.execute(sql);
 

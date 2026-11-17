@@ -19,7 +19,6 @@ export function useRealtimeSync() {
   const error = ref<string | null>(null);
 
   let eventSource: EventSource | null = null;
-  let supabaseChannel: any = null;
   const handlers = new Set<MutationHandler>();
   let connectHandler: MutationHandler | null = null;
   let hasConnectedOnce = false;
@@ -99,8 +98,20 @@ export function useRealtimeSync() {
 
           if (payload?.type === 'connected') {
             markConnected();
-          } else if (payload?.type === 'table-mutation' || payload?.table) {
-            notify(payload as RealtimeTableMutation);
+          } else if (
+            payload?.type === 'table-mutation'
+            || payload?.type === 'terminal:updated'
+            || payload?.type === 'terminal:layout'
+            || payload?.table
+          ) {
+            notify({
+              type: 'table-mutation',
+              table: payload.table ?? 'terminals',
+              action: payload.action ?? 'update',
+              recordId: payload.recordId ?? payload.terminalId ?? null,
+              data: payload.data ?? (payload.type !== 'table-mutation' ? payload : null),
+              timestamp: payload.timestamp ?? new Date().toISOString(),
+            });
           }
         } catch {
           // ignore non-json messages
@@ -116,44 +127,6 @@ export function useRealtimeSync() {
       status.value = 'error';
       error.value = (err as Error).message;
     }
-
-    // Optional Supabase Realtime fallback/dual-sync if public credentials are configured
-    try {
-      const config = useRuntimeConfig();
-      const supabaseUrl = config.public?.supabaseUrl;
-      const supabaseAnonKey = config.public?.supabaseAnonKey;
-
-      if (
-        supabaseUrl &&
-        supabaseAnonKey &&
-        !supabaseUrl.includes('your-project') &&
-        typeof window !== 'undefined'
-      ) {
-        import('@supabase/supabase-js').then(({ createClient }) => {
-          const client = createClient(supabaseUrl, supabaseAnonKey, {
-            realtime: { params: { eventsPerSecond: 10 } },
-          });
-
-          supabaseChannel = client
-            .channel(`public:realtime:${options.businessId || 'any'}`)
-            .on('postgres_changes', { event: '*', schema: '*', table: '*' }, (payload: any) => {
-              notify({
-                type: 'table-mutation',
-                table: payload.table,
-                action: (payload.eventType?.toLowerCase() ?? 'update') as any,
-                recordId: payload.new?.id ?? payload.old?.id ?? null,
-                data: payload.new ?? null,
-                timestamp: new Date().toISOString(),
-              });
-            })
-            .subscribe();
-        }).catch(() => {
-          // Supabase Realtime optional dependency error handled silently
-        });
-      }
-    } catch {
-      // Ignore Supabase Realtime setup if runtime config is inaccessible
-    }
   }
 
   function disconnect() {
@@ -165,13 +138,6 @@ export function useRealtimeSync() {
     if (eventSource) {
       eventSource.close();
       eventSource = null;
-    }
-
-    if (supabaseChannel) {
-      try {
-        supabaseChannel.unsubscribe?.();
-      } catch { }
-      supabaseChannel = null;
     }
 
     isConnected.value = false;

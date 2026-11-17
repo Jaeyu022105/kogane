@@ -2,13 +2,7 @@ import { defineEventHandler, getQuery } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
-import {
-  getBusinessForAdminUser,
-  isPrefixDb,
-  qualifyBusinessTable,
-  replacePlaceholdersForDialect,
-  sqlPlaceholder,
-} from '~/server/utils/business';
+import { getBusinessForAdminUser, qualifyBusinessTable } from '~/server/utils/business';
 import { getBusinessTableColumns } from '~/server/utils/businessTable';
 import { inDateRange, normalizeDateRange, toDateBucket, type ReportGrouping } from '~/server/utils/reporting';
 
@@ -62,12 +56,7 @@ export default defineEventHandler(async (event) => {
   validateIdentifier(revenueColumn);
   const table = qualifyBusinessTable(businessResult.data.schema_name, chosenTable);
   const params: unknown[] = [range.from.toISOString(), range.to.toISOString()];
-  const isSqliteOrPrefix = isPrefixDb();
-  const sql = isSqliteOrPrefix
-    ? `SELECT "${dateColumn}" as report_date, "${revenueColumn}" as revenue FROM ${table} WHERE datetime("${dateColumn}") >= datetime(?) AND datetime("${dateColumn}") <= datetime(?) ORDER BY "${dateColumn}" ASC`
-    : replacePlaceholdersForDialect(
-        `SELECT "${dateColumn}" as report_date, "${revenueColumn}" as revenue FROM ${table} WHERE "${dateColumn}" >= ${sqlPlaceholder(1)} AND "${dateColumn}" <= ${sqlPlaceholder(2)} ORDER BY "${dateColumn}" ASC`,
-      );
+  const sql = `SELECT "${dateColumn}" as report_date, "${revenueColumn}" as revenue FROM ${table} WHERE datetime("${dateColumn}") >= datetime(?) AND datetime("${dateColumn}") <= datetime(?) ORDER BY "${dateColumn}" ASC`;
   const result = await db.query<{ report_date: string; revenue: number | string | null }>(sql, params);
 
   const grouped = new Map<string, { revenue: number; transactions: number }>();

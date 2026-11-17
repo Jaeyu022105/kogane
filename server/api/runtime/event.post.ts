@@ -5,7 +5,7 @@ import type { AuditActionType } from '~/lib/audit';
 import type { RuntimeEventEnvelope } from '~/lib/runtime';
 import { writeAuditLog } from '~/server/utils/audit';
 import { deleteBusinessRow, fetchRowById, insertBusinessRow, queryBusinessRows, updateBusinessRow } from '~/server/utils/businessTable';
-import { getTerminalContext, replacePlaceholdersForDialect, sqlPlaceholder } from '~/server/utils/business';
+import { getTerminalContext } from '~/server/utils/business';
 import { ensureStarterBusinessTable } from '~/server/utils/starterTables';
 import { db } from '~/lib/db';
 import { realtimeHub } from '~/server/utils/realtimeHub';
@@ -77,26 +77,21 @@ async function queryAuditLogRows(options: {
     }
   }
 
-  const clauses = [`business_id = ${sqlPlaceholder(1)}`];
+  const clauses = ['business_id = ?'];
   const params: unknown[] = [options.businessId];
 
   for (const [key, value] of Object.entries(options.where ?? {})) {
     if (!AUDIT_LOG_FILTER_COLUMNS.has(key) || value == null || value === '') continue;
     const cleanVal = typeof value === 'string' ? stripUnsafeControlChars(value, false).slice(0, 256) : value;
     params.push(cleanVal);
-    clauses.push(`${key} = ${sqlPlaceholder(params.length)}`);
+    clauses.push(`${key} = ?`);
   }
 
   const limit = Math.min(options.limit ?? 50, 200);
   const offset = Math.max(options.offset ?? 0, 0);
-  params.push(limit);
-  const limitPlaceholder = sqlPlaceholder(params.length);
-  params.push(offset);
-  const offsetPlaceholder = sqlPlaceholder(params.length);
+  params.push(limit, offset);
 
-  const sql = replacePlaceholdersForDialect(
-    `SELECT ${selectedColumns.join(', ')} FROM audit_log WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder}`,
-  );
+  const sql = `SELECT ${selectedColumns.join(', ')} FROM audit_log WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
 
   return db.query(sql, params);
 }

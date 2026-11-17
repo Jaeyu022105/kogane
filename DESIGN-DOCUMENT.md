@@ -34,7 +34,7 @@ Kogane provides terminal presets designed for specific real-world workflows. Her
   - The cashier opens the terminal via a locked PIN screen or direct link on a tablet (e.g. iPad).
   - They tap items to add them to the cart, specify a table number, and select a payment method (Cash, Card, or GCash).
   - The terminal prints a formatted receipt via the browser print interface.
-  - The transaction details are saved locally in SQLite/Supabase.
+  - The transaction details are saved in the business database (SQLite locally, Firestore online).
 
 ### Kitchen Display System (KDS) Preset
 - **Scenario**: Kitchen staff in a busy restaurant.
@@ -69,7 +69,7 @@ To keep Kogane focused, secure, and lightweight, the following features are expl
 - **No Real Money Transfer**: Kogane handles transaction metadata, receipt numbers, and payment status logs (e.g. Card, Cash, GCash). It **does not transfer actual money**, connect to bank accounts, or execute real payment transactions through any payment gateway (e.g., Stripe, PayPal, PayMongo).
 - **No Native Desktop/Mobile App Packages**: The system runs entirely in modern web browsers (Safari, Chrome, Firefox) and is optimized for touch responsiveness. It does not compile into native iOS, Android, or Windows applications.
 - **No Direct Vendor Hardware SDKs**: Integrated barcode scanners use browser key-press burst analysis rather than vendor-specific USB/Bluetooth drivers. Card readers are simulated workflows ready to bridge with external SDKs but do not connect to real physical payment terminals.
-- **No Paid Host Infrastructure**: The local dev database uses Bun's built-in SQLite database engine. Deployment instructions target free-tier database providers (e.g., Supabase/PostgreSQL) and static hosting platforms, avoiding paid infrastructure costs.
+- **No Paid Host Infrastructure**: The local dev database uses Bun's built-in SQLite database engine. Deployment instructions target free tiers (Firebase Spark Firestore) and free hosting platforms, avoiding paid infrastructure costs.
 
 ## 6. Core Website And App Areas
 
@@ -125,10 +125,10 @@ Terminals use PIN-based access where appropriate. Public links are useful when e
 
 ### Schema And Database
 
-Kogane supports a hybrid database strategy:
+Kogane runs one database layer (`lib/db.ts`) on two engines, chosen automatically by `lib/backend.ts`:
 
-- `DEV_MODE=true` uses local SQLite through Bun's built-in SQLite adapter.
-- Production mode is intended to use Supabase/PostgreSQL.
+- Locally (`DEV_MODE=true`, or no Firebase credentials) it uses SQLite through Bun's built-in SQLite adapter.
+- In production (Firebase credentials present) it uses Firebase Cloud Firestore.
 - Platform tables include businesses, terminals, presets, and audit log.
 - Business tables are created per business schema.
 - Starter tables include products, orders, and inventory.
@@ -274,7 +274,7 @@ Main stack:
 - Bun runtime
 - Tailwind CSS and custom CSS
 - SQLite for local development
-- Supabase/PostgreSQL path for production
+- Firebase Cloud Firestore for production
 
 Important modules:
 
@@ -298,5 +298,5 @@ Important modules:
 - Make terminals focused and hard to misuse.
 - Keep admin power behind the dashboard.
 - Make generated UI feel intentional, not like raw database forms.
-- Keep local SQLite and production Supabase paths aligned where possible.
+- Keep local SQLite and production Firestore behaviour identical behind `lib/db.ts`.
 - Document decisions in `HANDOFF.md` after meaningful prompts so future AI agents can continue without re-discovering the project.

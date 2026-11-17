@@ -6,13 +6,25 @@
 
 import { defineEventHandler, readBody, setResponseStatus } from 'h3';
 import { hashPin, issueTerminalSession, verifyPin } from '~/lib/authUtils';
-import { enforceRateLimit, getClientIp, recordRateLimitAttempt, clearRateLimit } from '~/lib/rateLimit';
+import {
+  checkRateLimit,
+  clearRateLimit,
+  consumeRateLimit,
+  getClientIp,
+  recordRateLimitAttempt,
+  setRetryAfter,
+} from '~/lib/rateLimit';
 import { normalizeLayout } from '~/lib/uiTypes';
 import { normalizePermissions } from '~/lib/permissions';
 import { db } from '~/lib/db';
 import { writeAuditLog } from '~/server/utils/audit';
 import { findCountry } from '~/lib/currency';
 import { hasUnsafeControlChars } from '~/lib/securityClient';
+
+const CLIENT_WINDOW_MS = 5 * 60 * 1000;
+const CLIENT_MAX_ATTEMPTS = 10;
+const TERMINAL_WINDOW_MS = 15 * 60 * 1000;
+const TERMINAL_MAX_FAILURES = 20;
 
 export default defineEventHandler(async (event) => {
   const body = (await readBody<{
@@ -36,14 +48,17 @@ export default defineEventHandler(async (event) => {
     return { error: 'Invalid credentials', session: null, token: null };
   }
 
-  const rateId = body.terminalId || `${body.businessId}:${body.displayName}`;
-  const rateLimit = enforceRateLimit(event, {
-    scope: 'terminal_pin',
-    identifier: rateId,
-    maxAttempts: 10,
-    windowMs: 5 * 60 * 1000,
-  });
+  // Two limits: this device on this terminal (counted up front, so parallel guesses can't slip
+  // past), and wrong PINs for this terminal from anywhere, which locks the terminal for a while.
+  const rateId = (body.terminalId || `${body.businessId}:${body.displayName}`).toLowerCase();
+  const rateKey = `terminal_pin:${getClientIp(event)}:${rateId}`;
+  const terminalKey = `terminal_pin_any:${rateId}`;
+  const terminalLimit = checkRateLimit(terminalKey, TERMINAL_MAX_FAILURES, TERMINAL_WINDOW_MS);
+  const rateLimit = terminalLimit.allowed
+    ? consumeRateLimit(rateKey, CLIENT_MAX_ATTEMPTS, CLIENT_WINDOW_MS)
+    : terminalLimit;
   if (!rateLimit.allowed) {
+    setRetryAfter(event, rateLimit.retryAfterSeconds);
     setResponseStatus(event, 429);
     return {
       error: `Too many PIN attempts. Please wait ${rateLimit.retryAfterSeconds} seconds.`,
@@ -51,7 +66,7 @@ export default defineEventHandler(async (event) => {
       token: null,
     };
   }
-  const rateKey = `terminal_pin:${getClientIp(event)}:${rateId.toLowerCase()}`;
+  const recordFailure = () => recordRateLimitAttempt(terminalKey, TERMINAL_WINDOW_MS);
 
   const query = body.terminalId
     ? `
@@ -110,17 +125,18 @@ export default defineEventHandler(async (event) => {
   }>(query, params);
 
   if (!terminal) {
-    recordRateLimitAttempt(rateKey, 5 * 60 * 1000);
+    recordFailure();
     return { error: 'Invalid credentials', session: null, token: null };
   }
 
   const valid = await verifyPin(body.pin, terminal.pin_hash);
   if (!valid) {
-    recordRateLimitAttempt(rateKey, 5 * 60 * 1000);
+    recordFailure();
     return { error: 'Invalid credentials', session: null, token: null };
   }
 
   clearRateLimit(rateKey);
+  clearRateLimit(terminalKey);
 
   // Transparently upgrade legacy unsalted/static-salted SHA-256 PIN hashes to PBKDF2
   if (!terminal.pin_hash.startsWith('pin_pbkdf2$')) {

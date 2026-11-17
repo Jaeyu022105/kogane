@@ -98,12 +98,19 @@ const chartData = computed(() => {
       .sort((left, right) => left.label.localeCompare(right.label));
   }
 
-  return rows.value
-    .map((row) => ({
-      label: normalizeLabel(row[labelColumn]),
-      value: Number(row[valueColumn] ?? 0),
-    }))
-    .filter((item) => !Number.isNaN(item.value));
+  if (!valueColumn) return [];
+
+  const groupedSum = new Map<string, number>();
+  for (const row of rows.value) {
+    const value = Number(row[valueColumn]);
+    if (Number.isNaN(value)) continue;
+    const label = normalizeLabel(row[labelColumn]);
+    groupedSum.set(label, (groupedSum.get(label) ?? 0) + value);
+  }
+
+  return Array.from(groupedSum.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((left, right) => left.label.localeCompare(right.label));
 });
 
 const total = computed(() => chartData.value.reduce((sum, item) => sum + item.value, 0) || 1);
@@ -117,9 +124,12 @@ function polarToXY(angle: number, radius: number, cx: number, cy: number) {
 }
 
 function pieSlicePath(startAngle: number, endAngle: number, cx: number, cy: number, radius: number): string {
+  const clampedEnd = endAngle - startAngle >= Math.PI * 2 - 0.0001
+    ? startAngle + Math.PI * 2 - 0.0001
+    : endAngle;
   const start = polarToXY(startAngle, radius, cx, cy);
-  const end = polarToXY(endAngle, radius, cx, cy);
-  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+  const end = polarToXY(clampedEnd, radius, cx, cy);
+  const largeArc = clampedEnd - startAngle > Math.PI ? 1 : 0;
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
 }
 
@@ -265,7 +275,40 @@ function linePoints(width: number, height: number): string {
             :fill="palette[0]"
             :stroke="surfaceColor"
             stroke-width="1.5"
+          >
+            <title>{{ item.label }}: {{ item.value }}</title>
+          </circle>
+        </template>
+        <template v-else-if="chartData.length === 1">
+          <line
+            x1="24"
+            :y1="24 + 52 - (chartData[0].value / maxValue) * 52"
+            x2="136"
+            :y2="24 + 52 - (chartData[0].value / maxValue) * 52"
+            :stroke="palette[0]"
+            stroke-opacity="0.35"
+            stroke-width="1.5"
+            stroke-dasharray="3 3"
           />
+          <circle
+            cx="80"
+            :cy="24 + 52 - (chartData[0].value / maxValue) * 52"
+            r="5"
+            :fill="palette[0]"
+            :stroke="surfaceColor"
+            stroke-width="2"
+          >
+            <title>{{ chartData[0].label }}: {{ chartData[0].value }}</title>
+          </circle>
+          <text
+            x="80"
+            y="92"
+            text-anchor="middle"
+            font-size="8.5"
+            :fill="mutedTextColor"
+          >
+            {{ chartData[0].label }} ({{ chartData[0].value }})
+          </text>
         </template>
       </svg>
     </div>

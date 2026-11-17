@@ -1,25 +1,43 @@
 <script setup lang="ts">
-import { Menu, X } from 'lucide-vue-next';
+import MenuIcon from 'reicon-vue/icons/Menu';
+import XIcon from 'reicon-vue/icons/X';
 
-const { t, loadLocale } = useLocale();
+const { t, locale, setLocale, loadLocale, availableLocales } = useLocale();
+const { isEnabled } = useFeatureFlags();
 const route = useRoute();
 const { isLoggedIn, hydrateSession } = useAuth();
 
 const navLinks = computed(() => [
   { label: t('nav_features'), to: '/features' },
+  ...(isEnabled('pricing') ? [{ label: t('nav_pricing'), to: '/pricing' }] : []),
 ]);
 
 const scrolled = ref(false);
 const mobileMenuOpen = ref(false);
+// The home hero's faded pink backdrop runs up to the navbar, so the bar takes the same pink while the page sits at the top
+const isHome = computed(() => route.path === '/');
 
 function closeMobileMenu() {
   mobileMenuOpen.value = false;
 }
 
+function handleLocaleChange(event: Event) {
+  const value = (event.target as HTMLSelectElement).value;
+  setLocale(value);
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    closeMobileMenu();
+  },
+);
+
 onMounted(() => {
   loadLocale();
   void hydrateSession();
   const handler = () => { scrolled.value = window.scrollY > 24; };
+  handler();
   window.addEventListener('scroll', handler, { passive: true });
   onUnmounted(() => window.removeEventListener('scroll', handler));
 });
@@ -27,12 +45,13 @@ onMounted(() => {
 
 <template>
   <div class="marketing-shell">
-    <!-- â”€â”€ Navbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-    <header class="marketing-nav" :class="{ scrolled }">
+    <!-- ── Navbar ─────────────────────────────────────────── -->
+    <header class="marketing-nav" :class="{ scrolled, 'home-top': isHome && !scrolled }">
       <div class="nav-inner">
         <NuxtLink to="/" class="nav-logo" @click="closeMobileMenu">
+          <KoganeIcon class="logo-icon" />
           <span class="logo-wordmark">Kogane</span>
-          <span class="logo-dot" />
+          <span class="logo-dot" aria-hidden="true" />
         </NuxtLink>
 
         <nav id="marketing-menu" class="nav-links" :class="{ 'mobile-open': mobileMenuOpen }" aria-label="Main navigation">
@@ -52,7 +71,7 @@ onMounted(() => {
           <NuxtLink v-if="isLoggedIn" to="/dashboard" class="btn-ghost-sm">{{ t('nav_dashboard') }}</NuxtLink>
           <template v-else>
             <NuxtLink to="/login" class="btn-ghost-sm">{{ t('nav_signin') }}</NuxtLink>
-            <NuxtLink to="/login?mode=signup" class="btn-maroon-sm">{{ t('nav_getstarted') }}</NuxtLink>
+            <NuxtLink to="/login?mode=signup" class="btn-maroon-sm btn-ribbon" style="--ribbon-color: #68293A;">{{ t('nav_getstarted') }}</NuxtLink>
           </template>
         </div>
 
@@ -64,35 +83,58 @@ onMounted(() => {
           :aria-label="mobileMenuOpen ? 'Close menu' : 'Open menu'"
           @click="mobileMenuOpen = !mobileMenuOpen"
         >
-          <X v-if="mobileMenuOpen" class="w-5 h-5" />
-          <Menu v-else class="w-5 h-5" />
+          <XIcon v-if="mobileMenuOpen" class="w-5 h-5" aria-hidden="true" />
+          <MenuIcon v-else class="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
     </header>
 
-    <!-- â”€â”€ Page content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-    <main>
+    <!-- ── Page content ───────────────────────────────────── -->
+    <main class="marketing-main">
       <slot />
     </main>
 
-    <!-- â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── Footer ─────────────────────────────────────────── -->
     <footer class="marketing-footer">
       <div class="footer-inner">
         <div class="footer-brand">
-          <span class="logo-wordmark footer-logo">Kogane</span>
+          <NuxtLink to="/" class="nav-logo">
+            <KoganeIcon class="logo-icon footer-logo-icon" />
+            <span class="logo-wordmark footer-logo">Kogane</span>
+            <span class="logo-dot" aria-hidden="true" />
+          </NuxtLink>
           <p class="footer-tagline">{{ t('footer_tagline') }}</p>
+
+          <div class="footer-locale">
+            <label for="marketing-locale-select" class="footer-locale-label">
+              {{ t('footer_language') }}
+            </label>
+            <select
+              id="marketing-locale-select"
+              :value="locale"
+              class="footer-locale-select"
+              @change="handleLocaleChange"
+            >
+              <option v-for="lang in availableLocales" :key="lang.code" :value="lang.code">
+                {{ lang.nativeLabel }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <div class="footer-links-group">
           <p class="footer-col-title">{{ t('footer_product') }}</p>
           <NuxtLink to="/features" class="footer-link">{{ t('nav_features') }}</NuxtLink>
+          <NuxtLink v-if="isEnabled('pricing')" to="/pricing" class="footer-link">{{ t('nav_pricing') }}</NuxtLink>
         </div>
 
         <div class="footer-links-group">
-          <p class="footer-col-title">{{ t('footer_company') }}</p>
-          <span class="footer-link footer-link-disabled">{{ t('footer_about') }}</span>
-          <span class="footer-link footer-link-disabled">{{ t('footer_blog') }}</span>
-          <span class="footer-link footer-link-disabled">{{ t('footer_contact') }}</span>
+          <p class="footer-col-title">{{ t('footer_account') }}</p>
+          <NuxtLink v-if="isLoggedIn" to="/dashboard" class="footer-link">{{ t('nav_dashboard') }}</NuxtLink>
+          <template v-else>
+            <NuxtLink to="/login" class="footer-link">{{ t('nav_signin') }}</NuxtLink>
+            <NuxtLink to="/login?mode=signup" class="footer-link">{{ t('nav_getstarted') }}</NuxtLink>
+          </template>
         </div>
 
         <div class="footer-links-group">
@@ -110,15 +152,20 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* â”€â”€ Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Shell ──────────────────────────────────────────── */
 .marketing-shell {
   min-height: 100dvh;
   background: linear-gradient(180deg, #F6E6D7 0%, #FFFFFF 18%);
+  color: #68293A;
   display: flex;
   flex-direction: column;
 }
 
-/* â”€â”€ Navbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.marketing-main {
+  flex: 1;
+}
+
+/* ── Navbar ─────────────────────────────────────────── */
 .marketing-nav {
   position: sticky;
   top: 0;
@@ -127,6 +174,9 @@ onMounted(() => {
   transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   background: transparent;
   border-bottom: 1px solid transparent;
+}
+.marketing-nav.home-top {
+  background: var(--k-strawberry-soft);
 }
 .marketing-nav.scrolled {
   background: rgba(255, 255, 255, 0.92);
@@ -160,6 +210,16 @@ onMounted(() => {
 }
 .footer-logo { font-size: 1.5rem; }
 
+/* Kogane mark, chocolate brown to match the wordmark */
+.logo-icon {
+  width: 30px;
+  height: auto;
+  color: #68293A;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.footer-logo-icon { width: 34px; }
+
 .logo-dot {
   width: 6px;
   height: 6px;
@@ -186,6 +246,7 @@ onMounted(() => {
   color: #68293A;
   background: rgba(255, 255, 255, 0.72);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .nav-link {
@@ -193,7 +254,7 @@ onMounted(() => {
   border-radius: 0.5rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: rgba(104, 41, 58, 0.6);
+  color: rgba(104, 41, 58, 0.65);
   text-decoration: none;
   transition: color 0.15s, background 0.15s;
 }
@@ -216,10 +277,13 @@ onMounted(() => {
   text-decoration: none;
   border: 1.5px solid rgba(104, 41, 58, 0.2);
   transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
 }
 .btn-ghost-sm:hover { border-color: rgba(104, 41, 58, 0.45); background: rgba(104, 41, 58, 0.05); }
 
 .btn-maroon-sm {
+  position: relative;
+  overflow: visible;
   padding: 0.42rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -228,11 +292,12 @@ onMounted(() => {
   background: #68293A;
   text-decoration: none;
   transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
 }
 .btn-maroon-sm:hover  { opacity: 0.88; }
 .btn-maroon-sm:active { transform: scale(0.97); }
 
-/* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Footer ─────────────────────────────────────────── */
 .marketing-footer {
   margin-top: auto;
   border-top: 1px solid rgba(104, 41, 58, 0.1);
@@ -251,9 +316,34 @@ onMounted(() => {
 .footer-brand { display: flex; flex-direction: column; gap: 0.5rem; }
 .footer-tagline {
   font-size: 0.875rem;
+  color: rgba(104, 41, 58, 0.6);
+  margin: 0.25rem 0 0;
+  max-width: 260px;
+  line-height: 1.55;
+}
+
+.footer-locale {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.footer-locale-label {
+  font-size: 0.78rem;
+  font-weight: 600;
   color: rgba(104, 41, 58, 0.55);
-  margin-top: 0.25rem;
-  max-width: 220px;
+}
+
+.footer-locale-select {
+  padding: 0.3rem 0.6rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: #68293A;
+  background: #FDFAF7;
+  border: 1px solid rgba(104, 41, 58, 0.15);
+  border-radius: 0.45rem;
+  cursor: pointer;
 }
 
 .footer-links-group { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -263,18 +353,17 @@ onMounted(() => {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(104, 41, 58, 0.4);
-  margin-bottom: 0.25rem;
+  color: rgba(104, 41, 58, 0.45);
+  margin: 0 0 0.25rem;
 }
 
 .footer-link {
   font-size: 0.9rem;
-  color: rgba(104, 41, 58, 0.6);
+  color: rgba(104, 41, 58, 0.65);
   text-decoration: none;
   transition: color 0.15s;
 }
 .footer-link:hover { color: #68293A; }
-.footer-link-disabled { cursor: default; }
 
 .footer-bottom {
   border-top: 1px solid rgba(104, 41, 58, 0.07);
@@ -282,19 +371,21 @@ onMounted(() => {
   margin: 0 auto;
   padding: 1.25rem 2rem;
   font-size: 0.8rem;
-  color: rgba(104, 41, 58, 0.4);
+  color: rgba(104, 41, 58, 0.45);
 }
 
 @media (max-width: 768px) {
-  .footer-inner { grid-template-columns: 1fr 1fr; }
-  .nav-inner { position: relative; }
+  .marketing-nav { padding: 0 1rem; }
+  .footer-inner { grid-template-columns: 1fr 1fr; padding: 2.5rem 1.25rem; }
+  .footer-bottom { padding: 1.25rem; }
+  .nav-inner { position: relative; gap: 0.75rem; justify-content: space-between; }
   .mobile-menu-toggle { display: inline-flex; }
   .nav-links {
     display: none;
     position: absolute;
     top: 64px;
-    left: 0;
-    right: 0;
+    left: -1rem;
+    right: -1rem;
     flex-direction: column;
     align-items: stretch;
     gap: 0.25rem;
@@ -305,9 +396,12 @@ onMounted(() => {
   }
   .nav-links.mobile-open { display: flex; }
   .nav-link { padding: 0.7rem 0.85rem; }
-  .nav-actions { gap: 0.35rem; }
+  .nav-actions { gap: 0.35rem; margin-left: auto; }
   .btn-ghost-sm,
   .btn-maroon-sm { padding: 0.38rem 0.62rem; font-size: 0.75rem; }
 }
-</style>
 
+@media (max-width: 480px) {
+  .footer-inner { grid-template-columns: 1fr; }
+}
+</style>

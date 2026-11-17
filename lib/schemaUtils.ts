@@ -81,7 +81,7 @@ export function validateTableDef(table: TableDef): void {
       throw new Error('Invalid column definition.');
     }
     validateIdentifier(col.name);
-    if (!Object.prototype.hasOwnProperty.call(TYPE_MAP_PG, col.type)) {
+    if (!Object.prototype.hasOwnProperty.call(COLUMN_SQL_TYPES, col.type)) {
       throw new Error(`Unsupported column type "${String(col.type)}".`);
     }
     if (col.default !== undefined && col.default !== '') {
@@ -94,17 +94,9 @@ export function validateTableDef(table: TableDef): void {
   }
 }
 
-// Map app column types to Postgres/SQLite column types
-const TYPE_MAP_PG: Record<ColumnType, string> = {
-  text: 'text',
-  numeric: 'numeric',
-  integer: 'integer',
-  boolean: 'boolean',
-  date: 'date',
-  timestamptz: 'timestamptz',
-};
-
-const TYPE_MAP_SQLITE: Record<ColumnType, string> = {
+// Map app column types to SQL column types. The SQLite engine and the Firestore
+// translator both read this SQLite dialect.
+const COLUMN_SQL_TYPES: Record<ColumnType, string> = {
   text: 'TEXT',
   numeric: 'REAL',
   integer: 'INTEGER',
@@ -113,38 +105,33 @@ const TYPE_MAP_SQLITE: Record<ColumnType, string> = {
   timestamptz: 'TEXT',
 };
 
-/** Build a CREATE TABLE SQL string for Postgres. */
-export function buildCreateTableSql(table: TableDef, schema: string, dialect: 'postgres' | 'sqlite' = 'postgres'): string {
+/** Business tables live as `<schema>_<table>` (no schema namespaces). */
+function businessTableName(schema: string, tableName: string): string {
+  validateIdentifier(schema);
+  validateIdentifier(tableName);
+  return `${schema}_${tableName}`;
+}
+
+/** Build a CREATE TABLE SQL string. */
+export function buildCreateTableSql(table: TableDef, schema: string): string {
   validateIdentifier(schema);
   validateTableDef(table);
 
-  const typeMap = dialect === 'sqlite' ? TYPE_MAP_SQLITE : TYPE_MAP_PG;
-  const isSqlite = dialect === 'sqlite';
-
-  // SQLite doesn't support schema namespacing — prefix the table name instead
-  const tableName = isSqlite
-    ? `${schema}_${table.name}`
-    : `"${schema}"."${table.name}"`;
-
-  const primaryKey = isSqlite
-    ? `id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))`
-    : `id uuid PRIMARY KEY DEFAULT gen_random_uuid()`;
-
   const cols = [
-    primaryKey,
-    ...table.columns.map(col => buildColumnSql(col, typeMap)),
-    `created_at ${isSqlite ? 'TEXT DEFAULT (datetime(\'now\'))' : 'timestamptz DEFAULT now()'}`,
+    `id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))`,
+    ...table.columns.map(buildColumnSql),
+    `created_at TEXT DEFAULT (datetime('now'))`,
   ];
 
-  return `CREATE TABLE IF NOT EXISTS ${tableName} (\n  ${cols.join(',\n  ')}\n);`;
+  return `CREATE TABLE IF NOT EXISTS ${businessTableName(schema, table.name)} (\n  ${cols.join(',\n  ')}\n);`;
 }
 
-function buildColumnSql(col: ColumnDef, typeMap: Record<ColumnType, string>): string {
+function buildColumnSql(col: ColumnDef): string {
   validateIdentifier(col.name);
-  if (!Object.prototype.hasOwnProperty.call(typeMap, col.type)) {
+  if (!Object.prototype.hasOwnProperty.call(COLUMN_SQL_TYPES, col.type)) {
     throw new Error(`Unsupported column type "${String(col.type)}".`);
   }
-  const parts: string[] = [`${col.name} ${typeMap[col.type]}`];
+  const parts: string[] = [`${col.name} ${COLUMN_SQL_TYPES[col.type]}`];
   if (!col.nullable) parts.push('NOT NULL');
   if (col.unique) parts.push('UNIQUE');
   if (col.default !== undefined && col.default !== '') {
@@ -160,27 +147,15 @@ function buildColumnSql(col: ColumnDef, typeMap: Record<ColumnType, string>): st
 }
 
 /** Build DROP TABLE SQL. */
-export function buildDropTableSql(tableName: string, schema: string, dialect: 'postgres' | 'sqlite' = 'postgres'): string {
-  validateIdentifier(schema);
-  validateIdentifier(tableName);
-  const tbl = dialect === 'sqlite'
-    ? `${schema}_${tableName}`
-    : `"${schema}"."${tableName}"`;
-  return `DROP TABLE IF EXISTS ${tbl};`;
+export function buildDropTableSql(tableName: string, schema: string): string {
+  return `DROP TABLE IF EXISTS ${businessTableName(schema, tableName)};`;
 }
 
 /** Build ALTER TABLE ADD COLUMN SQL. */
-export function buildAddColumnSql(tableName: string, col: ColumnDef, schema: string, dialect: 'postgres' | 'sqlite' = 'postgres'): string {
-  validateIdentifier(schema);
-  validateIdentifier(tableName);
+export function buildAddColumnSql(tableName: string, col: ColumnDef, schema: string): string {
+  const tbl = businessTableName(schema, tableName);
   validateIdentifier(col.name);
-
-  const typeMap = dialect === 'sqlite' ? TYPE_MAP_SQLITE : TYPE_MAP_PG;
-  const tbl = dialect === 'sqlite'
-    ? `${schema}_${tableName}`
-    : `"${schema}"."${tableName}"`;
-
-  return `ALTER TABLE ${tbl} ADD COLUMN ${buildColumnSql(col, typeMap)};`;
+  return `ALTER TABLE ${tbl} ADD COLUMN ${buildColumnSql(col)};`;
 }
 
 // ── Normalization Analysis ───────────────────────────────────────────────────

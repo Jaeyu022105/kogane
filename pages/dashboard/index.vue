@@ -8,11 +8,18 @@ const { isEnterprise } = useEnterpriseAccess();
 const { t } = useLocale();
 
 
-import { Terminal, Settings, Shield, BarChart3, ArrowRight, Sparkles, Plus } from 'lucide-vue-next';
+import TerminalSquareIcon from 'reicon-vue/icons/TerminalSquare';
+import SettingsIcon from 'reicon-vue/icons/Settings';
+import ShieldIcon from 'reicon-vue/icons/Shield';
+import ChartBarIcon from 'reicon-vue/icons/ChartBar';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
+import PlusIcon from 'reicon-vue/icons/Plus';
+import SetupChecklist from '~/components/SetupChecklist.vue';
 import TerminalCard from '~/components/TerminalCard.vue';
-import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { presetsForIndustry } from '~/lib/permissions';
 
-const workstationPresets = computed(() => TERMINAL_PERMISSION_PRESETS);
+const workstationPresets = computed(() => presetsForIndustry(business.value?.colorPalette?.businessType));
 
 const now = new Date();
 const hour = now.getHours();
@@ -32,7 +39,9 @@ type DashboardTerminal = {
 const { authHeaders } = useAuth();
 const { isOnlineHost } = useShareOrigin();
 const terminals = ref<DashboardTerminal[]>([]);
+const latestPresetVersions = ref<Record<string, number>>({});
 const terminalLoading = ref(false);
+const terminalsLoaded = ref(false);
 const terminalError = ref('');
 
 interface QuickAction {
@@ -49,31 +58,31 @@ const quickActions = computed<QuickAction[]>(() => {
     {
       label: t('dashboard_action_preset_label'),
       body: t('dashboard_action_preset_body'),
-      icon: Sparkles,
+      icon: SparklesIcon,
       action: 'onboarding',
     },
     {
       label: t('dashboard_action_terminals_label'),
       body: t('dashboard_action_terminals_body'),
-      icon: Terminal,
+      icon: TerminalSquareIcon,
       to: '/dashboard/terminals',
     },
     {
       label: t('dashboard_action_reports_label'),
       body: t('dashboard_action_reports_body'),
-      icon: BarChart3,
+      icon: ChartBarIcon,
       to: '/dashboard/reports',
     },
     {
       label: t('dashboard_action_audit_label'),
       body: t('dashboard_action_audit_body'),
-      icon: Shield,
+      icon: ShieldIcon,
       to: '/dashboard/audit',
     },
     {
       label: t('dashboard_action_settings_label'),
       body: t('dashboard_action_settings_body'),
-      icon: Settings,
+      icon: SettingsIcon,
       to: '/dashboard/settings',
     },
   ];
@@ -94,15 +103,23 @@ async function loadTerminals() {
   terminalError.value = '';
 
   try {
-    const res = await $fetch<{ terminals?: DashboardTerminal[] | null; error?: string | null }>('/api/terminals', {
-      headers: authHeaders(),
-      query: { businessId: business.value.id },
-    });
-    if (res.error) {
+    const [termRes, presetsRes] = await Promise.all([
+      $fetch<{ terminals?: DashboardTerminal[] | null; error?: string | null }>('/api/terminals', {
+        headers: authHeaders(),
+        query: { businessId: business.value.id },
+      }),
+      $fetch<{ latestVersions?: Record<string, number> }>('/api/presets', {
+        headers: authHeaders(),
+        query: { businessId: business.value.id },
+      }).catch(() => ({ latestVersions: {} })),
+    ]);
+    if (termRes.error) {
       terminalError.value = 'We could not load your terminals right now. Please try again.';
       return;
     }
-    terminals.value = res.terminals ?? [];
+    terminals.value = termRes.terminals ?? [];
+    latestPresetVersions.value = presetsRes?.latestVersions ?? {};
+    terminalsLoaded.value = true;
   } catch {
     terminalError.value = 'We could not load your terminals right now. Please try again.';
   } finally {
@@ -138,7 +155,7 @@ watch(() => business.value?.id, loadTerminals);
             {{ now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) }}
           </p>
           <h1 class="font-serif font-normal leading-tight" style="font-size: clamp(2.5rem, 4vw, 3.5rem); color: rgb(var(--shell-sidebar));">
-            {{ greeting }}, <span style="font-weight: 500;">{{ firstName }}</span><span style="color: rgb(var(--shell-pink));">.</span>
+            {{ greeting }}, <span style="font-weight: 500;">{{ firstName }}</span>
           </h1>
           <p class="mt-4 text-[1.05rem] leading-relaxed" style="color: rgba(61,24,32,0.6); max-width: 600px;">
             {{ t('dashboard_welcome_prefix') }} <strong style="color: rgb(var(--shell-sidebar)); font-weight: 600;">{{ business?.name ?? t('dashboard_workspace_fallback') }}</strong>. {{ t('dashboard_welcome_suffix') }}
@@ -149,10 +166,17 @@ watch(() => business.value?.id, loadTerminals);
 
     <!-- ── Module Grid ────────────────────────────────────────────── -->
     <div class="dashboard-content px-10 py-10">
+      <SetupChecklist
+        v-if="business"
+        :has-logo="Boolean(business.logoUrl)"
+        :terminals="terminals"
+        :loading="!terminalsLoaded || terminalLoading"
+      />
+
       <div class="flex items-center justify-between mb-8">
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
+        <h2 class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: rgba(61,24,32,0.4);">
           {{ t('dashboard_platform_modules') }}
-        </p>
+        </h2>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -175,7 +199,7 @@ watch(() => business.value?.id, loadTerminals);
               <p class="text-sm leading-relaxed" style="color: rgba(61,24,32,0.55);">{{ action.body }}</p>
             </div>
             <div class="card-arrow">
-              {{ t('dashboard_open_module') }} <ArrowRight class="w-3.5 h-3.5 stroke-[2.5]" />
+              {{ t('dashboard_open_module') }} <ArrowRightIcon class="w-3.5 h-3.5 stroke-[2.5]" />
             </div>
           </NuxtLink>
 
@@ -198,7 +222,7 @@ watch(() => business.value?.id, loadTerminals);
               <p class="text-sm leading-relaxed" style="color: rgba(61,24,32,0.55);">{{ action.body }}</p>
             </div>
             <div class="card-arrow">
-              {{ t('dashboard_open_setup') }} <ArrowRight class="w-3.5 h-3.5 stroke-[2.5]" />
+              {{ t('dashboard_open_setup') }} <ArrowRightIcon class="w-3.5 h-3.5 stroke-[2.5]" />
             </div>
           </button>
         </template>
@@ -223,10 +247,10 @@ watch(() => business.value?.id, loadTerminals);
               class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-white hover:opacity-90 transition-opacity flex items-center gap-1.5 no-underline shadow-sm"
               style="background: rgb(var(--shell-sidebar));"
             >
-              <Plus class="w-3.5 h-3.5" /> New Workstation
+              <PlusIcon class="w-3.5 h-3.5" /> New Workstation
             </NuxtLink>
             <NuxtLink to="/dashboard/terminals" class="terminal-link">
-              {{ t('dashboard_terminal_manager_link') }} <ArrowRight class="w-3.5 h-3.5" />
+              {{ t('dashboard_terminal_manager_link') }} <ArrowRightIcon class="w-3.5 h-3.5" />
             </NuxtLink>
           </div>
         </div>
@@ -244,7 +268,7 @@ watch(() => business.value?.id, loadTerminals);
 
         <div v-else-if="terminals.length === 0" class="space-y-6">
           <div class="terminal-empty">
-            <Terminal class="w-10 h-10" />
+            <TerminalSquareIcon class="w-10 h-10" />
             <div>
               <p>{{ t('dashboard_terminal_empty_title') }}</p>
               <span>{{ t('dashboard_terminal_empty_body') }}</span>
@@ -254,7 +278,7 @@ watch(() => business.value?.id, loadTerminals);
               class="mt-3 px-4 py-2 text-xs font-semibold rounded-lg text-white hover:opacity-90 transition-opacity inline-flex items-center gap-1.5 no-underline"
               style="background: rgb(var(--shell-pink));"
             >
-              <Plus class="w-3.5 h-3.5" /> New Workstation
+              <PlusIcon class="w-3.5 h-3.5" /> New Workstation
             </NuxtLink>
           </div>
 
@@ -262,10 +286,10 @@ watch(() => business.value?.id, loadTerminals);
             <div class="flex items-center justify-between mb-4">
               <div>
                 <h3 class="font-serif text-lg text-[rgb(var(--shell-sidebar))]">Starter Workstations</h3>
-                <p class="text-xs text-[rgba(61,24,32,0.5)]">One-click creation for all 5 official operating workstations:</p>
+                <p class="text-xs text-[rgba(61,24,32,0.5)]">One-click creation for all {{ workstationPresets.length }} official operating workstations:</p>
               </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <NuxtLink
                 v-for="preset in workstationPresets"
                 :key="preset.key"
@@ -276,13 +300,13 @@ watch(() => business.value?.id, loadTerminals);
                 <div>
                   <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-bold text-[#68293A]">{{ preset.label }}</span>
-                    <Plus class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <PlusIcon class="w-4 h-4 text-[#FF5776] opacity-60 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <p class="text-[11px] leading-relaxed m-0 text-[rgba(61,24,32,0.6)]">{{ preset.description }}</p>
                 </div>
                 <div class="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-[11px] font-semibold text-[#FF5776]">
                   <span>Create station</span>
-                  <ArrowRight class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRightIcon class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </NuxtLink>
             </div>
@@ -291,15 +315,15 @@ watch(() => business.value?.id, loadTerminals);
 
         <div v-else class="space-y-4">
           <!-- Quick add strip -->
-          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
             <span class="text-[10px] font-bold uppercase tracking-wider text-[rgba(61,24,32,0.4)] shrink-0">Quick Add:</span>
             <NuxtLink
               v-for="preset in workstationPresets"
               :key="preset.key"
               :to="`/dashboard/terminals?create=${preset.key}`"
-              class="px-2.5 py-1 rounded-md bg-white border border-[rgba(61,24,32,0.08)] hover:border-[#FF5776] hover:text-[#FF5776] text-[rgba(61,24,32,0.7)] text-[11px] font-medium no-underline shrink-0 transition-colors flex items-center gap-1"
+              class="px-2.5 py-1 rounded-lg bg-white border border-[rgba(61,24,32,0.08)] hover:border-[#FF5776] hover:text-[#FF5776] text-[rgba(61,24,32,0.7)] text-[11px] font-medium no-underline shrink-0 transition-colors flex items-center gap-1"
             >
-              <Plus class="w-3 h-3" /> {{ preset.label }}
+              <PlusIcon class="w-3 h-3" /> {{ preset.label }}
             </NuxtLink>
           </div>
 
@@ -308,7 +332,9 @@ watch(() => business.value?.id, loadTerminals);
               v-for="terminal in terminals"
               :key="terminal.id"
               :terminal="terminal"
+              :latest-preset-versions="latestPresetVersions"
               @deleted="onTerminalDeleted(terminal.id)"
+              @synced="loadTerminals"
             />
           </div>
         </div>

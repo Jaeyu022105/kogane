@@ -1,12 +1,14 @@
 /**
- * Unified DB abstraction.
- * Switch DB implementation depending on environment — all server code
- * must import from here, never from db-sqlite, db-firebase, or db-supabase directly.
+ * The database. All server code imports `db` from here and writes SQLite-dialect SQL;
+ * it never imports db-sqlite or db-firebase directly and never checks which one is active.
+ *
+ * Locally this runs on SQLite; in production on Cloud Firestore, through a translator
+ * that reads the same SQL. lib/backend.ts decides which one is active.
  */
 
-import { isFirebaseConfigured } from './firebaseAdmin';
+import { getDbProvider, type DbProvider } from './backend';
 
-export type DbProvider = 'sqlite' | 'firebase' | 'supabase';
+export { getDbProvider, isLocalBackend, type DbProvider } from './backend';
 
 export type QueryResult<T = Record<string, unknown>> = {
   data: T[] | null;
@@ -38,22 +40,6 @@ export interface DbAdapter {
   execute(sql: string): Promise<{ error: string | null }>;
 }
 
-/** Resolves the active database provider dynamically from environment configuration. */
-export function getDbProvider(): DbProvider {
-  const explicit = process.env.DB_PROVIDER?.trim().toLowerCase();
-  if (explicit === 'firebase' || explicit === 'firestore') return 'firebase';
-  if (explicit === 'supabase' || explicit === 'postgres') return 'supabase';
-  if (explicit === 'sqlite') return 'sqlite';
-
-  if (process.env.DEV_MODE === 'true') return 'sqlite';
-
-  if (isFirebaseConfigured()) return 'firebase';
-
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) return 'supabase';
-
-  return 'sqlite';
-}
-
 // Lazily instantiate the adapter so it's only created server-side
 let _adapter: DbAdapter | null = null;
 let _adapterProvider: DbProvider | null = null;
@@ -75,9 +61,6 @@ async function getAdapter(): Promise<DbAdapter> {
   if (provider === 'firebase') {
     const { FirestoreAdapter } = await import('./db-firebase');
     _adapter = new FirestoreAdapter();
-  } else if (provider === 'supabase') {
-    const { SupabaseAdapter } = await import('./db-supabase');
-    _adapter = new SupabaseAdapter();
   } else {
     const { SqliteAdapter } = await import('./db-sqlite');
     _adapter = new SqliteAdapter();

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { Activity, RefreshCw, TrendingUp, ShoppingBag, CreditCard } from 'lucide-vue-next';
+import ActivityIcon from 'reicon-vue/icons/Activity';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import TrendUpIcon from 'reicon-vue/icons/TrendUp';
+import ShoppingBagIcon from 'reicon-vue/icons/ShoppingBag';
+import CreditCardIcon from 'reicon-vue/icons/CreditCard';
 import {
   buildDonutSlices,
   buildHorizontalBars,
@@ -175,7 +179,7 @@ function statusPillColor(status: string): string {
     >
       <div>
         <div class="flex items-center gap-2">
-          <TrendingUp class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-pink));" />
+          <TrendUpIcon class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-pink));" />
           <h2 class="font-serif text-lg font-normal m-0" style="color: rgb(var(--shell-sidebar));">
             {{ title }}
           </h2>
@@ -233,7 +237,7 @@ function statusPillColor(status: string): string {
           :disabled="loading"
           @click="emit('refresh')"
         >
-          <RefreshCw class="w-3.5 h-3.5" :class="loading ? 'animate-spin' : ''" />
+          <RefreshIcon class="w-3.5 h-3.5" :class="loading ? 'animate-spin' : ''" />
           <span>Refresh</span>
         </button>
       </div>
@@ -248,7 +252,7 @@ function statusPillColor(status: string): string {
         <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
           <div>
             <div class="flex items-center gap-2">
-              <Activity class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-sidebar));" />
+              <ActivityIcon class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-sidebar));" />
               <h3 class="text-base font-semibold m-0" style="color: rgb(var(--shell-sidebar));">
                 Sales Over Time
               </h3>
@@ -480,7 +484,7 @@ function statusPillColor(status: string): string {
           <div class="flex items-center justify-between gap-2 mb-4">
             <div>
               <div class="flex items-center gap-2">
-                <ShoppingBag class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-pink));" />
+                <ShoppingBagIcon class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-pink));" />
                 <h3 class="text-base font-semibold m-0" style="color: rgb(var(--shell-sidebar));">
                   Top Selling Items
                 </h3>
@@ -537,7 +541,7 @@ function statusPillColor(status: string): string {
         >
           <div class="mb-4">
             <div class="flex items-center gap-2">
-              <CreditCard class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-sidebar));" />
+              <CreditCardIcon class="w-4 h-4 shrink-0" style="color: rgb(var(--shell-sidebar));" />
               <h3 class="text-base font-semibold m-0" style="color: rgb(var(--shell-sidebar));">
                 Sales by Payment Method
               </h3>

@@ -1,6 +1,6 @@
 import { db } from '~/lib/db';
 import { buildAddColumnSql, buildCreateTableSql, type TableDef } from '~/lib/schemaUtils';
-import { getSqlDialect, listBusinessTables } from '~/server/utils/business';
+import { listBusinessTables } from '~/server/utils/business';
 import { getBusinessTableColumns } from '~/server/utils/businessTable';
 
 export const STARTER_BUSINESS_TABLES: Record<string, TableDef> = {
@@ -146,11 +146,7 @@ export async function ensureStarterBusinessTable(schemaName: string, tableName: 
   let ensured = false;
 
   if (!(existingTables.data ?? []).includes(tableName)) {
-    const sql = buildCreateTableSql(
-      starterTable,
-      schemaName,
-      getSqlDialect(),
-    );
+    const sql = buildCreateTableSql(starterTable, schemaName);
 
     const result = await db.execute(sql);
     return {
@@ -169,12 +165,7 @@ export async function ensureStarterBusinessTable(schemaName: string, tableName: 
   for (const column of starterTable.columns) {
     if (currentColumnNames.has(column.name)) continue;
 
-    const sql = buildAddColumnSql(
-      starterTable.name,
-      column,
-      schemaName,
-      getSqlDialect(),
-    );
+    const sql = buildAddColumnSql(starterTable.name, column, schemaName);
 
     const result = await db.execute(sql);
     if (result.error) {

@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import {
-  UtensilsCrossed,
-  Truck,
-  Calculator,
-  ShoppingBag,
-  Stethoscope,
-  Wrench,
-  GraduationCap,
-  Building2,
-  ChevronRight,
-  ChevronLeft,
-  Check,
-  Sparkles,
-  UploadCloud,
-  AlertTriangle,
-  X
-} from 'lucide-vue-next';
+import ForkKnifeIcon from 'reicon-vue/icons/ForkKnife';
+import TruckIcon from 'reicon-vue/icons/Truck';
+import CalculatorIcon from 'reicon-vue/icons/Calculator';
+import ShoppingBagIcon from 'reicon-vue/icons/ShoppingBag';
+import StethoscopeIcon from 'reicon-vue/icons/Stethoscope';
+import DesigntoolsIcon from 'reicon-vue/icons/Designtools';
+import GraduationCapIcon from 'reicon-vue/icons/GraduationCap';
+import BuildingIcon from 'reicon-vue/icons/Building';
+import ChevronRightIcon from 'reicon-vue/icons/ChevronRight';
+import ChevronLeftIcon from 'reicon-vue/icons/ChevronLeft';
+import CheckIcon from 'reicon-vue/icons/Check';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
+import CloudUploadIcon from 'reicon-vue/icons/CloudUpload';
+import AlertTriangleIcon from 'reicon-vue/icons/AlertTriangle';
+import XIcon from 'reicon-vue/icons/X';
 import type { SchemaDef, TableDef } from '~/lib/schemaUtils';
 import { ALL_TERMINAL_PERMISSION_PRESETS, type PermissionPresetKey } from '~/lib/permissions';
 import { defaultLayoutVariantForPreset, inferStarterTerminals, layoutVariantsForPreset } from '~/lib/starterWorkstations';
@@ -91,14 +89,14 @@ async function handleLogoUpload(e: Event) {
 
 // ── Business types ────────────────────────────────────────────────────────────
 const businessTypes = computed(() => [
-  { id: 'restaurant',  label: t('ind_restaurant_label'),  icon: UtensilsCrossed, color: '#e8748a' },
-  { id: 'logistics',   label: t('ind_logistics_label'),   icon: Truck,           color: '#8b5cf6' },
-  { id: 'accounting',  label: t('ind_accounting_label'),  icon: Calculator,      color: '#10b981' },
-  { id: 'retail',      label: t('ind_retail_label'),      icon: ShoppingBag,     color: '#f59e0b' },
-  { id: 'clinic',      label: t('ind_clinic_label'),      icon: Stethoscope,     color: '#3b82f6' },
-  { id: 'services',    label: t('ind_services_label'),    icon: Wrench,          color: '#ec4899' },
-  { id: 'education',   label: t('ind_education_label'),   icon: GraduationCap,   color: '#14b8a6' },
-  { id: 'other',       label: t('ind_other_label'),       icon: Building2,       color: '#6b7280' },
+  { id: 'restaurant',  label: t('ind_restaurant_label'),  icon: ForkKnifeIcon, color: '#e8748a' },
+  { id: 'logistics',   label: t('ind_logistics_label'),   icon: TruckIcon,           color: '#8b5cf6' },
+  { id: 'accounting',  label: t('ind_accounting_label'),  icon: CalculatorIcon,      color: '#10b981' },
+  { id: 'retail',      label: t('ind_retail_label'),      icon: ShoppingBagIcon,     color: '#f59e0b' },
+  { id: 'clinic',      label: t('ind_clinic_label'),      icon: StethoscopeIcon,     color: '#3b82f6' },
+  { id: 'services',    label: t('ind_services_label'),    icon: DesigntoolsIcon,          color: '#ec4899' },
+  { id: 'education',   label: t('ind_education_label'),   icon: GraduationCapIcon,   color: '#14b8a6' },
+  { id: 'other',       label: t('ind_other_label'),       icon: BuildingIcon,       color: '#6b7280' },
 ]);
 
 const UI_STYLE_PRESETS = computed(() => [
@@ -158,16 +156,22 @@ const FEATURES: Feature[] = [
       {
         name: 'orders',
         columns: [
-          { name: 'items',             type: 'text',    nullable: false },
-          { name: 'line_items',        type: 'text',    nullable: true },
-          { name: 'total',             type: 'numeric', nullable: false },
-          { name: 'status',            type: 'text',    nullable: false, default: "'pending'" },
-          { name: 'table_number',      type: 'text',    nullable: true },
-          { name: 'staff_name',        type: 'text',    nullable: true },
-          { name: 'payment_method',    type: 'text',    nullable: true },
-          { name: 'payment_status',    type: 'text',    nullable: true },
-          { name: 'payment_reference', type: 'text',    nullable: true },
-          { name: 'receipt_number',    type: 'text',    nullable: true },
+          { name: 'items',              type: 'text',    nullable: false },
+          { name: 'line_items',         type: 'text',    nullable: true },
+          { name: 'subtotal',           type: 'numeric', nullable: true },
+          { name: 'discount_type',      type: 'text',    nullable: true },
+          { name: 'discount_amount',    type: 'numeric', nullable: true, default: '0' },
+          { name: 'discount_label',     type: 'text',    nullable: true },
+          { name: 'discount_reference', type: 'text',    nullable: true },
+          { name: 'total',              type: 'numeric', nullable: false },
+          { name: 'status',             type: 'text',    nullable: false, default: "'pending'" },
+          { name: 'table_number',       type: 'text',    nullable: true },
+          { name: 'staff_name',         type: 'text',    nullable: true },
+          { name: 'payment_method',     type: 'text',    nullable: true },
+          { name: 'payment_status',     type: 'text',    nullable: true },
+          { name: 'payment_reference',  type: 'text',    nullable: true },
+          { name: 'receipt_number',     type: 'text',    nullable: true },
+          { name: 'metadata',           type: 'text',    nullable: true },
         ],
       },
     ],
@@ -182,11 +186,19 @@ const FEATURES: Feature[] = [
         name: 'products',
         columns: [
           { name: 'name',        type: 'text',    nullable: false },
-          { name: 'sku',         type: 'text',    nullable: true,  unique: true },
+          { name: 'description', type: 'text',    nullable: true },
+          { name: 'price',       type: 'numeric', nullable: false },
           { name: 'category',    type: 'text',    nullable: true },
-          { name: 'unit_price',  type: 'numeric', nullable: true },
-          { name: 'stock_qty',   type: 'integer', nullable: false, default: '0' },
-          { name: 'reorder_at',  type: 'integer', nullable: true },
+          { name: 'available',   type: 'boolean', nullable: false, default: 'true' },
+        ],
+      },
+      {
+        name: 'inventory',
+        columns: [
+          { name: 'item_name',  type: 'text',    nullable: false },
+          { name: 'quantity',   type: 'numeric', nullable: false, default: '0' },
+          { name: 'unit',       type: 'text',    nullable: true },
+          { name: 'reorder_at', type: 'numeric', nullable: true },
         ],
       },
     ],
@@ -565,7 +577,7 @@ async function handleSubmit() {
         
         <!-- Close Button (Not visible in step 4) -->
         <button v-if="step !== 4" class="modal-close" @click="close" aria-label="Close">
-          <X class="w-5 h-5" />
+          <XIcon class="w-5 h-5" />
         </button>
 
         <!-- ── Step 1: Basics ────────────────────────────────────────── -->
@@ -588,7 +600,7 @@ async function handleSubmit() {
                     <div class="w-24 h-24 border-[1.5px] border-dashed border-[rgba(104,41,58,0.2)] rounded-xl flex flex-col items-center justify-center bg-[rgba(104,41,58,0.02)] transition-all group-hover:border-[rgba(104,41,58,0.4)] group-hover:bg-[#F6E6D7] overflow-hidden">
                       <img v-if="logoUrl" :src="logoUrl" class="w-full h-full object-contain p-2" />
                       <template v-else>
-                        <UploadCloud class="w-6 h-6 mb-1 text-[rgba(104,41,58,0.3)] group-hover:text-[rgba(104,41,58,0.6)]" />
+                        <CloudUploadIcon class="w-6 h-6 mb-1 text-[rgba(104,41,58,0.3)] group-hover:text-[rgba(104,41,58,0.6)]" />
                         <span class="text-[10px] text-[rgba(104,41,58,0.5)] font-medium">{{ t('onboarding_upload') }}</span>
                       </template>
                     </div>
@@ -675,7 +687,7 @@ async function handleSubmit() {
                       class="w-10 h-10 rounded-lg flex items-center justify-center transition-all"
                       :style="`background: ${type.color}18; color: ${type.color};`"
                     >
-                      <component :is="type.icon" class="w-5 h-5" />
+                      <component :is="type.icon" class="w-5 h-5" :weight="selectedType === type.id ? 'Filled' : 'Outline'" />
                     </div>
                     <span class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ type.label }}</span>
                   </button>
@@ -689,7 +701,7 @@ async function handleSubmit() {
                     :disabled="!businessName.trim() || !selectedType"
                     @click="goToFeatures"
                   >
-                    {{ t('continue') }} <ChevronRight class="w-4 h-4" />
+                    {{ t('continue') }} <ChevronRightIcon class="w-4 h-4" />
                   </button>
             </div>
           </div>
@@ -752,7 +764,7 @@ async function handleSubmit() {
                         ? 'bg-[rgb(var(--shell-sidebar))] border-[rgb(var(--shell-sidebar))]'
                         : 'border-[rgba(104,41,58,0.2)] bg-transparent'"
                     >
-                      <Check v-if="selectedFeatures.has(feature.id)" class="w-3 h-3 text-white" />
+                      <CheckIcon v-if="selectedFeatures.has(feature.id)" class="w-3 h-3 text-white" />
                     </div>
                     <div>
                       <p class="text-xs font-semibold text-[rgb(var(--shell-sidebar))]">{{ feature.label }}</p>
@@ -880,7 +892,7 @@ async function handleSubmit() {
 
             <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-between items-center bg-[rgba(104,41,58,0.01)]">
               <button class="btn-nav-ghost" @click="step = 1">
-                <ChevronLeft class="w-4 h-4" /> {{ t('btn_back') }}
+                <ChevronLeftIcon class="w-4 h-4" /> {{ t('btn_back') }}
               </button>
               <div class="flex items-center gap-4">
                 <span class="text-xs text-[rgba(104,41,58,0.6)] font-mono">
@@ -891,7 +903,7 @@ async function handleSubmit() {
                   :disabled="!selectedPreset"
                   @click="goToReview"
                 >
-                  Review & Confirm <ChevronRight class="w-4 h-4" />
+                  Review & Confirm <ChevronRightIcon class="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -913,14 +925,14 @@ async function handleSubmit() {
               <!-- Preset Summary -->
               <div class="flex-1 overflow-y-auto p-6 bg-[#fdf7f2]">
                 <div class="flex items-center gap-2 mb-4">
-                  <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                  <SparklesIcon class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
                   <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">{{ t('onboarding_summary_preset') }}</p>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                   <div v-for="feature in selectedFeaturesList" :key="feature.id" class="feature-card bg-white p-4">
                     <div class="flex items-center gap-2 border-b border-[rgba(104,41,58,0.06)] pb-2 mb-3">
-                      <Sparkles class="w-3.5 h-3.5 text-[rgba(104,41,58,0.5)]" />
+                      <SparklesIcon class="w-3.5 h-3.5 text-[rgba(104,41,58,0.5)]" />
                       <span class="text-xs font-bold text-[rgb(var(--shell-sidebar))]">{{ feature.label }}</span>
                     </div>
                     <p class="text-xs leading-relaxed text-[rgba(104,41,58,0.58)]">{{ feature.description }}</p>
@@ -933,7 +945,7 @@ async function handleSubmit() {
 
                 <div v-if="starterTerminalCards.length > 0" class="mt-6">
                   <div class="flex items-center gap-2 mb-4">
-                    <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                    <SparklesIcon class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
                     <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">Terminal Styles</p>
                   </div>
                   <div class="grid grid-cols-2 gap-4">
@@ -956,7 +968,7 @@ async function handleSubmit() {
               <!-- Workspace Summary -->
               <div class="w-72 shrink-0 overflow-y-auto p-6 bg-white border-l border-[rgba(104,41,58,0.06)] flex flex-col">
                 <div class="flex items-center gap-2 mb-4">
-                  <Sparkles class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
+                  <SparklesIcon class="w-4 h-4 text-[rgba(104,41,58,0.4)]" />
                   <p class="text-xs font-bold uppercase tracking-widest text-[rgba(104,41,58,0.4)]">{{ t('onboarding_summary_workspace') }}</p>
                 </div>
 
@@ -1020,7 +1032,7 @@ async function handleSubmit() {
                 <!-- Warning Block -->
                 <div v-if="business" class="mt-auto mb-4 p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
                   <div class="flex items-center gap-2 mb-2">
-                    <AlertTriangle class="w-4 h-4 text-red-600" />
+                    <AlertTriangleIcon class="w-4 h-4 text-red-600" />
                     <span class="text-xs font-bold text-red-700 uppercase tracking-widest">{{ t('onboarding_override_warning_title') }}</span>
                   </div>
                   <p class="text-xs text-red-700 leading-relaxed">
@@ -1038,7 +1050,7 @@ async function handleSubmit() {
                   :disabled="submitting"
                   @click="handleSubmit"
                 >
-                  <Sparkles v-if="!submitting" class="w-4 h-4 text-[rgb(var(--shell-pink))]" />
+                  <SparklesIcon v-if="!submitting" class="w-4 h-4 text-[rgb(var(--shell-pink))]" />
                   {{ submitting ? t('onboarding_creating') : t('onboarding_create_btn') }}
                 </button>
               </div>
@@ -1046,7 +1058,7 @@ async function handleSubmit() {
 
             <div class="px-10 py-4 shrink-0 border-t border-[rgba(104,41,58,0.06)] flex justify-between items-center bg-[rgba(104,41,58,0.01)]">
               <button class="btn-nav-ghost" @click="step = 2">
-                <ChevronLeft class="w-4 h-4" /> {{ t('btn_back') }}
+                <ChevronLeftIcon class="w-4 h-4" /> {{ t('btn_back') }}
               </button>
             </div>
           </div>
@@ -1056,7 +1068,7 @@ async function handleSubmit() {
         <Transition name="slide">
           <div v-if="step === 4" class="flex flex-col items-center justify-center px-10 py-20 text-center h-full bg-white">
             <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 bg-[#F6E6D7] border border-[rgba(104,41,58,0.1)]">
-              <Sparkles class="w-10 h-10 text-[rgb(var(--shell-pink))]" />
+              <SparklesIcon class="w-10 h-10 text-[rgb(var(--shell-pink))]" />
             </div>
             <h2 class="font-serif text-3xl mb-3 text-[rgb(var(--shell-sidebar))]">
               {{ t('onboarding_step4_title') }}

@@ -12,8 +12,6 @@ import {
   type H3Event,
   setCookie,
 } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-import { getDbProvider } from './db';
 import { getClientIp } from './rateLimit';
 import { getSessionSecret, hashTokenSha256, timingSafeEqualStr } from './security';
 
@@ -49,13 +47,16 @@ export interface VerifiedAdminResult {
   sessionId?: string;
 }
 
-function isTestRuntime(): boolean {
+/**
+ * True only inside the automated test runner. (`Bun.jest` is not a signal: it exists in
+ * every Bun process, including production servers.)
+ */
+export function isTestRuntime(): boolean {
   return Boolean(
     process.env.BUN_ENV === 'test'
     || process.env.NODE_ENV === 'test'
     || process.env.VITEST
-    || process.env.JEST_WORKER_ID
-    || typeof (globalThis as any).Bun?.jest === 'function',
+    || process.env.JEST_WORKER_ID,
   );
 }
 
@@ -372,55 +373,54 @@ export async function verifyAdmin(event: H3Event): Promise<VerifiedAdminResult> 
 
   if (!token) throw createError({ statusCode: 401, message: 'Missing authorization token' });
 
-  // 1. Automated test / local dev backwards compatibility: dev-admin-token (never allowed in real prod)
-  const allowDevAdminToken = process.env.DEV_MODE === 'true'
-    || process.env.NODE_ENV !== 'production'
-    || isTestRuntime();
-  if (token === 'dev-admin-token' && allowDevAdminToken) {
+  // 1. Test-runner fixture token. Never accepted by a running server, whatever DEV_MODE / NODE_ENV say.
+  if (token === 'dev-admin-token' && isTestRuntime()) {
     return { userId: 'dev-admin', email: 'admin@kogane.dev' };
   }
 
-  // 2. Decode HMAC signed local/stateful admin token
+  // 2. Decode HMAC signed admin token. It must point at a live session row whose stored hash
+  //    matches, so a token forged with a leaked signing secret is still rejected.
   const adminPayload = await decodeAdminSessionToken(token);
   if (adminPayload) {
     if (adminPayload.twoFactorPending) {
       throw createError({ statusCode: 403, message: 'Two-factor authentication verification required' });
     }
 
-    // If token is bound to a stateful session ID, enforce DB session state & revocation check
-    if (adminPayload.sid) {
-      const { db } = await import('./db');
-      const { data: sessionRow } = await db.queryOne<{
-        id: string;
-        user_id: string;
-        token_hash: string;
-        two_factor_verified: number;
-        expires_at: string;
-        revoked_at: string | null;
-        last_active_at: string | null;
-      }>(
-        'SELECT id, user_id, token_hash, two_factor_verified, expires_at, revoked_at, last_active_at FROM sessions WHERE id = ?',
-        [adminPayload.sid],
-      );
+    if (!adminPayload.sid) {
+      throw createError({ statusCode: 401, message: 'Invalid or expired token' });
+    }
 
-      if (!sessionRow || sessionRow.revoked_at) {
-        throw createError({ statusCode: 401, message: 'Session has been revoked' });
-      }
-      if (sessionRow.two_factor_verified === 0) {
-        throw createError({ statusCode: 403, message: 'Two-factor authentication verification required' });
-      }
-      if (new Date(sessionRow.expires_at).getTime() < Date.now()) {
-        throw createError({ statusCode: 401, message: 'Session expired' });
-      }
-      if (!timingSafeEqualStr(sessionRow.token_hash, hashTokenSha256(token))) {
-        throw createError({ statusCode: 401, message: 'Session token mismatch' });
-      }
+    const { db } = await import('./db');
+    const { data: sessionRow } = await db.queryOne<{
+      id: string;
+      user_id: string;
+      token_hash: string;
+      two_factor_verified: number;
+      expires_at: string;
+      revoked_at: string | null;
+      last_active_at: string | null;
+    }>(
+      'SELECT id, user_id, token_hash, two_factor_verified, expires_at, revoked_at, last_active_at FROM sessions WHERE id = ?',
+      [adminPayload.sid],
+    );
 
-      // Update last_active_at if older than 60 seconds
-      const lastActiveMs = sessionRow.last_active_at ? new Date(sessionRow.last_active_at).getTime() : 0;
-      if (Date.now() - lastActiveMs > 60_000) {
-        await db.update('sessions', { last_active_at: new Date().toISOString() }, { id: sessionRow.id });
-      }
+    if (!sessionRow || sessionRow.revoked_at || sessionRow.user_id !== adminPayload.userId) {
+      throw createError({ statusCode: 401, message: 'Session has been revoked' });
+    }
+    if (sessionRow.two_factor_verified === 0) {
+      throw createError({ statusCode: 403, message: 'Two-factor authentication verification required' });
+    }
+    if (new Date(sessionRow.expires_at).getTime() < Date.now()) {
+      throw createError({ statusCode: 401, message: 'Session expired' });
+    }
+    if (!timingSafeEqualStr(sessionRow.token_hash, hashTokenSha256(token))) {
+      throw createError({ statusCode: 401, message: 'Session token mismatch' });
+    }
+
+    // Update last_active_at if older than 60 seconds
+    const lastActiveMs = sessionRow.last_active_at ? new Date(sessionRow.last_active_at).getTime() : 0;
+    if (Date.now() - lastActiveMs > 60_000) {
+      await db.update('sessions', { last_active_at: new Date().toISOString() }, { id: sessionRow.id });
     }
 
     return {
@@ -430,39 +430,8 @@ export async function verifyAdmin(event: H3Event): Promise<VerifiedAdminResult> 
     };
   }
 
-  // 3. Firebase ID token verification when running with Firebase provider
-  if (getDbProvider() === 'firebase') {
-    try {
-      const { getFirebaseAuth } = await import('./firebaseAdmin');
-      const decoded = await getFirebaseAuth().verifyIdToken(token);
-      if (decoded?.uid) {
-        return { userId: decoded.uid, email: decoded.email };
-      }
-    } catch {
-      // Fall through to 401
-    }
-  }
-
-  // 4. In dev / local mode or without Supabase config, reject invalid token
-  const isDevMode = process.env.DEV_MODE === 'true';
-  const hasSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
-  if (isDevMode || !hasSupabase || getDbProvider() !== 'supabase') {
-    throw createError({ statusCode: 401, message: 'Invalid or expired token' });
-  }
-
-  // 5. Supabase Auth in Supabase cloud mode
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-  );
-
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error || !data.user) {
-    throw createError({ statusCode: 401, message: 'Invalid or expired token' });
-  }
-
-  return { userId: data.user.id, email: data.user.email };
+  // Only Kogane's own signed session tokens are accepted.
+  throw createError({ statusCode: 401, message: 'Invalid or expired token' });
 }
 
 export async function createTerminalSessionToken(
@@ -502,8 +471,9 @@ export async function issueTerminalSession(
     expiresAt,
   });
 
-  // Persist stateful terminal session record (upsert/replace by sid)
-  try {
+  // Persist stateful terminal session record (upsert/replace by sid).
+  // verifyTerminalSession rejects any terminal token without this row.
+  {
     const { db } = await import('./db');
     const nowIso = new Date().toISOString();
     const { data: existing } = await db.queryOne<{ id: string }>(
@@ -543,8 +513,6 @@ export async function issueTerminalSession(
         created_at: nowIso,
       });
     }
-  } catch {
-    // Allow isolated unit tests without DB table if needed
   }
 
   const cookieOptions = {
@@ -604,44 +572,26 @@ export async function verifyTerminalSession(event: H3Event, expectedTerminalId?:
   if (token) {
     const payload = await decodeTerminalSessionToken(token);
     if (payload) {
-      // If bound to a stateful session ID, ensure it hasn't been revoked
-      let sessionActive = true;
+      // The token must point at a live terminal session row for the same terminal.
+      let sessionActive = false;
       if (payload.sid) {
-        try {
-          const { db } = await import('./db');
-          const { data: sessionRow } = await db.queryOne<{
-            id: string;
-            revoked_at: string | null;
-          }>('SELECT id, revoked_at FROM sessions WHERE id = ?', [payload.sid]);
-          if (sessionRow && sessionRow.revoked_at) {
-            sessionActive = false;
-          }
-        } catch {
-          // Ignore DB error in isolated unit test
-        }
+        const { db } = await import('./db');
+        const { data: sessionRow } = await db.queryOne<{
+          id: string;
+          terminal_id: string | null;
+          revoked_at: string | null;
+        }>('SELECT id, terminal_id, revoked_at FROM sessions WHERE id = ?', [payload.sid]);
+        sessionActive = Boolean(
+          sessionRow
+          && !sessionRow.revoked_at
+          && (!sessionRow.terminal_id || sessionRow.terminal_id === payload.terminalId),
+        );
       }
 
       if (sessionActive) {
-        let isTargetMatch = !expectedTerminalId || payload.terminalId === expectedTerminalId;
-
-        // If terminal IDs differ, check if target terminal belongs to the same business
-        if (!isTargetMatch && expectedTerminalId) {
-          try {
-            const { db } = await import('./db');
-            const { data: expectedTerm } = await db.queryOne<{ id: string; business_id: string; display_name: string; role: string }>(
-              'SELECT id, business_id, display_name, role FROM terminals WHERE id = ?',
-              [expectedTerminalId],
-            );
-            if (expectedTerm && expectedTerm.business_id === payload.businessId) {
-              payload.terminalId = expectedTerm.id;
-              payload.displayName = expectedTerm.display_name;
-              payload.role = expectedTerm.role;
-              isTargetMatch = true;
-            }
-          } catch {
-            // Ignore db lookup error
-          }
-        }
+        // A terminal session only ever acts as its own terminal. Opening a different
+        // terminal needs that terminal's PIN (or the business owner's admin session below).
+        const isTargetMatch = !expectedTerminalId || payload.terminalId === expectedTerminalId;
 
         if (isTargetMatch) {
           const expiresMs = new Date(payload.expiresAt).getTime();

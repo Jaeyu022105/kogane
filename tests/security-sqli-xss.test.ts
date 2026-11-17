@@ -20,7 +20,7 @@ import { normalizeLayout } from '../lib/uiTypes';
 import { FirestoreAdapter, InMemoryFirestoreStore } from '../lib/db-firebase';
 import { SqliteAdapter } from '../lib/db-sqlite';
 import { db } from '../lib/db';
-import { createAdminSessionToken } from '../lib/authUtils';
+import { createTestAdminToken } from './helpers/sessions';
 import { ensureStarterBusinessTables } from '../server/utils/starterTables';
 import rowsHandler from '../server/api/schema/tables/rows.get';
 import customReportHandler from '../server/api/reports/custom.post';
@@ -128,7 +128,6 @@ describe('SQL Injection (SQLi) Prevention', () => {
           ],
         },
         'biz_safe',
-        'sqlite',
       ),
     ).toThrow();
 
@@ -141,7 +140,6 @@ describe('SQL Injection (SQLi) Prevention', () => {
           ],
         },
         'biz_safe',
-        'sqlite',
       ),
     ).toThrow();
 
@@ -154,9 +152,9 @@ describe('SQL Injection (SQLi) Prevention', () => {
       }),
     ).toThrow();
 
-    expect(() => buildDropTableSql('orders', 'biz_safe"; DROP TABLE users;--', 'sqlite')).toThrow();
+    expect(() => buildDropTableSql('orders', 'biz_safe"; DROP TABLE users;--')).toThrow();
     expect(() =>
-      buildAddColumnSql('orders', { name: 'note', type: 'text', nullable: true }, 'biz_safe;--', 'sqlite'),
+      buildAddColumnSql('orders', { name: 'note', type: 'text', nullable: true }, 'biz_safe;--'),
     ).toThrow();
   });
 
@@ -193,7 +191,6 @@ describe('SQL Injection (SQLi) Prevention', () => {
       "SELECT id, total FROM orders WHERE status != 'delete me' ORDER BY created_at DESC",
       schema,
       allowed,
-      true,
     );
     expect(valid).toContain('"biz_tenant_a_orders"');
 
@@ -216,7 +213,7 @@ describe('SQL Injection (SQLi) Prevention', () => {
     ];
 
     for (const q of maliciousQueries) {
-      expect(() => validateAndQualifyBusinessSql(q, schema, allowed, true)).toThrow();
+      expect(() => validateAndQualifyBusinessSql(q, schema, allowed)).toThrow();
     }
     expect(() => validateReadOnlySql('PRAGMA database_list')).toThrow();
   });
@@ -251,7 +248,7 @@ describe('SQL Injection (SQLi) Prevention', () => {
     await db.insert('orders', { items: 'Tenant A order', total: 100, status: 'pending' }, schemaA);
     await db.insert('orders', { items: 'Tenant B secret order', total: 999, status: 'pending' }, schemaB);
 
-    const token = await createAdminSessionToken({ userId: owner.data!.id, email: `sec-owner-${suffix}@example.com`, role: 'admin' });
+    const token = await createTestAdminToken({ userId: owner.data!.id, email: `sec-owner-${suffix}@example.com`, role: 'admin' });
 
     // 1. rows.get.ts rejects malicious tableName
     const sqliRowsRes = await rowsHandler(
@@ -450,7 +447,6 @@ describe('XSS & Script Injection Prevention', () => {
       'SELECT COUNT(*) AS "Total Orders" FROM orders',
       schema,
       allowed,
-      true,
     );
     expect(aliasQuery).toContain('"biz_tenant_a_orders"');
     expect(aliasQuery).toContain('"Total Orders"');
@@ -470,12 +466,12 @@ describe('XSS & Script Injection Prevention', () => {
     ];
 
     for (const q of bypassQueries) {
-      expect(() => validateAndQualifyBusinessSql(q, schema, allowed, true)).toThrow();
+      expect(() => validateAndQualifyBusinessSql(q, schema, allowed)).toThrow();
     }
 
     // Zero-table tenant cannot query any table
-    expect(() => validateAndQualifyBusinessSql('SELECT * FROM users', 'biz_empty', [], true)).toThrow();
-    expect(() => validateAndQualifyBusinessSql('SELECT * FROM orders', 'biz_empty', [], true)).toThrow();
+    expect(() => validateAndQualifyBusinessSql('SELECT * FROM users', 'biz_empty', [])).toThrow();
+    expect(() => validateAndQualifyBusinessSql('SELECT * FROM orders', 'biz_empty', [])).toThrow();
   });
 
   test('reports/custom, data/query, and schema/tables/update enforce SQLi protections and return structured errors', async () => {
@@ -497,7 +493,7 @@ describe('XSS & Script Injection Prevention', () => {
     await ensureStarterBusinessTables(schema, ['orders']);
     await db.insert('orders', { items: 'Latte', total: 120, status: 'pending' }, schema);
 
-    const token = await createAdminSessionToken({
+    const token = await createTestAdminToken({
       userId: owner.data!.id,
       email: `sec-adv-${suffix}@example.com`,
       role: 'admin',

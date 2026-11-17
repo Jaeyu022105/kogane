@@ -7,7 +7,8 @@ import { defineEventHandler, getQuery } from 'h3';
 import { verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
-import { isPrefixDb } from '~/server/utils/business';
+import { qualifyBusinessTable } from '~/server/utils/business';
+import { getBusinessTableColumns } from '~/server/utils/businessTable';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -37,59 +38,26 @@ export default defineEventHandler(async (event) => {
     return { columns: null, rows: null, total: 0, error: (err as Error).message };
   }
 
-  const isDevMode = isPrefixDb();
   const rawPage = Number.parseInt(String(page ?? '1'), 10);
   const rawLimit = Number.parseInt(String(limit ?? '50'), 10);
   const pageNum = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const pageSize = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(200, rawLimit) : 50;
   const offset = (pageNum - 1) * pageSize;
 
-  let columns: { name: string; type: string }[] = [];
-  let rows: Record<string, unknown>[] = [];
-  let total = 0;
+  const fqTable = qualifyBusinessTable(business.schema_name, tableName);
 
-  if (isDevMode) {
-    const fqTable = `${business.schema_name}_${tableName}`;
+  const { data: columns } = await getBusinessTableColumns(business.schema_name, tableName);
 
-    const { data: colData } = await db.query<{ name: string; type: string }>(
-      `PRAGMA table_info(${fqTable})`,
-      [],
-    );
-    columns = (colData ?? []).map(c => ({ name: c.name, type: c.type }));
+  const { data: countData } = await db.queryOne<{ c: number | string }>(
+    `SELECT COUNT(*) as c FROM ${fqTable}`,
+    [],
+  );
+  const total = Number(countData?.c ?? 0);
 
-    const { data: countData } = await db.queryOne<{ c: number }>(
-      `SELECT COUNT(*) as c FROM ${fqTable}`,
-      [],
-    );
-    total = countData?.c ?? 0;
+  const { data: rowData } = await db.query<Record<string, unknown>>(
+    `SELECT * FROM ${fqTable} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    [pageSize, offset],
+  );
 
-    const { data: rowData } = await db.query<Record<string, unknown>>(
-      `SELECT * FROM ${fqTable} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [pageSize, offset],
-    );
-    rows = rowData ?? [];
-  } else {
-    const schema = business.schema_name;
-    const fqTable = `"${schema}"."${tableName}"`;
-
-    const { data: colData } = await db.query<{ column_name: string; data_type: string }>(
-      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position`,
-      [schema, tableName],
-    );
-    columns = (colData ?? []).map(c => ({ name: c.column_name, type: c.data_type }));
-
-    const { data: countData } = await db.queryOne<{ c: string }>(
-      `SELECT COUNT(*) as c FROM ${fqTable}`,
-      [],
-    );
-    total = parseInt(countData?.c ?? '0', 10);
-
-    const { data: rowData } = await db.query<Record<string, unknown>>(
-      `SELECT * FROM ${fqTable} ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      [pageSize, offset],
-    );
-    rows = rowData ?? [];
-  }
-
-  return { columns, rows, total, error: null };
+  return { columns: columns ?? [], rows: rowData ?? [], total, error: null };
 });

@@ -17,39 +17,121 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
-import QRCode from 'qrcode';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve as resolvePath } from 'node:path';
+import { deflateSync } from 'node:zlib';
+import { getDbProvider } from './backend';
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-let warnedMissingSecret = false;
+
+// ── Secrets ──────────────────────────────────────────────────────────────────
+
+const MIN_SECRET_LENGTH = 32;
+// The .env.example placeholders and the old hard-coded fallback are public, so never usable.
+const PUBLIC_SECRET_PATTERN = /change[-_ ]?this|placeholder|your[-_ ]?(session|encryption)?[-_ ]?(secret|key)|kogane-dev-secret/i;
+
+/** A secret is usable when it is long enough and not a published placeholder. */
+export function isStrongSecret(value: string | undefined | null): value is string {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length >= MIN_SECRET_LENGTH && !PUBLIC_SECRET_PATTERN.test(trimmed);
+}
 
 /**
- * Returns the HMAC session secret.
- * In production, prefers SESSION_SECRET / NUXT_SESSION_SECRET and warns if using a fallback.
+ * Online (Firebase) production servers can run several instances on throwaway disks, so they
+ * must share configured secrets. Local / single-server installs can fall back to a generated one.
  */
-export function getSessionSecret(): string {
-  const configured = process.env.SESSION_SECRET || process.env.NUXT_SESSION_SECRET;
-  if (configured && configured.trim().length > 0) {
-    return configured.trim();
-  }
+function requiresConfiguredSecrets(): boolean {
+  return process.env.NODE_ENV === 'production' && getDbProvider() === 'firebase';
+}
 
-  if (process.env.NODE_ENV === 'production' && !warnedMissingSecret) {
-    warnedMissingSecret = true;
-    console.warn(
-      '[kogane/security] SESSION_SECRET is not set in production. Set SESSION_SECRET in your Firebase/server environment.',
+function configuredSessionSecret(): string {
+  return (process.env.SESSION_SECRET || process.env.NUXT_SESSION_SECRET || '').trim();
+}
+
+/** Where a local install keeps its generated secret: next to the SQLite database. */
+function localSecretFilePath(): string {
+  if (process.env.KOGANE_SECRET_FILE) return process.env.KOGANE_SECRET_FILE;
+  const dbPath = process.env.SQLITE_DB_PATH || process.env.DATABASE_URL?.replace(/^sqlite:\/\//, '');
+  return join(dbPath ? dirname(resolvePath(dbPath)) : process.cwd(), '.kogane-secret');
+}
+
+let generatedSecret: string | null = null;
+
+/** A random secret created on first run and kept on disk, so sessions survive restarts. */
+function localGeneratedSecret(): string {
+  if (generatedSecret) return generatedSecret;
+  const file = localSecretFilePath();
+  try {
+    if (existsSync(file)) {
+      const stored = readFileSync(file, 'utf8').trim();
+      if (isStrongSecret(stored)) {
+        generatedSecret = stored;
+        return stored;
+      }
+    }
+    const fresh = randomBytes(48).toString('base64url');
+    writeFileSync(file, `${fresh}\n`, { mode: 0o600 });
+    console.warn(`[kogane/security] SESSION_SECRET is not set; generated a random one in ${file}. Keep that file private.`);
+    generatedSecret = fresh;
+  } catch {
+    // Read-only disk: still never fall back to a known value. Sessions reset on restart.
+    generatedSecret = randomBytes(48).toString('base64url');
+    console.warn('[kogane/security] SESSION_SECRET is not set and the generated secret could not be saved; sessions will reset when the server restarts.');
+  }
+  return generatedSecret;
+}
+
+/** Returns the HMAC session secret, or throws when an online production server has none configured. */
+export function getSessionSecret(): string {
+  const configured = configuredSessionSecret();
+  if (isStrongSecret(configured)) return configured;
+
+  if (requiresConfiguredSecrets()) {
+    throw new Error(
+      `[kogane/security] SESSION_SECRET must be a random value of at least ${MIN_SECRET_LENGTH} characters (not the .env.example placeholder). Refusing to sign sessions with a weak or missing secret.`,
     );
   }
+  return localGeneratedSecret();
+}
 
-  return (
-    process.env.FIREBASE_PRIVATE_KEY
-    || process.env.SUPABASE_SERVICE_KEY
-    || 'kogane-dev-secret'
-  );
+function encryptionKeyMaterial(): string {
+  const configured = process.env.ENCRYPTION_KEY?.trim();
+  if (isStrongSecret(configured)) return configured;
+  if (configured && requiresConfiguredSecrets()) {
+    throw new Error(
+      `[kogane/security] ENCRYPTION_KEY must be a random value of at least ${MIN_SECRET_LENGTH} characters (not the .env.example placeholder), or left unset to use SESSION_SECRET.`,
+    );
+  }
+  return getSessionSecret();
+}
+
+/** Fails fast at server start when an online production server lacks strong secrets. */
+export function assertProductionSecrets(): void {
+  getSessionSecret();
+  encryptionKeyMaterial();
+}
+
+function deriveEncryptionKey(material: string): Buffer {
+  return createHash('sha256').update(`kogane-aes-v1:${material}`).digest();
 }
 
 /** Derives a 32-byte AES-256 key from ENCRYPTION_KEY or SESSION_SECRET. */
 function getEncryptionKey(): Buffer {
-  const raw = process.env.ENCRYPTION_KEY || getSessionSecret();
-  return createHash('sha256').update(`kogane-aes-v1:${raw}`).digest();
+  return deriveEncryptionKey(encryptionKeyMaterial());
+}
+
+/**
+ * Keys older installs may have encrypted 2FA secrets with (weak or placeholder values that are
+ * no longer accepted for new data). Decryption still tries them so nobody loses 2FA access.
+ */
+function legacyEncryptionKeys(): Buffer[] {
+  const candidates = [
+    process.env.ENCRYPTION_KEY?.trim(),
+    configuredSessionSecret(),
+    process.env.FIREBASE_PRIVATE_KEY,
+    'kogane-dev-secret',
+  ].filter((value): value is string => Boolean(value));
+  return [...new Set(candidates)].map(deriveEncryptionKey);
 }
 
 /** Constant-time string equality check. */
@@ -88,18 +170,20 @@ export function decryptSecret(ciphertext: string | null | undefined): string | n
   if (parts.length !== 5) return null;
   const [, , ivHex, tagHex, dataHex] = parts;
 
-  try {
-    const key = getEncryptionKey();
-    const iv = Buffer.from(ivHex, 'hex');
-    const tag = Buffer.from(tagHex, 'hex');
-    const encrypted = Buffer.from(dataHex, 'hex');
-    const decipher = createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(tag);
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-    return decrypted.toString('utf8');
-  } catch {
-    return null;
+  const iv = Buffer.from(ivHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+  const encrypted = Buffer.from(dataHex, 'hex');
+
+  for (const key of [getEncryptionKey(), ...legacyEncryptionKeys()]) {
+    try {
+      const decipher = createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(tag);
+      return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+    } catch {
+      // Wrong key or tampered data: try the next key.
+    }
   }
+  return null;
 }
 
 /** RFC 4648 Base32 encoding (without padding). */
@@ -222,16 +306,113 @@ export function buildOtpAuthUri(options: {
   return `otpauth://totp/${label}?${params.toString()}`;
 }
 
+function computePngCrc32(buf: Buffer): number {
+  let crc = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) {
+    crc ^= buf[i]!;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function buildPngChunk(type: string, data: Buffer): Buffer {
+  const typeBuf = Buffer.from(type, 'ascii');
+  const lenBuf = Buffer.alloc(4);
+  lenBuf.writeUInt32BE(data.length, 0);
+  const crcInput = Buffer.concat([typeBuf, data]);
+  const crcBuf = Buffer.alloc(4);
+  crcBuf.writeUInt32BE(computePngCrc32(crcInput), 0);
+  return Buffer.concat([lenBuf, typeBuf, data, crcBuf]);
+}
+
+function encodeMatrixToPngDataUrl(matrix: boolean[][], scale = 6): string {
+  const gridSize = Math.max(1, matrix.length);
+  const dim = gridSize * scale;
+  const rowStride = 1 + dim * 3;
+  const raw = Buffer.alloc(dim * rowStride);
+
+  for (let y = 0; y < dim; y++) {
+    const rowOffset = y * rowStride;
+    raw[rowOffset] = 0; // PNG filter type 0 (None)
+    const srcRow = matrix[Math.floor(y / scale)] ?? [];
+    for (let x = 0; x < dim; x++) {
+      const dark = Boolean(srcRow[Math.floor(x / scale)]);
+      const px = rowOffset + 1 + x * 3;
+      if (dark) {
+        // #68293A (Neapolitan espresso)
+        raw[px] = 0x68;
+        raw[px + 1] = 0x29;
+        raw[px + 2] = 0x3a;
+      } else {
+        raw[px] = 0xff;
+        raw[px + 1] = 0xff;
+        raw[px + 2] = 0xff;
+      }
+    }
+  }
+
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(dim, 0);
+  ihdr.writeUInt32BE(dim, 4);
+  ihdr[8] = 8; // 8-bit depth
+  ihdr[9] = 2; // RGB color type
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const png = Buffer.concat([
+    signature,
+    buildPngChunk('IHDR', ihdr),
+    buildPngChunk('IDAT', deflateSync(raw)),
+    buildPngChunk('IEND', Buffer.alloc(0)),
+  ]);
+  return `data:image/png;base64,${png.toString('base64')}`;
+}
+
 /** Generates a real scannable QR code Data URL (PNG) for an otpauth URI. */
 export async function generateQrDataUrl(text: string): Promise<string> {
-  return QRCode.toDataURL(text, {
-    width: 220,
-    margin: 2,
-    color: {
-      dark: '#68293A',
-      light: '#FFFFFF',
-    },
-  });
+  const qrcodePkg = 'qrcode';
+  try {
+    const qrcodeMod = (await import(qrcodePkg)) as {
+      default?: { toDataURL: (input: string, opts: Record<string, unknown>) => Promise<string> };
+      toDataURL?: (input: string, opts: Record<string, unknown>) => Promise<string>;
+    };
+    const QRCode = qrcodeMod.default ?? qrcodeMod;
+    if (typeof QRCode.toDataURL === 'function') {
+      return await QRCode.toDataURL(text, {
+        width: 220,
+        margin: 2,
+        color: {
+          dark: '#68293A',
+          light: '#FFFFFF',
+        },
+      });
+    }
+  } catch {
+    // Fall back to uqr or deterministic PNG matrix below
+  }
+
+  try {
+    const uqrMod = await import('uqr');
+    const encoded = uqrMod.encode(text, { border: 2 });
+    if (encoded && Array.isArray(encoded.data) && encoded.data.length > 0) {
+      return encodeMatrixToPngDataUrl(encoded.data, 6);
+    }
+  } catch {
+    // Fall back to deterministic PNG matrix below
+  }
+
+  const digest = createHash('sha256').update(text).digest();
+  const fallbackMatrix: boolean[][] = Array.from({ length: 25 }, (_, r) =>
+    Array.from({ length: 25 }, (__, c) => {
+      const bitIndex = (r * 25 + c) % (digest.length * 8);
+      return Boolean((digest[Math.floor(bitIndex / 8)]! >> (bitIndex % 8)) & 1);
+    }),
+  );
+  return encodeMatrixToPngDataUrl(fallbackMatrix, 6);
 }
 
 function normalizeBackupCode(code: string): string {

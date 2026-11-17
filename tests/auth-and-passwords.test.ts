@@ -8,6 +8,7 @@ import {
   verifyPin,
 } from '../lib/authUtils';
 import { db } from '../lib/db';
+import { createTestAdminToken } from './helpers/sessions';
 import signupHandler from '../server/api/auth/signup.post';
 import loginHandler from '../server/api/auth/login.post';
 import changePasswordHandler from '../server/api/auth/change-password.post';
@@ -47,7 +48,6 @@ function createMockEvent(opts: {
 describe('Authentication & Password Security Engine', () => {
   beforeEach(() => {
     process.env.DEV_MODE = 'true';
-    delete process.env.SUPABASE_URL;
   });
 
   test('PBKDF2 password hashing generates secure salts and verifiable hashes', () => {
@@ -116,8 +116,8 @@ describe('Authentication & Password Security Engine', () => {
     const devAuth = await verifyAdmin(devEvent);
     expect(devAuth.userId).toBe('dev-admin');
 
-    // 2. Verified signed admin token
-    const signedToken = await createAdminSessionToken({
+    // 2. Verified signed admin token backed by a live session row
+    const signedToken = await createTestAdminToken({
       userId: 'usr_owner_456',
       email: 'owner@napoli.com',
       role: 'admin',
@@ -128,6 +128,17 @@ describe('Authentication & Password Security Engine', () => {
     const signedAuth = await verifyAdmin(signedEvent);
     expect(signedAuth.userId).toBe('usr_owner_456');
     expect(signedAuth.email).toBe('owner@napoli.com');
+
+    // 3. A correctly signed token with no session behind it (e.g. forged with a leaked
+    //    secret) is rejected, with or without a made-up session id.
+    for (const forged of [
+      await createAdminSessionToken({ userId: 'usr_owner_456', email: 'owner@napoli.com', role: 'admin' }),
+      await createAdminSessionToken({ userId: 'usr_owner_456', email: 'owner@napoli.com', role: 'admin', sid: 'sess_made_up' }),
+    ]) {
+      await expect(
+        verifyAdmin(createMockEvent({ headers: { authorization: `Bearer ${forged}` } })),
+      ).rejects.toMatchObject({ statusCode: 401 });
+    }
 
     // 3. Missing authorization header throws 401
     const noAuthEvent = createMockEvent({ headers: {} });
@@ -351,7 +362,7 @@ describe('Authentication & Password Security Engine', () => {
     expect(devMe.user.id).toBe('dev-admin');
 
     // 2. Signed session token profile
-    const token = await createAdminSessionToken({
+    const token = await createTestAdminToken({
       userId: 'usr_patron_1',
       email: 'patron@kogane.dev',
       role: 'admin',

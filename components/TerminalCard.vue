@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Eye, EyeOff, KeyRound, Link2, Check, Trash2, ArrowRight, Settings2 } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import KeyIcon from 'reicon-vue/icons/Key';
+import Link2Icon from 'reicon-vue/icons/Link2';
+import CheckIcon from 'reicon-vue/icons/Check';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import ArrowRightIcon from 'reicon-vue/icons/ArrowRight';
+import Setting2Icon from 'reicon-vue/icons/Setting2';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
 import TerminalThumbnail from '~/components/TerminalThumbnail.vue';
-import { TERMINAL_PERMISSION_PRESETS } from '~/lib/permissions';
+import { getTerminalPresetStatus } from '~/lib/builderPresets';
+import { presetByRoleOrKey } from '~/lib/permissions';
 
 const props = defineProps<{
   terminal: {
@@ -13,11 +22,13 @@ const props = defineProps<{
     pin_code: string | null;
     is_public: number | boolean | null;
     public_slug: string | null;
-  }
+  };
+  latestPresetVersions?: Record<string, number>;
 }>();
 
 const emit = defineEmits<{
   (e: 'deleted'): void;
+  (e: 'synced', payload: { terminalId: string; terminal?: Record<string, unknown> }): void;
 }>();
 
 const { authHeaders } = useAuth();
@@ -26,11 +37,55 @@ const { buildShareUrl, copyToClipboard, isOnlineHost } = useShareOrigin();
 
 const showPin = ref(false);
 const deleting = ref(false);
+const syncing = ref(false);
 const copiedLink = ref(false);
 const copiedPin = ref(false);
 
+const presetStatus = computed(() =>
+  getTerminalPresetStatus(props.terminal, props.latestPresetVersions),
+);
+
 function roleLabel(value: string) {
-  return TERMINAL_PERMISSION_PRESETS.find((preset) => preset.key === value)?.label ?? 'Staff workspace';
+  return presetByRoleOrKey(value)?.label ?? presetStatus.value.presetName ?? (value || 'Staff workspace');
+}
+
+async function syncPreset() {
+  if (syncing.value) return;
+  syncing.value = true;
+  try {
+    const res = await $fetch<{
+      success?: boolean;
+      updated?: boolean;
+      alreadyCurrent?: boolean;
+      toVersion?: number;
+      terminal?: Record<string, unknown>;
+      error?: string | null;
+    }>('/api/presets/sync', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        terminalId: props.terminal.id,
+        force: !presetStatus.value.updateAvailable,
+      },
+    });
+    if (res?.error) {
+      await alert({
+        title: 'Unable to sync preset',
+        description: res.error,
+        confirmLabel: 'Close',
+      });
+      return;
+    }
+    emit('synced', { terminalId: props.terminal.id, terminal: res?.terminal });
+  } catch (err: any) {
+    await alert({
+      title: 'Unable to sync preset',
+      description: err?.data?.statusMessage ?? err?.data?.message ?? err?.message ?? 'Could not sync preset update.',
+      confirmLabel: 'Close',
+    });
+  } finally {
+    syncing.value = false;
+  }
 }
 
 function friendlyTerminalError(value: unknown, fallback = 'We could not update this terminal. Please try again.') {
@@ -151,11 +206,22 @@ async function deleteTerminal() {
         <p class="font-semibold text-sm truncate" style="color: rgb(var(--shell-sidebar)); margin: 0;">
           {{ terminal.display_name }}
         </p>
-        <p class="text-xs mt-0.5" style="color: rgba(61, 24, 32, 0.35); margin: 0;">{{ roleLabel(terminal.role) }}</p>
+        <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+          <p class="text-xs truncate" style="color: rgba(61, 24, 32, 0.48); margin: 0;">{{ roleLabel(terminal.role) }}</p>
+          <span
+            v-if="presetStatus.linked"
+            class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono"
+            :style="presetStatus.updateAvailable
+              ? 'background: rgba(245, 158, 11, 0.14); color: #b45309;'
+              : 'background: rgba(61, 24, 32, 0.06); color: rgba(61, 24, 32, 0.55);'"
+          >
+            {{ presetStatus.updateAvailable ? `Update available · v${presetStatus.presetVersion}→v${presetStatus.latestVersion}` : `v${presetStatus.presetVersion}` }}
+          </span>
+        </div>
       </div>
       <button
         type="button"
-        class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-all border-none cursor-pointer"
+        class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center transition-all border-none cursor-pointer"
         style="background: rgba(239, 68, 68, 0.06); color: #b42318;"
         :disabled="deleting"
         :title="deleting ? 'Deleting...' : 'Delete terminal'"
@@ -163,7 +229,7 @@ async function deleteTerminal() {
         @click="deleteTerminal"
       >
         <div v-if="deleting" class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-        <Trash2 v-else class="w-4 h-4" />
+        <TrashIcon v-else class="w-4 h-4" />
       </button>
     </div>
 
@@ -178,8 +244,8 @@ async function deleteTerminal() {
         :aria-label="copiedLink ? 'Terminal link copied' : (isOnlineHost ? 'Copy terminal link' : 'Copy LAN terminal link')"
         @click="copyLink"
       >
-        <Check v-if="copiedLink" class="w-3.5 h-3.5 text-emerald-600" />
-        <Link2 v-else class="w-3.5 h-3.5" />
+        <CheckIcon v-if="copiedLink" class="w-3.5 h-3.5 text-emerald-600" />
+        <Link2Icon v-else class="w-3.5 h-3.5" />
         {{ copiedLink ? 'Copied Link' : (isOnlineHost ? 'Copy Link' : 'Copy LAN Link') }}
       </button>
 
@@ -196,7 +262,7 @@ async function deleteTerminal() {
           :aria-label="copiedPin ? 'PIN copied' : 'Copy terminal PIN'"
           @click="copyPin"
         >
-          <KeyRound class="w-3.5 h-3.5 shrink-0" style="color: rgba(61, 24, 32, 0.5);" />
+          <KeyIcon class="w-3.5 h-3.5 shrink-0" style="color: rgba(61, 24, 32, 0.5);" />
           <span>{{ copiedPin ? 'Copied!' : (showPin ? terminal.pin_code : '••••') }}</span>
         </button>
         <button
@@ -207,8 +273,8 @@ async function deleteTerminal() {
           :title="showPin ? 'Hide PIN' : 'Show PIN'"
           :aria-label="showPin ? 'Hide PIN' : 'Show PIN'"
         >
-          <EyeOff v-if="showPin" class="w-3.5 h-3.5" />
-          <Eye v-else class="w-3.5 h-3.5" />
+          <EyeOffIcon v-if="showPin" class="w-3.5 h-3.5" />
+          <EyeIcon v-else class="w-3.5 h-3.5" />
         </button>
       </div>
       <div
@@ -216,30 +282,55 @@ async function deleteTerminal() {
         class="text-xs font-medium px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 select-none"
         style="color: rgba(61, 24, 32, 0.35); background: rgba(61, 24, 32, 0.03);"
       >
-        <KeyRound class="w-3.5 h-3.5 opacity-40" />
+        <KeyIcon class="w-3.5 h-3.5 opacity-40" />
         <span>No PIN</span>
       </div>
     </div>
 
+    <!-- Preset update prompt -->
+    <button
+      v-if="presetStatus.updateAvailable"
+      type="button"
+      class="w-full text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 border-none cursor-pointer transition-all disabled:opacity-50"
+      style="background: rgba(245, 158, 11, 0.14); color: #92400e;"
+      :disabled="syncing"
+      @click="syncPreset"
+    >
+      <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
+      {{ syncing ? 'Syncing preset...' : 'Sync preset' }}
+    </button>
+
     <!-- Actions row -->
-    <div class="flex items-center gap-2 mt-auto">
+    <div class="grid grid-flow-col auto-cols-fr gap-2 mt-auto">
+      <button
+        v-if="!presetStatus.updateAvailable && presetStatus.canSync"
+        type="button"
+        class="text-xs font-medium px-2 py-2 rounded-lg transition-all border-none cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-50"
+        style="color: rgba(61, 24, 32, 0.65); background: rgba(61, 24, 32, 0.06);"
+        :disabled="syncing"
+        :title="presetStatus.linked ? 'Re-sync terminal with latest template' : 'Link and sync with official preset'"
+        @click="syncPreset"
+      >
+        <RefreshIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': syncing }" />
+        {{ syncing ? 'Syncing…' : 'Sync' }}
+      </button>
 
       <NuxtLink
         :to="`/dashboard/terminals/${terminal.id}`"
-        class="flex-1 text-center text-xs font-medium px-3 py-1.5 rounded-md transition-all no-underline"
+        class="text-center text-xs font-medium px-2 py-2 rounded-lg transition-all no-underline whitespace-nowrap"
         style="color: rgba(61, 24, 32, 0.6); background: rgba(61, 24, 32, 0.06);"
       >
         <div class="flex items-center justify-center gap-1.5">
-          <Settings2 class="w-3.5 h-3.5" /> Options
+          <Setting2Icon class="w-3.5 h-3.5" /> Options
         </div>
       </NuxtLink>
       <NuxtLink
         :to="terminal.is_public && terminal.public_slug ? `/t/${terminal.public_slug}` : `/terminal/${terminal.id}`"
-        class="text-center text-xs font-semibold px-3 py-1.5 rounded-md transition-all no-underline"
+        class="text-center text-xs font-semibold px-2 py-2 rounded-lg transition-all no-underline whitespace-nowrap"
         style="color: rgb(var(--shell-pink)); background: rgba(232, 116, 138, 0.1);"
       >
         <div class="flex items-center justify-center gap-1.5">
-          Open <ArrowRight class="w-3.5 h-3.5" />
+          Open <ArrowRightIcon class="w-3.5 h-3.5" />
         </div>
       </NuxtLink>
     </div>

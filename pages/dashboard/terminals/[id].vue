@@ -1,6 +1,28 @@
 <script setup lang="ts">
-import { ArrowLeft, Trash2, Link2, KeyRound, Palette, Sliders, Globe, Sparkles, Check, RefreshCw, Eye, EyeOff } from 'lucide-vue-next';
+import ArrowLeftIcon from 'reicon-vue/icons/ArrowLeft';
+import TrashIcon from 'reicon-vue/icons/Trash';
+import Link2Icon from 'reicon-vue/icons/Link2';
+import KeyIcon from 'reicon-vue/icons/Key';
+import PaletteIcon from 'reicon-vue/icons/Palette';
+import SlidersIcon from 'reicon-vue/icons/Sliders';
+import GlobeIcon from 'reicon-vue/icons/Globe';
+import SparklesIcon from 'reicon-vue/icons/Sparkles';
+import CheckIcon from 'reicon-vue/icons/Check';
+import RefreshIcon from 'reicon-vue/icons/Refresh';
+import EyeIcon from 'reicon-vue/icons/Eye';
+import EyeOffIcon from 'reicon-vue/icons/EyeOff';
+import ShieldIcon from 'reicon-vue/icons/Shield';
+import PlusIcon from 'reicon-vue/icons/Plus';
 import { UI_LAYOUT_BUNDLES, type LayoutBundleKey } from '~/lib/workspaceBranding';
+import {
+  ALL_TERMINAL_PERMISSION_PRESETS,
+  inferPermissionPreset,
+  normalizePermissions,
+  resolveTablePermissions,
+  type PermissionPreset,
+  type TablePermissionKey,
+  type TerminalPermissions,
+} from '~/lib/permissions';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -11,26 +33,55 @@ const { authHeaders }   = useAuth();
 const { business }      = useBusiness();
 const { confirm, alert } = useModal();
 const { buildShareUrl, copyToClipboard } = useShareOrigin();
+const { t } = useLocale();
 const businessId = computed(() => business.value?.id);
 
 // ── State ───────────────────────────────────────────────────────────────────
 
-const loading       = ref(false);
-const savingBasic   = ref(false);
-const savingStyle   = ref(false);
-const savingPublic  = ref(false);
-const deleting      = ref(false);
-const error         = ref<string | null>(null);
+const loading           = ref(false);
+const savingBasic       = ref(false);
+const savingStyle       = ref(false);
+const savingPublic      = ref(false);
+const savingPermissions = ref(false);
+const permissionsSaved  = ref(false);
+const deleting          = ref(false);
+const error             = ref<string | null>(null);
 
 const terminal = ref<{
   id: string;
+  business_id?: string;
   display_name: string;
   role: string;
   pin_code: string | null;
   is_public: boolean;
   public_slug: string | null;
   ui_layout: any;
+  permissions?: TerminalPermissions;
 } | null>(null);
+
+const permissionsState = ref<TerminalPermissions>(normalizePermissions());
+const workspaceTables = ref<string[]>([]);
+const newPermissionTable = ref('');
+
+const PERMISSION_ACTIONS: { key: TablePermissionKey; label: string }[] = [
+  { key: 'read', label: 'Read' },
+  { key: 'insert', label: 'Insert' },
+  { key: 'update', label: 'Update' },
+  { key: 'delete', label: 'Delete' },
+];
+
+const permissionTableNames = computed(() => {
+  const seen = new Set<string>();
+  for (const t of workspaceTables.value) {
+    if (t && t !== '*') seen.add(t);
+  }
+  for (const t of Object.keys(permissionsState.value.tables || {})) {
+    if (t && t !== '*') seen.add(t);
+  }
+  return Array.from(seen).sort((a, b) => a.localeCompare(b));
+});
+
+const activePermissionPreset = computed(() => inferPermissionPreset(permissionsState.value));
 
 // Basic options
 const optionDisplayName = ref('');
@@ -51,6 +102,16 @@ const publicUrl  = computed(() => {
 // Style settings
 const selectedBundle  = ref<LayoutBundleKey>('aurora-service');
 const accentColor     = ref('#ff8ca6');
+/** True while this terminal has no style override and simply follows the workspace brand kit. */
+const followsWorkspaceBrand = ref(true);
+const savingContent   = ref(false);
+
+function useWorkspaceStyleDefaults() {
+  const workspace = business.value?.colorPalette;
+  selectedBundle.value = workspace?.layoutBundle ?? 'aurora-service';
+  const bundle = UI_LAYOUT_BUNDLES.find((item) => item.key === selectedBundle.value);
+  accentColor.value = workspace?.accent ?? bundle?.swatches?.[2] ?? '#ff8ca6';
+}
 
 // Terminal content preferences.
 const stationConfig = reactive<{
@@ -107,9 +168,11 @@ async function loadTerminal() {
     if (typeof layout === 'string') {
       try { layout = JSON.parse(layout); } catch { layout = null; }
     }
-    if (layout?.brandConfig) {
-      selectedBundle.value = layout.brandConfig.layoutBundle ?? 'aurora-service';
-      accentColor.value    = layout.brandConfig.accent ?? '#ff8ca6';
+    useWorkspaceStyleDefaults();
+    followsWorkspaceBrand.value = !layout?.brandConfig || Object.keys(layout.brandConfig).length === 0;
+    if (!followsWorkspaceBrand.value) {
+      selectedBundle.value = layout.brandConfig.layoutBundle ?? selectedBundle.value;
+      accentColor.value    = layout.brandConfig.accent ?? accentColor.value;
     }
 
     // Restore station config
@@ -119,12 +182,40 @@ async function loadTerminal() {
     if (!stationConfig.currencySymbol) {
       stationConfig.currencySymbol = business.value?.currencySymbol || '$';
     }
+
+    permissionsState.value = normalizePermissions(res.terminal.permissions, res.terminal.role);
+    await loadWorkspaceTables(res.terminal.business_id || businessId.value);
   } catch (err) {
     error.value = friendlySaveError((err as Error).message, 'We could not load this terminal right now.');
   } finally {
     loading.value = false;
   }
 }
+
+async function loadWorkspaceTables(targetBusinessId?: string) {
+  const bizId = targetBusinessId || terminal.value?.business_id || businessId.value;
+  if (!bizId) return;
+  try {
+    const res = await $fetch<{ tables: string[] | null; error: string | null }>(
+      '/api/schema/tables',
+      {
+        query: { businessId: bizId },
+        headers: authHeaders(),
+      },
+    );
+    if (Array.isArray(res?.tables)) {
+      workspaceTables.value = res.tables;
+    }
+  } catch {
+    // Non-critical: table overrides already saved still remain visible
+  }
+}
+
+watch(businessId, (nextBizId) => {
+  if (nextBizId && workspaceTables.value.length === 0) {
+    loadWorkspaceTables(nextBizId);
+  }
+});
 
 // ── Actions ──────────────────────────────────────────────────────────────────
 
@@ -210,10 +301,9 @@ async function saveBasic() {
   }
 }
 
-async function saveStyle() {
-  if (!terminal.value || !business.value) return;
-  savingStyle.value = true;
-  error.value       = null;
+async function patchTerminalLayout(body: Record<string, unknown>, fallbackMessage: string) {
+  if (!terminal.value || !business.value) return false;
+  error.value = null;
 
   try {
     const res = await $fetch<{ success: boolean; error: string | null; terminal: any }>(
@@ -221,24 +311,57 @@ async function saveStyle() {
       {
         method:  'PATCH',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: {
-          businessId:   business.value.id,
-          brandConfig:  { layoutBundle: selectedBundle.value, accent: accentColor.value },
-          stationConfig: { ...stationConfig },
-        },
+        body: { businessId: business.value.id, ...body },
       },
     );
 
     if (res.error) {
-      error.value = friendlySaveError(res.error, 'We could not save the terminal appearance. Please try again.');
-    } else if (res.terminal) {
+      error.value = friendlySaveError(res.error, fallbackMessage);
+      return false;
+    }
+    if (res.terminal) {
       terminal.value = { ...terminal.value, ...res.terminal };
     }
+    return true;
   } catch (err) {
-    error.value = friendlySaveError((err as Error).message, 'We could not save the terminal appearance. Please try again.');
-  } finally {
-    savingStyle.value = false;
+    error.value = friendlySaveError((err as Error).message, fallbackMessage);
+    return false;
   }
+}
+
+/** Gives this terminal its own style (screen style + accent) on top of the workspace brand kit. */
+async function saveStyle() {
+  savingStyle.value = true;
+  const saved = await patchTerminalLayout(
+    { brandConfig: { layoutBundle: selectedBundle.value, accent: accentColor.value } },
+    'We could not save the terminal appearance. Please try again.',
+  );
+  if (saved) followsWorkspaceBrand.value = false;
+  savingStyle.value = false;
+}
+
+/** Drops this terminal's own style so it follows the workspace brand kit again. */
+async function useWorkspaceBrand() {
+  savingStyle.value = true;
+  const saved = await patchTerminalLayout(
+    { resetBrand: true },
+    'We could not switch this terminal back to the workspace brand. Please try again.',
+  );
+  if (saved) {
+    followsWorkspaceBrand.value = true;
+    useWorkspaceStyleDefaults();
+  }
+  savingStyle.value = false;
+}
+
+/** Saves welcome message, language, receipt and menu settings without touching the terminal's style. */
+async function saveContent() {
+  savingContent.value = true;
+  await patchTerminalLayout(
+    { stationConfig: { ...stationConfig } },
+    'We could not save the terminal content. Please try again.',
+  );
+  savingContent.value = false;
 }
 
 async function savePublicSettings() {
@@ -270,6 +393,102 @@ async function savePublicSettings() {
     error.value = friendlySaveError((err as Error).message, 'We could not save public access settings. Please try again.');
   } finally {
     savingPublic.value = false;
+  }
+}
+
+function applyPermissionPreset(preset: PermissionPreset) {
+  permissionsState.value = normalizePermissions(preset.permissions);
+  permissionsSaved.value = false;
+}
+
+function isTableOverridden(tableName: string): boolean {
+  return tableName !== '*' && Boolean(permissionsState.value.tables?.[tableName]);
+}
+
+function tablePermissionValue(tableName: string, key: TablePermissionKey): boolean {
+  const effective = resolveTablePermissions(permissionsState.value, tableName, terminal.value?.role);
+  return Boolean(effective[key]);
+}
+
+function toggleTablePermission(tableName: string, key: TablePermissionKey, checked: boolean) {
+  const current = resolveTablePermissions(permissionsState.value, tableName, terminal.value?.role);
+  permissionsState.value = {
+    ...permissionsState.value,
+    tables: {
+      ...permissionsState.value.tables,
+      [tableName]: {
+        ...current,
+        [key]: checked,
+      },
+    },
+  };
+  permissionsSaved.value = false;
+}
+
+function resetTablePermission(tableName: string) {
+  if (tableName === '*') return;
+  const nextTables = { ...permissionsState.value.tables };
+  delete nextTables[tableName];
+  permissionsState.value = {
+    ...permissionsState.value,
+    tables: nextTables,
+  };
+  permissionsSaved.value = false;
+}
+
+function addCustomPermissionTable() {
+  const cleaned = newPermissionTable.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  if (!cleaned || cleaned === '*') return;
+  if (!permissionsState.value.tables[cleaned]) {
+    const inherited = resolveTablePermissions(permissionsState.value, cleaned, terminal.value?.role);
+    permissionsState.value = {
+      ...permissionsState.value,
+      tables: {
+        ...permissionsState.value.tables,
+        [cleaned]: { ...inherited },
+      },
+    };
+  }
+  newPermissionTable.value = '';
+  permissionsSaved.value = false;
+}
+
+async function savePermissions() {
+  const effectiveBusinessId = business.value?.id || terminal.value?.business_id;
+  if (!terminal.value || !effectiveBusinessId) return;
+
+  savingPermissions.value = true;
+  error.value = null;
+  permissionsSaved.value = false;
+
+  try {
+    const res = await $fetch<{ success: boolean; error: string | null }>(
+      `/api/terminals/${terminal.value.id}/permissions`,
+      {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: {
+          businessId: effectiveBusinessId,
+          permissions: permissionsState.value,
+        },
+      },
+    );
+
+    if (!res.success || res.error) {
+      error.value = friendlySaveError(res.error, 'We could not save terminal permissions. Please try again.');
+      return;
+    }
+
+    terminal.value = {
+      ...terminal.value,
+      permissions: normalizePermissions(permissionsState.value, terminal.value.role),
+    };
+    permissionsSaved.value = true;
+    setTimeout(() => (permissionsSaved.value = false), 2500);
+  } catch (err) {
+    error.value = friendlySaveError((err as Error).message, 'We could not save terminal permissions. Please try again.');
+  } finally {
+    savingPermissions.value = false;
   }
 }
 
@@ -323,7 +542,7 @@ onMounted(async () => {
           style="color: rgba(61,24,32,0.5);"
           @click="router.push('/dashboard/terminals')"
         >
-          <ArrowLeft class="w-4 h-4" />
+          <ArrowLeftIcon class="w-4 h-4" />
         </button>
         <div>
           <p class="text-[10px] font-bold uppercase tracking-[0.18em] mb-0.5" style="color: rgba(61,24,32,0.4);">
@@ -338,14 +557,14 @@ onMounted(async () => {
       <button
         type="button"
         aria-label="Delete terminal"
-        class="text-sm font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-40"
+        class="text-sm font-semibold px-4 py-2 rounded-lg transition-all disabled:opacity-40"
         style="background: rgba(239,68,68,0.07); color: #b42318; border: 1px solid rgba(239,68,68,0.14);"
         :disabled="deleting || !terminal"
         @click="deleteTerminal"
       >
         <div class="flex items-center gap-2">
           <div v-if="deleting" class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          <Trash2 v-else class="w-3.5 h-3.5" />
+          <TrashIcon v-else class="w-3.5 h-3.5" />
           {{ deleting ? 'Deleting…' : 'Delete' }}
         </div>
       </button>
@@ -402,8 +621,8 @@ onMounted(async () => {
                     :aria-label="pinVisible ? 'Hide PIN' : 'Show PIN'"
                     @click="pinVisible = !pinVisible"
                   >
-                    <EyeOff v-if="pinVisible" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
+                    <EyeOffIcon v-if="pinVisible" class="w-4 h-4" />
+                    <EyeIcon v-else class="w-4 h-4" />
                   </button>
                 </div>
                 <p id="terminal-pin-help" class="text-[10px] mt-1" style="color: rgba(61,24,32,0.35);">Takes effect on the next sign-in.</p>
@@ -412,28 +631,28 @@ onMounted(async () => {
               <div class="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border"
+                  class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border"
                   style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
                   aria-label="Copy terminal link"
                   @click="copyTerminalLink"
                 >
                   <div class="flex items-center justify-center gap-1.5">
-                    <Check v-if="copiedLink" class="w-3.5 h-3.5 text-green-500" />
-                    <Link2 v-else class="w-3.5 h-3.5" />
+                    <CheckIcon v-if="copiedLink" class="w-3.5 h-3.5 text-green-500" />
+                    <Link2Icon v-else class="w-3.5 h-3.5" />
                     {{ copiedLink ? 'Copied' : 'Copy Link' }}
                   </div>
                 </button>
                 <button
                   type="button"
-                  class="text-xs font-semibold px-3 py-2 rounded-xl transition-all border disabled:opacity-40"
+                  class="text-xs font-semibold px-3 py-2 rounded-lg transition-all border disabled:opacity-40"
                   style="background: rgba(61,24,32,0.03); color: rgb(var(--shell-sidebar)); border-color: rgba(61,24,32,0.08);"
                   :disabled="!optionPin"
                   aria-label="Copy terminal PIN"
                   @click="copyTerminalPin"
                 >
                   <div class="flex items-center justify-center gap-1.5">
-                    <Check v-if="copiedPin" class="w-3.5 h-3.5 text-green-500" />
-                    <KeyRound v-else class="w-3.5 h-3.5" />
+                    <CheckIcon v-if="copiedPin" class="w-3.5 h-3.5 text-green-500" />
+                    <KeyIcon v-else class="w-3.5 h-3.5" />
                     {{ copiedPin ? 'Copied' : 'Copy PIN' }}
                   </div>
                 </button>
@@ -443,13 +662,13 @@ onMounted(async () => {
             <p v-if="error" class="text-xs text-red-600" role="alert">{{ error }}</p>
 
             <button
-              class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+              class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="savingBasic"
               @click="saveBasic"
             >
               <div class="flex items-center justify-center gap-2">
                 <div v-if="savingBasic" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <Sparkles v-else class="w-4 h-4" />
+                <SparklesIcon v-else class="w-4 h-4" />
                 {{ savingBasic ? 'Saving…' : 'Save General' }}
               </div>
             </button>
@@ -495,13 +714,13 @@ onMounted(async () => {
             <div class="flex-1" />
 
             <button
-              class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+              class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
               :disabled="savingPublic"
               @click="savePublicSettings"
             >
               <div class="flex items-center justify-center gap-2">
                 <div v-if="savingPublic" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <Globe v-else class="w-4 h-4" />
+                <GlobeIcon v-else class="w-4 h-4" />
                 {{ savingPublic ? 'Saving…' : 'Save Access' }}
               </div>
             </button>
@@ -513,12 +732,41 @@ onMounted(async () => {
         <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-6">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.6);">
-              <Palette class="w-4 h-4" />
+              <PaletteIcon class="w-4 h-4" />
             </div>
             <div>
               <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Appearance</h2>
               <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Choose a visual theme and accent colour for this terminal.</p>
             </div>
+          </div>
+
+          <div
+            class="flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 text-xs"
+            :style="followsWorkspaceBrand
+              ? 'background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.18); color: #047857;'
+              : 'background: rgba(255,87,118,0.07); border: 1px solid rgba(255,87,118,0.2); color: rgb(var(--shell-sidebar));'"
+            role="status"
+          >
+            <span class="flex-1 min-w-[12rem] leading-relaxed">
+              {{ followsWorkspaceBrand ? t('terminal_brand_follows') : t('terminal_brand_custom') }}
+            </span>
+            <NuxtLink
+              v-if="followsWorkspaceBrand"
+              to="/dashboard/settings"
+              class="font-semibold underline underline-offset-2"
+              style="color: inherit;"
+            >
+              {{ t('terminal_brand_edit_kit') }}
+            </NuxtLink>
+            <button
+              v-else
+              type="button"
+              class="px-3 py-1.5 font-semibold btn-ghost disabled:opacity-40"
+              :disabled="savingStyle"
+              @click="useWorkspaceBrand"
+            >
+              {{ t('terminal_brand_reset') }}
+            </button>
           </div>
 
           <!-- Theme bundles -->
@@ -552,7 +800,7 @@ onMounted(async () => {
                   class="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
                   style="background: rgb(var(--shell-sidebar));"
                 >
-                  <Check class="w-3 h-3 text-white" />
+                  <CheckIcon class="w-3 h-3 text-white" />
                 </div>
               </button>
             </div>
@@ -578,13 +826,13 @@ onMounted(async () => {
           </div>
 
           <button
-            class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
+            class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
             :disabled="savingStyle"
             @click="saveStyle"
           >
             <div class="flex items-center justify-center gap-2">
               <div v-if="savingStyle" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <RefreshCw v-else class="w-4 h-4" />
+              <RefreshIcon v-else class="w-4 h-4" />
               {{ savingStyle ? 'Applying…' : 'Apply Appearance' }}
             </div>
           </button>
@@ -594,7 +842,7 @@ onMounted(async () => {
         <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-6">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.6);">
-              <Sliders class="w-4 h-4" />
+              <SlidersIcon class="w-4 h-4" />
             </div>
             <div>
               <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Terminal content</h2>
@@ -667,16 +915,206 @@ onMounted(async () => {
           </div>
 
           <button
-            class="w-full text-sm font-semibold py-2.5 rounded-2xl transition-all disabled:opacity-40 btn-primary btn-ribbon"
-            :disabled="savingStyle"
-            @click="saveStyle"
+            class="w-full text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
+            :disabled="savingContent"
+            @click="saveContent"
           >
             <div class="flex items-center justify-center gap-2">
-              <div v-if="savingStyle" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <Sparkles v-else class="w-4 h-4" />
-              {{ savingStyle ? 'Saving…' : 'Save Terminal Content' }}
+              <div v-if="savingContent" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              <SparklesIcon v-else class="w-4 h-4" />
+              {{ savingContent ? 'Saving…' : 'Save Terminal Content' }}
             </div>
           </button>
+        </div>
+
+        <!-- ── Row 4: Role & Table Permissions ────────────────────────────── -->
+        <div class="bg-white rounded-3xl p-7 shadow-warm border border-black/[0.03] space-y-6">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(61,24,32,0.05); color: rgba(61,24,32,0.6);">
+                <ShieldIcon class="w-4 h-4" />
+              </div>
+              <div>
+                <h2 class="font-serif text-lg font-normal leading-none" style="color: rgb(var(--shell-sidebar));">Role &amp; Table Permissions</h2>
+                <p class="text-xs mt-0.5" style="color: rgba(61,24,32,0.4);">Control which business tables and operational views this terminal can access.</p>
+              </div>
+            </div>
+            <span
+              v-if="activePermissionPreset"
+              class="text-[11px] font-semibold px-2.5 py-1 rounded-full border"
+              style="background: rgba(61,24,32,0.04); border-color: rgba(61,24,32,0.1); color: rgb(var(--shell-sidebar));"
+            >
+              Preset: {{ activePermissionPreset.label }}
+            </span>
+          </div>
+
+          <!-- Quick Role Presets -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider mb-2" style="color: rgba(61,24,32,0.45);">Apply permission preset</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="preset in ALL_TERMINAL_PERMISSION_PRESETS"
+                :key="preset.key"
+                type="button"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                :class="activePermissionPreset?.key === preset.key
+                  ? 'bg-[#3d1820] text-white border-[#3d1820]'
+                  : 'bg-[#fdfaf7] text-[#3d1820] border-black/[0.08] hover:border-[#3d1820]/30'"
+                :title="preset.description"
+                @click="applyPermissionPreset(preset)"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Operational Views -->
+          <div class="grid gap-3 md:grid-cols-2">
+            <div
+              class="flex items-center justify-between p-3.5 rounded-2xl border transition-all"
+              :class="permissionsState.reports.visible ? 'bg-[#3d1820]/[0.02] border-[#3d1820]/10' : 'bg-transparent border-black/[0.06]'"
+            >
+              <div>
+                <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">Reports &amp; Analytics</p>
+                <p class="text-[10px] font-medium mt-0.5" style="color: rgba(61,24,32,0.4);">Allow charts and aggregate metrics on this terminal.</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  class="sr-only peer"
+                  aria-label="Allow reports access"
+                  :checked="permissionsState.reports.visible"
+                  @change="permissionsState.reports.visible = ($event.target as HTMLInputElement).checked; permissionsSaved = false"
+                />
+                <div class="w-11 h-6 bg-black/[0.08] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3d1820]" />
+              </label>
+            </div>
+
+            <div
+              class="flex items-center justify-between p-3.5 rounded-2xl border transition-all"
+              :class="permissionsState.audit_log.visible ? 'bg-[#3d1820]/[0.02] border-[#3d1820]/10' : 'bg-transparent border-black/[0.06]'"
+            >
+              <div>
+                <p class="text-sm font-semibold" style="color: rgb(var(--shell-sidebar));">Audit Log Access</p>
+                <p class="text-[10px] font-medium mt-0.5" style="color: rgba(61,24,32,0.4);">Allow querying activity audit entries from this station.</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  class="sr-only peer"
+                  aria-label="Allow audit log access"
+                  :checked="permissionsState.audit_log.visible"
+                  @change="permissionsState.audit_log.visible = ($event.target as HTMLInputElement).checked; permissionsSaved = false"
+                />
+                <div class="w-11 h-6 bg-black/[0.08] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3d1820]" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Per-Table Matrix -->
+          <div class="overflow-x-auto rounded-2xl border border-black/[0.06]">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-black/[0.06] bg-[#faf5f0]">
+                  <th class="px-4 py-2.5 font-semibold" style="color: rgb(var(--shell-sidebar));">Table</th>
+                  <th
+                    v-for="act in PERMISSION_ACTIONS"
+                    :key="act.key"
+                    class="px-3 py-2.5 text-center font-semibold"
+                    style="color: rgb(var(--shell-sidebar));"
+                  >
+                    {{ act.label }}
+                  </th>
+                  <th class="px-3 py-2.5 text-right font-semibold" style="color: rgba(61,24,32,0.45);">Rule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-black/[0.05] bg-[#fdfaf7]">
+                  <td class="px-4 py-2.5 font-medium" style="color: rgb(var(--shell-sidebar));">
+                    Default (all other tables) <code class="text-[10px] opacity-60">*</code>
+                  </td>
+                  <td v-for="act in PERMISSION_ACTIONS" :key="`wild-${act.key}`" class="px-3 py-2.5 text-center">
+                    <input
+                      type="checkbox"
+                      :aria-label="`Default ${act.label} permission`"
+                      class="w-4 h-4 accent-[#3d1820] cursor-pointer"
+                      :checked="tablePermissionValue('*', act.key)"
+                      @change="toggleTablePermission('*', act.key, ($event.target as HTMLInputElement).checked)"
+                    />
+                  </td>
+                  <td class="px-3 py-2.5 text-right text-[10px]" style="color: rgba(61,24,32,0.4);">Base fallback</td>
+                </tr>
+
+                <tr
+                  v-for="tableName in permissionTableNames"
+                  :key="tableName"
+                  class="border-b last:border-b-0 border-black/[0.04]"
+                >
+                  <td class="px-4 py-2.5 font-mono text-[11px]" style="color: rgb(var(--shell-sidebar));">
+                    {{ tableName }}
+                  </td>
+                  <td v-for="act in PERMISSION_ACTIONS" :key="`${tableName}-${act.key}`" class="px-3 py-2.5 text-center">
+                    <input
+                      type="checkbox"
+                      :aria-label="`${tableName} ${act.label} permission`"
+                      class="w-4 h-4 accent-[#3d1820] cursor-pointer"
+                      :checked="tablePermissionValue(tableName, act.key)"
+                      @change="toggleTablePermission(tableName, act.key, ($event.target as HTMLInputElement).checked)"
+                    />
+                  </td>
+                  <td class="px-3 py-2.5 text-right">
+                    <button
+                      v-if="isTableOverridden(tableName)"
+                      type="button"
+                      class="text-[10px] font-semibold text-[#3d1820]/70 hover:text-[#3d1820] underline"
+                      @click="resetTablePermission(tableName)"
+                    >
+                      Inherit *
+                    </button>
+                    <span v-else class="text-[10px]" style="color: rgba(61,24,32,0.35);">Inherited</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input
+              v-model="newPermissionTable"
+              class="input-warm flex-1 px-3 py-2 text-xs font-mono"
+              placeholder="Add custom table rule (e.g. orders, inventory)"
+              @keydown.enter.prevent="addCustomPermissionTable"
+            />
+            <button
+              type="button"
+              class="px-3.5 py-2 rounded-lg text-xs font-semibold border border-black/[0.08] bg-[#faf5f0] hover:bg-[#f2ebe3] flex items-center gap-1.5"
+              style="color: rgb(var(--shell-sidebar));"
+              @click="addCustomPermissionTable"
+            >
+              <PlusIcon class="w-3.5 h-3.5" /> Add rule
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="flex-1 text-sm font-semibold py-2.5 transition-all disabled:opacity-40 btn-primary btn-ribbon"
+              :disabled="savingPermissions"
+              @click="savePermissions"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <div v-if="savingPermissions" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <ShieldIcon v-else class="w-4 h-4" />
+                {{ savingPermissions ? 'Saving Permissions…' : 'Save Permissions' }}
+              </div>
+            </button>
+            <span
+              v-if="permissionsSaved"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"
+            >
+              <CheckIcon class="w-3.5 h-3.5" /> Saved
+            </span>
+          </div>
         </div>
 
       </template>

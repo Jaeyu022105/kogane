@@ -2,10 +2,13 @@ import { defineEventHandler, readBody } from 'h3';
 import { hashPin, verifyAdmin } from '~/lib/authUtils';
 import { db } from '~/lib/db';
 import { getBusinessForAdmin } from '~/server/utils/business';
-import { applyBrandingToLayout, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
-import { normalizeLayout } from '~/lib/uiTypes';
+import { applyBrandingToLayout, mergeTerminalBrandConfig, TERMINAL_BRAND_OVERRIDE_KEYS, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
+import { parseBusinessPalette } from '~/server/utils/terminalBrand';
+import { normalizeLayout, type UiLayout } from '~/lib/uiTypes';
 import { normalizePermissions } from '~/lib/permissions';
 import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
+import { writeAuditLog } from '~/server/utils/audit';
+import { realtimeHub } from '~/server/utils/realtimeHub';
 
 export default defineEventHandler(async (event) => {
   const { userId } = await verifyAdmin(event);
@@ -16,6 +19,8 @@ export default defineEventHandler(async (event) => {
     displayName?:  string;
     pin?:          string | null;
     brandConfig?:  Partial<WorkspaceBrandConfig> | null;
+    /** Drop this terminal's own style override so it follows the workspace brand kit again. */
+    resetBrand?:   boolean;
     stationConfig?: Record<string, unknown> | null;
   }>(event).catch(() => null);
   const body = (parsed && Object.keys(parsed).length > 0) ? parsed : (event.context?.body ?? (event as any)._body ?? {});
@@ -28,9 +33,11 @@ export default defineEventHandler(async (event) => {
   const { data: terminal } = await db.queryOne<{
     id: string;
     business_id: string;
+    display_name: string;
+    pin_length: number | null;
     ui_layout: string | null;
   }>(
-    'SELECT id, business_id, ui_layout FROM terminals WHERE id = ?',
+    'SELECT id, business_id, display_name, pin_length, ui_layout FROM terminals WHERE id = ?',
     [terminalId],
   );
 
@@ -41,6 +48,16 @@ export default defineEventHandler(async (event) => {
   const { data: business } = await getBusinessForAdmin(userId, terminal.business_id);
   if (!business || business.id !== body.businessId) {
     return { success: false, error: 'Forbidden', terminal: null };
+  }
+
+  let beforeLayout: Record<string, unknown> = {};
+  try {
+    const rawBefore = typeof terminal.ui_layout === 'string'
+      ? terminal.ui_layout
+      : JSON.stringify(terminal.ui_layout ?? '{}');
+    beforeLayout = JSON.parse(rawBefore) || {};
+  } catch {
+    beforeLayout = {};
   }
 
   const updates: Record<string, unknown> = {};
@@ -63,7 +80,7 @@ export default defineEventHandler(async (event) => {
 
   // ── Appearance + station config ───────────────────────────────────────────
 
-  if (body.brandConfig || body.stationConfig) {
+  if (body.brandConfig || body.resetBrand === true || body.stationConfig) {
     let cleanBrandConfig: Partial<WorkspaceBrandConfig> | null = null;
     let cleanStationConfig: Record<string, unknown> | null = null;
     try {
@@ -90,19 +107,32 @@ export default defineEventHandler(async (event) => {
 
     let updatedLayout = { ...existingLayout };
 
-    // Re-apply branding if brandConfig was supplied
-    if (cleanBrandConfig) {
-      const mergedBrandConfig: Partial<WorkspaceBrandConfig> = {
-        ...(existingLayout.brandConfig as Partial<WorkspaceBrandConfig> ?? {}),
-        ...cleanBrandConfig,
-      };
+    // Re-apply branding when this terminal's style override changes or is reset
+    if (cleanBrandConfig || body.resetBrand === true) {
+      const terminalOverride: Partial<WorkspaceBrandConfig> = {};
+      if (body.resetBrand !== true) {
+        const previousOverride = (existingLayout.brandConfig as Partial<WorkspaceBrandConfig> | undefined) ?? {};
+        for (const key of TERMINAL_BRAND_OVERRIDE_KEYS) {
+          const value = cleanBrandConfig?.[key] ?? previousOverride[key];
+          if (value !== undefined && value !== null && value !== '') {
+            (terminalOverride as Record<string, unknown>)[key] = value;
+          }
+        }
+      }
 
-      // applyBrandingToLayout expects a UiLayout-shaped object
-      const rebranded = applyBrandingToLayout(updatedLayout as any, mergedBrandConfig);
+      // The workspace brand kit supplies the business colors; the override only changes its own keys.
+      const effectiveBrand = mergeTerminalBrandConfig(
+        parseBusinessPalette(business.color_palette),
+        Object.keys(terminalOverride).length ? terminalOverride : null,
+      );
+      const rebranded = applyBrandingToLayout(normalizeLayout(updatedLayout as Partial<UiLayout>), effectiveBrand);
+      const { brandConfig: _previousOverride, ...rest } = updatedLayout;
       updatedLayout = {
+        ...rest,
         ...rebranded,
-        brandConfig: mergedBrandConfig,         // store so we can restore it
+        ...(Object.keys(terminalOverride).length ? { brandConfig: terminalOverride } : {}),
       };
+      if (!Object.keys(terminalOverride).length) delete updatedLayout.brandConfig;
     }
 
     // Merge station config
@@ -126,7 +156,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // Revoke active stateful sessions when a terminal's PIN is rotated
-  if (typeof updates.pin_hash === 'string') {
+  const pinRotated = typeof updates.pin_hash === 'string';
+  if (pinRotated) {
     await db.update(
       'sessions',
       { revoked_at: new Date().toISOString() },
@@ -150,7 +181,7 @@ export default defineEventHandler(async (event) => {
     [terminalId],
   );
 
-  let parsedLayout = null;
+  let parsedLayout: Record<string, unknown> | null = null;
   try {
     parsedLayout = refreshed.data?.ui_layout
       ? (typeof refreshed.data.ui_layout === 'string' ? JSON.parse(refreshed.data.ui_layout) : refreshed.data.ui_layout)
@@ -158,6 +189,53 @@ export default defineEventHandler(async (event) => {
   } catch {
     parsedLayout = null;
   }
+
+  const updatedFields = Object.keys(updates).filter(
+    (field) => field !== 'pin_hash' && field !== 'pin_code',
+  );
+
+  await writeAuditLog({
+    businessId: terminal.business_id,
+    actorId: userId,
+    actorType: 'admin',
+    actorName: 'Owner',
+    actionType: 'update',
+    targetTable: 'terminals',
+    targetId: terminalId,
+    payloadBefore: {
+      displayName: terminal.display_name,
+      pinLength: terminal.pin_length ?? null,
+      brandConfig: (beforeLayout.brandConfig as Record<string, unknown> | undefined) ?? null,
+      stationConfig: (beforeLayout.stationConfig as Record<string, unknown> | undefined) ?? null,
+    },
+    payloadAfter: {
+      displayName: typeof updates.display_name === 'string' ? updates.display_name : terminal.display_name,
+      pinRotated,
+      ...(pinRotated ? { pinLength: updates.pin_length ?? null } : {}),
+      ...(updates.ui_layout ? {
+        brandConfig: (parsedLayout?.brandConfig as Record<string, unknown> | undefined) ?? null,
+        stationConfig: (parsedLayout?.stationConfig as Record<string, unknown> | undefined) ?? null,
+      } : {}),
+    },
+    metadata: {
+      event: 'terminal:update',
+      terminalId,
+      pinRotated,
+      updatedFields,
+    },
+  });
+
+  realtimeHub.publish(terminal.business_id, {
+    table: 'terminals',
+    action: 'update',
+    recordId: terminalId,
+    data: {
+      terminalId,
+      event: 'terminal:updated',
+      displayName: refreshed.data?.display_name ?? terminal.display_name,
+      pinRotated,
+    },
+  });
 
   return {
     success:  true,

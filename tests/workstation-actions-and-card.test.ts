@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { isActionAllowed, normalizePermissions, presetByKey } from '../lib/permissions';
 import { realtimeHub } from '../server/utils/realtimeHub';
 import { db } from '../lib/db';
-import { createTerminalSessionToken } from '../lib/authUtils';
+import { createTestTerminalToken } from './helpers/sessions';
 import { ensureStarterBusinessTable } from '../server/utils/starterTables';
 import eventHandler from '../server/api/runtime/event.post';
 
@@ -81,7 +81,7 @@ describe('Workstation Actions: Card Reader, Catalog CRUD, Kitchen Served', () =>
 
     await ensureStarterBusinessTable(biz.data.schema_name, 'products');
 
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: catalogTerm.data.id,
       businessId: catalogTerm.data.business_id,
       displayName: catalogTerm.data.display_name,
@@ -229,7 +229,7 @@ describe('Workstation Actions: Card Reader, Catalog CRUD, Kitchen Served', () =>
       kitchenTerm = { data: managed.terminal };
     }
 
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: kitchenTerm.data.id,
       businessId: biz.data.id,
       displayName: 'Kitchen Expediter',
@@ -328,7 +328,7 @@ describe('Workstation Actions: Card Reader, Catalog CRUD, Kitchen Served', () =>
       [biz.data.id]
     );
 
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: cashierTerm.data.id,
       businessId: biz.data.id,
       displayName: 'Cashier Station 1',
@@ -427,7 +427,7 @@ describe('Workstation Actions: Card Reader, Catalog CRUD, Kitchen Served', () =>
       catalogTerm = { data: managed.terminal };
     }
 
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: catalogTerm.data.id,
       businessId: biz.data.id,
       displayName: 'Catalog Staff',
@@ -605,7 +605,7 @@ describe('Workstation Actions: Card Reader, Catalog CRUD, Kitchen Served', () =>
       kitchenTerm = await db.queryOne<any>("SELECT * FROM terminals WHERE business_id = ? LIMIT 1", [biz.data.id]);
     }
 
-    const token = await createTerminalSessionToken({
+    const token = await createTestTerminalToken({
       terminalId: kitchenTerm.data.id,
       businessId: biz.data.id,
       displayName: 'Kitchen Display',

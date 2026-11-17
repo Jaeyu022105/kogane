@@ -1,0 +1,23 @@
+{
+  "name": "Kogane",
+  "short_name": "Kogane",
+  "description": "Managed Terminal Builder SaaS for everyday businesses.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6E6D7",
+  "theme_color": "#68293A",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

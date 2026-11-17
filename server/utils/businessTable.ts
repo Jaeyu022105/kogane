@@ -1,13 +1,7 @@
 import { db } from '~/lib/db';
 import { validateIdentifier } from '~/lib/schemaUtils';
 import { stripUnsafeControlChars, validateAndSanitizeRecord } from '~/lib/securityClient';
-import {
-  isPrefixDb,
-  qualifyBusinessTable,
-  replacePlaceholdersForDialect,
-  sqlPlaceholder,
-  sqlPlaceholders,
-} from '~/server/utils/business';
+import { qualifyBusinessTable } from '~/server/utils/business';
 
 function validateColumns(columns: string[]) {
   for (const column of columns) validateIdentifier(column);
@@ -27,7 +21,7 @@ export async function fetchRowById<T = Record<string, unknown>>(schemaName: stri
   validateIdentifier(tableName);
   const cleanRowId = typeof rowId === 'string' ? stripUnsafeControlChars(rowId, false) : rowId;
   const table = qualifyBusinessTable(schemaName, tableName);
-  const sql = replacePlaceholdersForDialect(`SELECT * FROM ${table} WHERE id = ${sqlPlaceholder(1)} LIMIT 1`);
+  const sql = `SELECT * FROM ${table} WHERE id = ? LIMIT 1`;
   return db.queryOne<T>(sql, [cleanRowId]);
 }
 
@@ -39,10 +33,8 @@ export async function insertBusinessRow<T = Record<string, unknown>>(schemaName:
 
   const table = qualifyBusinessTable(schemaName, tableName);
   const columns = keys.map((key) => `"${key}"`).join(', ');
-  const placeholders = sqlPlaceholders(keys.length).join(', ');
-  const sql = replacePlaceholdersForDialect(
-    `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *`,
-  );
+  const placeholders = keys.map(() => '?').join(', ');
+  const sql = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *`;
 
   return db.queryOne<T>(sql, Object.values(sanitized).map(serializeBusinessValue));
 }
@@ -56,11 +48,9 @@ export async function updateBusinessRow<T = Record<string, unknown>>(schemaName:
 
   const table = qualifyBusinessTable(schemaName, tableName);
   const setClause = keys
-    .map((key, index) => `"${key}" = ${sqlPlaceholder(index + 1)}`)
+    .map((key, index) => `"${key}" = ?`)
     .join(', ');
-  const sql = replacePlaceholdersForDialect(
-    `UPDATE ${table} SET ${setClause} WHERE id = ${sqlPlaceholder(keys.length + 1)} RETURNING *`,
-  );
+  const sql = `UPDATE ${table} SET ${setClause} WHERE id = ? RETURNING *`;
 
   return db.queryOne<T>(sql, [...Object.values(sanitized).map(serializeBusinessValue), cleanRowId]);
 }
@@ -69,9 +59,7 @@ export async function deleteBusinessRow<T = Record<string, unknown>>(schemaName:
   validateIdentifier(tableName);
   const cleanRowId = typeof rowId === 'string' ? stripUnsafeControlChars(rowId, false) : rowId;
   const table = qualifyBusinessTable(schemaName, tableName);
-  const sql = replacePlaceholdersForDialect(
-    `DELETE FROM ${table} WHERE id = ${sqlPlaceholder(1)} RETURNING *`,
-  );
+  const sql = `DELETE FROM ${table} WHERE id = ? RETURNING *`;
 
   return db.queryOne<T>(sql, [cleanRowId]);
 }
@@ -109,7 +97,7 @@ export async function queryBusinessRows<T = Record<string, unknown>>(
     validateColumns(Object.keys(sanitizedWhere));
     const conditions = Object.keys(sanitizedWhere).map((key) => {
       params.push(serializeBusinessValue(sanitizedWhere[key]));
-      return `"${key}" = ${sqlPlaceholder(params.length)}`;
+      return `"${key}" = ?`;
     });
     whereClause = ` WHERE ${conditions.join(' AND ')}`;
   }
@@ -127,15 +115,14 @@ export async function queryBusinessRows<T = Record<string, unknown>>(
   const offset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? Math.floor(parsedOffset) : 0;
 
   params.push(limit);
-  paginationClause += ` LIMIT ${sqlPlaceholder(params.length)}`;
+  paginationClause += ` LIMIT ?`;
   if (offset > 0) {
     params.push(offset);
-    paginationClause += ` OFFSET ${sqlPlaceholder(params.length)}`;
+    paginationClause += ` OFFSET ?`;
   }
 
-  const sql = replacePlaceholdersForDialect(
-    `SELECT ${selectedColumns.map((column) => column === '*' ? '*' : `"${column}"`).join(', ')} FROM ${table}${whereClause}${orderClause}${paginationClause}`,
-  );
+  const columnList = selectedColumns.map((column) => column === '*' ? '*' : `"${column}"`).join(', ');
+  const sql = `SELECT ${columnList} FROM ${table}${whereClause}${orderClause}${paginationClause}`;
 
   return db.query<T>(sql, params);
 }
@@ -143,32 +130,12 @@ export async function queryBusinessRows<T = Record<string, unknown>>(
 export async function getBusinessTableColumns(schemaName: string, tableName: string) {
   validateIdentifier(tableName);
 
-  if (isPrefixDb()) {
-    const table = qualifyBusinessTable(schemaName, tableName);
-    const result = await db.query<{ name: string; type: string }>(`PRAGMA table_info(${table})`);
-    return {
-      data: (result.data ?? []).map((column) => ({
-        name: column.name,
-        type: column.type,
-      })),
-      error: result.error,
-    };
-  }
-
-  const result = await db.query<{ column_name: string; data_type: string }>(
-    `
-      SELECT column_name, data_type
-      FROM information_schema.columns
-      WHERE table_schema = $1 AND table_name = $2
-      ORDER BY ordinal_position
-    `,
-    [schemaName, tableName],
-  );
-
+  const table = qualifyBusinessTable(schemaName, tableName);
+  const result = await db.query<{ name: string; type: string }>(`PRAGMA table_info(${table})`);
   return {
     data: (result.data ?? []).map((column) => ({
-      name: column.column_name,
-      type: column.data_type,
+      name: column.name,
+      type: column.type,
     })),
     error: result.error,
   };

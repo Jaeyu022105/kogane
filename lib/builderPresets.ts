@@ -1,7 +1,20 @@
-import { DEFAULT_LAYOUT_THEME, type UiLayout } from '~/lib/uiTypes';
+import { cloneLayout, normalizeLayout, DEFAULT_LAYOUT_THEME, type UiLayout } from '~/lib/uiTypes';
+import {
+  DEFAULT_TERMINAL_PERMISSIONS,
+  normalizePermissions,
+  presetByRoleOrKey,
+  type PermissionPresetKey,
+  type TerminalPermissions,
+} from '~/lib/permissions';
+import { validateTableDef, type SchemaDef, type TableDef } from '~/lib/schemaUtils';
+import { sanitizeTextInput, validateAndSanitizeRecord } from '~/lib/securityClient';
+import { applyBrandingToLayout, mergeTerminalBrandConfig, type WorkspaceBrandConfig } from '~/lib/workspaceBranding';
 
 export interface BuilderPreset {
   id: string;
+  presetKey: PermissionPresetKey;
+  category: 'core' | 'industry';
+  presetVersion: number;
   name: string;
   description: string;
   icon: string;
@@ -11,6 +24,9 @@ export interface BuilderPreset {
 export const BUILDER_PRESETS: BuilderPreset[] = [
   {
     id: 'cashier-station',
+    presetKey: 'cashier-register',
+    category: 'core',
+    presetVersion: 1,
     name: 'Cashier Station',
     description: 'Registrar-style selling screen with a sale panel and open orders queue.',
     icon: 'monitor',
@@ -91,6 +107,9 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
   },
   {
     id: 'catalog-station',
+    presetKey: 'catalog-registrar',
+    category: 'core',
+    presetVersion: 1,
     name: 'Catalog Registrar',
     description: 'Dedicated product-entry screen for creating sellable items and checking the live catalog before they reach the cashier.',
     icon: 'database',
@@ -273,6 +292,9 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
   },
   {
     id: 'inventory-station',
+    presetKey: 'inventory-manager',
+    category: 'core',
+    presetVersion: 1,
     name: 'Inventory Station',
     description: 'Operations view for stock counts, updates, and restock visibility.',
     icon: 'list',
@@ -344,6 +366,9 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
   },
   {
     id: 'kitchen-station',
+    presetKey: 'kitchen-display',
+    category: 'core',
+    presetVersion: 1,
     name: 'Kitchen Display',
     description: 'Back-of-house order board that refreshes automatically as the cashier sends new tickets.',
     icon: 'monitor',
@@ -399,6 +424,9 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
   },
   {
     id: 'reports-station',
+    presetKey: 'reports-viewer',
+    category: 'core',
+    presetVersion: 1,
     name: 'Reports Station',
     description: 'Read-only reporting screen with audit feed and activity charts.',
     icon: 'chart',
@@ -475,6 +503,9 @@ export const BUILDER_PRESETS: BuilderPreset[] = [
 export const INDUSTRY_BUILDER_PRESETS: BuilderPreset[] = [
   {
     id: 'dispatch-station',
+    presetKey: 'dispatch-console',
+    category: 'industry',
+    presetVersion: 1,
     name: 'Dispatch & Delivery Console',
     description: 'Logistics & courier console with barcode tracking scan, waybill intake, and live delivery board.',
     icon: 'monitor',
@@ -641,6 +672,9 @@ export const INDUSTRY_BUILDER_PRESETS: BuilderPreset[] = [
   },
   {
     id: 'billing-station',
+    presetKey: 'billing-ledger',
+    category: 'industry',
+    presetVersion: 1,
     name: 'Billing & Ledger Desk',
     description: 'Accounting & finance workstation for issuing client invoices, recording expenses, and watching spend mix.',
     icon: 'chart',
@@ -883,6 +917,9 @@ export const INDUSTRY_BUILDER_PRESETS: BuilderPreset[] = [
   },
   {
     id: 'appointment-station',
+    presetKey: 'appointment-desk',
+    category: 'industry',
+    presetVersion: 1,
     name: 'Appointments & Intake Desk',
     description: 'Front-desk scheduling and check-in board for clinics, salons, repair shops, and tutoring centers.',
     icon: 'list',
@@ -1037,6 +1074,9 @@ export const INDUSTRY_BUILDER_PRESETS: BuilderPreset[] = [
   },
   {
     id: 'directory-station',
+    presetKey: 'service-directory',
+    category: 'industry',
+    presetVersion: 1,
     name: 'Directory & Roster Desk',
     description: 'Dedicated records desk for registering clients, patients, students, or loyalty members alongside your staff roster.',
     icon: 'database',
@@ -1276,5 +1316,499 @@ export const ALL_BUILDER_PRESETS: BuilderPreset[] = [
   ...BUILDER_PRESETS,
   ...INDUSTRY_BUILDER_PRESETS,
 ];
+
+export const BUILDER_PRESET_KEY_MAP: Record<string, PermissionPresetKey> = {
+  'cashier-station': 'cashier-register',
+  'catalog-station': 'catalog-registrar',
+  'inventory-station': 'inventory-manager',
+  'kitchen-station': 'kitchen-display',
+  'reports-station': 'reports-viewer',
+  'dispatch-station': 'dispatch-console',
+  'billing-station': 'billing-ledger',
+  'appointment-station': 'appointment-desk',
+  'directory-station': 'service-directory',
+};
+
+export const PERMISSION_KEY_TO_BUILDER_ID: Record<PermissionPresetKey, string> = {
+  'cashier-register': 'cashier-station',
+  'catalog-registrar': 'catalog-station',
+  'inventory-manager': 'inventory-station',
+  'kitchen-display': 'kitchen-station',
+  'reports-viewer': 'reports-station',
+  'dispatch-console': 'dispatch-station',
+  'billing-ledger': 'billing-station',
+  'appointment-desk': 'appointment-station',
+  'service-directory': 'directory-station',
+};
+
+export function findBuiltInBuilderPreset(identifier?: string | null): BuilderPreset | null {
+  if (!identifier || typeof identifier !== 'string') return null;
+  const trimmed = identifier.trim();
+  if (!trimmed) return null;
+  const direct = ALL_BUILDER_PRESETS.find(
+    (preset) => preset.id === trimmed || preset.presetKey === trimmed,
+  );
+  if (direct) return direct;
+
+  const permissionPreset = presetByRoleOrKey(trimmed);
+  if (!permissionPreset) return null;
+  const builderId = PERMISSION_KEY_TO_BUILDER_ID[permissionPreset.key];
+  return ALL_BUILDER_PRESETS.find((preset) => preset.id === builderId) ?? null;
+}
+
+export function resolvePresetVersionNumber(value: unknown, fallback = 1): number {
+  const num = Number(value);
+  if (Number.isFinite(num) && num >= 1) {
+    return Math.floor(num);
+  }
+  return fallback;
+}
+
+export function buildBuiltInLatestVersionMap(): Record<string, number> {
+  const map: Record<string, number> = {};
+  for (const preset of ALL_BUILDER_PRESETS) {
+    map[preset.id] = preset.presetVersion;
+    map[preset.presetKey] = preset.presetVersion;
+  }
+  return map;
+}
+
+export interface LayoutPresetMetadata {
+  presetId: string | null;
+  presetVersion: number | null;
+  presetName: string | null;
+}
+
+export function extractPresetMetaFromLayout(rawLayout: unknown): LayoutPresetMetadata {
+  let obj: Record<string, unknown> | null = null;
+  if (typeof rawLayout === 'string') {
+    try {
+      const parsed = JSON.parse(rawLayout);
+      if (parsed && typeof parsed === 'object') {
+        obj = parsed as Record<string, unknown>;
+      }
+    } catch {
+      obj = null;
+    }
+  } else if (rawLayout && typeof rawLayout === 'object') {
+    obj = rawLayout as Record<string, unknown>;
+  }
+
+  const presetId = typeof obj?.presetId === 'string' && obj.presetId.trim()
+    ? obj.presetId.trim()
+    : null;
+  const rawVer = obj?.presetVersion;
+  const parsedVer = typeof rawVer === 'number' || (typeof rawVer === 'string' && rawVer.trim() !== '')
+    ? Number(rawVer)
+    : NaN;
+  const presetVersion = Number.isFinite(parsedVer) && parsedVer >= 0 ? Math.floor(parsedVer) : null;
+  const presetName = typeof obj?.presetName === 'string' && obj.presetName.trim()
+    ? obj.presetName.trim()
+    : null;
+
+  return { presetId, presetVersion, presetName };
+}
+
+export function attachPresetMetaToLayout(
+  layout: UiLayout,
+  meta: {
+    presetId?: string | null;
+    presetVersion?: number | null;
+    presetName?: string | null;
+    brandConfig?: Record<string, unknown> | null;
+    stationConfig?: Record<string, unknown> | null;
+  },
+): UiLayout & Record<string, unknown> {
+  const out: UiLayout & Record<string, unknown> = { ...(layout as UiLayout & Record<string, unknown>) };
+  if (meta.presetId) {
+    out.presetId = meta.presetId;
+  }
+  if (typeof meta.presetVersion === 'number' && Number.isFinite(meta.presetVersion)) {
+    out.presetVersion = Math.floor(meta.presetVersion);
+  }
+  if (meta.presetName) {
+    out.presetName = meta.presetName;
+  }
+  if (meta.brandConfig && typeof meta.brandConfig === 'object') {
+    out.brandConfig = meta.brandConfig;
+  }
+  if (meta.stationConfig && typeof meta.stationConfig === 'object') {
+    out.stationConfig = meta.stationConfig;
+  }
+  return out;
+}
+
+export const MAX_PRESET_LAYOUT_BYTES = 512_000;
+export const MAX_PRESET_SCHEMA_TABLES = 50;
+export const MAX_PRESET_TABLE_COLUMNS = 100;
+export const MAX_PRESET_ELEMENTS = 200;
+export const MAX_PRESET_MODALS = 50;
+
+export function parseJsonObject(raw: unknown): Record<string, unknown> | null {
+  if (raw == null) return null;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return null;
+}
+
+export function parseBrandConfigFromBusinessPalette(colorPaletteRaw: unknown): WorkspaceBrandConfig | null {
+  const obj = parseJsonObject(colorPaletteRaw);
+  if (!obj || Object.keys(obj).length === 0) return null;
+  return obj as WorkspaceBrandConfig;
+}
+
+export function sanitizePresetSchemaDefinition(raw: unknown): SchemaDef | null {
+  if (raw == null) return null;
+  let parsed: unknown = raw;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === '{}') return null;
+    parsed = JSON.parse(trimmed);
+  }
+  if (Array.isArray(parsed)) {
+    parsed = { tables: parsed };
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Schema definition must be an object containing a tables array.');
+  }
+  const obj = validateAndSanitizeRecord(parsed, {
+    maxDepth: 6,
+    maxStringLength: 1000,
+    maxArrayLength: 250,
+    maxObjectKeys: 50,
+    rejectNullBytes: true,
+    allowMultiline: false,
+  });
+  if (!('tables' in obj) || obj.tables == null) {
+    return null;
+  }
+  if (!Array.isArray(obj.tables)) {
+    throw new Error('Schema definition tables must be an array.');
+  }
+  if (obj.tables.length === 0) {
+    return null;
+  }
+  if (obj.tables.length > MAX_PRESET_SCHEMA_TABLES) {
+    throw new Error(`Schema definition cannot exceed ${MAX_PRESET_SCHEMA_TABLES} tables.`);
+  }
+  const cleanTables: TableDef[] = [];
+  for (const tbl of obj.tables) {
+    if (!tbl || typeof tbl !== 'object' || Array.isArray(tbl)) {
+      throw new Error('Each table definition must be an object.');
+    }
+    const tableRecord = tbl as unknown as TableDef;
+    if (!Array.isArray(tableRecord.columns) || tableRecord.columns.length > MAX_PRESET_TABLE_COLUMNS) {
+      throw new Error(`Each table may contain at most ${MAX_PRESET_TABLE_COLUMNS} columns.`);
+    }
+    validateTableDef(tableRecord);
+    cleanTables.push({
+      name: tableRecord.name,
+      columns: tableRecord.columns.map((col) => ({
+        name: col.name,
+        type: col.type,
+        nullable: Boolean(col.nullable),
+        ...(col.unique ? { unique: true } : {}),
+        ...(col.default !== undefined && col.default !== '' ? { default: String(col.default).trim() } : {}),
+        ...(col.references ? { references: { table: col.references.table, column: col.references.column } } : {}),
+      })),
+    });
+  }
+  return { tables: cleanTables };
+}
+
+export function sanitizePresetLayoutInput(rawLayout: unknown): UiLayout & Record<string, unknown> {
+  let parsed: unknown = rawLayout;
+  if (typeof rawLayout === 'string') {
+    if (!rawLayout.trim()) {
+      throw new Error('UI layout cannot be empty.');
+    }
+    parsed = JSON.parse(rawLayout);
+  }
+  const sanitized = validateAndSanitizeRecord(parsed, {
+    maxDepth: 10,
+    maxStringLength: 65_536,
+    maxArrayLength: 500,
+    maxObjectKeys: 200,
+    rejectNullBytes: true,
+    allowMultiline: true,
+  });
+  const elements = Array.isArray(sanitized.elements) ? sanitized.elements : [];
+  const modals = Array.isArray(sanitized.modals) ? sanitized.modals : [];
+  if (elements.length > MAX_PRESET_ELEMENTS) {
+    throw new Error(`Preset layout cannot exceed ${MAX_PRESET_ELEMENTS} elements.`);
+  }
+  if (modals.length > MAX_PRESET_MODALS) {
+    throw new Error(`Preset layout cannot exceed ${MAX_PRESET_MODALS} modals.`);
+  }
+  const serializedSize = JSON.stringify(sanitized).length;
+  if (serializedSize > MAX_PRESET_LAYOUT_BYTES) {
+    throw new Error(`Preset layout exceeds maximum size of ${MAX_PRESET_LAYOUT_BYTES} bytes.`);
+  }
+  const normalized = normalizeLayout(sanitized as unknown as UiLayout);
+  const stationConfig = parseJsonObject(sanitized.stationConfig);
+  return stationConfig ? { ...normalized, stationConfig } : (normalized as UiLayout & Record<string, unknown>);
+}
+
+export function normalizePresetPermissionsInput(
+  rawPermissions: unknown,
+  roleOrKey?: string | null,
+): TerminalPermissions | null {
+  if (rawPermissions == null && !roleOrKey) {
+    return null;
+  }
+  let parsed: unknown = rawPermissions;
+  if (typeof rawPermissions === 'string') {
+    const trimmed = rawPermissions.trim();
+    parsed = trimmed ? JSON.parse(trimmed) : {};
+  }
+  if (parsed && typeof parsed === 'object') {
+    parsed = validateAndSanitizeRecord(parsed, {
+      maxDepth: 6,
+      maxStringLength: 500,
+      maxArrayLength: 100,
+      maxObjectKeys: 100,
+      rejectNullBytes: true,
+      allowMultiline: false,
+    });
+  } else if (parsed != null) {
+    throw new Error('Permissions must be an object.');
+  }
+  return normalizePermissions(parsed as Partial<TerminalPermissions> | null, roleOrKey);
+}
+
+export interface BuildTerminalPresetLayoutOptions {
+  templateLayout: UiLayout;
+  presetId: string;
+  presetVersion: number;
+  presetName?: string | null;
+  businessPaletteRaw?: unknown;
+  existingTerminalLayout?: unknown;
+}
+
+export function buildBrandedTerminalLayoutForPreset(
+  options: BuildTerminalPresetLayoutOptions,
+): UiLayout & Record<string, unknown> {
+  const existingObj = parseJsonObject(options.existingTerminalLayout);
+  const templateObj = parseJsonObject(options.templateLayout);
+  const existingStationConfig = parseJsonObject(existingObj?.stationConfig) ?? parseJsonObject(templateObj?.stationConfig);
+  const existingBrandConfig = parseJsonObject(existingObj?.brandConfig);
+  const businessBrandConfig = parseBrandConfigFromBusinessPalette(options.businessPaletteRaw);
+  // The terminal keeps only its own style override; the workspace brand kit fills in everything else,
+  // so later brand kit changes still reach this terminal.
+  const terminalOverride = existingBrandConfig as Partial<WorkspaceBrandConfig> | null;
+  const effectiveBrand = (businessBrandConfig || terminalOverride)
+    ? mergeTerminalBrandConfig(businessBrandConfig, terminalOverride) as WorkspaceBrandConfig
+    : null;
+
+  const baseNormalized = normalizeLayout(cloneLayout(options.templateLayout));
+
+  // Preserve custom terminal screen dimensions if previously configured
+  const existingRes = parseJsonObject(existingObj?.resolution);
+  if (
+    existingRes &&
+    typeof existingRes.width === 'number' &&
+    typeof existingRes.height === 'number' &&
+    Number.isFinite(existingRes.width) &&
+    Number.isFinite(existingRes.height) &&
+    existingRes.width >= 320 &&
+    existingRes.height >= 240
+  ) {
+    baseNormalized.resolution = {
+      width: Math.round(existingRes.width),
+      height: Math.round(existingRes.height),
+    };
+  }
+
+  let branded: UiLayout;
+  if (effectiveBrand && Object.keys(effectiveBrand).length > 0) {
+    branded = applyBrandingToLayout(baseNormalized, effectiveBrand);
+  } else if (existingObj?.theme && typeof existingObj.theme === 'object') {
+    branded = normalizeLayout({
+      ...baseNormalized,
+      theme: existingObj.theme as UiLayout['theme'],
+    });
+  } else {
+    branded = baseNormalized;
+  }
+
+  return attachPresetMetaToLayout(branded, {
+    presetId: options.presetId,
+    presetVersion: options.presetVersion,
+    presetName: options.presetName ?? null,
+    brandConfig: terminalOverride ? (terminalOverride as Record<string, unknown>) : null,
+    stationConfig: existingStationConfig,
+  });
+}
+
+export interface ApiPresetRecord {
+  id: string;
+  business_id: string | null;
+  name: string;
+  description: string | null;
+  category: string;
+  preset_key: string | null;
+  schema_definition: Record<string, unknown>;
+  ui_layout: UiLayout | Record<string, unknown>;
+  permissions: TerminalPermissions | Record<string, unknown>;
+  version: number;
+  is_custom: boolean;
+  linked_terminal_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function terminalMatchesPreset(
+  terminal: { ui_layout?: unknown },
+  presetId: string,
+  presetKey?: string | null,
+): boolean {
+  const meta = extractPresetMetaFromLayout(terminal.ui_layout);
+  if (!meta.presetId) return false;
+  if (meta.presetId === presetId) return true;
+  if (presetKey && meta.presetId === presetKey) return true;
+  return false;
+}
+
+export function normalizeDbPresetRow(
+  row: Record<string, unknown>,
+  linkedTerminalCount = 0,
+): ApiPresetRecord {
+  const rawSchema = parseJsonObject(row.schema_definition) ?? {};
+  const rawLayout = parseJsonObject(row.ui_layout);
+  const presetKey = typeof row.preset_key === 'string' && row.preset_key.trim()
+    ? sanitizeTextInput(row.preset_key, 80, false).trim()
+    : null;
+  const rawPermissions = parseJsonObject(row.permissions);
+  const permissions = rawPermissions
+    ? normalizePermissions(rawPermissions as Partial<TerminalPermissions>, presetKey)
+    : (presetKey ? normalizePermissions({}, presetKey) : DEFAULT_TERMINAL_PERMISSIONS);
+
+  const normalizedLayout = rawLayout && Array.isArray(rawLayout.elements)
+    ? normalizeLayout(rawLayout as unknown as UiLayout)
+    : (rawLayout ?? {});
+
+  const createdAt = typeof row.created_at === 'string' && row.created_at
+    ? row.created_at
+    : new Date().toISOString();
+  const updatedAt = typeof row.updated_at === 'string' && row.updated_at
+    ? row.updated_at
+    : createdAt;
+  const businessId = typeof row.business_id === 'string' && row.business_id.trim()
+    ? row.business_id.trim()
+    : null;
+
+  return {
+    id: String(row.id ?? ''),
+    business_id: businessId,
+    name: String(row.name ?? 'Custom Preset'),
+    description: typeof row.description === 'string' ? row.description : null,
+    category: typeof row.category === 'string' && row.category.trim()
+      ? row.category.trim()
+      : (businessId ? 'custom' : 'core'),
+    preset_key: presetKey,
+    schema_definition: rawSchema,
+    ui_layout: normalizedLayout,
+    permissions,
+    version: resolvePresetVersionNumber(row.version, 1),
+    is_custom: Boolean(businessId),
+    linked_terminal_count: linkedTerminalCount,
+    created_at: createdAt,
+    updated_at: updatedAt,
+  };
+}
+
+export function formatBuiltInPresetRecord(
+  preset: BuilderPreset,
+  options: {
+    schemaDefinition?: Record<string, unknown>;
+    permissions?: TerminalPermissions;
+    linkedTerminalCount?: number;
+  } = {},
+): ApiPresetRecord {
+  return {
+    id: preset.id,
+    business_id: null,
+    name: preset.name,
+    description: preset.description,
+    category: preset.category,
+    preset_key: preset.presetKey,
+    schema_definition: options.schemaDefinition ?? {},
+    ui_layout: attachPresetMetaToLayout(cloneLayout(preset.layout), {
+      presetId: preset.id,
+      presetVersion: preset.presetVersion,
+      presetName: preset.name,
+    }),
+    permissions: options.permissions ?? normalizePermissions({}, preset.presetKey),
+    version: preset.presetVersion,
+    is_custom: false,
+    linked_terminal_count: options.linkedTerminalCount ?? 0,
+    created_at: '',
+    updated_at: '',
+  };
+}
+
+export interface PresetVersionStatus {
+  presetId: string | null;
+  presetName: string | null;
+  presetVersion: number;
+  latestVersion: number | null;
+  updateAvailable: boolean;
+  linked: boolean;
+  canSync: boolean;
+}
+
+export function getTerminalPresetStatus(
+  terminal: { ui_layout?: unknown; role?: string | null },
+  latestVersionsById?: Record<string, number>,
+): PresetVersionStatus {
+  const meta = extractPresetMetaFromLayout(terminal.ui_layout);
+  const builtInVersions = buildBuiltInLatestVersionMap();
+  const versionsMap = { ...builtInVersions, ...(latestVersionsById ?? {}) };
+  const inferredBuiltIn = !meta.presetId && terminal.role
+    ? findBuiltInBuilderPreset(terminal.role)
+    : null;
+
+  const effectivePresetId = meta.presetId ?? inferredBuiltIn?.id ?? null;
+  const latestVersion = effectivePresetId && typeof versionsMap[effectivePresetId] === 'number'
+    ? versionsMap[effectivePresetId]
+    : null;
+
+  if (meta.presetId) {
+    const currentVersion = meta.presetVersion ?? 0;
+    const updateAvailable = latestVersion !== null && currentVersion < latestVersion;
+    return {
+      presetId: meta.presetId,
+      presetName: meta.presetName ?? findBuiltInBuilderPreset(meta.presetId)?.name ?? null,
+      presetVersion: currentVersion,
+      latestVersion,
+      updateAvailable,
+      linked: true,
+      canSync: latestVersion !== null,
+    };
+  }
+
+  return {
+    presetId: inferredBuiltIn?.id ?? null,
+    presetName: inferredBuiltIn?.name ?? null,
+    presetVersion: meta.presetVersion ?? 0,
+    latestVersion,
+    updateAvailable: false,
+    linked: false,
+    canSync: Boolean(inferredBuiltIn),
+  };
+}
 
 
